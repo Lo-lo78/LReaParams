@@ -1,4 +1,4 @@
-# Stato della consegna — 0.0.2 Native Test
+# Stato della consegna — 0.0.3 TEST2 Native Test
 
 Progetto sorgente GitHub-ready, senza compilazioni, binari o test runtime locali.
 Il workflow Windows x64 eseguirà la prima compilazione e i test C++.
@@ -10,13 +10,13 @@ Il workflow Windows x64 eseguirà la prima compilazione e i test C++.
 | DLL, menu Extensions, 8 azioni stabili | Presente, non testato in REAPER |
 | OSARA outputMessage e Shortcut Help | Integrato, verifica in REAPER necessaria |
 | Due backend tastiera senza finestra | Sperimentali, da collaudare |
-| FX Params | Griglia/Value, normalizzati reali e Undo, ricerca Ctrl+F, Home/End/Page |
+| FX Params | Rilevamento FX da track/take selezionati; FX singolo diretto, browser multi-FX e Monitor FX master; griglia/Value, normalizzati reali e Undo, ricerca Ctrl+F, Home/End/Page |
 | Track Params | Nuova navigazione nativa per otto controlli e sends/receives |
 | Parameter Library | Solo importazione `.pp`; azione informa che non è migrata |
 | Importer `.fx`, `.tp`, `.pp` | Conserva TXT storici, backup e conflitti, worker asincrono |
 | Profilo FX applicato e preferenze ExtState | Non implementati |
 | Test sorgente statici | Python audit eseguito, PASS |
-| Build GitHub Actions e runtime REAPER | NON ESEGUITI |
+| Build GitHub Actions per TEST1 FIX1 riuscita; TEST2 modificato solo sorgente, non compilato né testato in REAPER |
 
 ## Cosa manca prima di considerare LReaParams equivalente ai Lua
 

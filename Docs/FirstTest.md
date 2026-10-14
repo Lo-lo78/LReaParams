@@ -1,4 +1,4 @@
-# LReaParams 0.0.2 — Primo collaudo NVDA/OSARA
+# LReaParams 0.0.3 TEST2 — Primo collaudo NVDA/OSARA
 
 **Usa un progetto di prova e salva prima il progetto.** La DLL modifica valori
 reali di tracce, mandate ed FX. Compila esclusivamente con GitHub Actions;
@@ -17,9 +17,16 @@ nessuna prova runtime è stata eseguita da chi ha preparato questo ZIP.
 
 ## FX Params
 
-6. Inserisci un JSFX di prova su una traccia, apri la sua GUI, seleziona un
-   parametro e avvia `LReaParams: FX Params (native test)` dalla Action List
-   o con una scorciatoia assegnata da te.
+6. Inserisci un solo JSFX di prova su una traccia, seleziona la traccia SENZA
+   toccare il plugin e avvia `LReaParams: FX Params (native test)` dalla Action List
+   o con una scorciatoia assegnata da te. Deve aprire subito la griglia.
+   Aggiungi un secondo FX alla stessa traccia: la stessa azione deve aprire
+   il browser FX vocale. Su/Giù scorrono gli FX; Home/End e PageUp/Down
+   spostano la scelta; Invio entra nella griglia del FX selezionato; Esc
+   chiude. Alt+B dalla griglia riapre il browser. Verifica che sia possibile
+   scegliere anche il SECONDO FX e controllare i suoi valori senza che
+   LReaParams esca a causa del focus rimasto sul primo FX.
+   Facoltativo: prova anche take FX su un item selezionato e Master/Monitor FX.
 7. Tab deve leggere nome e valore. Su/Giù navigano nella colonna;
    Sinistra/Destra passano tra colonne. F1/F2 cambiano l'altezza colonne.
 8. Home/End vanno rispettivamente al primo/ultimo parametro; PageUp/PageDown

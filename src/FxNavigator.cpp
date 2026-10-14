@@ -3,45 +3,147 @@
 #include <cmath>
 #include <cstring>
 #include <cctype>
+#include <utility>
 #include <stdexcept>
 
 namespace lrp {
 namespace {
 bool same(const GUID* a, const GUID& b) { return a && std::memcmp(a, &b, sizeof(GUID)) == 0; }
 }
+// Startup context follows the original Lua's track/item selection rather than
+// requiring GetTouchedOrFocusedFX, which is often empty when FX Params is invoked.
 bool FxNavigator::begin() {
     end();
-    int trackIndex = 0, itemIndex = -1, takeIndex = -1, flags = 0;
-    // Focused FX first. A stale "still open" result is refused; touched FX is an explicit fallback.
-    bool focused = GetTouchedOrFocusedFX(1, &trackIndex, &itemIndex, &takeIndex, &fx_, &flags) && !(flags & 1);
-    int touchedParam = 0;
-    if (!focused && !GetTouchedOrFocusedFX(0, &trackIndex, &itemIndex, &takeIndex, &fx_, &touchedParam)) {
-        speech_("No focused or touched FX. Open an FX or touch a parameter first."); return false;
-    }
     project_ = EnumProjects(-1, nullptr, 0);
-    track_ = trackIndex < 0 ? GetMasterTrack(project_) : GetTrack(project_, trackIndex);
-    if (!track_ || !ValidatePtr2(project_, track_, "MediaTrack*")) return false;
-    take_ = nullptr;
-    if (itemIndex >= 0) {
-        auto* item = GetTrackMediaItem(track_, itemIndex);
-        if (!item || !ValidatePtr2(project_, item, "MediaItem*")) return false;
-        take_ = GetTake(item, takeIndex);
-        if (!take_ || !ValidatePtr2(project_, take_, "MediaItem_Take*")) return false;
+    if (!project_) { speech_("No REAPER project"); return false; }
+    track_ = nullptr; take_ = nullptr;
+    MediaTrack* master = GetMasterTrack(project_);
+    const bool masterSelected = master && GetMediaTrackInfo_Value(master, "I_SELECTED") > 0.5;
+    // An already visible FX chain wins over cursor context (as in the Lua).
+    if (masterSelected && (TrackFX_GetChainVisible(master) >= 0 || TrackFX_GetRecChainVisible(master) >= 0)) {
+        track_ = master;
     }
-    const auto* tg = GetTrackGUID(track_);
-    const auto* fg = take_ ? TakeFX_GetFXGUID(take_, fx_) : TrackFX_GetFXGUID(track_, fx_);
-    if (!tg || !fg) return false;
-    trackGuid_ = *tg; fxGuid_ = *fg;
-    count_ = count();
-    if (count_ <= 0) { speech_("No FX parameters"); return false; }
-    parameter_ = focused ? 0 : std::clamp(touchedParam, 0, count_ - 1);
+    if (!track_) {
+        const int selectedCount = CountSelectedTracks(project_);
+        for (int i = 0; i < selectedCount; ++i) {
+            auto* candidate = GetSelectedTrack(project_, i);
+            if (candidate && TrackFX_GetChainVisible(candidate) >= 0) { track_ = candidate; break; }
+        }
+    }
+    if (!track_ && CountSelectedMediaItems(project_) > 0) {
+        for (int i = 0; i < CountSelectedMediaItems(project_); ++i) {
+            auto* item = GetSelectedMediaItem(project_, i);
+            if (!item) continue;
+            auto* candidate = GetActiveTake(item);
+            if (candidate && TakeFX_GetChainVisible(candidate) >= 0) {
+                take_ = candidate; track_ = GetMediaItemTrack(item); break;
+            }
+        }
+    }
+    if (!track_) {
+        if (masterSelected) {
+            track_ = master;
+        } else if (GetCursorContext2(true) == 1 && CountSelectedMediaItems(project_) > 0) {
+            // Deliberate item context: do not silently edit track FX instead.
+            for (int i = 0; i < CountSelectedMediaItems(project_); ++i) {
+                auto* item = GetSelectedMediaItem(project_, i);
+                auto* candidate = item ? GetActiveTake(item) : nullptr;
+                if (candidate && TakeFX_GetCount(candidate) > 0) {
+                    take_ = candidate; track_ = GetMediaItemTrack(item); break;
+                }
+            }
+            if (!take_) { speech_("No take FX on selected item"); return false; }
+        } else if (CountSelectedTracks(project_) > 0) {
+            track_ = GetSelectedTrack(project_, 0);
+        } else if (CountSelectedMediaItems(project_) > 0) {
+            for (int i = 0; i < CountSelectedMediaItems(project_); ++i) {
+                auto* item = GetSelectedMediaItem(project_, i);
+                auto* candidate = item ? GetActiveTake(item) : nullptr;
+                if (candidate && TakeFX_GetCount(candidate) > 0) {
+                    take_ = candidate; track_ = GetMediaItemTrack(item); break;
+                }
+            }
+            if (!track_) { speech_("No take FX on selected item"); return false; }
+        } else {
+            // Lua's last-resort behavior when no track or item is selected.
+            auto* last = GetLastTouchedTrack();
+            if (last && ValidatePtr2(project_, last, "MediaTrack*") && TrackFX_GetCount(last) > 0) track_ = last;
+            if (!track_) for (int i = 0; i < CountTracks(project_); ++i) {
+                auto* candidate = GetTrack(project_, i);
+                if (candidate && TrackFX_GetCount(candidate) > 0) { track_ = candidate; break; }
+            }
+        }
+    }
+    if (!track_ || !ValidatePtr2(project_, track_, "MediaTrack*")) {
+        speech_("Select a track with FX or an item with take FX"); return false;
+    }
+    const auto* trackGuid = GetTrackGUID(track_);
+    if (!trackGuid) return false;
+    trackGuid_ = *trackGuid;
+
+    const int regularCount = take_ ? TakeFX_GetCount(take_) : TrackFX_GetCount(track_);
+    const int monitorCount = !take_ && track_ == master ? TrackFX_GetRecCount(track_) : 0;
+    for (int i = 0; i < regularCount + monitorCount; ++i) {
+        const int fx = i < regularCount ? i : 0x1000000 + (i - regularCount);
+        const GUID* guid = take_ ? TakeFX_GetFXGUID(take_, fx) : TrackFX_GetFXGUID(track_, fx);
+        if (!guid) continue;
+        char name[2048]{};
+        if (take_) TakeFX_GetFXName(take_, fx, name, sizeof(name));
+        else TrackFX_GetFXName(track_, fx, name, sizeof(name));
+        FxEntry entry; entry.index = fx; entry.guid = *guid;
+        entry.name = name[0] ? name : ("FX " + std::to_string(i + 1));
+        if (fx & 0x1000000) entry.name = "Monitor: " + entry.name;
+        entries_.push_back(std::move(entry));
+    }
+    if (entries_.empty()) { speech_("No FX on selected track or take"); return false; }
+
+    // Put the browser cursor on REAPER's visible-chain selection when possible.
+    int visible = -1;
+    if (take_) visible = TakeFX_GetChainVisible(take_);
+    else {
+        if (track_ == master && TrackFX_GetRecChainVisible(track_) >= 0)
+            visible = 0x1000000 + TrackFX_GetRecChainVisible(track_);
+        else visible = TrackFX_GetChainVisible(track_);
+    }
+    for (size_t i = 0; i < entries_.size(); ++i)
+        if (entries_[i].index == visible) { browserIndex_ = static_cast<int>(i); break; }
+
+    active_ = true;
+    browserMode_ = entries_.size() > 1;
+    searchMode_ = false; search_.clear();
+    valueMode_ = false; stepScale_ = 0; columns_ = 10;
+    if (browserMode_) {
+        speech_("FX browser. Up or Down to choose, Enter to open, Escape to exit.");
+        browserAnnounce();
+        return true;
+    }
+    if (!selectFx(0)) { end(); return false; }
+    speech_("FX Params. " + entries_[0].name);
+    announce();
+    return true;
+}
+void FxNavigator::browserAnnounce() {
+    if (entries_.empty()) return;
+    speech_(std::to_string(browserIndex_ + 1) + " of " + std::to_string(entries_.size()) + ", " + entries_[browserIndex_].name);
+}
+void FxNavigator::browserMove(int delta) {
+    const int index = std::clamp(browserIndex_ + delta, 0, static_cast<int>(entries_.size()) - 1);
+    if (index != browserIndex_) { browserIndex_ = index; browserAnnounce(); }
+}
+bool FxNavigator::selectFx(int index) {
+    if (index < 0 || index >= static_cast<int>(entries_.size())) return false;
+    const auto& candidate = entries_[index];
+    const GUID* guid = take_ ? TakeFX_GetFXGUID(take_, candidate.index) : TrackFX_GetFXGUID(track_, candidate.index);
+    if (!same(guid, candidate.guid)) { speech_("FX list changed. Reopen FX Params"); end(); return false; }
+    const int num = take_ ? TakeFX_GetNumParams(take_, candidate.index) : TrackFX_GetNumParams(track_, candidate.index);
+    if (num <= 0) { speech_("This FX has no parameters. Choose another FX."); return false; }
+    fx_ = candidate.index; fxGuid_ = candidate.guid;
+    count_ = num; parameter_ = 0;
     parameterName_ = parameterName();
-    valueMode_ = false; searchMode_ = false; search_.clear(); stepScale_ = 0; columns_ = 10; active_ = true;
     hadUi_ = take_ ? TakeFX_GetOpen(take_, fx_) : TrackFX_GetOpen(track_, fx_);
-    char name[2048]{};
-    if (take_) TakeFX_GetFXName(take_, fx_, name, sizeof(name)); else TrackFX_GetFXName(track_, fx_, name, sizeof(name));
-    speech_(std::string("FX Params. Phase zero. ") + name);
-    announce(); return true;
+    browserMode_ = false;
+    valueMode_ = false; searchMode_ = false; search_.clear();
+    return true;
 }
 int FxNavigator::count() const { return take_ ? TakeFX_GetNumParams(take_, fx_) : TrackFX_GetNumParams(track_, fx_); }
 std::string FxNavigator::parameterName() const {
@@ -53,6 +155,7 @@ bool FxNavigator::valid() const {
     if (!active_ || EnumProjects(-1, nullptr, 0) != project_ || !ValidatePtr2(project_, track_, "MediaTrack*")) return false;
     if (!same(GetTrackGUID(track_), trackGuid_)) return false;
     if (take_ && (!ValidatePtr2(project_, take_, "MediaItem_Take*") || GetMediaItemTake_Track(take_) != track_)) return false;
+    if (browserMode_) return true;
     const auto* g = take_ ? TakeFX_GetFXGUID(take_, fx_) : TrackFX_GetFXGUID(track_, fx_);
     if (!same(g, fxGuid_)) return false;
     if (count() != count_ || parameter_ < 0 || parameter_ >= count_) return false;
@@ -60,23 +163,34 @@ bool FxNavigator::valid() const {
 }
 bool FxNavigator::contextUnchanged() const {
     if (!valid()) return false;
-    int tr = 0, item = -1, tk = -1, fx = -1, state = 0;
-    if (!GetTouchedOrFocusedFX(1, &tr, &item, &tk, &fx, &state) || (state & 1)) return true;
-    auto* track = tr < 0 ? GetMasterTrack(project_) : GetTrack(project_, tr);
-    if (track != track_ || fx != fx_) return false;
-    if (item < 0) return take_ == nullptr;
-    auto* media = GetTrackMediaItem(track, item);
-    return media && GetTake(media, tk) == take_;
+    // Compare FX identities, never the last-touched FX. The browser may choose
+    // any plugin even while REAPER still reports a different focused plugin.
+    const int currentNormal = take_ ? TakeFX_GetCount(take_) : TrackFX_GetCount(track_);
+    const int currentMonitor = !take_ && track_ == GetMasterTrack(project_) ? TrackFX_GetRecCount(track_) : 0;
+    if (currentNormal + currentMonitor != static_cast<int>(entries_.size())) return false;
+    for (const auto& entry : entries_) {
+        const GUID* guid = take_ ? TakeFX_GetFXGUID(take_, entry.index) : TrackFX_GetFXGUID(track_, entry.index);
+        if (!same(guid, entry.guid)) return false;
+    }
+    return true;
 }
 HWND FxNavigator::floatingWindow() const {
-    return valid() ? (take_ ? TakeFX_GetFloatingWindow(take_, fx_) : TrackFX_GetFloatingWindow(track_, fx_)) : nullptr;
+    return valid() && !browserMode_ ? (take_ ? TakeFX_GetFloatingWindow(take_, fx_) : TrackFX_GetFloatingWindow(track_, fx_)) : nullptr;
 }
 bool FxNavigator::uiStillOpen() const {
     if (!valid()) return false;
-    return !hadUi_ || (take_ ? TakeFX_GetOpen(take_, fx_) : TrackFX_GetOpen(track_, fx_));
+    return browserMode_ || !hadUi_ || (take_ ? TakeFX_GetOpen(take_, fx_) : TrackFX_GetOpen(track_, fx_));
 }
 bool FxNavigator::accepts(const Key& k) const noexcept {
     if (!active_) return false;
+    if (browserMode_) {
+        if (k.alt || k.ctrl || k.shift) return false;
+        return k.vk == VK_ESCAPE || k.vk == VK_RETURN || k.vk == VK_TAB ||
+            k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_LEFT || k.vk == VK_RIGHT ||
+            k.vk == VK_HOME || k.vk == VK_END || k.vk == VK_PRIOR || k.vk == VK_NEXT ||
+            (k.vk >= 'A' && k.vk <= 'Z');
+    }
+    if (k.alt && !k.ctrl && !k.shift && k.vk == 'B') return entries_.size() > 1;
     if (k.ctrl && !k.alt && !k.shift && k.vk == 'F') return true;
     if (searchMode_) {
         if (k.alt || k.ctrl) return false;
@@ -158,6 +272,44 @@ void FxNavigator::searchPreview() {
 }
 void FxNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
+    if (browserMode_) {
+        if (k.vk == VK_ESCAPE) { end(); return; }
+        if (k.vk == VK_RETURN) {
+            if (!k.repeat && selectFx(browserIndex_)) {
+                speech_("FX Params. " + entries_[browserIndex_].name);
+                announce();
+            }
+            return;
+        }
+        if (k.vk == VK_TAB) { browserAnnounce(); return; }
+        if (k.vk == VK_HOME) { browserIndex_ = 0; browserAnnounce(); return; }
+        if (k.vk == VK_END) { browserIndex_ = static_cast<int>(entries_.size()) - 1; browserAnnounce(); return; }
+        if (k.vk == VK_DOWN || k.vk == VK_RIGHT) { browserMove(1); return; }
+        if (k.vk == VK_UP || k.vk == VK_LEFT) { browserMove(-1); return; }
+        if (k.vk == VK_NEXT) { browserMove(10); return; }
+        if (k.vk == VK_PRIOR) { browserMove(-10); return; }
+        if (k.vk >= 'A' && k.vk <= 'Z') {
+            for (int offset = 1; offset <= static_cast<int>(entries_.size()); ++offset) {
+                int index = (browserIndex_ + offset) % static_cast<int>(entries_.size());
+                std::string name = entries_[index].name;
+                const auto colon = name.find(": ");
+                if (colon != std::string::npos) name.erase(0, colon + 2);
+                while (name.size() && name.front() == ' ') name.erase(name.begin());
+                // Strip common FX type prefixes (VST3i:, VST:, JS:).
+                const auto typeEnd = name.find(':');
+                if (typeEnd != std::string::npos && typeEnd < 6) name.erase(0, typeEnd + 1);
+                while (name.size() && name.front() == ' ') name.erase(name.begin());
+                if (name.size() && std::toupper(static_cast<unsigned char>(name.front())) == static_cast<int>(k.vk)) {
+                    browserIndex_ = index; browserAnnounce(); break;
+                }
+            }
+        }
+        return;
+    }
+    if (k.alt && k.vk == 'B' && entries_.size() > 1) {
+        browserMode_ = true; valueMode_ = false; searchMode_ = false;
+        speech_("FX browser"); browserAnnounce(); return;
+    }
     if (k.ctrl && k.vk == 'F') {
         if (!k.repeat) { searchMode_ = !searchMode_; search_.clear(); speech_(searchMode_ ? "Find parameter. Type letters or digits, Up or Down next match, Enter accept, Escape cancel." : "Find cancelled"); }
         return;

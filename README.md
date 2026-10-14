@@ -1,4 +1,4 @@
-# LReaParams — 0.0.2 Native Test (sorgente GitHub-ready)
+# LReaParams — 0.0.3 TEST2 Native Test (sorgente GitHub-ready)
 
 Estensione Windows x64 di REAPER scritta in C++17. **Questa è una prima versione
 sperimentale da collaudare, NON la migrazione completa dei tre Lua originali.**
@@ -6,6 +6,8 @@ La DLL non crea alcuna finestra di navigazione o pixel fuori schermo. Le azioni
 si trovano in Extensions → LReaParams e nella Action List.
 
 ## Compilazione: esclusivamente GitHub Actions
+
+**TEST2:** avvio di FX Params dal contesto traccia/item, senza dover toccare un parametro. Se è presente un solo FX entra direttamente nella griglia, con due o più FX apre il browser vocale (Su/Giù, Invio, Esc, Alt+B per riaprirlo). Supporta anche i Monitor FX del master. Nessuna finestra ausiliaria.
 
 **TEST1 FIX1:** corretto il workflow per il runner Windows 2025 con
 Visual Studio 2026 (CMake generator `Visual Studio 18 2026`).
@@ -30,7 +32,7 @@ catturati in tutte le GUI dei plugin: occorre il test in REAPER.
 
 ## Cosa è utilizzabile
 
-- **FX Params**: apertura tramite FX focalizzato/ultimo toccato, parametri reali
+- **FX Params**: apertura tramite contesto della traccia/item selezionato, browser vocale con due o più FX, parametri reali
   track/take, griglia per colonne, Value, modifica in tempo reale, ricerca
   locale con Ctrl+F, Home/End e PageUp/PageDown nella griglia, Undo e annunci OSARA.
 - **Track Params (basic controls)**: traccia selezionata (anche master),

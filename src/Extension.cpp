@@ -130,7 +130,7 @@ public:
         }
         case 7:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.2 NATIVE TEST\nPartial native navigation, not the full Lua migration.\n\nFX grid: Up/Down within column; Left/Right between columns.\nEnter: Value/Grid. Alt+Up/Down: value. Alt+PageUp/Down: large step.\nF1/F2: column height. Alt+Left/Right: test sensitivity.\nTab: read parameter. Esc: Value to Grid, then exit.\nF12: exit and pass to OSARA. Unmapped keys exit and pass to REAPER.\n\nTrack Params supports basic track and send controls. Parameter Library and advanced Lua features remain pending.\nSee Docs/Acceptance.md before testing.", "About LReaParams", 0);
+            ShowMessageBox("LReaParams 0.0.3 TEST2 NATIVE\nPartial native navigation, not the full Lua migration.\n\nFX selection: one FX opens directly; multiple FX open a spoken browser.\nUp/Down selects; Enter opens; Esc cancels. Alt+B reopens the FX browser.\nFX grid: Up/Down within column; Left/Right between columns.\nEnter: Value/Grid. Alt+Up/Down: value. Alt+PageUp/Down: large step.\nF1/F2: column height. Alt+Left/Right: test sensitivity.\nTab: read parameter. Esc: Value to Grid, then exit.\nF12: exit and pass to OSARA. Unmapped keys exit and pass to REAPER.\n\nTrack Params supports basic track and send controls. Parameter Library and advanced Lua features remain pending.\nSee Docs/Acceptance.md before testing.", "About LReaParams", 0);
             break;
         default: break;
         }
