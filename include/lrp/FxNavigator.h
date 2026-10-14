@@ -19,6 +19,7 @@ public:
     void announce() override;
     void announceTitle() override;
     std::wstring windowTitle() const override;
+    std::string reviewLine() const override;
     HWND floatingWindow() const override;
     bool uiStillOpen() const override;
 private:

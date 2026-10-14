@@ -1,8 +1,29 @@
-# LReaParams — 0.0.7 TEST6 (sorgente GitHub-ready)
+# LReaParams — 0.0.8 TEST7 (sorgente GitHub-ready)
 
 Estensione C++17 per REAPER su Windows x64. **TEST6 verifica il possesso
 reale della tastiera, come nei Lua originali.** Non è ancora la migrazione
 completa di FX Params, Track Params e Parameter Library.
+
+## Novità TEST7 — NVDA+Freccia Su e Sends/Receives come nei Lua
+
+- **NVDA+Freccia Su**: il navigatore pubblica nome e valore corrente in
+  un campo Win32 EDIT nativo di sola lettura, posto nella finestra fuori
+  schermo che gia' possiede la tastiera. NVDA puo' leggere la riga dal
+  cursore di sistema; NVDA+T mantiene il titolo della finestra padre.
+  Gli annunci durante la navigazione passano sempre da OSARA.
+- **Track Params F1**: Enter su Mute, Solo e Phase Invert cambia direttamente
+  lo stato On/Off, senza aprire Value o una finestra.
+- **Track Params F2/F3**: ogni send/receive e' una colonna, con **14 campi
+  verticali** per colonna. Su/Giu' scorre i campi, Sinistra/Destra passa
+  alla colonna precedente/successiva mantenendo la riga; MIDI follows fader
+  e Mute sono azionabili con Enter. I campi di routing audio complesso
+  rimangono leggibili ma non ancora modificabili per sicurezza.
+- Non compila localmente: il workflow GitHub Actions crea la DLL.
+- Test: `Docs/TEST7_NVDA_TRACK_COLUMNS.md`.
+
+**La correttezza del gesto NVDA+Freccia Su deve essere confermata in REAPER.**
+Il controllo EDIT nativo e' una soluzione progettata per l'accessibilita'
+standard di Windows, non una garanzia verificata in runtime.
 
 ## Novità TEST6 — focus gestito come gfx.getchar()
 
@@ -66,7 +87,7 @@ catturati in tutte le GUI dei plugin: occorre il test in REAPER.
 - **FX Params**: apertura tramite contesto della traccia/item selezionato, browser vocale con due o più FX, parametri reali
   track/take, griglia per colonne, Value, modifica in tempo reale, ricerca
   locale con Ctrl+F, Home/End e PageUp/PageDown nella griglia, Undo e annunci OSARA.
-- **Track Params (basic controls)**: F1 riprende la matrice del Lua: ogni traccia visibile nel TCP e non nascosta da una cartella chiusa ha una riga orizzontale con 9 campi (Volume, Pan, Width, Mute, Solo, Phase invert, Send count, Receive count, FX count). La navigazione nella matrice NON seleziona davvero la traccia nel TCP. F2/F3 sono pagine parziali per send e receive (volume, pan, mute), non equivalenti alle 14 colonne dei Lua.
+- **Track Params (basic controls)**: F1 riprende la matrice del Lua: ogni traccia visibile nel TCP e non nascosta da una cartella chiusa ha una riga orizzontale con 9 campi (Volume, Pan, Width, Mute, Solo, Phase invert, Send count, Receive count, FX count). La navigazione nella matrice NON seleziona davvero la traccia nel TCP. F2/F3 hanno 14 campi per colonna send/receive (layout Lua); alcune modifiche di routing restano da portare.
 - **Dati storici**: importa i TXT riconosciuti da
   `REAPER/Scripts/Lo-lo - Scripts/Utility/Scripts/{Plugins,Params,Tracks}`
   nella cartella sorella `REAPER/LReaParams`, convertendoli in `.fx`, `.pp`, `.tp`.
@@ -88,7 +109,7 @@ con la finestra Lua-style, invece, rimane confinato nella finestra di input.
 
 ## Documentazione
 
-- `Docs/FirstTest.md` — test accessibile passo passo per la TEST5.
+- `Docs/TEST7_NVDA_TRACK_COLUMNS.md` — collaudo aggiornato TEST7. `Docs/FirstTest.md` resta storico.
 - `Docs/Status.md` — funzionalità realmente implementate e TODO.
 - `Docs/Acceptance.md` — prove approfondite input, OSARA e perdita del focus.
 - `Docs/Architecture.md`, `Docs/Formats.md`, `Docs/FunctionalMatrix.md`.

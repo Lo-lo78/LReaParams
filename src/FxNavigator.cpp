@@ -228,6 +228,17 @@ std::wstring FxNavigator::windowTitle() const {
     if (searchMode_) return L"LReaParams - FX Params - Find Parameter";
     return valueMode_ ? L"LReaParams - FX Params - Value" : L"LReaParams - FX Params - Grid";
 }
+std::string FxNavigator::reviewLine() const {
+    if (!active_) return "";
+    if (browserMode_) {
+        if (entries_.empty()) return "No FX";
+        return "FX " + std::to_string(browserIndex_ + 1) + " of " +
+            std::to_string(entries_.size()) + ", " + entries_[browserIndex_].name;
+    }
+    // The line remains about the actual parameter even while its search mode
+    // or the parameter Value mode is active.
+    return entries_[browserIndex_].name + ", " + currentParameterSpeech();
+}
 void FxNavigator::navigate(int delta) {
     const int next = std::clamp(parameter_ + delta, 0, count_ - 1);
     if (next == parameter_) return;

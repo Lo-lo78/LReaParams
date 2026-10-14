@@ -112,7 +112,10 @@ public:
                 const InputBackend selected = titleProxyActive_ ? InputBackend::ownedWindow : backend_;
                 if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
                     exitNavigation(false); speak("Keyboard capture unavailable"); }
-                else desired->announceTitle();
+                else {
+                    if (titleProxyActive_) titleProxy_.updateReviewLine(desired->reviewLine());
+                    desired->announceTitle();
+                }
                 refreshToggles();
             }
             break;
@@ -144,11 +147,11 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.7 TEST6 FOCUS NATIVE\n\n"
+            ShowMessageBox("LReaParams 0.0.8 TEST7 NVDA REVIEW AND ROUTING\n\n"
                 "FX: F1/F2 change grid height again. Ctrl+Home/End jump to first/last parameter.\n"
-                "Track: F1 Tracks, F2 Sends, F3 Receives.\n"
-                "Like the Lua, a 1x1 offscreen window OWNS keyboard focus during navigation.\n"
-                "NVDA+T reads its title; the FX GUI stays visible and mouse-enabled.\n"
+                "Track: F1 track rows, F2/F3 fourteen vertical fields per send/receive column.\n"
+                "Like the Lua, an offscreen window owns the keyboard; a read-only EDIT exposes the NVDA review line.\n"
+                "NVDA+T reads the title and NVDA+Up the current parameter and value.\n"
                 "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
                 "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"
                 "Memories and full Lua migration remain unfinished.", "About LReaParams", 0);
@@ -190,6 +193,7 @@ public:
             if (!current_->active()) { exitNavigation(false); speak("LReaParams navigation off"); break; }
             if (titleProxyActive_) {
                 titleProxy_.updateTitle(current_->windowTitle());
+                titleProxy_.updateReviewLine(current_->reviewLine());
                 // The Lua reinitializes gfx after changing plugin values.
                 // Recover focus immediately after the handled key, not in a
                 // continuous background loop that would fight the mouse.

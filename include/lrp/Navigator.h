@@ -18,7 +18,8 @@ public:
     virtual void handle(const Key&) = 0;
     virtual void announce() = 0;
     virtual void announceTitle() = 0; // one OSARA announcement at mode entry
-    virtual std::wstring windowTitle() const = 0; // NVDA+T via offscreen title proxy
+    virtual std::wstring windowTitle() const = 0; // NVDA+T
+    virtual std::string reviewLine() const = 0; // NVDA+Up, native read-only EDIT caret
     virtual HWND floatingWindow() const { return nullptr; }
     virtual bool uiStillOpen() const { return true; }
 };

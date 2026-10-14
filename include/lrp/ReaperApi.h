@@ -55,6 +55,8 @@
 #define REAPERAPI_WANT_GetTrackName
 #define REAPERAPI_WANT_GetMediaTrackInfo_Value
 #define REAPERAPI_WANT_SetMediaTrackInfo_Value
+#define REAPERAPI_WANT_GetTrackSendName
+#define REAPERAPI_WANT_GetTrackReceiveName
 #define REAPERAPI_WANT_GetTrackNumSends
 #define REAPERAPI_WANT_GetTrackSendInfo_Value
 #define REAPERAPI_WANT_SetTrackSendInfo_Value

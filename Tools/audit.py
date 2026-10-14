@@ -50,9 +50,17 @@ def main():
         check(not re.search(forbidden,all_cpp),'Unexpected window/global hook/state write')
     # One purpose-built offscreen title proxy is allowed; forbid other window creation.
     title_src=(ROOT/'src/TitleProxy.cpp').read_text()
-    check(title_src.count('CreateWindowExW(')==1,'Expected one title proxy')
+    check(title_src.count('CreateWindowExW(')==2,'Expected titled owner window and one native EDIT child')
     for marker in ['WS_EX_TOOLWINDOW','-32000','SW_HIDE','DestroyWindow','UnregisterClassW','SetForegroundWindow','WM_KEYDOWN']:
         check(marker in title_src,'Title proxy lifecycle contract missing: '+marker)
+    check('ES_READONLY' in title_src and 'EM_SETSEL' in title_src and
+          'updateReviewLine' in title_src and 'WM_GETDLGCODE' in title_src,
+          'NVDA native review line missing')
+    track_src=(ROOT/'src/TrackNavigator.cpp').read_text()
+    check(track_src.count('entries_.push_back(')==14, 'F2/F3 must have 14 fields per column')
+    for marker in ['moveDetailColumn', 'VK_RETURN', 'Entry::midiFollowsFader',
+                   'detailIndex_ * detailHeight + parameter_', 'toggle(*e)']:
+        check(marker in track_src, 'Track grid/Enter feature missing: '+marker)
     for cpp in (ROOT/'src').glob('*.cpp'):
         if cpp.name != 'TitleProxy.cpp':
             check(not re.search(r'CreateWindow(?:Ex)?[AW]?\s*\(',cpp.read_text()),'Unexpected window creation: '+cpp.name)

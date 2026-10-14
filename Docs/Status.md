@@ -1,3 +1,7 @@
+# Stato TEST7 (0.0.8): solo sorgente; compilazione tramite GitHub Actions.
+
+NVDA+Freccia Su usa EDIT Win32 di sola lettura; F2/F3 ora hanno 14 campi verticali per ogni colonna send/receive. Invio commuta immediatamente gli interruttori Track. Routing audio avanzato non editabile. Collaudo: `Docs/TEST7_NVDA_TRACK_COLUMNS.md`.
+
 # Stato della consegna — 0.0.7 TEST6 Focus Owner
 
 Progetto sorgente GitHub-ready, senza compilazioni, binari o test runtime locali.

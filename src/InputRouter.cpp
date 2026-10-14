@@ -13,7 +13,7 @@ bool InputRouter::start(InputBackend backend, HWND keyboardWindow) {
     if (backend == InputBackend::ownedWindow) {
         if (!keyboardWindow || !IsWindow(keyboardWindow) ||
             GetWindowThreadProcessId(keyboardWindow, nullptr) != threadId_ ||
-            GetForegroundWindow() != keyboardWindow || GetFocus() != keyboardWindow ||
+            GetForegroundWindow() != GetAncestor(keyboardWindow, GA_ROOT) || GetFocus() != keyboardWindow ||
             !IsWindowEnabled(main_)) return false;
         ownedWindow_ = keyboardWindow;
         originalRoot_ = keyboardWindow;
@@ -67,11 +67,13 @@ bool InputRouter::safeTarget(HWND target) const noexcept {
     if (GetWindowThreadProcessId(target, &pid) != threadId_ || pid != GetCurrentProcessId()) return false;
     GUITHREADINFO info{sizeof(info)};
     if (!GetGUIThreadInfo(threadId_, &info) || (info.flags & (GUI_INMENUMODE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE | GUI_INMOVESIZE))) return false;
-    if (info.hwndCaret) return false;
+    // The owned native EDIT has a system caret by design (NVDA+Up).
     // The owned, focused keyboard window is a legitimate navigation target.
     // Do not override it using GetTouchedOrFocusedFX (the TEST5 failure).
     if (ownedWindow_ && target == ownedWindow_)
-        return GetFocus() == ownedWindow_ && GetForegroundWindow() == ownedWindow_;
+        return GetFocus() == ownedWindow_ &&
+            GetForegroundWindow() == GetAncestor(ownedWindow_, GA_ROOT);
+    if (info.hwndCaret) return false;
     const auto root = GetAncestor(target, GA_ROOT);
     if (root != main_ && root != originalRoot_ && root != floating_) return false;
     for (HWND h = target; h; h = GetParent(h)) {
