@@ -57,6 +57,18 @@ def main():
         if cpp.name != 'TitleProxy.cpp':
             check(not re.search(r'CreateWindow(?:Ex)?[AW]?\s*\(',cpp.read_text()),'Unexpected window creation: '+cpp.name)
     check('PM_REMOVE' in all_cpp and 'CallNextHookEx' in all_cpp,'Thread hook lifecycle contract missing')
+    # TEST6: the focus window owns the keys, without passing via the TCP.
+    router=(ROOT/'src/InputRouter.cpp').read_text()
+    extension=(ROOT/'src/Extension.cpp').read_text()
+    check('enqueueOwnedKey' in router and 'InputBackend::ownedWindow' in router,
+          'Owned window keyboard queue missing')
+    check('enqueueOwnedKey' in extension and 'InputBackend::ownedWindow' in extension,
+          'Owned window not connected to navigator')
+    check('WM_SYSKEYDOWN' in title_src and 'keyboardKey_' in title_src and
+          'DLGC_WANTALLKEYS' in title_src,
+          'Window procedure keyboard ownership missing')
+    check('reassertFocusAfterNavigationKey' in title_src,
+          'Post-parameter-change focus recovery missing')
     corpus(ROOT/'Testing/fixtures')
     if len(sys.argv)>1: corpus(Path(sys.argv[1]))
     reject(b'Version=3\n'); reject(b'Version=2\nOther=unknown\n'); reject(b'PARAMLIB_V1\nMode=handoff\n')

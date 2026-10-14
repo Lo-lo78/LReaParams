@@ -101,13 +101,17 @@ public:
             if (desired->begin()) {
                 current_ = desired;
                 input_.select(*desired);
-                // The one-pixel offscreen window is optional but enabled by default.
-                // While it owns foreground focus, WH_GETMESSAGE is more reliable
-                // than REAPER's accelerator, which targets its own windows.
+                // Lua gfx.init-style focus owner: keys go straight from its
+                // Win32 window procedure into the navigator queue, without a
+                // REAPER accelerator/hook. No more fall-through to the TCP.
                 titleProxyActive_ = titleModeEnabled_ && titleProxy_.activate(
-                    desired->windowTitle(), [this] { exitNavigation(false); });
-                const InputBackend selected = titleProxyActive_ ? InputBackend::mainThreadHook : backend_;
-                if (!input_.start(selected)) { exitNavigation(false); speak("Keyboard capture unavailable"); }
+                    desired->windowTitle(), [this] { exitNavigation(false); },
+                    [this](UINT vk, bool repeat) {
+                        return input_.enqueueOwnedKey(titleProxy_.hwnd(), vk, repeat);
+                    });
+                const InputBackend selected = titleProxyActive_ ? InputBackend::ownedWindow : backend_;
+                if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
+                    exitNavigation(false); speak("Keyboard capture unavailable"); }
                 else desired->announceTitle();
                 refreshToggles();
             }
@@ -140,13 +144,13 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.6 TEST5 NATIVE\n\n"
+            ShowMessageBox("LReaParams 0.0.7 TEST6 FOCUS NATIVE\n\n"
                 "FX: F1/F2 change grid height again. Ctrl+Home/End jump to first/last parameter.\n"
                 "Track: F1 Tracks, F2 Sends, F3 Receives.\n"
-                "NVDA+T: an experimental 1x1 offscreen title window is active while navigating.\n"
-                "The true FX interface stays visible and the title proxy is removed on exit.\n"
+                "Like the Lua, a 1x1 offscreen window OWNS keyboard focus during navigation.\n"
+                "NVDA+T reads its title; the FX GUI stays visible and mouse-enabled.\n"
                 "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
-                "Use 'NVDA title window (1px)' to disable the experiment if necessary.\n\n"
+                "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"
                 "Memories and full Lua migration remain unfinished.", "About LReaParams", 0);
             break;
         case 7:
@@ -160,7 +164,7 @@ public:
         case 9:
             exitNavigation(false);
             titleModeEnabled_ = !titleModeEnabled_;
-            speak(titleModeEnabled_ ? "NVDA title window enabled" : "NVDA title window disabled");
+            speak(titleModeEnabled_ ? "Lua-style keyboard window enabled" : "Lua-style keyboard window disabled");
             break;
         default: break;
         }
@@ -184,7 +188,13 @@ public:
             if (!current_->contextUnchanged() || GetFocus() != key.window) { exitNavigation(false); return; }
             current_->handle(key);
             if (!current_->active()) { exitNavigation(false); speak("LReaParams navigation off"); break; }
-            if (titleProxyActive_) titleProxy_.updateTitle(current_->windowTitle());
+            if (titleProxyActive_) {
+                titleProxy_.updateTitle(current_->windowTitle());
+                // The Lua reinitializes gfx after changing plugin values.
+                // Recover focus immediately after the handled key, not in a
+                // continuous background loop that would fight the mouse.
+                titleProxy_.reassertFocusAfterNavigationKey();
+            }
         }
     }
     void menu(const char* id, HMENU menu, int flag) {
@@ -260,7 +270,7 @@ private:
         {"LREAPARAMSABOUT", "LReaParams: About LReaParams", L"About LReaParams"},
         {"LREAPARAMSFXMEMORIES", "LReaParams: FX Memories (future)", L"FX Memories (future)"},
         {"LREAPARAMSTRACKMEMORIES", "LReaParams: Track Memories (future)", L"Track Memories (future)"},
-        {"LREAPARAMSNVDATITLE", "LReaParams: Toggle NVDA window title (experimental)", L"NVDA title window (1px)"}
+        {"LREAPARAMSNVDATITLE", "LReaParams: Toggle Lua-style keyboard focus window", L"Lua-style keyboard window (1px)"}
     }};
 };
 bool actionHook(KbdSectionInfo*, int command, int, int, int, HWND) noexcept {

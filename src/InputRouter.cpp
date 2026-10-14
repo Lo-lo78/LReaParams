@@ -8,8 +8,20 @@ InputRouter::InputRouter(reaper_plugin_info_t* api, Navigator& navigator) : api_
     accelerator_.translateAccel = translate; accelerator_.isLocal = true; accelerator_.user = this;
 }
 InputRouter::~InputRouter() { stop(); }
-bool InputRouter::start(InputBackend backend) {
+bool InputRouter::start(InputBackend backend, HWND keyboardWindow) {
     stop(); threadId_ = GetCurrentThreadId();
+    if (backend == InputBackend::ownedWindow) {
+        if (!keyboardWindow || !IsWindow(keyboardWindow) ||
+            GetWindowThreadProcessId(keyboardWindow, nullptr) != threadId_ ||
+            GetForegroundWindow() != keyboardWindow || GetFocus() != keyboardWindow ||
+            !IsWindowEnabled(main_)) return false;
+        ownedWindow_ = keyboardWindow;
+        originalRoot_ = keyboardWindow;
+        floating_ = navigator_->floatingWindow();
+        exitRequested_ = false;
+        capturing_ = true;
+        return true;
+    }
     if (GetWindowThreadProcessId(main_, nullptr) != threadId_) return false;
     originalRoot_ = GetAncestor(GetFocus(), GA_ROOT);
     floating_ = navigator_->floatingWindow();
@@ -44,7 +56,7 @@ void InputRouter::stop() noexcept {
     if (registered_) { api_->Register("-accelerator", &accelerator_); registered_ = false; }
     if (hook_) { UnhookWindowsHookEx(hook_); hook_ = nullptr; }
     if (current_ == this) current_ = nullptr;
-    swallowed_.fill(nullptr); head_ = tail_ = 0; originalRoot_ = floating_ = nullptr;
+    swallowed_.fill(nullptr); head_ = tail_ = 0; originalRoot_ = floating_ = ownedWindow_ = nullptr;
     exitRequested_ = false; escapeHookOnly_ = false;
 }
 void InputRouter::requestExit() noexcept { capturing_ = false; exitRequested_ = true; head_ = tail_ = 0; }
@@ -56,6 +68,10 @@ bool InputRouter::safeTarget(HWND target) const noexcept {
     GUITHREADINFO info{sizeof(info)};
     if (!GetGUIThreadInfo(threadId_, &info) || (info.flags & (GUI_INMENUMODE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE | GUI_INMOVESIZE))) return false;
     if (info.hwndCaret) return false;
+    // The owned, focused keyboard window is a legitimate navigation target.
+    // Do not override it using GetTouchedOrFocusedFX (the TEST5 failure).
+    if (ownedWindow_ && target == ownedWindow_)
+        return GetFocus() == ownedWindow_ && GetForegroundWindow() == ownedWindow_;
     const auto root = GetAncestor(target, GA_ROOT);
     if (root != main_ && root != originalRoot_ && root != floating_) return false;
     for (HWND h = target; h; h = GetParent(h)) {
@@ -100,6 +116,30 @@ bool InputRouter::route(MSG& message, bool removed) noexcept {
     const auto next = (tail_ + 1) % queue_.size();
     if (next == head_) { requestExit(); return false; }
     queue_[tail_] = key; tail_ = next; swallowed_[vk] = message.hwnd; return true;
+}
+bool InputRouter::enqueueOwnedKey(HWND window, UINT vk, bool repeat) noexcept {
+    if (!capturing_ || !ownedWindow_ || window != ownedWindow_ ||
+        GetCurrentThreadId() != threadId_ || !environmentSafe()) {
+        requestExit(); return false;
+    }
+    // NVDA intercepts its own gestures. If an Insert-based gesture reaches
+    // this window anyway, do not convert it to a navigation command.
+    if ((GetKeyState(VK_INSERT) & 0x8000) || (GetKeyState(VK_NUMPAD0) & 0x8000))
+        return true;
+    if (vk == VK_SHIFT || vk == VK_CONTROL || vk == VK_MENU ||
+        vk == VK_LSHIFT || vk == VK_RSHIFT || vk == VK_LCONTROL ||
+        vk == VK_RCONTROL || vk == VK_LMENU || vk == VK_RMENU)
+        return true;
+    Key key{vk, (GetKeyState(VK_CONTROL) & 0x8000) != 0,
+        (GetKeyState(VK_MENU) & 0x8000) != 0,
+        (GetKeyState(VK_SHIFT) & 0x8000) != 0, repeat, window};
+    // A gfx.getchar-style keyboard owner does not close on an unsupported key
+    // and never leaks such a key to the TCP, FX or project.
+    if (!navigator_->accepts(key)) return true;
+    const auto next = (tail_ + 1) % queue_.size();
+    if (next == head_) { requestExit(); return false; }
+    queue_[tail_] = key; tail_ = next;
+    return true;
 }
 bool InputRouter::pop(Key& key) noexcept {
     if (head_ == tail_) return false;

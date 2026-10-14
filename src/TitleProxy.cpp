@@ -21,12 +21,14 @@ bool TitleProxy::ensureWindow() {
     return window_ != nullptr;
 }
 
-bool TitleProxy::activate(const std::wstring& title, std::function<void()> closeNavigator) {
+bool TitleProxy::activate(const std::wstring& title, std::function<void()> closeNavigator,
+                          std::function<bool(UINT, bool)> keyboardKey) {
     hideAndRestore();
     if (!ensureWindow()) return false;
     originalForeground_ = GetForegroundWindow();
     originalFocus_ = GetFocus();
     closeNavigator_ = std::move(closeNavigator);
+    keyboardKey_ = std::move(keyboardKey);
     title_ = title;
     SetWindowTextW(window_, title_.c_str());
     ShowWindow(window_, SW_SHOW);
@@ -45,12 +47,31 @@ void TitleProxy::updateTitle(const std::wstring& title) {
     SetWindowTextW(window_, title_.c_str());
 }
 
+void TitleProxy::reassertFocusAfterNavigationKey() noexcept {
+    if (!window_ || !IsWindowVisible(window_) || !IsWindowEnabled(host_)) return;
+    // Respect switching to other applications and any REAPER modal dialogs.
+    HWND front = GetForegroundWindow();
+    if (!front) return;
+    DWORD pid = 0;
+    if (GetWindowThreadProcessId(front, &pid) != GetCurrentThreadId() ||
+        pid != GetCurrentProcessId()) return;
+    GUITHREADINFO gui{sizeof(gui)};
+    if (!GetGUIThreadInfo(GetCurrentThreadId(), &gui) ||
+        (gui.flags & (GUI_INMENUMODE | GUI_POPUPMENUMODE |
+                      GUI_SYSTEMMENUMODE | GUI_INMOVESIZE)) || gui.hwndCaret)
+        return;
+    if (front != window_) SetForegroundWindow(window_);
+    if (GetForegroundWindow() == window_ && GetFocus() != window_)
+        SetFocus(window_);
+}
+
 void TitleProxy::hideAndRestore() noexcept {
     if (!window_) return;
     const bool foregroundOwned = GetForegroundWindow() == window_;
     const HWND previousForeground = originalForeground_;
     const HWND previousFocus = originalFocus_;
     closeNavigator_ = {};
+    keyboardKey_ = {};
     originalForeground_ = originalFocus_ = nullptr;
     if (IsWindowVisible(window_)) ShowWindow(window_, SW_HIDE);
     // Never steal focus back if the user / remote collaborator clicked away.
@@ -93,11 +114,27 @@ LRESULT CALLBACK TitleProxy::windowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
     }
     auto* self = reinterpret_cast<TitleProxy*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     if (self) {
+        if (msg == WM_GETDLGCODE) return DLGC_WANTALLKEYS;
         if ((msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) && wp == VK_F12) {
             if (!(lp & (1LL << 30))) self->onF12(lp);
             return 0;
         }
         if ((msg == WM_KEYUP || msg == WM_SYSKEYUP) && wp == VK_F12) return 0;
+        if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
+            // Direct keyboard ownership, like gfx.getchar in the legacy Lua.
+            // No transient focus trip through REAPER's TCP or accelerators.
+            try {
+                if (self->keyboardKey_) self->keyboardKey_(
+                    static_cast<UINT>(wp), (lp & (1LL << 30)) != 0);
+            } catch (...) {
+                auto close = std::move(self->closeNavigator_);
+                try { if (close) close(); } catch (...) {}
+            }
+            return 0; // Unsupported keys stay inside the navigation window.
+        }
+        if (msg == WM_KEYUP || msg == WM_SYSKEYUP ||
+            msg == WM_CHAR || msg == WM_SYSCHAR || msg == WM_DEADCHAR ||
+            msg == WM_SYSDEADCHAR) return 0;
         if (msg == WM_CLOSE) {
             auto close = std::move(self->closeNavigator_);
             try { if (close) close(); else self->hideAndRestore(); }

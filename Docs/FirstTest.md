@@ -1,3 +1,5 @@
+TEST6: per la regressione del focus usare PRIMA Docs/FocusOwnerTest.md.
+
 # LReaParams 0.0.6 TEST5 — Primo collaudo NVDA/OSARA
 
 **Usa un progetto di prova e salva prima il progetto.** La DLL modifica valori

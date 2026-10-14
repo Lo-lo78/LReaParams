@@ -1,4 +1,4 @@
-# Stato della consegna — 0.0.5 TEST4 Native Test
+# Stato della consegna — 0.0.7 TEST6 Focus Owner
 
 Progetto sorgente GitHub-ready, senza compilazioni, binari o test runtime locali.
 Il workflow Windows x64 eseguirà la prima compilazione e i test C++.
@@ -51,3 +51,6 @@ non portate rimangono in `Legacy` e sono esplicitamente previste.
 
 
 TEST5 0.0.6: ripristinato FX F1/F2 per griglia; introdotta finestra Win32 titolata da un pixel fuori schermo per NVDA+T (attiva solo nella navigazione, disattivabile dal menu). Prova runtime non eseguita.
+
+
+TEST6 0.0.7: la finestra Win32 da 1 px ora è proprietaria reale della tastiera (messaggi dalla WindowProc alla coda InputRouter). Corretto il rifiuto del contesto della finestra che in TEST5 provocava il ritorno al TCP. I tasti non gestiti non vengono mandati a REAPER; recupero del focus dopo un tasto di modifica, senza ricattura continua. Non compilato localmente.

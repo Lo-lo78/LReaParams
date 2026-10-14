@@ -1,25 +1,38 @@
-# LReaParams — 0.0.6 TEST5 Native Test (sorgente GitHub-ready)
+# LReaParams — 0.0.7 TEST6 (sorgente GitHub-ready)
 
-Estensione Windows x64 di REAPER scritta in C++17. **Questa è una prima versione
-sperimentale da collaudare, NON la migrazione completa dei tre Lua originali.**
-La DLL non crea alcuna finestra di navigazione o pixel fuori schermo. Le azioni
-si trovano in Extensions → LReaParams e nella Action List.
+Estensione C++17 per REAPER su Windows x64. **TEST6 verifica il possesso
+reale della tastiera, come nei Lua originali.** Non è ancora la migrazione
+completa di FX Params, Track Params e Parameter Library.
 
-## Novità TEST5: titoli e memorie
+## Novità TEST6 — focus gestito come gfx.getchar()
 
-- Le modalità annunciano un **titolo virtuale** tramite OSARA all'attivazione:
-  `LReaParams - FX Params - Grid/FX browser` oppure
-  `LReaParams - Track Params - Tracks/Sends/Receives`.
-  Non esistono finestre aggiuntive: perciò **NVDA+T continuerà a leggere il
-  titolo della finestra REAPER**. Non si modifica il titolo della DAW, che deve
-  rimanere intatto e visibile al collaboratore.
-- Menu **Extensions → LReaParams → Memories** con `FX Memories`,
-  `Track Memories` e `Parameter Library`. Sono per ora voci **in attesa di
-  migrazione**, non funzioni operative; i profili importati rimangono intatti.
-- **FX Params: F1–F11 riservati** (F1/F2 non cambiano più la griglia).
-  **Track Params: F1–F3** conservano le pagine dei Lua,
-  **F4–F11 riservati**. I tasti riservati non escono dalla navigazione
-  né attivano comandi REAPER. **F12 resta di OSARA**.
+- La finestra Win32 da **1 × 1 pixel, fuori schermo**, è il vero proprietario
+  della tastiera per tutta la navigazione, anziché un semplice titolo temporaneo.
+  Non copre le GUI dei plugin: gli effetti restano visibili e utilizzabili con il mouse.
+- La finestra riceve `WM_KEYDOWN`/`WM_SYSKEYDOWN` direttamente e passa i comandi
+  al navigatore attraverso una coda. Non richiede il backend `WH_GETMESSAGE`
+  quando questa modalità è attiva. Tasti non assegnati non provocano uscita
+  dalla navigazione e non si propagano al TCP di REAPER.
+- **Correzione rispetto a TEST5:** la finestra di un pixel è riconosciuta come
+  contesto autorizzato di input. TEST5 la rifiutava quando REAPER non aveva
+  un FX focused/touched, provocando l'uscita immediata nel TCP.
+- Il titolo si aggiorna durante Grid/Value/FX browser/Track Params e può essere
+  letto con NVDA+T. Le modifiche dei parametri avvengono tramite le API REAPER.
+- Dopo un tasto di navigazione la DLL può recuperare il focus se un plugin lo
+  ha sottratto. Non forza il focus in un ciclo continuo: se si passa a un'altra
+  applicazione o si apre un dialogo, la navigazione si interrompe.
+- Escape resta interno; F12 chiude il navigatore e viene inoltrato verso REAPER
+  per OSARA Shortcut Help: **funzione da verificare sulla DAW reale**.
+- Il menu `Extensions → LReaParams → Lua-style keyboard window (1px)` consente
+  di disattivare questa modalità solo per diagnosi, tornando al vecchio backend.
+
+Le funzioni precedenti sono conservate: FX F1/F2 per dimensione griglia;
+Ctrl+Home/End per estremi dei parametri; browser con più FX; Track Params
+con righe di tracce orizzontali (F1), F2 Sends, F3 Receives; menu Memories
+separato ma non ancora operativo.
+
+**Non compilare localmente.** La compilazione è demandata a GitHub Actions.
+Per i test specifici usa `Docs/FocusOwnerTest.md`.
 
 ## Compilazione: esclusivamente GitHub Actions
 
@@ -58,7 +71,7 @@ catturati in tutte le GUI dei plugin: occorre il test in REAPER.
   `REAPER/Scripts/Lo-lo - Scripts/Utility/Scripts/{Plugins,Params,Tracks}`
   nella cartella sorella `REAPER/LReaParams`, convertendoli in `.fx`, `.pp`, `.tp`.
   Gli originali nella cartella `Scripts` vengono preservati.
-- **Tastiera senza finestra**: backend SDK accelerator (predefinito) più
+- **Tastiera (modalità senza finestra opzionale)**: backend SDK accelerator (predefinito) più
   hook `WH_GETMESSAGE` limitato al solo Escape sul thread principale, per provare
   a sottrarre Escape a REAPER quando la navigazione è attiva. Secondo backend
   sperimentale `WH_GETMESSAGE` per tutte le chiavi supportate. Nessun hook globale
@@ -70,8 +83,8 @@ navigatori Lua, migrazione delle ExtState e salvataggio delle modifiche nei
 nuovi profili. `Legacy/` conserva il sorgente originale per il porting.
 
 La navigazione cattura i tasti solo se attiva e in un contesto considerato
-sicuro. F12 viene sempre rilasciato a OSARA. In questa fase un tasto non
-riconosciuto termina la navigazione per evitare di bloccare REAPER.
+sicuro. F12 viene sempre rilasciato a OSARA. Nel backend precedente un tasto non riconosciuto termina la navigazione;
+con la finestra Lua-style, invece, rimane confinato nella finestra di input.
 
 ## Documentazione
 
@@ -85,7 +98,7 @@ riconosciuto termina la navigazione per evitare di bloccare REAPER.
 `Tools/audit.py` esegue soltanto controlli statici dei sorgenti e dei profili.
 I test C++ vengono eseguiti dal workflow Actions; non sono stati eseguiti qui.
 
-## TEST5 — NVDA+T e griglia FX
+## TEST5 — storico
 
 Ripristinati **F1/F2 di FX Params** per diminuire/aumentare l'altezza della griglia.
 Track Params conserva F1/F2/F3 per Tracks/Sends/Receives.

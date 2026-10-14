@@ -4,12 +4,15 @@
 #include <array>
 
 namespace lrp {
-enum class InputBackend { sdkAccelerator, mainThreadHook };
+enum class InputBackend { sdkAccelerator, mainThreadHook, ownedWindow };
 class InputRouter {
 public:
     explicit InputRouter(reaper_plugin_info_t* api, Navigator& navigator);
     ~InputRouter();
-    bool start(InputBackend backend);
+    bool start(InputBackend backend, HWND keyboardWindow = nullptr);
+    // Called directly by the Lua-style keyboard window, on REAPER's UI thread.
+    // Unknown keys remain inside that window instead of escaping into REAPER.
+    bool enqueueOwnedKey(HWND window, UINT vk, bool repeat) noexcept;
     void select(Navigator& navigator) noexcept { stop(); navigator_ = &navigator; }
     void stop() noexcept;
     bool pop(Key& key) noexcept;
@@ -26,7 +29,7 @@ private:
     Navigator* navigator_;
     accelerator_register_t accelerator_{};
     HHOOK hook_{};
-    HWND main_{}, originalRoot_{}, floating_{};
+    HWND main_{}, originalRoot_{}, floating_{}, ownedWindow_{};
     DWORD threadId_{};
     bool registered_ = false, capturing_ = false, exitRequested_ = false, escapeHookOnly_ = false;
     std::array<HWND, 256> swallowed_{};

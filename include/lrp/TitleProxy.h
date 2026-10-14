@@ -4,9 +4,9 @@
 #include <string>
 
 namespace lrp {
-// Experimental accessibility-only top-level window, 1x1 px outside the desktop.
-// It owns keyboard focus only while a navigator runs, so NVDA+T reports its
-// real window title. It never overlays a plugin or changes the host caption.
+// Lua gfx.init-style keyboard owner: offscreen, titled, never covers a plugin.
+// Unlike TEST5 it delivers keys directly from its window procedure, rather
+// than relying on a REAPER accelerator or a WH_GETMESSAGE hook.
 // All operations are on REAPER's UI thread.
 class TitleProxy final {
 public:
@@ -14,11 +14,16 @@ public:
     ~TitleProxy() { shutdown(); }
     TitleProxy(const TitleProxy&) = delete;
     TitleProxy& operator=(const TitleProxy&) = delete;
-    bool activate(const std::wstring& title, std::function<void()> closeNavigator);
+    bool activate(const std::wstring& title, std::function<void()> closeNavigator,
+                  std::function<bool(UINT, bool)> keyboardKey);
+    HWND hwnd() const noexcept { return window_; }
+    // Called after a key changes an FX: some plug-ins steal focus on parameter set.
+    void reassertFocusAfterNavigationKey() noexcept;
     void updateTitle(const std::wstring& title);
     void hideAndRestore() noexcept;
     void shutdown() noexcept;
-    bool active() const noexcept { return window_ && GetForegroundWindow() == window_; }
+    bool active() const noexcept { return window_ && IsWindow(window_) &&
+        GetForegroundWindow() == window_ && GetFocus() == window_; }
 private:
     static LRESULT CALLBACK windowProc(HWND, UINT, WPARAM, LPARAM) noexcept;
     bool ensureWindow();
@@ -32,5 +37,6 @@ private:
     bool classRegistered_ = false;
     std::wstring title_;
     std::function<void()> closeNavigator_;
+    std::function<bool(UINT, bool)> keyboardKey_;
 };
 } // namespace lrp
