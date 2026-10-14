@@ -22,8 +22,9 @@ ABI ricostruiti da ipotesi o dalle firme Lua.
   https://github.com/actions/upload-artifact. I tag v7 sono stati risolti con
   git ls-remote e il workflow usa gli SHA verificati, non hash inventati.
 - Runner: https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
-  La documentazione consultata include Visual Studio Enterprise 2022 e CMake;
-  il workflow seleziona esplicitamente il generatore Visual Studio 17 2022 x64.
+  Per GitHub Actions ottobre 2026, il workflow usa il runner
+  windows-2025-vs2026 e il generatore Visual Studio 18 2026 x64.
+  Vedi: https://github.com/actions/runner-images/issues/14017
 
 Questi SHA identificano dipendenze/riferimenti pubblici. Non sono commit del
 futuro repository LReaParams: qui non è stato effettuato alcun commit remoto.

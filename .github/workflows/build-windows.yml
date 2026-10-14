@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   build-windows:
-    runs-on: windows-2025
+    runs-on: windows-2025-vs2026
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -16,8 +16,8 @@ jobs:
           persist-credentials: false
       - name: Verify source and synthetic fixtures
         run: python Tools/audit.py
-      - name: Configure MSVC x64 (GitHub Actions only)
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+      - name: Configure MSVC x64 - Visual Studio 2026
+        run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build
         run: cmake --build build --config Release --parallel
       - name: Test native parsers and storage

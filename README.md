@@ -7,6 +7,11 @@ si trovano in Extensions → LReaParams e nella Action List.
 
 ## Compilazione: esclusivamente GitHub Actions
 
+**TEST1 FIX1:** corretto il workflow per il runner Windows 2025 con
+Visual Studio 2026 (CMake generator `Visual Studio 18 2026`).
+Nessuna compilazione locale effettuata.
+
+
 Non è stata eseguita alcuna compilazione locale, non sono stati generati binari.
 
 1. Crea il repository `Lo-lo78/LReaParams`.
