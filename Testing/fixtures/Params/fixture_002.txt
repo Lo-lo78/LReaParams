@@ -1,0 +1,30 @@
+PARAMLIB_V1
+Mode=cell
+Plugin=JS: Synthetic FX 002
+Cell=Cell 002
+Grid=12
+Active=231
+Count=23
+P	0	Parameter 0	Alias 0	0.16923076923076924	0.038
+P	1	Parameter 1	Alias 1	0.65517241379310343	1.0
+P	2	Parameter 2	Alias 2	0	0.0
+P	3	Parameter 3	Alias 3	0.71999999999999997	0.72
+P	15	Parameter 15	Alias 15	0.25	0.25
+P	27	Parameter 27	Alias 27	0.55000000000000004	0.55
+P	39	Parameter 39	Alias 39	0.25	-0.5
+P	51	Parameter 51	Alias 51	0.16	0.16
+P	63	Parameter 63	Alias 63	0.34999999999999998	7.0
+P	75	Parameter 75	Alias 75	0.55000000000000004	0.3
+P	87	Parameter 87	Alias 87	0.5	5.0
+P	99	Parameter 99	Alias 99	0.080160320641282562	41.0
+P	111	Parameter 111	Alias 111	0.47999999999999998	0.48
+P	123	Parameter 123	Alias 123	0.83333333333333326	5.0
+P	135	Parameter 135	Alias 135	0	0.0
+P	147	Parameter 147	Alias 147	0.16666666666666666	1.0
+P	159	Parameter 159	Alias 159	0.17835671342685372	90.0
+P	171	Parameter 171	Alias 171	0.16326530612244897	180.0
+P	183	Parameter 183	Alias 183	0.19839679358717435	100.0
+P	195	Parameter 195	Alias 195	0.13827655310621242	70.0
+P	207	Parameter 207	Alias 207	0	0.0
+P	219	Parameter 219	Alias 219	0	0.0
+P	231	Parameter 231	Alias 231	0	0.0

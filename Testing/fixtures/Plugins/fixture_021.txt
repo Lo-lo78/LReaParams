@@ -1,0 +1,22 @@
+Version=3
+PluginRaw=JS: Synthetic FX 021
+LastParam=2	Parameter 2
+LastEntry=all
+LastArea=grid
+SlotAccessMode=param
+CustomOrderView=plugin
+QuickGroup=
+
+[CustomOrder]
+
+[DefaultValues]
+0	Parameter 0	1.0
+1	Parameter 1	1.0
+2	Parameter 2	0.0
+
+[ParamSlots]
+
+[GroupSlots]
+
+[Extra]
+grid_size_v1=10

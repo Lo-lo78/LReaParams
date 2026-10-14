@@ -1,0 +1,7 @@
+Version=2
+Project=Synthetic project
+TrackName=Track 002
+TrackGUID={00000000-0000-4000-8000-000000000002}
+
+[FXParams]
+Synthetic FX|1:Parameter=1,8

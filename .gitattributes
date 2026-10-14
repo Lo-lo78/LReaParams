@@ -1,0 +1,5 @@
+* text=auto eol=lf
+# Preserve the exact supplied reference bytes, including their mixed newline styles.
+Legacy/*.lua -text
+Docs/Specification.txt -text
+third_party/reaper-sdk/*.h -text

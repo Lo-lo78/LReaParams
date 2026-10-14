@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/justinfrankel/reaper-sdk",
+  "commit": "c0eafe87863b2bf69c5c822760f1b32a753b211b",
+  "files": {
+    "reaper_plugin.h": "e94b69bf3dd5573da6c34ac8f35af6911b302c4f79a33be424d2a8e49ba2651b",
+    "reaper_plugin_functions.h": "62e1919f614afd88be0e310676ae5d45a7d86a0f9da991485053309b478d39d5"
+  }
+}

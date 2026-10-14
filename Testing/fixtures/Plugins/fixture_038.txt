@@ -1,0 +1,56 @@
+Version=3
+PluginRaw=JS: Synthetic FX 038
+LastParam=1	Parameter 1
+LastEntry=all
+LastArea=grid
+SlotAccessMode=param
+CustomOrderView=plugin
+QuickGroup=
+
+[CustomOrder]
+
+[DefaultValues]
+0	Parameter 0	0.5
+1	Parameter 1	0.0
+2	Parameter 2	0.5
+3	Parameter 3	0.5
+4	Parameter 4	0.16666666666667
+5	Parameter 5	1.0
+6	Parameter 6	0.30666666666667
+7	Parameter 7	0.55
+8	Parameter 8	0.16
+9	Parameter 9	0.55414012738854
+10	Parameter 10	0.044044044044044
+11	Parameter 11	0.087719298245614
+12	Parameter 12	0.45
+13	Parameter 13	0.3695652173913
+14	Parameter 14	0.55
+15	Parameter 15	0.5
+16	Parameter 16	0.78
+17	Parameter 17	0.72
+18	Parameter 18	0.45
+19	Parameter 19	0.2
+20	Parameter 20	0.35
+21	Parameter 21	0.08
+22	Parameter 22	0.43478260869565
+23	Parameter 23	0.42857142857143
+24	Parameter 24	0.175
+25	Parameter 25	0.08
+26	Parameter 26	0.15
+27	Parameter 27	0.8
+28	Parameter 28	0.12
+29	Parameter 29	0.11111111111111
+30	Parameter 30	0.10126582278481
+31	Parameter 31	0.08
+32	Parameter 32	0.5
+33	Parameter 33	0.0
+34	Parameter 34	1.0
+35	Parameter 35	0.0
+
+[ParamSlots]
+
+[GroupSlots]
+
+[Extra]
+grid_size_v1=10
+param_step_scales_v1=0	Synthetic	Synthetic3:9\Synthetic6	Synthetic	Synthetic3:9\Synthetic7	Synthetic	Synthetic3:10\Synthetic12	Synthetic	Synthetic3:9\Synthetic13	Synthetic	Synthetic3:10\Synthetic15	Synthetic	Synthetic3:10

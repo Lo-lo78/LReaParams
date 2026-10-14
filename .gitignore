@@ -1,0 +1,9 @@
+/build/
+/dist/
+/Testing/private/
+__pycache__/
+*.pdb
+*.obj
+*.dll
+*.exe
+/.vs/

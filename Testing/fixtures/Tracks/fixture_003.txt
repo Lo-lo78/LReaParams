@@ -1,0 +1,9 @@
+Version=2
+Project=Synthetic project
+TrackName=Track 003
+TrackGUID={00000000-0000-4000-8000-000000000003}
+
+[FXParams]
+
+[F4Order]
+Synthetic FX|1:Parameter=5,3,6,4,8,9,10,12,13,14,15,17,16

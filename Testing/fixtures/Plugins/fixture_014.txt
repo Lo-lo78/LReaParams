@@ -1,0 +1,141 @@
+Version=3
+PluginRaw=JS: Synthetic FX 014
+LastParam=128	Parameter 128
+LastEntry=all
+LastArea=grid
+SlotAccessMode=param
+CustomOrderView=plugin
+QuickGroup=
+
+[CustomOrder]
+
+[DefaultValues]
+0	Parameter 0	0.88095238095238
+1	Parameter 1	0.1
+2	Parameter 2	0.679
+3	Parameter 3	0.565
+4	Parameter 4	0.56
+5	Parameter 5	0.49748743718593
+6	Parameter 6	0.039039039039039
+7	Parameter 7	0.25
+8	Parameter 8	0.54
+9	Parameter 9	0.5
+10	Parameter 10	0.5
+11	Parameter 11	0.16666666666667
+12	Parameter 12	0.15
+13	Parameter 13	0.2
+14	Parameter 14	0.175
+15	Parameter 15	0.080160320641283
+16	Parameter 16	0.01
+17	Parameter 17	0.16
+18	Parameter 18	0.5
+19	Parameter 19	0.52
+20	Parameter 20	0.0
+21	Parameter 21	1.0
+22	Parameter 22	0.0048834086192162
+23	Parameter 23	0.2
+24	Parameter 24	0.0040816326530612
+25	Parameter 25	0.62
+26	Parameter 26	0.5
+27	Parameter 27	0.7
+28	Parameter 28	0.25
+29	Parameter 29	0.5
+30	Parameter 30	0.079079079079079
+31	Parameter 31	0.15831663326653
+32	Parameter 32	0.0
+33	Parameter 33	0.249
+34	Parameter 34	0.55
+35	Parameter 35	0.04
+36	Parameter 36	0.33333333333333
+37	Parameter 37	0.52
+38	Parameter 38	0.37
+39	Parameter 39	0.3
+40	Parameter 40	1.0
+41	Parameter 41	0.20833333333333
+42	Parameter 42	0.06
+43	Parameter 43	0.875
+44	Parameter 44	0.55
+45	Parameter 45	0.035
+46	Parameter 46	0.0
+47	Parameter 47	0.5
+48	Parameter 48	0.32
+49	Parameter 49	1.0
+50	Parameter 50	0.007
+51	Parameter 51	0.25
+52	Parameter 52	0.4994994994995
+53	Parameter 53	0.6
+54	Parameter 54	0.090909090909091
+55	Parameter 55	0.62
+56	Parameter 56	0.013333333333333
+57	Parameter 57	0.5
+58	Parameter 58	0.7
+59	Parameter 59	0.25
+60	Parameter 60	0.5
+61	Parameter 61	0.079079079079079
+62	Parameter 62	0.17835671342685
+63	Parameter 63	0.0
+64	Parameter 64	0.65
+65	Parameter 65	0.42
+66	Parameter 66	0.5
+67	Parameter 67	0.25
+68	Parameter 68	0.5
+69	Parameter 69	0.75
+70	Parameter 70	1.0
+71	Parameter 71	1.0
+72	Parameter 72	1.0
+73	Parameter 73	0.5
+74	Parameter 74	0.485
+75	Parameter 75	0.405
+76	Parameter 76	0.12
+77	Parameter 77	0.09
+78	Parameter 78	0.15
+79	Parameter 79	0.51
+80	Parameter 80	0.35
+81	Parameter 81	0.32
+82	Parameter 82	0.039039039039039
+83	Parameter 83	0.029029029029029
+84	Parameter 84	0.024024024024024
+85	Parameter 85	0.6
+86	Parameter 86	0.7
+87	Parameter 87	0.4
+88	Parameter 88	1.0
+89	Parameter 89	1.0
+90	Parameter 90	1.0
+91	Parameter 91	0.43333333333333
+92	Parameter 92	0.43333333333333
+93	Parameter 93	0.43333333333333
+94	Parameter 94	1.0
+95	Parameter 95	1.0
+96	Parameter 96	1.0
+97	Parameter 97	0.1875
+98	Parameter 98	0.19
+99	Parameter 99	0.225
+100	Parameter 100	0.7
+101	Parameter 101	0.25
+102	Parameter 102	0.64583333333333
+103	Parameter 103	0.059059059059059
+104	Parameter 104	0.19839679358717
+105	Parameter 105	0.5
+106	Parameter 106	0.7
+107	Parameter 107	0.25
+108	Parameter 108	0.64583333333333
+109	Parameter 109	0.059059059059059
+110	Parameter 110	0.19839679358717
+111	Parameter 111	0.5
+112	Parameter 112	0.7
+113	Parameter 113	0.25
+114	Parameter 114	0.64583333333333
+115	Parameter 115	0.059059059059059
+116	Parameter 116	0.19839679358717
+117	Parameter 117	0.5
+118	Parameter 118	0.0
+119	Parameter 119	1.0
+120	Parameter 120	0.0
+
+[ParamSlots]
+
+[GroupSlots]
+
+[Extra]
+grid_size_v1=10
+param_step_scales_v1=82	Synthetic| Synthetic	Synthetic3:10\Synthetic84	Synthetic| Synthetic	Synthetic3:8\Synthetic86	Synthetic| Synthetic	Synthetic3:9\Synthetic87	Synthetic| Synthetic	Synthetic3:9\Synthetic91	Synthetic| Synthetic	Synthetic3:9\Synthetic92	Synthetic| Synthetic	Synthetic3:9\Synthetic93	Synthetic| Synthetic	Synthetic3:9\Synthetic98	Synthetic| Synthetic	Synthetic3:9\Synthetic99	Synthetic| Synthetic	Synthetic3:9\Synthetic102	Synthetic| Synthetic	Synthetic3:9\Synthetic108	Synthetic| Synthetic	Synthetic3:9\Synthetic114	Synthetic| Synthetic	Synthetic3:9\Synthetic119	Synthetic| Synthetic	Synthetic3:8

@@ -1,0 +1,9 @@
+Version=2
+Project=Synthetic project
+TrackName=Track 001
+TrackGUID={00000000-0000-4000-8000-000000000001}
+
+[FXParams]
+
+[CCSpeech]
+Synthetic FX|1:Parameter=1

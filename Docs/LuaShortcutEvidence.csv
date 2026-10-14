@@ -1,0 +1,1493 @@
+﻿module,line,function,exact_source
+Parameter Library.lua,9,<top level>,"-- Open it with F10 from the FX parameter grid, or Ctrl+Tab from F7."
+Parameter Library.lua,11,<top level>,-- F1  Library cells for the current plugin
+Parameter Library.lua,12,<top level>,"-- F2  Current F7 parameter selection, only when opened from F7"
+Parameter Library.lua,14,<top level>,-- Ctrl+S  In F2 only: save current selection as a named TXT cell
+Parameter Library.lua,15,<top level>,-- Enter   F1: load current cell and return to the source position
+Parameter Library.lua,16,<top level>,-- Delete  F1: delete cell (two presses); F2: remove parameter
+Parameter Library.lua,17,<top level>,-- F10     return to the source position without loading a cell
+Parameter Library.lua,18,<top level>,-- Ctrl+Tab keeps the same return behavior for compatibility
+Parameter Library.lua,86,<top level>,KEY_ESC = 27
+Parameter Library.lua,87,<top level>,KEY_BACKSPACE = 8
+Parameter Library.lua,88,<top level>,KEY_BACKSPACE_2 = 127
+Parameter Library.lua,89,<top level>,KEY_UP = 30064
+Parameter Library.lua,90,<top level>,KEY_DOWN = 1685026670
+Parameter Library.lua,91,<top level>,KEY_LEFT = 1818584692
+Parameter Library.lua,92,<top level>,KEY_RIGHT = 1919379572
+Parameter Library.lua,93,<top level>,KEY_HOME = 6647396
+Parameter Library.lua,94,<top level>,KEY_END = 1752132965
+Parameter Library.lua,95,<top level>,KEY_PAGE_UP = 1885828464
+Parameter Library.lua,96,<top level>,KEY_PAGE_DOWN = 1885824110
+Parameter Library.lua,97,<top level>,KEY_ENTER = 13
+Parameter Library.lua,98,<top level>,KEY_TAB = 9
+Parameter Library.lua,99,<top level>,KEY_DELETE = 6579564
+Parameter Library.lua,100,<top level>,KEY_BACKSLASH = 92
+Parameter Library.lua,101,<top level>,KEY_F1 = 26161
+Parameter Library.lua,102,<top level>,KEY_F2 = 26162
+Parameter Library.lua,103,<top level>,KEY_F10 = 6697264
+Parameter Library.lua,104,<top level>,KEY_CTRL_S = 19
+Parameter Library.lua,110,<top level>,VK_TAB = 0x09
+Parameter Library.lua,111,<top level>,VK_I = 0x49
+Parameter Library.lua,112,<top level>,VK_CTRL = 0x11
+Parameter Library.lua,113,<top level>,VK_SHIFT = 0x10
+Parameter Library.lua,114,<top level>,VK_ALT = 0x12
+Parameter Library.lua,142,ctrl_tab_key,    local is_ctrl = ctrl_down() or js_vkey_down_now(VK_CTRL)
+Parameter Library.lua,143,ctrl_tab_key,    local is_shift = shift_down() or js_vkey_down_now(VK_SHIFT)
+Parameter Library.lua,144,ctrl_tab_key,    local is_alt = alt_down() or js_vkey_down_now(VK_ALT)
+Parameter Library.lua,146,ctrl_tab_key,    if not is_ctrl or is_shift or is_alt or char ~= KEY_TAB then
+Parameter Library.lua,151,ctrl_tab_key,        return js_vkey_down_now(VK_TAB) and not js_vkey_down_now(VK_I)
+Parameter Library.lua,787,<top level>,-- - Ctrl+Left / Ctrl+Right si muove per parole;
+Parameter Library.lua,1087,handle_name_edit,    local is_ctrl = ctrl_down() or js_vkey_down_now(VK_CTRL)
+Parameter Library.lua,1088,handle_name_edit,    local is_shift = shift_down() or js_vkey_down_now(VK_SHIFT)
+Parameter Library.lua,1089,handle_name_edit,    local is_alt = alt_down() or js_vkey_down_now(VK_ALT)
+Parameter Library.lua,1091,handle_name_edit,    if char == KEY_ESC then
+Parameter Library.lua,1096,handle_name_edit,    if char == KEY_ENTER then
+Parameter Library.lua,1127,handle_name_edit,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Parameter Library.lua,1132,handle_name_edit,    if char == KEY_BACKSPACE or char == KEY_BACKSPACE_2 then
+Parameter Library.lua,1138,handle_name_edit,    if char == KEY_DELETE then
+Parameter Library.lua,1158,handle_name_edit,    if not is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Parameter Library.lua,1172,handle_name_edit,    if not is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Parameter Library.lua,1186,handle_name_edit,    if is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Parameter Library.lua,1207,handle_name_edit,    if is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Parameter Library.lua,1227,handle_name_edit,    if char == KEY_HOME then
+Parameter Library.lua,1242,handle_name_edit,    if char == KEY_END then
+Parameter Library.lua,1417,main_loop,    local is_ctrl = ctrl_down() or js_vkey_down_now(VK_CTRL)
+Parameter Library.lua,1418,main_loop,    local is_shift = shift_down() or js_vkey_down_now(VK_SHIFT)
+Parameter Library.lua,1419,main_loop,    local is_alt = alt_down() or js_vkey_down_now(VK_ALT)
+Parameter Library.lua,1421,main_loop,    if char == KEY_F10 and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1439,main_loop,    if char == KEY_ESC then
+Parameter Library.lua,1444,main_loop,    if char == KEY_F1 and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1452,main_loop,    if char == KEY_F2 and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1462,main_loop,    if char == KEY_CTRL_S or
+Parameter Library.lua,1471,main_loop,    if char == KEY_TAB and not is_ctrl then
+Parameter Library.lua,1477,main_loop,    if char == KEY_BACKSLASH and not is_ctrl and not is_alt then
+Parameter Library.lua,1483,main_loop,    if char == KEY_ENTER and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1494,main_loop,    if char == KEY_DELETE and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1504,main_loop,    if char == KEY_UP and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1510,main_loop,    if char == KEY_DOWN and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1516,main_loop,    if char == KEY_LEFT and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1522,main_loop,    if char == KEY_RIGHT and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1528,main_loop,    if char == KEY_PAGE_UP and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1534,main_loop,    if char == KEY_PAGE_DOWN and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1540,main_loop,    if char == KEY_HOME and not is_ctrl and not is_shift and not is_alt then
+Parameter Library.lua,1546,main_loop,    if char == KEY_END and not is_ctrl and not is_shift and not is_alt then
+Speak FX Params - TrackTake Navigator.lua,338,<top level>,-- Ctrl+Shift+Alt+F1 leggerà direttamente le prime righe:
+Speak FX Params - TrackTake Navigator.lua,1665,<top level>,KEY_ESC = 27
+Speak FX Params - TrackTake Navigator.lua,1667,<top level>,KEY_BACKSPACE   = 8
+Speak FX Params - TrackTake Navigator.lua,1668,<top level>,KEY_BACKSPACE_2 = 127
+Speak FX Params - TrackTake Navigator.lua,1669,<top level>,KEY_BACKSPACE_3 = 6579564
+Speak FX Params - TrackTake Navigator.lua,1671,<top level>,KEY_UP        = 30064
+Speak FX Params - TrackTake Navigator.lua,1672,<top level>,KEY_DOWN      = 1685026670
+Speak FX Params - TrackTake Navigator.lua,1673,<top level>,KEY_LEFT      = 1818584692
+Speak FX Params - TrackTake Navigator.lua,1674,<top level>,KEY_RIGHT     = 1919379572
+Speak FX Params - TrackTake Navigator.lua,1675,<top level>,KEY_HOME      = 6647396
+Speak FX Params - TrackTake Navigator.lua,1676,<top level>,KEY_END       = 1752132965
+Speak FX Params - TrackTake Navigator.lua,1677,<top level>,KEY_PAGE_UP   = 1885828464
+Speak FX Params - TrackTake Navigator.lua,1678,<top level>,KEY_PAGE_DOWN = 1885824110
+Speak FX Params - TrackTake Navigator.lua,1679,<top level>,KEY_ENTER     = 13
+Speak FX Params - TrackTake Navigator.lua,1680,<top level>,KEY_TAB       = 9
+Speak FX Params - TrackTake Navigator.lua,1681,<top level>,KEY_DELETE    = 6579564
+Speak FX Params - TrackTake Navigator.lua,1682,<top level>,KEY_BACKSLASH = 92
+Speak FX Params - TrackTake Navigator.lua,1683,<top level>,KEY_SHIFT_BACKSLASH = 124
+Speak FX Params - TrackTake Navigator.lua,1684,<top level>,KEY_SPACE     = 32
+Speak FX Params - TrackTake Navigator.lua,1685,<top level>,KEY_A         = 65
+Speak FX Params - TrackTake Navigator.lua,1686,<top level>,KEY_C         = 67
+Speak FX Params - TrackTake Navigator.lua,1687,<top level>,KEY_CTRL_ALT_A = 257
+Speak FX Params - TrackTake Navigator.lua,1688,<top level>,KEY_CTRL_ALT_C = 259
+Speak FX Params - TrackTake Navigator.lua,1690,<top level>,KEY_PLUS       = 43
+Speak FX Params - TrackTake Navigator.lua,1691,<top level>,KEY_MINUS      = 45
+Speak FX Params - TrackTake Navigator.lua,1692,<top level>,KEY_EQUAL      = 61
+Speak FX Params - TrackTake Navigator.lua,1693,<top level>,KEY_CTRL_MINUS = 31
+Speak FX Params - TrackTake Navigator.lua,1695,<top level>,KEY_CTRL_A = 1
+Speak FX Params - TrackTake Navigator.lua,1696,<top level>,KEY_CTRL_B = 2
+Speak FX Params - TrackTake Navigator.lua,1697,<top level>,KEY_CTRL_ALT_B = 258
+Speak FX Params - TrackTake Navigator.lua,1698,<top level>,KEY_CTRL_D = 4
+Speak FX Params - TrackTake Navigator.lua,1699,<top level>,KEY_CTRL_E = 5
+Speak FX Params - TrackTake Navigator.lua,1700,<top level>,KEY_CTRL_F = 6
+Speak FX Params - TrackTake Navigator.lua,1701,<top level>,KEY_CTRL_G = 7
+Speak FX Params - TrackTake Navigator.lua,1702,<top level>,KEY_CTRL_I = 9
+Speak FX Params - TrackTake Navigator.lua,1703,<top level>,KEY_CTRL_L = 12
+Speak FX Params - TrackTake Navigator.lua,1704,<top level>,KEY_CTRL_O = 15
+Speak FX Params - TrackTake Navigator.lua,1705,<top level>,KEY_CTRL_P = 16
+Speak FX Params - TrackTake Navigator.lua,1706,<top level>,KEY_CTRL_Q = 17
+Speak FX Params - TrackTake Navigator.lua,1707,<top level>,KEY_CTRL_R = 18
+Speak FX Params - TrackTake Navigator.lua,1708,<top level>,KEY_CTRL_V = 22
+Speak FX Params - TrackTake Navigator.lua,1709,<top level>,KEY_CTRL_W = 23
+Speak FX Params - TrackTake Navigator.lua,1710,<top level>,KEY_CTRL_X = 24
+Speak FX Params - TrackTake Navigator.lua,1711,<top level>,KEY_CTRL_C = 3
+Speak FX Params - TrackTake Navigator.lua,1712,<top level>,KEY_CTRL_Z = 26
+Speak FX Params - TrackTake Navigator.lua,1714,<top level>,KEY_F1  = 26161
+Speak FX Params - TrackTake Navigator.lua,1715,<top level>,KEY_F2  = 26162
+Speak FX Params - TrackTake Navigator.lua,1716,<top level>,KEY_F3  = 26163
+Speak FX Params - TrackTake Navigator.lua,1717,<top level>,KEY_F4  = 26164
+Speak FX Params - TrackTake Navigator.lua,1718,<top level>,KEY_F5  = 26165
+Speak FX Params - TrackTake Navigator.lua,1719,<top level>,KEY_F6  = 26166
+Speak FX Params - TrackTake Navigator.lua,1720,<top level>,KEY_F7  = 26167
+Speak FX Params - TrackTake Navigator.lua,1721,<top level>,KEY_F8  = 26168
+Speak FX Params - TrackTake Navigator.lua,1722,<top level>,KEY_F9  = 26169
+Speak FX Params - TrackTake Navigator.lua,1723,<top level>,KEY_F10 = 6697264
+Speak FX Params - TrackTake Navigator.lua,1724,<top level>,KEY_F11 = 6697265
+Speak FX Params - TrackTake Navigator.lua,1725,<top level>,KEY_F12 = 6697266
+Speak FX Params - TrackTake Navigator.lua,1748,<top level>,-- - Ctrl+1 ... Ctrl+0 possono arrivare con char == 0.
+Speak FX Params - TrackTake Navigator.lua,1749,<top level>,-- Ctrl+Space è stato provato ma resta disattivato: in questo contesto non è affidabile.
+Speak FX Params - TrackTake Navigator.lua,1755,<top level>,VK_SPACE = 0x20
+Speak FX Params - TrackTake Navigator.lua,1756,<top level>,VK_ENTER = 0x0D
+Speak FX Params - TrackTake Navigator.lua,1757,<top level>,VK_TAB = 0x09
+Speak FX Params - TrackTake Navigator.lua,1758,<top level>,VK_I = 0x49
+Speak FX Params - TrackTake Navigator.lua,1759,<top level>,VK_M = 0x4D
+Speak FX Params - TrackTake Navigator.lua,1760,<top level>,VK_C = 0x43
+Speak FX Params - TrackTake Navigator.lua,1761,<top level>,VK_0 = 0x30
+Speak FX Params - TrackTake Navigator.lua,1762,<top level>,VK_1 = 0x31
+Speak FX Params - TrackTake Navigator.lua,1763,<top level>,VK_2 = 0x32
+Speak FX Params - TrackTake Navigator.lua,1764,<top level>,VK_3 = 0x33
+Speak FX Params - TrackTake Navigator.lua,1765,<top level>,VK_4 = 0x34
+Speak FX Params - TrackTake Navigator.lua,1766,<top level>,VK_5 = 0x35
+Speak FX Params - TrackTake Navigator.lua,1767,<top level>,VK_6 = 0x36
+Speak FX Params - TrackTake Navigator.lua,1768,<top level>,VK_7 = 0x37
+Speak FX Params - TrackTake Navigator.lua,1769,<top level>,VK_8 = 0x38
+Speak FX Params - TrackTake Navigator.lua,1770,<top level>,VK_9 = 0x39
+Speak FX Params - TrackTake Navigator.lua,1771,<top level>,VK_CTRL  = 0x11
+Speak FX Params - TrackTake Navigator.lua,1772,<top level>,VK_SHIFT = 0x10
+Speak FX Params - TrackTake Navigator.lua,1773,<top level>,VK_ALT   = 0x12
+Speak FX Params - TrackTake Navigator.lua,1796,js_ctrl_down_now,    return ctrl_down() or js_vkey_down_now(VK_CTRL)
+Speak FX Params - TrackTake Navigator.lua,1800,js_shift_down_now,    return shift_down() or js_vkey_down_now(VK_SHIFT)
+Speak FX Params - TrackTake Navigator.lua,1804,js_alt_down_now,    return alt_down() or js_vkey_down_now(VK_ALT)
+Speak FX Params - TrackTake Navigator.lua,1808,<top level>,-- CTRL+M DISAMBIGUATION
+Speak FX Params - TrackTake Navigator.lua,1810,<top level>,"-- In gfx.getchar() Ctrl+M arriva come char 13, lo stesso"
+Speak FX Params - TrackTake Navigator.lua,1820,char13_is_ctrl_m,    if char ~= KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,1834,char13_is_ctrl_m,    local m_down = (state:byte(VK_M) or 0) ~= 0
+Speak FX Params - TrackTake Navigator.lua,1835,char13_is_ctrl_m,    local enter_down = (state:byte(VK_ENTER) or 0) ~= 0
+Speak FX Params - TrackTake Navigator.lua,1869,transport_play_stop_manual,"    -- Se il transport è in pausa per Ctrl+Spazio, però,"
+Speak FX Params - TrackTake Navigator.lua,1907,transport_play_pause_manual,    -- Ctrl+Spazio mentre suona/rec registra deve mettere in
+Speak FX Params - TrackTake Navigator.lua,1947,transport_space_set_intercept,"        local ok = pcall(reaper.JS_VKeys_Intercept, VK_SPACE, 1)"
+Speak FX Params - TrackTake Navigator.lua,1957,transport_space_set_intercept,"        pcall(reaper.JS_VKeys_Intercept, VK_SPACE, -1)"
+Speak FX Params - TrackTake Navigator.lua,1969,transport_space_release_intercept,    -- Con Ctrl+Space usiamo JS_VKeys_Intercept per impedire
+Speak FX Params - TrackTake Navigator.lua,1971,transport_space_release_intercept,"    -- Se poi usciamo con Ctrl+Tab o la finestra viene chiusa,"
+Speak FX Params - TrackTake Navigator.lua,1977,transport_space_release_intercept,"        pcall(reaper.JS_VKeys_Intercept, VK_SPACE, -1)"
+Speak FX Params - TrackTake Navigator.lua,1995,transport_should_swallow_space_char,    if char ~= KEY_SPACE then
+Speak FX Params - TrackTake Navigator.lua,2046,js_digit_vk_to_marker_number,    if vk == VK_0 then
+Speak FX Params - TrackTake Navigator.lua,2050,js_digit_vk_to_marker_number,    if vk >= VK_1 and vk <= VK_9 then
+Speak FX Params - TrackTake Navigator.lua,2051,js_digit_vk_to_marker_number,        return vk - VK_0
+Speak FX Params - TrackTake Navigator.lua,2058,<top level>,-- 1.9 - FUNZIONI PER SLOT F1 ... F12
+Speak FX Params - TrackTake Navigator.lua,2061,<top level>,"    [KEY_F1]  = 1,"
+Speak FX Params - TrackTake Navigator.lua,2062,<top level>,"    [KEY_F2]  = 2,"
+Speak FX Params - TrackTake Navigator.lua,2063,<top level>,"    [KEY_F3]  = 3,"
+Speak FX Params - TrackTake Navigator.lua,2064,<top level>,"    [KEY_F4]  = 4,"
+Speak FX Params - TrackTake Navigator.lua,2065,<top level>,"    [KEY_F5]  = 5,"
+Speak FX Params - TrackTake Navigator.lua,2066,<top level>,"    [KEY_F6]  = 6,"
+Speak FX Params - TrackTake Navigator.lua,2067,<top level>,"    [KEY_F7]  = 7,"
+Speak FX Params - TrackTake Navigator.lua,2068,<top level>,"    [KEY_F8]  = 8,"
+Speak FX Params - TrackTake Navigator.lua,2069,<top level>,"    [KEY_F9]  = 9,"
+Speak FX Params - TrackTake Navigator.lua,2070,<top level>,"    [KEY_F10] = 10,"
+Speak FX Params - TrackTake Navigator.lua,2071,<top level>,"    [KEY_F11] = 11,"
+Speak FX Params - TrackTake Navigator.lua,2072,<top level>,    [KEY_F12] = 12
+Speak FX Params - TrackTake Navigator.lua,2190,<top level>,-- Ctrl+F può essere rilanciato più volte senza perdere il
+Speak FX Params - TrackTake Navigator.lua,2232,<top level>,"-- Quando F7 viene aperto da un Group reale, la selezione deve"
+Speak FX Params - TrackTake Navigator.lua,2243,<top level>,"-- Gli indici possono arrivare anche da Plugin/Custom/F7, ma"
+Speak FX Params - TrackTake Navigator.lua,2250,<top level>,-- 1.16A - F7 GROUP EDIT: SERPENTE / SELEZIONE CONTINUA
+Speak FX Params - TrackTake Navigator.lua,2267,<top level>,-- 1.16B - RITORNO DA F7 GROUP EDIT
+Speak FX Params - TrackTake Navigator.lua,2276,<top level>,-- Usato dai pannelli temporanei (Recent / F8) per tornare
+Speak FX Params - TrackTake Navigator.lua,2278,<top level>,"-- Plugin order, Custom order, Search results, Group ed Edit F7."
+Speak FX Params - TrackTake Navigator.lua,2350,restore_navigation_return_snapshot,"    -- Edit F7: ripristina anche selezione, percorso Shift e"
+Speak FX Params - TrackTake Navigator.lua,2351,restore_navigation_return_snapshot,    -- destinazione originale del successivo F7/Esc.
+Speak FX Params - TrackTake Navigator.lua,2355,restore_navigation_return_snapshot,        -- F7 può contenere anche un filtro Search attivo.
+Speak FX Params - TrackTake Navigator.lua,2357,restore_navigation_return_snapshot,        -- F7 restano indipendenti.
+Speak FX Params - TrackTake Navigator.lua,2410,restore_navigation_return_snapshot,        -- Risultati Search già applicati: Recent/F8 devono
+Speak FX Params - TrackTake Navigator.lua,2519,<top level>,-- 1.16C - RITORNO DA F8 Parameter Navigator.
+Speak FX Params - TrackTake Navigator.lua,2526,<top level>,-- 1.16D - F7 GROUP EDIT: MEMORIA RUNTIME PER FX
+Speak FX Params - TrackTake Navigator.lua,2530,<top level>,-- Ogni istanza FX ha la sua selezione F7 separata.
+Speak FX Params - TrackTake Navigator.lua,2537,<top level>,-- Ctrl+X:
+Speak FX Params - TrackTake Navigator.lua,2538,<top level>,--   fuori da F7 taglia il parametro corrente;
+Speak FX Params - TrackTake Navigator.lua,2539,<top level>,--   dentro F7 taglia i parametri selezionati.
+Speak FX Params - TrackTake Navigator.lua,2541,<top level>,-- Ctrl+V:
+Speak FX Params - TrackTake Navigator.lua,2586,<top level>,-- Ctrl+Alt+C:
+Speak FX Params - TrackTake Navigator.lua,2629,<top level>,-- Shift+C:
+Speak FX Params - TrackTake Navigator.lua,2631,<top level>,-- Ctrl+Alt+C resta dedicato al CC Learn del parametro corrente.
+Speak FX Params - TrackTake Navigator.lua,3046,<top level>,-- Alt+T:
+Speak FX Params - TrackTake Navigator.lua,3062,<top level>,-- Ctrl+Shift+C:
+Speak FX Params - TrackTake Navigator.lua,3067,<top level>,--   - premendo di nuovo Ctrl+Shift+C torna ai CC normali.
+Speak FX Params - TrackTake Navigator.lua,3266,<top level>,-- Ctrl+Alt+B:
+Speak FX Params - TrackTake Navigator.lua,3978,<top level>,"-- da F7 / F8 / pannelli vengono definite più avanti, nella Parte 3."
+Speak FX Params - TrackTake Navigator.lua,4037,<top level>,--   Ctrl+G = Groups
+Speak FX Params - TrackTake Navigator.lua,4038,<top level>,--   Ctrl+M = Memory positions
+Speak FX Params - TrackTake Navigator.lua,4040,<top level>,-- La scelta NON cambia entrando/uscendo da F7.
+Speak FX Params - TrackTake Navigator.lua,4066,set_slot_access_mode,    -- Così Ctrl+G / Ctrl+M sopravvivono sia alla chiusura
+Speak FX Params - TrackTake Navigator.lua,4158,is_context_track_nav_key,    return char == KEY_UP or char == KEY_DOWN
+Speak FX Params - TrackTake Navigator.lua,4166,is_context_item_nav_key,    return char == KEY_LEFT or char == KEY_RIGHT
+Speak FX Params - TrackTake Navigator.lua,4170,get_context_track_nav_direction,    if char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,4174,get_context_track_nav_direction,    if char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,4182,get_context_item_nav_direction,    if char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,4186,get_context_item_nav_direction,    if char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,4222,<top level>,-- Si cancella da F8 con Delete.
+Speak FX Params - TrackTake Navigator.lua,4226,<top level>,-- 2.1 - Parameter Navigator. MODE: F8
+Speak FX Params - TrackTake Navigator.lua,4239,<top level>,-- F8 Default confirmation
+Speak FX Params - TrackTake Navigator.lua,4243,<top level>,-- F8 resta invece il ritorno rapido come prima.
+Speak FX Params - TrackTake Navigator.lua,4519,rebuild_memory_manager_lists,    -- Mostra solo le occorrenze extra create con Ctrl+C.
+Speak FX Params - TrackTake Navigator.lua,4576,speak_memory_manager_current,"        -- F8 deve parlare lo slot reale del gruppo salvato,"
+Speak FX Params - TrackTake Navigator.lua,4656,restore_memory_manager_return_context,    -- Nuovo ritorno completo: F8 può essere stato aperto da
+Speak FX Params - TrackTake Navigator.lua,4657,restore_memory_manager_return_context,"    -- Plugin order, Custom order, Search results, Group o F7."
+Speak FX Params - TrackTake Navigator.lua,4671,restore_memory_manager_return_context,"    -- Se F8 era stato aperto da un gruppo reale, prova a"
+Speak FX Params - TrackTake Navigator.lua,4732,enter_memory_manager_mode,    -- F8 è uno strumento gestionale: per la nuova filosofia
+Speak FX Params - TrackTake Navigator.lua,4733,enter_memory_manager_mode,    -- si apre soltanto dopo essere entrati intenzionalmente in F7.
+Speak FX Params - TrackTake Navigator.lua,4734,enter_memory_manager_mode,    -- In Plugin order F7 stesso non è disponibile.
+Speak FX Params - TrackTake Navigator.lua,4798,memory_manager_switch_col,    -- Colonne visive F8:
+Speak FX Params - TrackTake Navigator.lua,5092,memory_manager_delete_current,            default_snapshot_confirm_start(KEY_DELETE)
+Speak FX Params - TrackTake Navigator.lua,5102,memory_manager_delete_current,"    -- dopo qualunque cancellazione reale, F8 deve ricostruire"
+Speak FX Params - TrackTake Navigator.lua,5111,memory_manager_delete_current,    -- disponibile nell'ordine visivo di F8.
+Speak FX Params - TrackTake Navigator.lua,5204,memory_manager_load_current,        -- restando dentro F8.
+Speak FX Params - TrackTake Navigator.lua,5325,memory_manager_load_current,"        -- Enter APPLICA il Default, come Ctrl+Shift+Backspace."
+Speak FX Params - TrackTake Navigator.lua,5327,memory_manager_load_current,"        -- Se il default era stato cancellato con Delete dentro F8,"
+Speak FX Params - TrackTake Navigator.lua,5329,memory_manager_load_current,        -- griglia/lista da cui F8 era stato aperto.
+Speak FX Params - TrackTake Navigator.lua,5341,memory_manager_load_current,"        -- Ctrl+Shift+Backspace, quindi comprende anche gli eventuali"
+Speak FX Params - TrackTake Navigator.lua,5344,memory_manager_load_current,        -- Dopo il reset torna al contesto da cui F8 era stato aperto.
+Speak FX Params - TrackTake Navigator.lua,5391,memory_manager_load_current,"        -- carica la Custom order, poi esce davvero da F8"
+Speak FX Params - TrackTake Navigator.lua,5392,memory_manager_load_current,        -- e torna alla griglia/lista da cui F8 era stato aperto.
+Speak FX Params - TrackTake Navigator.lua,5431,memory_manager_load_current_for_f7,"    -- carica il gruppo, poi F7 entrerà in edit."
+Speak FX Params - TrackTake Navigator.lua,5443,memory_manager_load_current_for_f7,"    -- va al parametro salvato, poi F7 entra in edit."
+Speak FX Params - TrackTake Navigator.lua,5475,memory_manager_load_current_for_f7,    -- Poi F7 entrerà subito in edit group / Navigation Manager.
+Speak FX Params - TrackTake Navigator.lua,5532,default_snapshot_confirm_start,    default_snapshot_confirm_ignore_char = trigger_char or KEY_ENTER
+Speak FX Params - TrackTake Navigator.lua,5559,default_snapshot_clear_navigation_memories_after_default,    -- Default in F8 deve riportare il profilo del navigatore
+Speak FX Params - TrackTake Navigator.lua,5574,default_snapshot_clear_navigation_memories_after_default,    -- Il Default non deve cambiare il recinto Ctrl+G/Ctrl+M:
+Speak FX Params - TrackTake Navigator.lua,5645,default_snapshot_return_to_plugin_order_after_yes,    -- si esce da F8 direttamente in Plugin order.
+Speak FX Params - TrackTake Navigator.lua,5707,default_snapshot_confirm_commit_yes,"    -- Se non esiste uno snapshot default, resta in F8 e non"
+Speak FX Params - TrackTake Navigator.lua,5747,handle_default_snapshot_confirm_key,    -- F8 uguale a prima: esce da F8 senza eseguire il reset.
+Speak FX Params - TrackTake Navigator.lua,5749,handle_default_snapshot_confirm_key,    if char == KEY_F8 then
+Speak FX Params - TrackTake Navigator.lua,5759,handle_default_snapshot_confirm_key,    -- dentro F8 sulla colonna Default.
+Speak FX Params - TrackTake Navigator.lua,5761,handle_default_snapshot_confirm_key,    if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,5766,handle_default_snapshot_confirm_key,        if char == KEY_LEFT or char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,5770,handle_default_snapshot_confirm_key,        if char == KEY_RIGHT or char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,5789,handle_default_snapshot_confirm_key,        if char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,5811,handle_memory_manager_key,    -- Default snapshot cancellato da F8:
+Speak FX Params - TrackTake Navigator.lua,5816,handle_memory_manager_key,    -- F8:
+Speak FX Params - TrackTake Navigator.lua,5823,handle_memory_manager_key,        if char == KEY_ENTER or char == KEY_F8 then
+Speak FX Params - TrackTake Navigator.lua,5834,handle_memory_manager_key,        if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,5846,handle_memory_manager_key,    if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,5851,handle_memory_manager_key,    if char == KEY_F8 then
+Speak FX Params - TrackTake Navigator.lua,5857,handle_memory_manager_key,    -- F7 dentro F8:
+Speak FX Params - TrackTake Navigator.lua,5860,handle_memory_manager_key,    if char == KEY_F7 then
+Speak FX Params - TrackTake Navigator.lua,5871,handle_memory_manager_key,    -- Alt+Freccia sinistra/destra dentro F8:
+Speak FX Params - TrackTake Navigator.lua,5876,handle_memory_manager_key,        if char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,5881,handle_memory_manager_key,        elseif char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,5889,handle_memory_manager_key,    -- In F8 solo TAB legge la colonna corrente.
+Speak FX Params - TrackTake Navigator.lua,5891,handle_memory_manager_key,    if char == KEY_TAB then
+Speak FX Params - TrackTake Navigator.lua,5897,handle_memory_manager_key,    -- Navigazione F8:
+Speak FX Params - TrackTake Navigator.lua,5901,handle_memory_manager_key,"    -- Ctrl+Home va all'ultimo elemento dell'ultima colonna,"
+Speak FX Params - TrackTake Navigator.lua,5902,handle_memory_manager_key,    -- Ctrl+End va al primo elemento della prima colonna.
+Speak FX Params - TrackTake Navigator.lua,5904,handle_memory_manager_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,5909,handle_memory_manager_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,5914,handle_memory_manager_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,5919,handle_memory_manager_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,5924,handle_memory_manager_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,5929,handle_memory_manager_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,5934,handle_memory_manager_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,5939,handle_memory_manager_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,5944,handle_memory_manager_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,5949,handle_memory_manager_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,5954,handle_memory_manager_key,    if char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,5959,handle_memory_manager_key,    if char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,5982,<top level>,--   cambia davvero la griglia con F3/F4 o reset.
+Speak FX Params - TrackTake Navigator.lua,6279,<top level>,-- Alt+Freccia sinistra/destra marca solo il parametro come dirty:
+Speak FX Params - TrackTake Navigator.lua,6682,<top level>,-- Ctrl+Backspace:         ultimo controllo Step / Grid.
+Speak FX Params - TrackTake Navigator.lua,6683,<top level>,-- Ctrl+Shift+Backspace:   tutti i parametri al default.
+Speak FX Params - TrackTake Navigator.lua,6689,handle_backspace_reset_shortcut,    if char ~= KEY_BACKSPACE and
+Speak FX Params - TrackTake Navigator.lua,6690,handle_backspace_reset_shortcut,       char ~= KEY_BACKSPACE_2 then
+Speak FX Params - TrackTake Navigator.lua,7865,<top level>,-- La vecchia navigazione Ctrl+Alt+frecce è stata sostituita
+Speak FX Params - TrackTake Navigator.lua,9461,reaeq_parse_frequency_hz,    -- Ctrl+E invece deve ricevere sempre Hz reali.
+Speak FX Params - TrackTake Navigator.lua,9472,reaeq_get_numeric_display_value,    -- Frequency: Ctrl+E parte da Hz reali.
+Speak FX Params - TrackTake Navigator.lua,9486,reaeq_get_numeric_display_value,    -- Gain delle bande: Ctrl+E parte dai dB parlati dal VST.
+Speak FX Params - TrackTake Navigator.lua,10205,reaeq_gain_nudge_chunk_direct,    -- Normal ora vale circa 1 dB con Alt+Up/Down.
+Speak FX Params - TrackTake Navigator.lua,12277,get_param_alias,"    -- Plugin order, Custom order, Groups e F7 Edit group."
+Speak FX Params - TrackTake Navigator.lua,13255,custom_order_is_complete,    -- volta. Le occorrenze extra sono gestite da F8.
+Speak FX Params - TrackTake Navigator.lua,13286,custom_order_normalize_list,    -- volontarie create con Ctrl+C. Prima questa funzione
+Speak FX Params - TrackTake Navigator.lua,13324,<top level>,-- Ctrl+L può aprire una Custom order virtuale identica alla
+Speak FX Params - TrackTake Navigator.lua,13643,activate_custom_order_from_current_grid,    -- Ctrl+L deve essere leggero.
+Speak FX Params - TrackTake Navigator.lua,13662,activate_custom_order_from_current_grid,        -- Nessuna memoria viene creata finché F7 non produce
+Speak FX Params - TrackTake Navigator.lua,13681,activate_custom_order_from_current_grid,    -- che esiste davvero una memoria Custom. Il semplice Ctrl+L
+Speak FX Params - TrackTake Navigator.lua,13932,hide_current_param_in_custom_order,    -- l'utente è già entrato intenzionalmente in Custom con Ctrl+L.
+Speak FX Params - TrackTake Navigator.lua,14003,hide_f7_selected_params_in_custom_order,    -- Solo F7:
+Speak FX Params - TrackTake Navigator.lua,14004,hide_f7_selected_params_in_custom_order,    -- Ctrl+Delete deve nascondere tutti i parametri selezionati.
+Speak FX Params - TrackTake Navigator.lua,14032,hide_f7_selected_params_in_custom_order,    -- F7 non autorizza da solo modifiche alla Plugin order.
+Speak FX Params - TrackTake Navigator.lua,14997,get_active_indices,        -- F7 è il motore di selezione; Search è soltanto la
+Speak FX Params - TrackTake Navigator.lua,15000,get_active_indices,"        -- Se F7 sta modificando un Group reale, il recinto base"
+Speak FX Params - TrackTake Navigator.lua,15330,save_f7_return_snapshot,"    -- F7 deve poter tornare anche a Search results, non solo"
+Speak FX Params - TrackTake Navigator.lua,15338,save_f7_return_snapshot,"    -- Se F7 nasce dentro Search, conserva anche il ritorno"
+Speak FX Params - TrackTake Navigator.lua,15339,save_f7_return_snapshot,"    -- originale della sessione Search. Così, uscendo da F7,"
+Speak FX Params - TrackTake Navigator.lua,15398,exit_loaded_group_edit_to_group,"    -- NON ripristinare lo snapshot F7 precedente, perché quello"
+Speak FX Params - TrackTake Navigator.lua,15449,restore_f7_return_snapshot,"    -- Un F7 aperto da un Group reale torna al Group VIVO,"
+Speak FX Params - TrackTake Navigator.lua,15458,restore_f7_return_snapshot,"    -- cui F7 era stato aperto, compresi eventuali risultati"
+Speak FX Params - TrackTake Navigator.lua,15509,restore_f7_return_snapshot,    -- F7 non modifica più il selettore slot.
+Speak FX Params - TrackTake Navigator.lua,15510,restore_f7_return_snapshot,    -- Ctrl+G / Ctrl+M restano sticky anche entrando e uscendo.
+Speak FX Params - TrackTake Navigator.lua,15517,save_memory_manager_return_snapshot,    -- Snapshot completo prima di F8. È quello usato per il
+Speak FX Params - TrackTake Navigator.lua,15518,save_memory_manager_return_snapshot,"    -- ritorno moderno, compreso Edit F7."
+Speak FX Params - TrackTake Navigator.lua,15969,<top level>,-- 3.17 - GROUP SLOT MEMORIES: CTRL+F1 ... CTRL+F12
+Speak FX Params - TrackTake Navigator.lua,15988,save_group_slot,    -- richiede F7.
+Speak FX Params - TrackTake Navigator.lua,16167,<top level>,-- 3.18 - PARAMETER SLOT MEMORIES: CTRL+F1 ... CTRL+F12
+Speak FX Params - TrackTake Navigator.lua,16203,save_param_memory_slot,    -- Ctrl+Shift+F1 ... F12 salva solo se lo slot è vuoto.
+Speak FX Params - TrackTake Navigator.lua,16205,save_param_memory_slot,    -- La cancellazione resta nel gestore F8.
+Speak FX Params - TrackTake Navigator.lua,16345,<top level>,-- 3.19 - NAVIGAZIONE CONTESTO CTRL+ALT: LEGACY DISATTIVATA
+Speak FX Params - TrackTake Navigator.lua,16347,<top level>,-- La vecchia navigazione Ctrl+Alt+frecce è stata rimossa.
+Speak FX Params - TrackTake Navigator.lua,16364,<top level>,"-- RICERCA, F7 GROUP EDIT, NAVIGAZIONE GRIGLIA,"
+Speak FX Params - TrackTake Navigator.lua,16372,<top level>,-- F7 GROUP EDIT:
+Speak FX Params - TrackTake Navigator.lua,16375,<top level>,-- - Shift+frecce crea una selezione continua stile editor.
+Speak FX Params - TrackTake Navigator.lua,16376,<top level>,-- - Shift+Page Up / Page Down seleziona verticalmente nella colonna.
+Speak FX Params - TrackTake Navigator.lua,16377,<top level>,-- - Shift+Home / End seleziona fino a fine/inizio colonna.
+Speak FX Params - TrackTake Navigator.lua,16378,<top level>,-- - Ctrl+Shift+Home / End seleziona tutto.
+Speak FX Params - TrackTake Navigator.lua,16726,<top level>,-- L'unico ingresso intenzionale alla Custom order resta Ctrl+L.
+Speak FX Params - TrackTake Navigator.lua,16736,custom_order_require_active_for_structural_edit,    -- struttura è consentita soltanto dentro F7.
+Speak FX Params - TrackTake Navigator.lua,16942,custom_order_move_current_by_amount,    -- Quindi Shift+Up spostava di due posizioni.
+Speak FX Params - TrackTake Navigator.lua,16985,<top level>,-- Custom order completa: uno Shift+freccia poteva quindi scambiare
+Speak FX Params - TrackTake Navigator.lua,17175,custom_order_move_current_vertical,    -- Shift+Up / Shift+Down devono restare dentro la colonna.
+Speak FX Params - TrackTake Navigator.lua,17374,<top level>,-- 4.4Z - F7: SELEZIONE PER OCCORRENZA NEI GROUP REALI
+Speak FX Params - TrackTake Navigator.lua,17457,<top level>,-- 4.5 - F7 GROUP EDIT
+Speak FX Params - TrackTake Navigator.lua,18007,group_edit_select_all_grid,"    -- ""Select all"" in F7 è additivo rispetto alla selezione"
+Speak FX Params - TrackTake Navigator.lua,18039,<top level>,-- 4.5A - F7 RUNTIME SELECTION PER FX
+Speak FX Params - TrackTake Navigator.lua,18069,save_f7_runtime_selection_for_current_fx,    -- F7 generale del plugin.
+Speak FX Params - TrackTake Navigator.lua,18118,group_clipboard_capture,    -- contenuto del Group esiste soltanto nel suo Edit F7.
+Speak FX Params - TrackTake Navigator.lua,18199,group_paste_clipboard_into_current_group,    -- Paste può cambiare il Group soltanto dentro il suo F7.
+Speak FX Params - TrackTake Navigator.lua,18391,<top level>,-- Ctrl+X:
+Speak FX Params - TrackTake Navigator.lua,18392,<top level>,--   - in F7: taglia i parametri selezionati;
+Speak FX Params - TrackTake Navigator.lua,18393,<top level>,--   - fuori da F7: taglia il parametro corrente.
+Speak FX Params - TrackTake Navigator.lua,18395,<top level>,-- Ctrl+V:
+Speak FX Params - TrackTake Navigator.lua,18503,custom_cut_current_or_selected,    -- Cut strutturale esiste soltanto dentro F7.
+Speak FX Params - TrackTake Navigator.lua,18514,custom_cut_current_or_selected,    -- All parameters dentro F7 di un Group è una sorgente:
+Speak FX Params - TrackTake Navigator.lua,18524,custom_cut_current_or_selected,    -- Il ramo rimanente è Custom F7.
+Speak FX Params - TrackTake Navigator.lua,18550,custom_cut_current_or_selected,    -- Nessuna selezione: F7 lavora sul parametro corrente.
+Speak FX Params - TrackTake Navigator.lua,18951,custom_paste_cut_clipboard,    -- Paste strutturale esiste soltanto dentro F7.
+Speak FX Params - TrackTake Navigator.lua,18985,custom_paste_cut_clipboard,    -- Custom già attiva tramite Ctrl+L.
+Speak FX Params - TrackTake Navigator.lua,19052,custom_paste_cut_clipboard,"    -- Fallback vecchio: rimuove per indice solo per blocchi F7,"
+Speak FX Params - TrackTake Navigator.lua,19134,custom_paste_cut_clipboard,    -- - dentro F7 resta in F7;
+Speak FX Params - TrackTake Navigator.lua,19135,custom_paste_cut_clipboard,    -- - fuori da F7 torna alla lista normale Custom order.
+Speak FX Params - TrackTake Navigator.lua,19201,custom_copy_current_or_selected,    -- Fuori da F7 non esiste più Copy strutturale.
+Speak FX Params - TrackTake Navigator.lua,19212,custom_copy_current_or_selected,    -- All parameters dentro F7 di un Group è una sorgente
+Speak FX Params - TrackTake Navigator.lua,19264,custom_order_prepare_for_duplicate_edit,    -- Anche la gestione delle copie è strutturale e richiede F7.
+Speak FX Params - TrackTake Navigator.lua,19423,<top level>,-- 4.5B - ENTRATA / USCITA F7 GROUP EDIT
+Speak FX Params - TrackTake Navigator.lua,19432,enter_group_edit_mode,    -- F7 e' la modifica strutturale avanzata. Plugin order
+Speak FX Params - TrackTake Navigator.lua,19433,enter_group_edit_mode,    -- non puo' entrarci: prima serve Ctrl+L -> Custom order.
+Speak FX Params - TrackTake Navigator.lua,19461,enter_group_edit_mode,    -- F7 aperto da un Group reale: il recinto Edit è proprio
+Speak FX Params - TrackTake Navigator.lua,19697,<top level>,-- 4.5B1 - F7: NAVIGAZIONE GEOMETRICA TRA I SOLI SELEZIONATI
+Speak FX Params - TrackTake Navigator.lua,19699,<top level>,-- Ctrl+Alt+Up / Down:
+Speak FX Params - TrackTake Navigator.lua,19702,<top level>,-- Ctrl+Alt+Left / Right:
+Speak FX Params - TrackTake Navigator.lua,19710,<top level>,"-- - usa la vista F7 corrente, quindi rispetta anche Search;"
+Speak FX Params - TrackTake Navigator.lua,19876,<top level>,-- 4.5C - TASTI F7 GROUP EDIT
+Speak FX Params - TrackTake Navigator.lua,19883,handle_group_edit_grid_key,    if char == KEY_F7 then
+Speak FX Params - TrackTake Navigator.lua,19888,handle_group_edit_grid_key,    if char == KEY_F8 then
+Speak FX Params - TrackTake Navigator.lua,19894,handle_group_edit_grid_key,    -- Ctrl+Alt+frecce dentro F7:
+Speak FX Params - TrackTake Navigator.lua,19896,handle_group_edit_grid_key,    -- Le vecchie Ctrl+Alt di cambio contesto sono disattivate.
+Speak FX Params - TrackTake Navigator.lua,19899,handle_group_edit_grid_key,        if char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,19903,handle_group_edit_grid_key,        elseif char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,19907,handle_group_edit_grid_key,        elseif char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,19911,handle_group_edit_grid_key,        elseif char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,19918,handle_group_edit_grid_key,    -- Ctrl+G / Ctrl+M restano disponibili anche dentro F7.
+Speak FX Params - TrackTake Navigator.lua,19919,handle_group_edit_grid_key,    -- Ctrl+M arriva come char 13 e va disambiguato PRIMA di
+Speak FX Params - TrackTake Navigator.lua,19920,handle_group_edit_grid_key,    -- Ctrl+Enter usando il JS physical-key state.
+Speak FX Params - TrackTake Navigator.lua,19922,handle_group_edit_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_G then
+Speak FX Params - TrackTake Navigator.lua,19933,handle_group_edit_grid_key,    -- Ctrl+Enter dentro F7 segue sempre il recinto sticky:
+Speak FX Params - TrackTake Navigator.lua,19936,handle_group_edit_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,19942,handle_group_edit_grid_key,    -- Ctrl+F dentro F7:
+Speak FX Params - TrackTake Navigator.lua,19948,handle_group_edit_grid_key,    -- la stessa selezione F7. Delete resta l'unico reset totale.
+Speak FX Params - TrackTake Navigator.lua,19950,handle_group_edit_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_F then
+Speak FX Params - TrackTake Navigator.lua,19961,handle_group_edit_grid_key,    -- Reset Backspace anche dentro F7:
+Speak FX Params - TrackTake Navigator.lua,19969,handle_group_edit_grid_key,    -- Step/Grid anche dentro F7.
+Speak FX Params - TrackTake Navigator.lua,19970,handle_group_edit_grid_key,    -- Alt+Freccia sinistra/destra cambia Step; F1/F2 cambia Grid.
+Speak FX Params - TrackTake Navigator.lua,19971,handle_group_edit_grid_key,    -- F7 resta una modalità musicale viva: puoi cambiare
+Speak FX Params - TrackTake Navigator.lua,19981,handle_group_edit_grid_key,        if char == KEY_F5 then
+Speak FX Params - TrackTake Navigator.lua,19988,handle_group_edit_grid_key,        elseif char == KEY_F6 then
+Speak FX Params - TrackTake Navigator.lua,19995,handle_group_edit_grid_key,        elseif char == KEY_F9 then
+Speak FX Params - TrackTake Navigator.lua,20004,handle_group_edit_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,20016,handle_group_edit_grid_key,    if char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,20021,handle_group_edit_grid_key,    if char == KEY_SPACE and is_shift and not is_ctrl and not is_alt then
+Speak FX Params - TrackTake Navigator.lua,20026,handle_group_edit_grid_key,    if char == KEY_ENTER and
+Speak FX Params - TrackTake Navigator.lua,20035,handle_group_edit_grid_key,    if char == KEY_TAB then
+Speak FX Params - TrackTake Navigator.lua,20040,handle_group_edit_grid_key,    if char == KEY_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,20046,handle_group_edit_grid_key,       (char == KEY_HOME or char == KEY_END) then
+Speak FX Params - TrackTake Navigator.lua,20052,handle_group_edit_grid_key,    if is_shift and not is_ctrl and not is_alt and char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,20057,handle_group_edit_grid_key,    if is_shift and not is_ctrl and not is_alt and char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,20062,handle_group_edit_grid_key,    if not is_shift and not is_ctrl and not is_alt and char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,20067,handle_group_edit_grid_key,    if not is_shift and not is_ctrl and not is_alt and char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,20072,handle_group_edit_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,20077,handle_group_edit_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,20082,handle_group_edit_grid_key,    if is_shift and not is_ctrl and not is_alt and char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,20087,handle_group_edit_grid_key,    if is_shift and not is_ctrl and not is_alt and char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,20092,handle_group_edit_grid_key,    if is_shift and not is_ctrl and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,20097,handle_group_edit_grid_key,    if is_shift and not is_ctrl and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,20102,handle_group_edit_grid_key,    if is_shift and not is_ctrl and not is_alt and char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,20107,handle_group_edit_grid_key,    if is_shift and not is_ctrl and not is_alt and char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,20112,handle_group_edit_grid_key,    if not is_shift and not is_ctrl and not is_alt and char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,20117,handle_group_edit_grid_key,    if not is_shift and not is_ctrl and not is_alt and char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,20122,handle_group_edit_grid_key,    if not is_shift and not is_ctrl and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,20127,handle_group_edit_grid_key,    if not is_shift and not is_ctrl and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,20132,handle_group_edit_grid_key,    if not is_shift and not is_ctrl and not is_alt and char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,20137,handle_group_edit_grid_key,    if not is_shift and not is_ctrl and not is_alt and char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,20320,start_recent_searches,    -- Secondo Ctrl+R = stesso comportamento di Esc.
+Speak FX Params - TrackTake Navigator.lua,21033,toggle_search_edit_or_clear_results,    -- Fuori da F7 mantiene il comportamento storico: Ctrl+F
+Speak FX Params - TrackTake Navigator.lua,21035,toggle_search_edit_or_clear_results,    -- gestito esplicitamente dal handler F7.
+Speak FX Params - TrackTake Navigator.lua,21435,handle_search_edit,    -- Ctrl+F dentro Search = nuova ricerca.
+Speak FX Params - TrackTake Navigator.lua,21439,handle_search_edit,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_F then
+Speak FX Params - TrackTake Navigator.lua,21444,handle_search_edit,    if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,21449,handle_search_edit,    if char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,21454,handle_search_edit,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,21459,handle_search_edit,    if char == KEY_BACKSPACE or
+Speak FX Params - TrackTake Navigator.lua,21460,handle_search_edit,       char == KEY_BACKSPACE_2 then
+Speak FX Params - TrackTake Navigator.lua,21468,handle_search_edit,    if char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,21489,handle_search_edit,    if not is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,21507,handle_search_edit,    if not is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,21525,handle_search_edit,    if is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,21555,handle_search_edit,    if is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,21585,handle_search_edit,    if char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,21601,handle_search_edit,    if char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,21637,<top level>,-- Solo Ctrl+L entra intenzionalmente in Custom order.
+Speak FX Params - TrackTake Navigator.lua,21679,<top level>,-- 4.8S - F7 È L'UNICA PORTA DI MODIFICA STRUTTURALE
+Speak FX Params - TrackTake Navigator.lua,21681,<top level>,"-- Plugin order, Custom order e Group fuori da F7 sono viste."
+Speak FX Params - TrackTake Navigator.lua,21682,<top level>,"-- Soltanto Edit F7 può cambiare ordine, nomi, visibilità,"
+Speak FX Params - TrackTake Navigator.lua,21707,start_param_name_edit,    -- Il nome del parametro è modificabile soltanto dentro F7.
+Speak FX Params - TrackTake Navigator.lua,21723,start_param_name_edit,    -- F7 rende intenzionale la modifica anche se il parametro
+Speak FX Params - TrackTake Navigator.lua,21894,handle_param_name_edit,    if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,21899,handle_param_name_edit,    if char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,21904,handle_param_name_edit,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,21909,handle_param_name_edit,    if char == KEY_BACKSPACE or
+Speak FX Params - TrackTake Navigator.lua,21910,handle_param_name_edit,       char == KEY_BACKSPACE_2 then
+Speak FX Params - TrackTake Navigator.lua,21918,handle_param_name_edit,    if char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,21939,handle_param_name_edit,    if not is_ctrl and not shift_down() and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,21957,handle_param_name_edit,    if not is_ctrl and not shift_down() and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,21975,handle_param_name_edit,    if is_ctrl and not shift_down() and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,22005,handle_param_name_edit,    if is_ctrl and not shift_down() and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,22035,handle_param_name_edit,    if char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,22051,handle_param_name_edit,    if char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,22092,start_group_name_edit,    -- da Edit F7. Aprire o visitare un Group non abilita rename.
+Speak FX Params - TrackTake Navigator.lua,22305,handle_group_name_edit,    if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,22310,handle_group_name_edit,    if char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,22315,handle_group_name_edit,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,22320,handle_group_name_edit,    if char == KEY_BACKSPACE or
+Speak FX Params - TrackTake Navigator.lua,22321,handle_group_name_edit,       char == KEY_BACKSPACE_2 then
+Speak FX Params - TrackTake Navigator.lua,22329,handle_group_name_edit,    if char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,22350,handle_group_name_edit,    if not is_ctrl and not shift_down() and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,22374,handle_group_name_edit,    if not is_ctrl and not shift_down() and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,22398,handle_group_name_edit,    if is_ctrl and not shift_down() and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,22432,handle_group_name_edit,    if is_ctrl and not shift_down() and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,22465,handle_group_name_edit,    if char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,22481,handle_group_name_edit,    if char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,22521,handle_recent_key,    if char == KEY_ESC or
+Speak FX Params - TrackTake Navigator.lua,22522,handle_recent_key,       (is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_R) then
+Speak FX Params - TrackTake Navigator.lua,22528,handle_recent_key,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,22533,handle_recent_key,    if char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,22538,handle_recent_key,    if char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,22543,handle_recent_key,    if char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,22548,handle_recent_key,    if char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,22553,handle_recent_key,    if char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,22558,handle_recent_key,    if char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,22563,handle_recent_key,    if char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,22573,handle_recent_key,    if char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,22583,handle_recent_key,    if char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,22588,handle_recent_key,    if char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,23205,lexicon_nudge_until_label_changes,        -- Non bloccare Alt+Freccia se la scansione Lexicon
+Speak FX Params - TrackTake Navigator.lua,23286,param_binary_has_distinct_text_labels,"    -- come binari, Alt+Up/Down saltano direttamente a primo/ultimo"
+Speak FX Params - TrackTake Navigator.lua,23287,param_binary_has_distinct_text_labels,"    -- valore, cioè il comportamento di Alt+Home/Alt+End."
+Speak FX Params - TrackTake Navigator.lua,23593,<top level>,-- Come in Track Param F4: per i combo testuali multipli
+Speak FX Params - TrackTake Navigator.lua,23723,fx_text_combo_map_build,        -- Alt+Up/Down fa sempre uno scatto intero e non resta
+Speak FX Params - TrackTake Navigator.lua,23826,value_nudge_text_combo_cached,    -- come fa F4 in Track Params quando trova il prossimo cambio.
+Speak FX Params - TrackTake Navigator.lua,24139,lexicon_force_value_nudge_direct,    -- normalizzato: Alt+freccia va sempre all'elemento dopo.
+Speak FX Params - TrackTake Navigator.lua,24455,reaeq_gain_set_absolute_db_from_value,    -- Alt+Home/Home = -inf / minimo pratico.
+Speak FX Params - TrackTake Navigator.lua,24456,reaeq_gain_set_absolute_db_from_value,"    -- Alt+End/End = +36.1 dB, cioè il massimo numerico"
+Speak FX Params - TrackTake Navigator.lua,24626,reaeq_blocked_band_real_set_absolute_from_value,    -- Home / End / Alt+Home / Alt+End fallback per i tre
+Speak FX Params - TrackTake Navigator.lua,24633,reaeq_blocked_band_real_set_absolute_from_value,    -- speciale che ha sbloccato frecce e Ctrl+E.
+Speak FX Params - TrackTake Navigator.lua,24786,value_set_absolute,"    -- da frecce e Ctrl+E, altrimenti dopo un cambio Type il"
+Speak FX Params - TrackTake Navigator.lua,24797,value_set_absolute,    -- Alt+Home / Alt+End devono continuare a funzionare
+Speak FX Params - TrackTake Navigator.lua,24799,value_set_absolute,"    -- il caso ReaEQ Gain, perché dopo Ctrl+E il valore può"
+Speak FX Params - TrackTake Navigator.lua,24916,<top level>,-- Ctrl+V:
+Speak FX Params - TrackTake Navigator.lua,24928,<top level>,-- Ctrl+Shift+V resta dedicato al paste della Custom order.
+Speak FX Params - TrackTake Navigator.lua,25009,handle_value_mode_key,    -- Alt+Freccia sinistra/destra:
+Speak FX Params - TrackTake Navigator.lua,25014,handle_value_mode_key,    if is_alt and not is_ctrl and not is_shift and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,25023,handle_value_mode_key,    elseif is_alt and not is_ctrl and not is_shift and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,25034,handle_value_mode_key,    -- F1 / F2 restano liberi qui per la nuova mappa globale:
+Speak FX Params - TrackTake Navigator.lua,25048,handle_value_mode_key,    -- Ctrl+E: apre l'edit numerico anche dal Value mode.
+Speak FX Params - TrackTake Navigator.lua,25052,handle_value_mode_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_E then
+Speak FX Params - TrackTake Navigator.lua,25058,handle_value_mode_key,    -- Ctrl+V richiude la modalità Value.
+Speak FX Params - TrackTake Navigator.lua,25060,handle_value_mode_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_V then
+Speak FX Params - TrackTake Navigator.lua,25068,handle_value_mode_key,    if char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,25076,handle_value_mode_key,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,25084,handle_value_mode_key,    -- step scale come Alt+freccia sinistra/destra.
+Speak FX Params - TrackTake Navigator.lua,25086,handle_value_mode_key,    if char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,25095,handle_value_mode_key,    elseif char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,25104,handle_value_mode_key,    elseif char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,25108,handle_value_mode_key,    elseif char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,25112,handle_value_mode_key,    elseif char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,25116,handle_value_mode_key,    elseif char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,25120,handle_value_mode_key,    elseif char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,25124,handle_value_mode_key,    elseif char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,25245,finish_numeric_edit,"        -- Ctrl+E lavora in dB, ma il parametro grezzo è"
+Speak FX Params - TrackTake Navigator.lua,25430,handle_numeric_edit,    if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,25436,handle_numeric_edit,    -- Ctrl+E dentro l'edit numerico = Esc:
+Speak FX Params - TrackTake Navigator.lua,25439,handle_numeric_edit,    if char == KEY_CTRL_E then
+Speak FX Params - TrackTake Navigator.lua,25444,handle_numeric_edit,    if char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,25449,handle_numeric_edit,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,25454,handle_numeric_edit,    if not is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,25469,handle_numeric_edit,    if not is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,25488,handle_numeric_edit,"    -- KEY_HOME va alla fine del testo,"
+Speak FX Params - TrackTake Navigator.lua,25489,handle_numeric_edit,    -- KEY_END va all'inizio del testo.
+Speak FX Params - TrackTake Navigator.lua,25494,handle_numeric_edit,    if char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,25514,handle_numeric_edit,    if char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,25534,handle_numeric_edit,    if char == KEY_BACKSPACE or
+Speak FX Params - TrackTake Navigator.lua,25535,handle_numeric_edit,       char == KEY_BACKSPACE_2 then
+Speak FX Params - TrackTake Navigator.lua,25543,handle_numeric_edit,    if char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,25584,enter_edit_from_anywhere,    -- Secondo Ctrl+E dentro l'edit numerico = Esc:
+Speak FX Params - TrackTake Navigator.lua,25593,enter_edit_from_anywhere,"    -- Se siamo in Value mode, Ctrl+E apre l'edit numerico"
+Speak FX Params - TrackTake Navigator.lua,25594,enter_edit_from_anywhere,    -- partendo dal parametro corrente e al secondo Ctrl+E
+Speak FX Params - TrackTake Navigator.lua,25600,enter_edit_from_anywhere,"        -- Ctrl+E deve aprire subito l'edit numerico, non"
+Speak FX Params - TrackTake Navigator.lua,25623,jump_to_current_grid,    -- alla griglia da cui era partito Ctrl+E.
+Speak FX Params - TrackTake Navigator.lua,25641,jump_to_current_grid,    -- partito Ctrl+V.
+Speak FX Params - TrackTake Navigator.lua,25702,read_current_line,"        -- Se F7 appartiene a un Group reale, il conteggio e'"
+Speak FX Params - TrackTake Navigator.lua,25770,<top level>,-- 4.17 - PREPARAZIONE CAMBIO CONTESTO CTRL+ALT
+Speak FX Params - TrackTake Navigator.lua,25784,<top level>,-- - F7 group edit.
+Speak FX Params - TrackTake Navigator.lua,25826,prepare_ui_state_for_context_switch,    -- F7 group edit runtime path.
+Speak FX Params - TrackTake Navigator.lua,25827,prepare_ui_state_for_context_switch,    -- La selezione F7 runtime per FX resta salvata nella
+Speak FX Params - TrackTake Navigator.lua,25882,<top level>,if KEY_CTRL_D == nil then
+Speak FX Params - TrackTake Navigator.lua,25883,<top level>,    KEY_CTRL_D = 4
+Speak FX Params - TrackTake Navigator.lua,25991,<top level>,-- Verrà salvata solo se l'utente cambia la griglia con F3/F4
+Speak FX Params - TrackTake Navigator.lua,26080,<top level>,"-- get_param_value_formatted(). In F8, quando esistono parametri"
+Speak FX Params - TrackTake Navigator.lua,26142,is_current_fx_reacomp,    -- perché in F8/Hidden parameters veniva chiamata troppe volte
+Speak FX Params - TrackTake Navigator.lua,27299,prepare_selected_fx_for_param_browser,    -- Shift+C salvato nel TXT:
+Speak FX Params - TrackTake Navigator.lua,27302,prepare_selected_fx_for_param_browser,    -- come quando premi Shift+C manualmente.
+Speak FX Params - TrackTake Navigator.lua,27464,<top level>,-- Usato da CTRL+ALT+frecce.
+Speak FX Params - TrackTake Navigator.lua,27480,<top level>,-- - CTRL+ALT+UP/DOWN cambia traccia.
+Speak FX Params - TrackTake Navigator.lua,27484,<top level>,-- - CTRL+ALT+LEFT/RIGHT cambia item sulla stessa traccia.
+Speak FX Params - TrackTake Navigator.lua,27563,context_switch_load_current_context,"    -- F7, search, value, numeric edit, Parameter Navigator., ecc."
+Speak FX Params - TrackTake Navigator.lua,27749,switch_track_context_by_direction,"    -- Anche se eravamo in item mode, Ctrl+Page Up/Down"
+Speak FX Params - TrackTake Navigator.lua,27802,switch_take_context_to_current_track_fx,    -- Ctrl+W:
+Speak FX Params - TrackTake Navigator.lua,28159,handle_fx_browser_key,    -- CTRL+PAGE UP / CTRL+PAGE DOWN:
+Speak FX Params - TrackTake Navigator.lua,28162,handle_fx_browser_key,    -- CTRL+PAGE UP   = traccia precedente
+Speak FX Params - TrackTake Navigator.lua,28163,handle_fx_browser_key,    -- CTRL+PAGE DOWN = traccia successiva
+Speak FX Params - TrackTake Navigator.lua,28165,handle_fx_browser_key,"    -- Non usa ALT, così ALT+frecce resta libero per il valore"
+Speak FX Params - TrackTake Navigator.lua,28166,handle_fx_browser_key,    -- e non dipendiamo da CTRL+ALT+frecce.
+Speak FX Params - TrackTake Navigator.lua,28168,handle_fx_browser_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,28173,handle_fx_browser_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,28179,handle_fx_browser_key,    -- CTRL+LEFT / CTRL+RIGHT:
+Speak FX Params - TrackTake Navigator.lua,28182,handle_fx_browser_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,28187,handle_fx_browser_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,28193,handle_fx_browser_key,    -- CTRL+B:
+Speak FX Params - TrackTake Navigator.lua,28196,handle_fx_browser_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_B then
+Speak FX Params - TrackTake Navigator.lua,28212,handle_fx_browser_key,    -- CTRL+SHIFT+D:
+Speak FX Params - TrackTake Navigator.lua,28215,handle_fx_browser_key,    if is_ctrl and is_shift and not is_alt and char == KEY_CTRL_D then
+Speak FX Params - TrackTake Navigator.lua,28231,handle_fx_browser_key,    -- CTRL+SHIFT+UP / CTRL+SHIFT+DOWN:
+Speak FX Params - TrackTake Navigator.lua,28234,handle_fx_browser_key,    if is_ctrl and is_shift and not is_alt and char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,28239,handle_fx_browser_key,    if is_ctrl and is_shift and not is_alt and char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,28247,handle_fx_browser_key,    if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,28255,handle_fx_browser_key,    if char == KEY_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,28264,handle_fx_browser_key,    if char == KEY_TAB then
+Speak FX Params - TrackTake Navigator.lua,28270,handle_fx_browser_key,    -- CTRL+P / ENTER:
+Speak FX Params - TrackTake Navigator.lua,28273,handle_fx_browser_key,    if char == KEY_CTRL_P or char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,28281,handle_fx_browser_key,    if char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,28286,handle_fx_browser_key,    if char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,28295,handle_fx_browser_key,    if char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,28300,handle_fx_browser_key,    if char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,28308,handle_fx_browser_key,    if char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,28313,handle_fx_browser_key,    if char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,28322,handle_fx_browser_key,    if char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,28332,handle_fx_browser_key,    if char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,28400,<top level>,-- Ctrl+Alt+Shift+C:
+Speak FX Params - TrackTake Navigator.lua,28403,<top level>,-- Ctrl+V:
+Speak FX Params - TrackTake Navigator.lua,28405,<top level>,"--   lo ripristina. Se non contengono uno snapshot, Ctrl+V"
+Speak FX Params - TrackTake Navigator.lua,29031,<top level>,-- CTRL+SHIFT+UP   = sposta FX sopra
+Speak FX Params - TrackTake Navigator.lua,29032,<top level>,-- CTRL+SHIFT+DOWN = sposta FX sotto
+Speak FX Params - TrackTake Navigator.lua,29408,<top level>,-- CTRL+UP   = plugin precedente
+Speak FX Params - TrackTake Navigator.lua,29409,<top level>,-- CTRL+DOWN = plugin successivo
+Speak FX Params - TrackTake Navigator.lua,29649,announce_startup,"    -- Se Shift+C è salvato On per questo plugin, all'ingresso"
+Speak FX Params - TrackTake Navigator.lua,29683,<top level>,-- Ctrl+Q:
+Speak FX Params - TrackTake Navigator.lua,29753,background_live_poll_tick,"        -- Anche quando la finestra non ha focus, Shift+C On"
+Speak FX Params - TrackTake Navigator.lua,29852,<top level>,-- Ctrl+Tab:
+Speak FX Params - TrackTake Navigator.lua,30036,<top level>,-- Dentro F7 Ctrl+Tab apre Parameter Library.lua.
+Speak FX Params - TrackTake Navigator.lua,30306,paramlib_can_open_from_current_context,    -- F8 / Memory Manager non appartiene alla Parameter Library.
+Speak FX Params - TrackTake Navigator.lua,30308,paramlib_can_open_from_current_context,    -- restano esclusi: F10 è un passaggio fra griglie stabili.
+Speak FX Params - TrackTake Navigator.lua,30345,switch_to_parameter_library_script,    -- F7 aggiunge sopra questa memoria la selezione a isole.
+Speak FX Params - TrackTake Navigator.lua,30428,paramlib_apply_return_packet,        -- Ritorno speciale F7: ricostruisce le isole.
+Speak FX Params - TrackTake Navigator.lua,30471,paramlib_apply_return_packet,    -- eventuale gruppo e ultimo parametro. Non entra in F7.
+Speak FX Params - TrackTake Navigator.lua,30524,ctrl_tab_to_track_params_key,    if not is_ctrl or is_shift or is_alt or char ~= KEY_TAB then
+Speak FX Params - TrackTake Navigator.lua,30529,ctrl_tab_to_track_params_key,"    -- Con JS_ReaScriptAPI distinguiamo Ctrl+Tab da Ctrl+I,"
+Speak FX Params - TrackTake Navigator.lua,30533,ctrl_tab_to_track_params_key,        return js_vkey_down_now(VK_TAB) and not js_vkey_down_now(VK_I)
+Speak FX Params - TrackTake Navigator.lua,30889,<top level>,-- 7.3 - CTRL+B
+Speak FX Params - TrackTake Navigator.lua,30985,<top level>,-- Ctrl+Alt+C:
+Speak FX Params - TrackTake Navigator.lua,31379,cc_runtime_set_fixed_map_enabled,        -- Non forzare più Shift+C a Off quando in questo
+Speak FX Params - TrackTake Navigator.lua,31388,cc_runtime_set_fixed_map_enabled,        -- Ora Shift+C è uno stato del plugin: può restare On
+Speak FX Params - TrackTake Navigator.lua,31396,cc_runtime_set_fixed_map_enabled,        -- alternative. Shift+C riporta il controllo ai CC
+Speak FX Params - TrackTake Navigator.lua,31397,cc_runtime_set_fixed_map_enabled,        -- fissi salvati nel TXT senza usare Ctrl+C.
+Speak FX Params - TrackTake Navigator.lua,31408,cc_runtime_set_fixed_map_enabled,"        -- quando Shift+C riattiva i CC fissi del plugin,"
+Speak FX Params - TrackTake Navigator.lua,31470,cc_runtime_apply_restored_fixed_map_after_grid_ready,"    -- In quel caso Shift+C risultava On, ma la cache runtime"
+Speak FX Params - TrackTake Navigator.lua,31476,cc_runtime_apply_restored_fixed_map_after_grid_ready,    -- stessa accensione completa del tasto Shift+C manuale.
+Speak FX Params - TrackTake Navigator.lua,31712,<top level>,-- Ctrl+T non è più un toggle globale.
+Speak FX Params - TrackTake Navigator.lua,31714,<top level>,-- Ora Ctrl+T abilita/disabilita il parlato CC solo per
+Speak FX Params - TrackTake Navigator.lua,31751,cc_param_speech_is_supported,    -- Quindi deve poter usare anche Ctrl+T per il parlato CC.
+Speak FX Params - TrackTake Navigator.lua,31763,cc_param_speech_is_supported,    -- Quindi possono avere Ctrl+T memorizzato nel TXT.
+Speak FX Params - TrackTake Navigator.lua,31945,cc_param_should_speak_combo,    -- con Ctrl+T.
+Speak FX Params - TrackTake Navigator.lua,32446,cc_focus_poll_recent_input,    -- Primo CC nuovo dopo Ctrl+Shift+C:
+Speak FX Params - TrackTake Navigator.lua,32603,cc_learn_poll_recent_input,    -- ignora tutto ciò che era già presente quando Ctrl+Alt+C
+Speak FX Params - TrackTake Navigator.lua,32906,start_cc_learn_mode,    -- Ctrl+Alt+C deve riportare il lavoro sui CC fissi.
+Speak FX Params - TrackTake Navigator.lua,32910,start_cc_learn_mode,    -- di Ctrl+Shift+C.
+Speak FX Params - TrackTake Navigator.lua,32977,handle_cc_learn_key,    -- Esc oppure Ctrl+Alt+C mentre il learn è armato:
+Speak FX Params - TrackTake Navigator.lua,32981,handle_cc_learn_key,    if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,32987,handle_cc_learn_key,       (char == KEY_CTRL_C or char == KEY_CTRL_ALT_C) then
+Speak FX Params - TrackTake Navigator.lua,32997,handle_cc_learn_key,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,33006,handle_cc_learn_key,    if char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,33014,handle_cc_learn_key,    if char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,33278,<top level>,-- Alt+F1 = preset precedente
+Speak FX Params - TrackTake Navigator.lua,33279,<top level>,-- Alt+F2 = preset successivo
+Speak FX Params - TrackTake Navigator.lua,33281,<top level>,-- Alt+F11 / Alt+F12 restano liberi per OSARA Peak Watcher.
+Speak FX Params - TrackTake Navigator.lua,33293,handle_preset_navigation_keys,    -- Alt+F1 / Alt+F2:
+Speak FX Params - TrackTake Navigator.lua,33296,handle_preset_navigation_keys,    -- Ctrl+F1 / Ctrl+F2 restano liberi per gli slot.
+Speak FX Params - TrackTake Navigator.lua,33302,handle_preset_navigation_keys,    if char == KEY_F1 then
+Speak FX Params - TrackTake Navigator.lua,33307,handle_preset_navigation_keys,    if char == KEY_F2 then
+Speak FX Params - TrackTake Navigator.lua,33511,<top level>,-- Ctrl+Shift+Alt+A:
+Speak FX Params - TrackTake Navigator.lua,33514,<top level>,-- Alt+F3 / Alt+F4:
+Speak FX Params - TrackTake Navigator.lua,33632,handle_auto_param_navigation_keys,    if char == KEY_F3 then
+Speak FX Params - TrackTake Navigator.lua,33636,handle_auto_param_navigation_keys,    if char == KEY_F4 then
+Speak FX Params - TrackTake Navigator.lua,33738,<top level>,-- 7.8 - TOGGLE F7 GROUP EDIT
+Speak FX Params - TrackTake Navigator.lua,33752,<top level>,-- 7.9 - CTRL+D
+Speak FX Params - TrackTake Navigator.lua,33767,<top level>,-- 7.10 - CTRL+L
+Speak FX Params - TrackTake Navigator.lua,33775,exit_loaded_group_to_underlying_order,    -- Ctrl+L è un'uscita definitiva dal recinto Group.
+Speak FX Params - TrackTake Navigator.lua,33776,exit_loaded_group_to_underlying_order,"    -- Consuma anche eventuali snapshot temporanei di Search/F7,"
+Speak FX Params - TrackTake Navigator.lua,33830,toggle_custom_order_or_plugin_order,    -- Ctrl+L dentro un Group NON cambia Plugin/Custom order:
+Speak FX Params - TrackTake Navigator.lua,33953,<top level>,-- 7.13 - MARKER NORMALI: CTRL+I / CTRL+O
+Speak FX Params - TrackTake Navigator.lua,33955,<top level>,-- CTRL+I = marker normale precedente
+Speak FX Params - TrackTake Navigator.lua,33956,<top level>,-- CTRL+O = marker normale successivo
+Speak FX Params - TrackTake Navigator.lua,34150,handle_ctrl_marker_keys,    if char == KEY_CTRL_I then
+Speak FX Params - TrackTake Navigator.lua,34155,handle_ctrl_marker_keys,    if char == KEY_CTRL_O then
+Speak FX Params - TrackTake Navigator.lua,34307,<top level>,-- Alt+F10:
+Speak FX Params - TrackTake Navigator.lua,34310,<top level>,-- Alt+Shift+F10/F11/F12:
+Speak FX Params - TrackTake Navigator.lua,34342,handle_osara_peak_watcher_keys,    -- Alt+F10/F11/F12: watcher 1 reset / channel 1 / channel 2.
+Speak FX Params - TrackTake Navigator.lua,34343,handle_osara_peak_watcher_keys,    -- Alt+F11/F12 sono di nuovo liberi per OSARA: i preset
+Speak FX Params - TrackTake Navigator.lua,34344,handle_osara_peak_watcher_keys,    -- dello script sono su Alt+F1/F2.
+Speak FX Params - TrackTake Navigator.lua,34347,handle_osara_peak_watcher_keys,        if char == KEY_F10 then
+Speak FX Params - TrackTake Navigator.lua,34351,handle_osara_peak_watcher_keys,        if char == KEY_F11 then
+Speak FX Params - TrackTake Navigator.lua,34355,handle_osara_peak_watcher_keys,        if char == KEY_F12 then
+Speak FX Params - TrackTake Navigator.lua,34363,handle_osara_peak_watcher_keys,    -- Alt+Shift+F10/F11/F12: watcher 2.
+Speak FX Params - TrackTake Navigator.lua,34365,handle_osara_peak_watcher_keys,    if char == KEY_F10 then
+Speak FX Params - TrackTake Navigator.lua,34369,handle_osara_peak_watcher_keys,    if char == KEY_F11 then
+Speak FX Params - TrackTake Navigator.lua,34373,handle_osara_peak_watcher_keys,    if char == KEY_F12 then
+Speak FX Params - TrackTake Navigator.lua,34387,<top level>,-- Ctrl+Backspace:
+Speak FX Params - TrackTake Navigator.lua,34390,<top level>,-- Ctrl+Shift+Backspace:
+Speak FX Params - TrackTake Navigator.lua,34432,plugin_default_snapshot_count,    -- il numero qui serve solo per messaggi/F8.
+Speak FX Params - TrackTake Navigator.lua,35111,handle_step_grid_keys,    -- Alt+Freccia sinistra/destra = Step scale -/+
+Speak FX Params - TrackTake Navigator.lua,35112,handle_step_grid_keys,    -- F1/F2 = Grid size -/+
+Speak FX Params - TrackTake Navigator.lua,35113,handle_step_grid_keys,    -- Le vecchie F3/F4 non gestiscono più la Grid.
+Speak FX Params - TrackTake Navigator.lua,35116,handle_step_grid_keys,        if char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,35125,handle_step_grid_keys,        elseif char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,35142,handle_step_grid_keys,    if char == KEY_F1 then
+Speak FX Params - TrackTake Navigator.lua,35151,handle_step_grid_keys,    elseif char == KEY_F2 then
+Speak FX Params - TrackTake Navigator.lua,35171,handle_alt_value_keys,    if char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,35175,handle_alt_value_keys,    elseif char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,35179,handle_alt_value_keys,    elseif char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,35183,handle_alt_value_keys,    elseif char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,35187,handle_alt_value_keys,    elseif char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,35191,handle_alt_value_keys,    elseif char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,35267,group_remove_positions,        -- Elimina anche il ritorno F7 salvato verso quel Group.
+Speak FX Params - TrackTake Navigator.lua,35323,group_remove_current_occurrence,    -- Il Group normale è read only; la rimozione vive in F7.
+Speak FX Params - TrackTake Navigator.lua,35356,group_move_current_to_pos,    -- Lo spostamento singolo fuori da F7 è stato rimosso.
+Speak FX Params - TrackTake Navigator.lua,35357,group_move_current_to_pos,    -- In F7 si usa selezione + Cut/Paste.
+Speak FX Params - TrackTake Navigator.lua,35438,handle_shift_custom_order_keys,    -- Rimosso: fuori da F7 Shift non modifica più né Custom
+Speak FX Params - TrackTake Navigator.lua,35439,handle_shift_custom_order_keys,    -- né Group. Dentro F7 lo Shift è gestito dal motore di
+Speak FX Params - TrackTake Navigator.lua,35457,toggle_loaded_group_edit_all_parameters,    -- Ctrl+Fn dentro F7 su un Group reale alterna soltanto
+Speak FX Params - TrackTake Navigator.lua,35459,toggle_loaded_group_edit_all_parameters,    -- F7 resta attivo e le due selezioni restano separate.
+Speak FX Params - TrackTake Navigator.lua,35480,toggle_loaded_group_edit_all_parameters,        -- La vista completa usa la selezione F7 generale del FX.
+Speak FX Params - TrackTake Navigator.lua,35536,handle_ctrl_function_slot,    --   Ctrl+G = Groups
+Speak FX Params - TrackTake Navigator.lua,35537,handle_ctrl_function_slot,    --   Ctrl+M = Memory positions
+Speak FX Params - TrackTake Navigator.lua,35539,handle_ctrl_function_slot,    -- La scelta è autoritativa per F1 ... F12 anche in F7.
+Speak FX Params - TrackTake Navigator.lua,35540,handle_ctrl_function_slot,    -- F7 non forza più Groups e la griglia normale non forza
+Speak FX Params - TrackTake Navigator.lua,35543,handle_ctrl_function_slot,    -- Ctrl+F1 ... F12       = richiama dal recinto scelto.
+Speak FX Params - TrackTake Navigator.lua,35544,handle_ctrl_function_slot,    -- Ctrl+Shift+F1 ... F12 = salva nel recinto scelto.
+Speak FX Params - TrackTake Navigator.lua,35556,handle_ctrl_function_slot,        -- Ctrl+F1 ... F12 nei Groups apre il Group richiesto.
+Speak FX Params - TrackTake Navigator.lua,35560,handle_ctrl_function_slot,        -- Per uscire dal Group si usa Ctrl+L. Ctrl+L non cambia
+Speak FX Params - TrackTake Navigator.lua,35564,handle_ctrl_function_slot,        -- Un Ctrl+F diverso mentre un Group è aperto carica
+Speak FX Params - TrackTake Navigator.lua,35572,handle_ctrl_function_slot,            -- Lo stesso Ctrl+Fn NON chiude più il Group.
+Speak FX Params - TrackTake Navigator.lua,35585,handle_ctrl_function_slot,            -- Richiamare un Group diverso mentre F7 è aperto apre
+Speak FX Params - TrackTake Navigator.lua,35623,handle_list_navigation_keys,        if char == KEY_UP or
+Speak FX Params - TrackTake Navigator.lua,35624,handle_list_navigation_keys,           char == KEY_DOWN or
+Speak FX Params - TrackTake Navigator.lua,35625,handle_list_navigation_keys,           char == KEY_LEFT or
+Speak FX Params - TrackTake Navigator.lua,35626,handle_list_navigation_keys,           char == KEY_RIGHT or
+Speak FX Params - TrackTake Navigator.lua,35627,handle_list_navigation_keys,           char == KEY_HOME or
+Speak FX Params - TrackTake Navigator.lua,35628,handle_list_navigation_keys,           char == KEY_END or
+Speak FX Params - TrackTake Navigator.lua,35629,handle_list_navigation_keys,           char == KEY_PAGE_UP or
+Speak FX Params - TrackTake Navigator.lua,35630,handle_list_navigation_keys,           char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,35638,handle_list_navigation_keys,    if char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,35642,handle_list_navigation_keys,    elseif char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,35646,handle_list_navigation_keys,    elseif char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,35650,handle_list_navigation_keys,    elseif char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,35654,handle_list_navigation_keys,    elseif char == KEY_HOME then
+Speak FX Params - TrackTake Navigator.lua,35663,handle_list_navigation_keys,    elseif char == KEY_END then
+Speak FX Params - TrackTake Navigator.lua,35672,handle_list_navigation_keys,    elseif char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,35676,handle_list_navigation_keys,    elseif char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,35680,handle_list_navigation_keys,    elseif char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,35717,<top level>,-- 8.1A - CTRL+ENTER LEGATO A CTRL+G / CTRL+M
+Speak FX Params - TrackTake Navigator.lua,35719,<top level>,-- Ctrl+G selezionato:
+Speak FX Params - TrackTake Navigator.lua,35720,<top level>,--   CTRL+ENTER = rinomina il gruppo corrente.
+Speak FX Params - TrackTake Navigator.lua,35722,<top level>,-- Ctrl+M selezionato:
+Speak FX Params - TrackTake Navigator.lua,35723,<top level>,--   CTRL+ENTER = rinomina il parametro corrente.
+Speak FX Params - TrackTake Navigator.lua,35725,<top level>,-- F7 non cambia il significato del comando. Se F7 è stato
+Speak FX Params - TrackTake Navigator.lua,35726,<top level>,"-- aperto da un gruppo salvato, Ctrl+G + Ctrl+Enter rinomina"
+Speak FX Params - TrackTake Navigator.lua,35731,handle_ctrl_enter_contextual_name_edit,    -- Ctrl+Enter non apre più nessun rename fuori da F7.
+Speak FX Params - TrackTake Navigator.lua,35770,handle_js_global_key_shortcuts,    -- Ctrl+Alt+Shift+C: snapshot completo plugin.
+Speak FX Params - TrackTake Navigator.lua,35774,handle_js_global_key_shortcuts,    local snapshot_c_down = js_vkey_down_now(VK_C)
+Speak FX Params - TrackTake Navigator.lua,35783,handle_js_global_key_shortcuts,    local space_down = js_vkey_down_now(VK_SPACE)
+Speak FX Params - TrackTake Navigator.lua,35790,handle_js_global_key_shortcuts,    -- Ctrl+Space: Play / Pause globale.
+Speak FX Params - TrackTake Navigator.lua,35815,handle_js_global_key_shortcuts,    -- Shift+Space: selezione/deselezione solo dentro F7.
+Speak FX Params - TrackTake Navigator.lua,35839,handle_js_global_key_shortcuts,    -- Ctrl+1 ... Ctrl+0: marker 1 ... 10.
+Speak FX Params - TrackTake Navigator.lua,35845,handle_js_global_key_shortcuts,"            VK_1, VK_2, VK_3, VK_4, VK_5,"
+Speak FX Params - TrackTake Navigator.lua,35846,handle_js_global_key_shortcuts,"            VK_6, VK_7, VK_8, VK_9, VK_0"
+Speak FX Params - TrackTake Navigator.lua,35859,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_0))"
+Speak FX Params - TrackTake Navigator.lua,35860,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_1))"
+Speak FX Params - TrackTake Navigator.lua,35861,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_2))"
+Speak FX Params - TrackTake Navigator.lua,35862,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_3))"
+Speak FX Params - TrackTake Navigator.lua,35863,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_4))"
+Speak FX Params - TrackTake Navigator.lua,35864,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_5))"
+Speak FX Params - TrackTake Navigator.lua,35865,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_6))"
+Speak FX Params - TrackTake Navigator.lua,35866,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_7))"
+Speak FX Params - TrackTake Navigator.lua,35867,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_8))"
+Speak FX Params - TrackTake Navigator.lua,35868,handle_js_global_key_shortcuts,"        js_clear_key_edge(""ctrl_digit_"" .. tostring(VK_9))"
+Speak FX Params - TrackTake Navigator.lua,35903,main_loop,"    -- Se il default era stato cancellato in F8 ed era pending,"
+Speak FX Params - TrackTake Navigator.lua,35958,main_loop,-- CTRL+SHIFT+ALT+F1:
+Speak FX Params - TrackTake Navigator.lua,35962,main_loop,if is_ctrl and is_shift and is_alt and char == KEY_F1 then
+Speak FX Params - TrackTake Navigator.lua,35971,main_loop,-- SHIFT+C:
+Speak FX Params - TrackTake Navigator.lua,35973,main_loop,-- Ctrl+Alt+C resta CC Learn; Ctrl+Shift+C resta Floating CC.
+Speak FX Params - TrackTake Navigator.lua,35976,main_loop,   not is_ctrl and is_shift and not is_alt and char == KEY_C then
+Speak FX Params - TrackTake Navigator.lua,35986,main_loop,"-- Ctrl+Space, Space, Shift+Space in F7,"
+Speak FX Params - TrackTake Navigator.lua,35987,main_loop,-- Ctrl+1 ... Ctrl+0 marker direct.
+Speak FX Params - TrackTake Navigator.lua,35995,main_loop,-- CTRL+ALT+SHIFT+C fallback da gfx.getchar().
+Speak FX Params - TrackTake Navigator.lua,36000,main_loop,   (char == KEY_CTRL_C or char == KEY_CTRL_ALT_C or char == KEY_C) then
+Speak FX Params - TrackTake Navigator.lua,36009,main_loop,-- CTRL+V globale per snapshot FX Param.
+Speak FX Params - TrackTake Navigator.lua,36011,main_loop,-- i vecchi Ctrl+V (Value mode / Custom order / campi)
+Speak FX Params - TrackTake Navigator.lua,36014,main_loop,if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_V then
+Speak FX Params - TrackTake Navigator.lua,36032,main_loop,    -- Shift+C On ha priorità sul Floating CC.
+Speak FX Params - TrackTake Navigator.lua,36047,main_loop,    -- F8 MEMORY MANAGER:
+Speak FX Params - TrackTake Navigator.lua,36049,main_loop,"    -- Lascia navigazione/gestione F8, Alt+freccia sinistra/destra per Step e"
+Speak FX Params - TrackTake Navigator.lua,36061,main_loop,    -- ALT+F1 / ALT+F2:
+Speak FX Params - TrackTake Navigator.lua,36063,main_loop,    -- Alt+F11/F12 restano liberi per OSARA Peak Watcher.
+Speak FX Params - TrackTake Navigator.lua,36072,main_loop,    -- Alt+F10/F11/F12 e Alt+Shift+F10/F11/F12.
+Speak FX Params - TrackTake Navigator.lua,36080,main_loop,    -- F10:
+Speak FX Params - TrackTake Navigator.lua,36082,main_loop,    -- In F7 porta anche la selezione corrente; fuori da F7
+Speak FX Params - TrackTake Navigator.lua,36083,main_loop,    -- la Library apre solo F1. F8 è già intercettato sopra.
+Speak FX Params - TrackTake Navigator.lua,36085,main_loop,    if char == KEY_F10 and
+Speak FX Params - TrackTake Navigator.lua,36095,main_loop,    -- CTRL+SHIFT+F:
+Speak FX Params - TrackTake Navigator.lua,36098,main_loop,    if is_ctrl and is_shift and not is_alt and char == KEY_CTRL_F then
+Speak FX Params - TrackTake Navigator.lua,36104,main_loop,    -- ALT+SHIFT+F:
+Speak FX Params - TrackTake Navigator.lua,36109,main_loop,"    -- In gfx.getchar(), Alt+Shift+F può arrivare come char 326,"
+Speak FX Params - TrackTake Navigator.lua,36126,main_loop,    -- CTRL+W:
+Speak FX Params - TrackTake Navigator.lua,36130,main_loop,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_W then
+Speak FX Params - TrackTake Navigator.lua,36140,main_loop,    -- CTRL+PAGE UP / CTRL+PAGE DOWN:
+Speak FX Params - TrackTake Navigator.lua,36143,main_loop,    if is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_UP then
+Speak FX Params - TrackTake Navigator.lua,36150,main_loop,    if is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_DOWN then
+Speak FX Params - TrackTake Navigator.lua,36158,main_loop,    -- CTRL+LEFT / CTRL+RIGHT:
+Speak FX Params - TrackTake Navigator.lua,36162,main_loop,    -- lì Ctrl+Left / Ctrl+Right serve per muoversi parola per parola.
+Speak FX Params - TrackTake Navigator.lua,36167,main_loop,       is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak FX Params - TrackTake Navigator.lua,36178,main_loop,       is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak FX Params - TrackTake Navigator.lua,36187,main_loop,    -- CTRL+Q:
+Speak FX Params - TrackTake Navigator.lua,36191,main_loop,    if char == KEY_CTRL_Q then
+Speak FX Params - TrackTake Navigator.lua,36198,main_loop,    -- CTRL+TAB:
+Speak FX Params - TrackTake Navigator.lua,36199,main_loop,    -- - dentro F7 passa a Parameter Library;
+Speak FX Params - TrackTake Navigator.lua,36200,main_loop,    -- - fuori da F7 mantiene il passaggio storico a Track Params.
+Speak FX Params - TrackTake Navigator.lua,36212,main_loop,    -- CTRL+I / CTRL+O:
+Speak FX Params - TrackTake Navigator.lua,36214,main_loop,"    -- Deve stare presto, perché CTRL+I usa lo stesso codice"
+Speak FX Params - TrackTake Navigator.lua,36224,main_loop,    -- Esc oppure Ctrl+Alt+C disarmano il learn e ritornano
+Speak FX Params - TrackTake Navigator.lua,36241,main_loop,if char == KEY_ESC then
+Speak FX Params - TrackTake Navigator.lua,36261,main_loop,    -- Recent: stesso ritorno del secondo Ctrl+R.
+Speak FX Params - TrackTake Navigator.lua,36270,main_loop,    -- Search ha priorità su F7.
+Speak FX Params - TrackTake Navigator.lua,36272,main_loop,"    -- Se siamo dentro Edit F7 con una lente Search attiva,"
+Speak FX Params - TrackTake Navigator.lua,36273,main_loop,    -- Esc deve chiudere SOLO Search e restare in Edit F7.
+Speak FX Params - TrackTake Navigator.lua,36276,main_loop,    -- uscire da F7 verso Plugin order / Custom order / Group.
+Speak FX Params - TrackTake Navigator.lua,36288,main_loop,    -- F7: Esc equivale a ripremere F7 SOLO quando non c'è
+Speak FX Params - TrackTake Navigator.lua,36304,main_loop,"    -- La gestione affidabile di Ctrl+Space, Space e"
+Speak FX Params - TrackTake Navigator.lua,36305,main_loop,    -- Shift+Space in F7 avviene sopra tramite JS_VKeys.
+Speak FX Params - TrackTake Navigator.lua,36309,main_loop,    if char == KEY_SPACE then
+Speak FX Params - TrackTake Navigator.lua,36313,main_loop,            -- già gestito dal polling JS di Ctrl+Spazio
+Speak FX Params - TrackTake Navigator.lua,36339,main_loop,    -- CTRL+Z: undo REAPER.
+Speak FX Params - TrackTake Navigator.lua,36341,main_loop,    if char == KEY_CTRL_Z then
+Speak FX Params - TrackTake Navigator.lua,36350,main_loop,    -- CTRL+ALT+B:
+Speak FX Params - TrackTake Navigator.lua,36355,main_loop,    if (is_ctrl and is_alt and not is_shift and char == KEY_CTRL_B) or
+Speak FX Params - TrackTake Navigator.lua,36356,main_loop,       char == KEY_CTRL_ALT_B then
+Speak FX Params - TrackTake Navigator.lua,36364,main_loop,    -- CTRL+B:
+Speak FX Params - TrackTake Navigator.lua,36371,main_loop,    if char == KEY_CTRL_B then
+Speak FX Params - TrackTake Navigator.lua,36383,main_loop,-- SHIFT+\:
+Speak FX Params - TrackTake Navigator.lua,36387,main_loop,-- In gfx.getchar() Shift+\ arriva come 124.
+Speak FX Params - TrackTake Navigator.lua,36390,main_loop,   char == KEY_SHIFT_BACKSLASH then
+Speak FX Params - TrackTake Navigator.lua,36399,main_loop,-- CTRL+SHIFT+C:
+Speak FX Params - TrackTake Navigator.lua,36402,main_loop,-- Primo Ctrl+Shift+C:
+Speak FX Params - TrackTake Navigator.lua,36406,main_loop,-- Secondo Ctrl+Shift+C:
+Speak FX Params - TrackTake Navigator.lua,36409,main_loop,if is_ctrl and is_shift and not is_alt and char == KEY_CTRL_C then
+Speak FX Params - TrackTake Navigator.lua,36417,main_loop,-- CTRL+T:
+Speak FX Params - TrackTake Navigator.lua,36421,main_loop,"-- In gfx.getchar(), Ctrl+T arriva come 20."
+Speak FX Params - TrackTake Navigator.lua,36431,main_loop,    -- CTRL+ALT+C:
+Speak FX Params - TrackTake Navigator.lua,36433,main_loop,    -- Ctrl+C resta libero e non arma più il learn.
+Speak FX Params - TrackTake Navigator.lua,36436,main_loop,       (char == KEY_CTRL_C or char == KEY_CTRL_ALT_C) then
+Speak FX Params - TrackTake Navigator.lua,36445,main_loop,    -- CTRL+DELETE:
+Speak FX Params - TrackTake Navigator.lua,36447,main_loop,    -- Plugin order resta read only anche dentro F7/Search.
+Speak FX Params - TrackTake Navigator.lua,36449,main_loop,    if is_ctrl and not is_shift and not is_alt and char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,36473,main_loop,-- ALT+F1 / ALT+F2:
+Speak FX Params - TrackTake Navigator.lua,36482,main_loop,-- ALT+F3 / ALT+F4:
+Speak FX Params - TrackTake Navigator.lua,36491,main_loop,    -- CTRL+L:
+Speak FX Params - TrackTake Navigator.lua,36494,main_loop,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_L then
+Speak FX Params - TrackTake Navigator.lua,36502,main_loop,    -- CTRL+SHIFT+UP / DOWN:
+Speak FX Params - TrackTake Navigator.lua,36504,main_loop,    -- Deve stare prima di CTRL+UP/DOWN.
+Speak FX Params - TrackTake Navigator.lua,36505,main_loop,    -- In F7 non deve intervenire.
+Speak FX Params - TrackTake Navigator.lua,36508,main_loop,       is_ctrl and is_shift and not is_alt and char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,36517,main_loop,       is_ctrl and is_shift and not is_alt and char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,36527,main_loop,"    -- Deve stare prima di FX browser, Value mode, Ctrl+V,"
+Speak FX Params - TrackTake Navigator.lua,36528,main_loop,"    -- Ctrl+G, Ctrl+M e altri comandi globali: quando Ctrl+E apre"
+Speak FX Params - TrackTake Navigator.lua,36570,main_loop,    -- SHIFT + NAVIGAZIONE FUORI DA F7:
+Speak FX Params - TrackTake Navigator.lua,36572,main_loop,    -- viste; il serpentone esiste soltanto dentro F7.
+Speak FX Params - TrackTake Navigator.lua,36578,main_loop,            (char == KEY_UP or char == KEY_DOWN or
+Speak FX Params - TrackTake Navigator.lua,36579,main_loop,             char == KEY_LEFT or char == KEY_RIGHT or
+Speak FX Params - TrackTake Navigator.lua,36580,main_loop,             char == KEY_PAGE_UP or char == KEY_PAGE_DOWN or
+Speak FX Params - TrackTake Navigator.lua,36581,main_loop,             char == KEY_HOME or char == KEY_END))
+Speak FX Params - TrackTake Navigator.lua,36583,main_loop,           (is_ctrl and (char == KEY_HOME or char == KEY_END))
+Speak FX Params - TrackTake Navigator.lua,36591,main_loop,    -- CTRL+F1 ... CTRL+F12
+Speak FX Params - TrackTake Navigator.lua,36601,main_loop,    -- CTRL+SHIFT+ALT+A:
+Speak FX Params - TrackTake Navigator.lua,36605,main_loop,       (char == KEY_CTRL_A or char == KEY_A or char == KEY_CTRL_ALT_A) then
+Speak FX Params - TrackTake Navigator.lua,36614,main_loop,    -- CTRL+SHIFT+A:
+Speak FX Params - TrackTake Navigator.lua,36617,main_loop,    -- CTRL+A resta libero/coerente per selezione; in F7 mantiene
+Speak FX Params - TrackTake Navigator.lua,36620,main_loop,    if is_ctrl and is_shift and not is_alt and char == KEY_CTRL_A then
+Speak FX Params - TrackTake Navigator.lua,36628,main_loop,"       char == KEY_CTRL_A and mode == ""group_edit"" then"
+Speak FX Params - TrackTake Navigator.lua,36637,main_loop,    -- CTRL+SHIFT+D:
+Speak FX Params - TrackTake Navigator.lua,36640,main_loop,    if is_ctrl and is_shift and not is_alt and char == KEY_CTRL_D then
+Speak FX Params - TrackTake Navigator.lua,36648,main_loop,    -- CTRL+D rimosso.
+Speak FX Params - TrackTake Navigator.lua,36650,main_loop,    -- Il ritorno dal Group è ora Ctrl+L. Ripremere Ctrl+F1 ... F12
+Speak FX Params - TrackTake Navigator.lua,36655,main_loop,    -- CTRL+UP / CTRL+DOWN:
+Speak FX Params - TrackTake Navigator.lua,36658,main_loop,    if is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak FX Params - TrackTake Navigator.lua,36665,main_loop,    if is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak FX Params - TrackTake Navigator.lua,36673,main_loop,    -- CTRL+P:
+Speak FX Params - TrackTake Navigator.lua,36676,main_loop,    if char == KEY_CTRL_P then
+Speak FX Params - TrackTake Navigator.lua,36684,main_loop,-- CTRL+G:
+Speak FX Params - TrackTake Navigator.lua,36687,main_loop,if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_G then
+Speak FX Params - TrackTake Navigator.lua,36695,main_loop,-- CTRL+M:
+Speak FX Params - TrackTake Navigator.lua,36699,main_loop,-- ramo Ctrl+Enter ed essere disambiguato con JS physical M.
+Speak FX Params - TrackTake Navigator.lua,36709,main_loop,-- CTRL+X:
+Speak FX Params - TrackTake Navigator.lua,36710,main_loop,-- Cut strutturale è disponibile soltanto dentro F7.
+Speak FX Params - TrackTake Navigator.lua,36713,main_loop,if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_X then
+Speak FX Params - TrackTake Navigator.lua,36721,main_loop,-- CTRL+C:
+Speak FX Params - TrackTake Navigator.lua,36722,main_loop,-- Copy strutturale è disponibile soltanto dentro F7.
+Speak FX Params - TrackTake Navigator.lua,36725,main_loop,if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_C then
+Speak FX Params - TrackTake Navigator.lua,36733,main_loop,-- CTRL+V:
+Speak FX Params - TrackTake Navigator.lua,36734,main_loop,-- Paste modifica soltanto il contenitore F7 corrente.
+Speak FX Params - TrackTake Navigator.lua,36737,main_loop,if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_V then
+Speak FX Params - TrackTake Navigator.lua,36745,main_loop,-- CTRL+E: edit numerico diretto.
+Speak FX Params - TrackTake Navigator.lua,36747,main_loop,if char == KEY_CTRL_E then
+Speak FX Params - TrackTake Navigator.lua,36755,main_loop,    -- CTRL+ENTER:
+Speak FX Params - TrackTake Navigator.lua,36756,main_loop,    -- segue il recinto sticky scelto con Ctrl+G / Ctrl+M:
+Speak FX Params - TrackTake Navigator.lua,36760,main_loop,    if is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak FX Params - TrackTake Navigator.lua,36773,main_loop,       char == KEY_ENTER and
+Speak FX Params - TrackTake Navigator.lua,36785,main_loop,    -- In F8 Enter resta gestito dalla finestra Memory manager.
+Speak FX Params - TrackTake Navigator.lua,36786,main_loop,    -- In F7 Enter è gestito da handle_group_edit_grid_key().
+Speak FX Params - TrackTake Navigator.lua,36789,main_loop,       char == KEY_ENTER and
+Speak FX Params - TrackTake Navigator.lua,36854,main_loop,-- Tutti i tasti di F8 passano da handle_memory_manager_key().
+Speak FX Params - TrackTake Navigator.lua,36857,main_loop,-- - F8 salva e torna alla griglia;
+Speak FX Params - TrackTake Navigator.lua,36868,main_loop,    -- F7 GROUP EDIT GRID
+Speak FX Params - TrackTake Navigator.lua,36882,main_loop,"    if char == KEY_BACKSLASH and mode == ""list"" then"
+Speak FX Params - TrackTake Navigator.lua,36897,main_loop,-- - Ctrl+Backspace:
+Speak FX Params - TrackTake Navigator.lua,36900,main_loop,-- - Ctrl+Shift+Backspace:
+Speak FX Params - TrackTake Navigator.lua,36904,main_loop,-- KEY_BACKSPACE_3 ha lo stesso codice di KEY_DELETE.
+Speak FX Params - TrackTake Navigator.lua,36914,main_loop,-- CTRL+F:
+Speak FX Params - TrackTake Navigator.lua,36919,main_loop,if char == KEY_CTRL_F then
+Speak FX Params - TrackTake Navigator.lua,36927,main_loop,    -- CTRL+R: ricerche recenti.
+Speak FX Params - TrackTake Navigator.lua,36929,main_loop,    if char == KEY_CTRL_R then
+Speak FX Params - TrackTake Navigator.lua,36938,main_loop,-- fuori da F7/F8 e fuori dai campi edit rimuove il CC
+Speak FX Params - TrackTake Navigator.lua,36941,main_loop,"-- Nei campi edit, in F7, in F8 e in CC Learn viene"
+Speak FX Params - TrackTake Navigator.lua,36944,main_loop,if char == KEY_DELETE then
+Speak FX Params - TrackTake Navigator.lua,36962,main_loop,    if char == KEY_TAB then
+Speak FX Params - TrackTake Navigator.lua,36979,main_loop,    elseif char == KEY_F5 then
+Speak FX Params - TrackTake Navigator.lua,36988,main_loop,    elseif char == KEY_F6 then
+Speak FX Params - TrackTake Navigator.lua,36997,main_loop,    elseif char == KEY_F7 then
+Speak FX Params - TrackTake Navigator.lua,37003,main_loop,    elseif char == KEY_F8 then
+Speak FX Params - TrackTake Navigator.lua,37009,main_loop,    elseif char == KEY_F9 then
+Speak Track Params - TrackTake Navigator.lua,12,<top level>,"-- F1 Tracks, F2 Sends, F3 Receives,"
+Speak Track Params - TrackTake Navigator.lua,13,<top level>,-- F4 FX parameters TCP / FX headers.
+Speak Track Params - TrackTake Navigator.lua,1752,<top level>,KEY_ESC = 27
+Speak Track Params - TrackTake Navigator.lua,1754,<top level>,KEY_BACKSPACE   = 8
+Speak Track Params - TrackTake Navigator.lua,1755,<top level>,KEY_BACKSPACE_2 = 127
+Speak Track Params - TrackTake Navigator.lua,1757,<top level>,KEY_UP        = 30064
+Speak Track Params - TrackTake Navigator.lua,1758,<top level>,KEY_DOWN      = 1685026670
+Speak Track Params - TrackTake Navigator.lua,1759,<top level>,KEY_LEFT      = 1818584692
+Speak Track Params - TrackTake Navigator.lua,1760,<top level>,KEY_RIGHT     = 1919379572
+Speak Track Params - TrackTake Navigator.lua,1761,<top level>,KEY_HOME      = 1752132965
+Speak Track Params - TrackTake Navigator.lua,1762,<top level>,KEY_END       = 6647396
+Speak Track Params - TrackTake Navigator.lua,1763,<top level>,KEY_PAGE_UP   = 1885828464
+Speak Track Params - TrackTake Navigator.lua,1764,<top level>,KEY_PAGE_DOWN = 1885824110
+Speak Track Params - TrackTake Navigator.lua,1765,<top level>,KEY_ENTER     = 13
+Speak Track Params - TrackTake Navigator.lua,1766,<top level>,KEY_TAB       = 9
+Speak Track Params - TrackTake Navigator.lua,1767,<top level>,KEY_DELETE    = 6579564
+Speak Track Params - TrackTake Navigator.lua,1768,<top level>,KEY_BACKSLASH = 92
+Speak Track Params - TrackTake Navigator.lua,1769,<top level>,KEY_SPACE     = 32
+Speak Track Params - TrackTake Navigator.lua,1770,<top level>,KEY_A         = 65
+Speak Track Params - TrackTake Navigator.lua,1771,<top level>,KEY_C         = 67
+Speak Track Params - TrackTake Navigator.lua,1772,<top level>,KEY_CTRL_ALT_A  = 257
+Speak Track Params - TrackTake Navigator.lua,1773,<top level>,KEY_CTRL_ALT_C  = 259
+Speak Track Params - TrackTake Navigator.lua,1774,<top level>,KEY_ALT_I       = 329
+Speak Track Params - TrackTake Navigator.lua,1776,<top level>,KEY_CTRL_A = 1
+Speak Track Params - TrackTake Navigator.lua,1777,<top level>,KEY_CTRL_B = 2
+Speak Track Params - TrackTake Navigator.lua,1778,<top level>,KEY_CTRL_C = 3
+Speak Track Params - TrackTake Navigator.lua,1779,<top level>,KEY_CTRL_D = 4
+Speak Track Params - TrackTake Navigator.lua,1780,<top level>,KEY_CTRL_E = 5
+Speak Track Params - TrackTake Navigator.lua,1781,<top level>,KEY_CTRL_F = 6
+Speak Track Params - TrackTake Navigator.lua,1782,<top level>,KEY_CTRL_H = 8
+Speak Track Params - TrackTake Navigator.lua,1783,<top level>,KEY_CTRL_I = 9
+Speak Track Params - TrackTake Navigator.lua,1784,<top level>,KEY_CTRL_J = 10
+Speak Track Params - TrackTake Navigator.lua,1785,<top level>,KEY_CTRL_O = 15
+Speak Track Params - TrackTake Navigator.lua,1786,<top level>,KEY_CTRL_M = 13
+Speak Track Params - TrackTake Navigator.lua,1787,<top level>,KEY_CTRL_R = 18
+Speak Track Params - TrackTake Navigator.lua,1788,<top level>,KEY_CTRL_S = 19
+Speak Track Params - TrackTake Navigator.lua,1789,<top level>,KEY_CTRL_V = 22
+Speak Track Params - TrackTake Navigator.lua,1790,<top level>,KEY_CTRL_X = 24
+Speak Track Params - TrackTake Navigator.lua,1791,<top level>,KEY_CTRL_P = 16
+Speak Track Params - TrackTake Navigator.lua,1792,<top level>,KEY_CTRL_Q = 17
+Speak Track Params - TrackTake Navigator.lua,1793,<top level>,KEY_CTRL_Z = 26
+Speak Track Params - TrackTake Navigator.lua,1795,<top level>,KEY_F1  = 26161
+Speak Track Params - TrackTake Navigator.lua,1796,<top level>,KEY_F2  = 26162
+Speak Track Params - TrackTake Navigator.lua,1797,<top level>,KEY_F3  = 26163
+Speak Track Params - TrackTake Navigator.lua,1798,<top level>,KEY_F4  = 26164
+Speak Track Params - TrackTake Navigator.lua,1799,<top level>,KEY_F5  = 26165
+Speak Track Params - TrackTake Navigator.lua,1800,<top level>,KEY_F6  = 26166
+Speak Track Params - TrackTake Navigator.lua,1801,<top level>,KEY_F7  = 26167
+Speak Track Params - TrackTake Navigator.lua,1802,<top level>,KEY_F8  = 26168
+Speak Track Params - TrackTake Navigator.lua,1803,<top level>,KEY_F9  = 26169
+Speak Track Params - TrackTake Navigator.lua,1804,<top level>,KEY_F10 = 6697264
+Speak Track Params - TrackTake Navigator.lua,1805,<top level>,KEY_F11 = 6697265
+Speak Track Params - TrackTake Navigator.lua,1806,<top level>,KEY_F12 = 6697266
+Speak Track Params - TrackTake Navigator.lua,1827,<top level>,"-- Alcuni tasti, soprattutto Shift+Spazio e Ctrl+numero,"
+Speak Track Params - TrackTake Navigator.lua,1863,<top level>,VK_TAB   = 0x09
+Speak Track Params - TrackTake Navigator.lua,1864,<top level>,VK_SPACE = 0x20
+Speak Track Params - TrackTake Navigator.lua,1865,<top level>,VK_I     = 0x49
+Speak Track Params - TrackTake Navigator.lua,1868,<top level>,-- Ctrl+M reale distinto da Enter / Ctrl+Enter.
+Speak Track Params - TrackTake Navigator.lua,1870,<top level>,"-- In gfx.getchar, Ctrl+M e Enter possono arrivare entrambi"
+Speak Track Params - TrackTake Navigator.lua,1878,<top level>,VK_PHYSICAL_ENTER = 0x0D
+Speak Track Params - TrackTake Navigator.lua,1879,<top level>,VK_PHYSICAL_M     = 0x4D
+Speak Track Params - TrackTake Navigator.lua,1882,js_physical_m_down,    return js_vkey_down_now(VK_PHYSICAL_M)
+Speak Track Params - TrackTake Navigator.lua,1886,js_physical_enter_down,    return js_vkey_down_now(VK_PHYSICAL_ENTER)
+Speak Track Params - TrackTake Navigator.lua,1890,real_ctrl_m_key,    return char == KEY_CTRL_M and
+Speak Track Params - TrackTake Navigator.lua,1899,ctrl_a_key,    return char == KEY_CTRL_A or char == KEY_A
+Speak Track Params - TrackTake Navigator.lua,1903,ctrl_alt_a_key,    return char == KEY_CTRL_ALT_A
+Speak Track Params - TrackTake Navigator.lua,1912,automation_clear_shortcut_key,    -- Ctrl+Shift+Alt+A.
+Speak Track Params - TrackTake Navigator.lua,1913,automation_clear_shortcut_key,"    -- Accettiamo sia Ctrl+A con i modifier reali, sia il codice"
+Speak Track Params - TrackTake Navigator.lua,1915,automation_clear_shortcut_key,"    -- Ctrl+Alt+A, perché quella combinazione resta libera."
+Speak Track Params - TrackTake Navigator.lua,1962,<top level>,current_section_key = KEY_F1
+Speak Track Params - TrackTake Navigator.lua,1982,<top level>,-- - sono attive solo in F1 Tracks e F4 FX parameters griglia.
+Speak Track Params - TrackTake Navigator.lua,1984,<top level>,-- Ctrl+F1 ... Ctrl+F12:
+Speak Track Params - TrackTake Navigator.lua,1987,<top level>,-- Ctrl+Shift+F1 ... Ctrl+Shift+F12:
+Speak Track Params - TrackTake Navigator.lua,2129,<top level>,-- - si attiva / disattiva con Ctrl+M;
+Speak Track Params - TrackTake Navigator.lua,2453,cursor_memory_prepare_section_before_build,        -- In F2 ogni send è un blocco verticale da 12 voci.
+Speak Track Params - TrackTake Navigator.lua,2465,cursor_memory_prepare_section_before_build,        -- Stessa logica di F2: resta sullo stesso campo
+Speak Track Params - TrackTake Navigator.lua,2549,cursor_memory_restore_send_receive,    -- F2/F3 non devono ripartire sempre dall'header.
+Speak Track Params - TrackTake Navigator.lua,2655,cursor_memory_section_id_to_key,        return KEY_F2
+Speak Track Params - TrackTake Navigator.lua,2659,cursor_memory_section_id_to_key,        return KEY_F3
+Speak Track Params - TrackTake Navigator.lua,2663,cursor_memory_section_id_to_key,        return KEY_F4
+Speak Track Params - TrackTake Navigator.lua,2667,cursor_memory_section_id_to_key,        return KEY_F5
+Speak Track Params - TrackTake Navigator.lua,2671,cursor_memory_section_id_to_key,        return KEY_F6
+Speak Track Params - TrackTake Navigator.lua,2675,cursor_memory_section_id_to_key,        return KEY_F7
+Speak Track Params - TrackTake Navigator.lua,2679,cursor_memory_section_id_to_key,        return KEY_F8
+Speak Track Params - TrackTake Navigator.lua,2682,cursor_memory_section_id_to_key,    return KEY_F1
+Speak Track Params - TrackTake Navigator.lua,2689,<top level>,-- Ctrl+Shift+M:
+Speak Track Params - TrackTake Navigator.lua,2885,<top level>,-- 1.6.1 - SELEZIONE TRACCE F1
+Speak Track Params - TrackTake Navigator.lua,2894,<top level>,-- Ciclo Ctrl+Enter sulle tracce che chiudono una o più folder.
+Speak Track Params - TrackTake Navigator.lua,3310,track_shift_select_move,    -- Shift+Freccia in F1 deve sempre creare / estendere una
+Speak Track Params - TrackTake Navigator.lua,3501,<top level>,fx_param_list_return_section_key = KEY_F4
+Speak Track Params - TrackTake Navigator.lua,3506,<top level>,-- 1.6.3A - EDIT ALIAS PARAMETRO FX F4
+Speak Track Params - TrackTake Navigator.lua,3508,<top level>,-- Ctrl+Enter su un parametro FX visibile in F4 apre un campo
+Speak Track Params - TrackTake Navigator.lua,3524,<top level>,-- 1.6.3B - STATO RUNTIME AUTOMATION F4
+Speak Track Params - TrackTake Navigator.lua,3528,<top level>,-- Ctrl+A mantiene una piccola memoria runtime della visibilità
+Speak Track Params - TrackTake Navigator.lua,3535,<top level>,-- 1.6.3B2 - STATO RUNTIME AUTOMATION TRACCE F1
+Speak Track Params - TrackTake Navigator.lua,3537,<top level>,-- Ctrl+Shift+A in F1 usa gli envelope nativi di REAPER per
+Speak Track Params - TrackTake Navigator.lua,3547,<top level>,"-- Come per F4, la visibilità parlata di Auto viene mantenuta"
+Speak Track Params - TrackTake Navigator.lua,3548,<top level>,-- in runtime. Però per F2/F3 il vero envelope viene creato o
+Speak Track Params - TrackTake Navigator.lua,3656,<top level>,    [KEY_F1] = {
+Speak Track Params - TrackTake Navigator.lua,3663,<top level>,    [KEY_F2] = {
+Speak Track Params - TrackTake Navigator.lua,3670,<top level>,    [KEY_F3] = {
+Speak Track Params - TrackTake Navigator.lua,3677,<top level>,    [KEY_F4] = {
+Speak Track Params - TrackTake Navigator.lua,3684,<top level>,    [KEY_F6] = {
+Speak Track Params - TrackTake Navigator.lua,3691,<top level>,    [KEY_F7] = {
+Speak Track Params - TrackTake Navigator.lua,3698,<top level>,    [KEY_F8] = {
+Speak Track Params - TrackTake Navigator.lua,3715,runtime_safe_blocks_function_key,    if char == KEY_F1 or
+Speak Track Params - TrackTake Navigator.lua,3716,runtime_safe_blocks_function_key,       char == KEY_F2 or
+Speak Track Params - TrackTake Navigator.lua,3717,runtime_safe_blocks_function_key,       char == KEY_F3 or
+Speak Track Params - TrackTake Navigator.lua,3718,runtime_safe_blocks_function_key,       char == KEY_F4 or
+Speak Track Params - TrackTake Navigator.lua,3719,runtime_safe_blocks_function_key,       char == KEY_F5 or
+Speak Track Params - TrackTake Navigator.lua,3720,runtime_safe_blocks_function_key,       char == KEY_F6 or
+Speak Track Params - TrackTake Navigator.lua,3721,runtime_safe_blocks_function_key,       char == KEY_F7 or
+Speak Track Params - TrackTake Navigator.lua,3722,runtime_safe_blocks_function_key,       char == KEY_F8 or
+Speak Track Params - TrackTake Navigator.lua,3723,runtime_safe_blocks_function_key,       char == KEY_F9 or
+Speak Track Params - TrackTake Navigator.lua,3724,runtime_safe_blocks_function_key,       char == KEY_F10 or
+Speak Track Params - TrackTake Navigator.lua,3725,runtime_safe_blocks_function_key,       char == KEY_F11 or
+Speak Track Params - TrackTake Navigator.lua,3726,runtime_safe_blocks_function_key,       char == KEY_F12 then
+Speak Track Params - TrackTake Navigator.lua,4397,join_track_context_and_entry_label,"    -- Quando segue un parametro F1, non aggiungiamo un altro"
+Speak Track Params - TrackTake Navigator.lua,5873,build_window_title,"    -- Modalità rapida, Ctrl+Shift+M:"
+Speak Track Params - TrackTake Navigator.lua,5916,refresh_window_title_for_startup,"    -- a funzionare come prima, rispettando Ctrl+Shift+M."
+Speak Track Params - TrackTake Navigator.lua,6140,<anonymous>,"            return switch_section_by_key(KEY_F2, true)"
+Speak Track Params - TrackTake Navigator.lua,6159,<anonymous>,"            return switch_section_by_key(KEY_F3, true)"
+Speak Track Params - TrackTake Navigator.lua,6178,<anonymous>,"            return switch_section_by_key(KEY_F4, true)"
+Speak Track Params - TrackTake Navigator.lua,6186,<top level>,-- 1.14 - BUILD F1 TRACKS GRID
+Speak Track Params - TrackTake Navigator.lua,6240,build_tracks_grid,    -- in F1 il cursore dello script deve restare invisibile.
+Speak Track Params - TrackTake Navigator.lua,6289,send_receive_opposite_section_for_entry,"        return SECTION_RECEIVES, KEY_F3"
+Speak Track Params - TrackTake Navigator.lua,6293,send_receive_opposite_section_for_entry,"        return SECTION_SENDS, KEY_F2"
+Speak Track Params - TrackTake Navigator.lua,6780,<top level>,-- 2.2.2 - DELETE SAFE PER F2 / F3
+Speak Track Params - TrackTake Navigator.lua,6782,<top level>,-- F2:
+Speak Track Params - TrackTake Navigator.lua,6787,<top level>,-- F3:
+Speak Track Params - TrackTake Navigator.lua,8356,apply_common_fields,"        -- L'editing resta su Alt+frecce, Ctrl+E, Ctrl+V."
+Speak Track Params - TrackTake Navigator.lua,9753,<top level>,-- F4 mostra:
+Speak Track Params - TrackTake Navigator.lua,10513,<top level>,-- 3.5 - ENTRIES F4
+Speak Track Params - TrackTake Navigator.lua,10516,<top level>,-- F4 grid layout:
+Speak Track Params - TrackTake Navigator.lua,10723,<top level>,-- 3.5A - F5 AUDIO PIN CONNECTOR
+Speak Track Params - TrackTake Navigator.lua,10725,<top level>,"-- F5 si apre solo da F4, su un FX header o su un parametro"
+Speak Track Params - TrackTake Navigator.lua,10737,<top level>,-- Ctrl+Home/Ctrl+End: primo/ultimo elemento della griglia.
+Speak Track Params - TrackTake Navigator.lua,11120,enter_pin_audio_from_f4,    current_section_key = KEY_F5
+Speak Track Params - TrackTake Navigator.lua,11146,exit_pin_audio_to_f4,    current_section_key = KEY_F4
+Speak Track Params - TrackTake Navigator.lua,11409,pin_audio_jump_selected_in_row,    -- Ctrl+Left / Ctrl+Right:
+Speak Track Params - TrackTake Navigator.lua,11414,pin_audio_jump_selected_in_row,"    -- colonna: per F5 audio, normalmente lo stesso canale."
+Speak Track Params - TrackTake Navigator.lua,11459,pin_audio_jump_selected_in_column,    -- Ctrl+Up / Ctrl+Down:
+Speak Track Params - TrackTake Navigator.lua,11506,pin_audio_jump_selected_linear,    -- Ctrl+Alt+frecce in F5:
+Speak Track Params - TrackTake Navigator.lua,11550,handle_pin_audio_key,    if char == KEY_ESC then
+Speak Track Params - TrackTake Navigator.lua,11555,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_F4 then
+Speak Track Params - TrackTake Navigator.lua,11565,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_F5 then
+Speak Track Params - TrackTake Navigator.lua,11573,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_F6 then
+Speak Track Params - TrackTake Navigator.lua,11579,handle_pin_audio_key,        current_section_key = KEY_F6
+Speak Track Params - TrackTake Navigator.lua,11599,handle_pin_audio_key,    -- F5 pin audio:
+Speak Track Params - TrackTake Navigator.lua,11600,handle_pin_audio_key,    -- Ctrl+S non serve qui. La cella contiene già il rapporto
+Speak Track Params - TrackTake Navigator.lua,11604,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,11608,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,11612,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,11616,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,11620,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_TAB then
+Speak Track Params - TrackTake Navigator.lua,11628,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_BACKSLASH then
+Speak Track Params - TrackTake Navigator.lua,11634,handle_pin_audio_key,    -- Ctrl+frecce in F5:
+Speak Track Params - TrackTake Navigator.lua,11641,handle_pin_audio_key,    -- Ctrl+Alt+frecce in F5:
+Speak Track Params - TrackTake Navigator.lua,11646,handle_pin_audio_key,    if is_ctrl and not is_shift and is_alt and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,11650,handle_pin_audio_key,    if is_ctrl and not is_shift and is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,11654,handle_pin_audio_key,    if is_ctrl and not is_shift and is_alt and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,11658,handle_pin_audio_key,    if is_ctrl and not is_shift and is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,11662,handle_pin_audio_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,11666,handle_pin_audio_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,11670,handle_pin_audio_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,11674,handle_pin_audio_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,11678,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,11683,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,11688,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,11693,handle_pin_audio_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,11698,handle_pin_audio_key,    if char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,11707,handle_pin_audio_key,    if char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,11720,<top level>,-- 3.5B - F6 MIDI CONNECTOR / FX MIDI STATUS
+Speak Track Params - TrackTake Navigator.lua,11722,<top level>,-- F6 resta legato al plugin/synth selezionato da F4.
+Speak Track Params - TrackTake Navigator.lua,11723,<top level>,"-- Non contiene bus o merge: quelli stanno in F2/F3, cioe'"
+Speak Track Params - TrackTake Navigator.lua,11871,pin_midi_control_edge,    -- Bordi controllo F6:
+Speak Track Params - TrackTake Navigator.lua,11890,<top level>,-- 3.5C - F6 TRACK MIDI PAGE
+Speak Track Params - TrackTake Navigator.lua,11892,<top level>,-- F6 ora e' una pagina reale della traccia corrente.
+Speak Track Params - TrackTake Navigator.lua,11893,<top level>,-- Non dipende piu' da F4 o dal singolo FX.
+Speak Track Params - TrackTake Navigator.lua,11894,<top level>,-- F5 resta il pin connector audio del plugin selezionato.
+Speak Track Params - TrackTake Navigator.lua,12370,enter_pin_midi_from_f4,"    return switch_section_by_key(KEY_F6, true)"
+Speak Track Params - TrackTake Navigator.lua,12375,exit_pin_midi_to_f4,"    return switch_section_by_key(KEY_F4, speak_it ~= false)"
+Speak Track Params - TrackTake Navigator.lua,12400,pin_midi_enter_routing_page,"        return switch_section_by_key(KEY_F2, true)"
+Speak Track Params - TrackTake Navigator.lua,12407,pin_midi_enter_routing_page,"        return switch_section_by_key(KEY_F3, true)"
+Speak Track Params - TrackTake Navigator.lua,12419,handle_pin_midi_key,    if char == KEY_ESC then
+Speak Track Params - TrackTake Navigator.lua,12429,handle_pin_midi_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_F5 then
+Speak Track Params - TrackTake Navigator.lua,12434,handle_pin_midi_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_F6 then
+Speak Track Params - TrackTake Navigator.lua,12442,handle_pin_midi_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_TAB then
+Speak Track Params - TrackTake Navigator.lua,12450,handle_pin_midi_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_BACKSLASH then
+Speak Track Params - TrackTake Navigator.lua,12455,handle_pin_midi_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,12463,handle_pin_midi_key,    if not is_ctrl and not is_shift and is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,12467,handle_pin_midi_key,    if not is_ctrl and not is_shift and is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,12471,handle_pin_midi_key,    if not is_ctrl and not is_shift and is_alt and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,12475,handle_pin_midi_key,    if not is_ctrl and not is_shift and is_alt and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,12481,handle_pin_midi_key,    -- Alt+Home = ultimo/massimo valore.
+Speak Track Params - TrackTake Navigator.lua,12482,handle_pin_midi_key,    -- Alt+End  = primo/minimo valore.
+Speak Track Params - TrackTake Navigator.lua,12484,handle_pin_midi_key,    if not is_ctrl and not is_shift and is_alt and char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,12488,handle_pin_midi_key,    if not is_ctrl and not is_shift and is_alt and char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,12492,handle_pin_midi_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,12497,handle_pin_midi_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,12502,handle_pin_midi_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,12506,handle_pin_midi_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,12510,handle_pin_midi_key,    if char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,12520,handle_pin_midi_key,    if char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,12535,<top level>,-- 3.5D - F7 HARDWARE OUTPUTS
+Speak Track Params - TrackTake Navigator.lua,12537,<top level>,-- F7 gestisce gli hardware audio outputs della traccia corrente.
+Speak Track Params - TrackTake Navigator.lua,13031,<top level>,-- 3.5E - F8 REAROUTE BRIDGE
+Speak Track Params - TrackTake Navigator.lua,13033,<top level>,-- F8 gestisce il ponte audio virtuale ReaRoute della traccia:
+Speak Track Params - TrackTake Navigator.lua,13475,rearoute_add_input_block_to_grid,"    -- successiva, così F8 resta leggibile come ponte input/output."
+Speak Track Params - TrackTake Navigator.lua,14040,<top level>,-- 3.6 - F4 HELPERS DI POSIZIONE FX
+Speak Track Params - TrackTake Navigator.lua,14042,<top level>,-- In F4:
+Speak Track Params - TrackTake Navigator.lua,14130,f4_find_previous_fx_header_pos,    -- F4 Home:
+Speak Track Params - TrackTake Navigator.lua,14174,f4_find_next_fx_header_pos,    -- F4 End:
+Speak Track Params - TrackTake Navigator.lua,14386,<top level>,"    [KEY_F1]  = 1,"
+Speak Track Params - TrackTake Navigator.lua,14387,<top level>,"    [KEY_F2]  = 2,"
+Speak Track Params - TrackTake Navigator.lua,14388,<top level>,"    [KEY_F3]  = 3,"
+Speak Track Params - TrackTake Navigator.lua,14389,<top level>,"    [KEY_F4]  = 4,"
+Speak Track Params - TrackTake Navigator.lua,14390,<top level>,"    [KEY_F5]  = 5,"
+Speak Track Params - TrackTake Navigator.lua,14391,<top level>,"    [KEY_F6]  = 6,"
+Speak Track Params - TrackTake Navigator.lua,14392,<top level>,"    [KEY_F7]  = 7,"
+Speak Track Params - TrackTake Navigator.lua,14393,<top level>,"    [KEY_F8]  = 8,"
+Speak Track Params - TrackTake Navigator.lua,14394,<top level>,"    [KEY_F9]  = 9,"
+Speak Track Params - TrackTake Navigator.lua,14395,<top level>,"    [KEY_F10] = 10,"
+Speak Track Params - TrackTake Navigator.lua,14396,<top level>,"    [KEY_F11] = 11,"
+Speak Track Params - TrackTake Navigator.lua,14397,<top level>,    [KEY_F12] = 12
+Speak Track Params - TrackTake Navigator.lua,14497,track_memory_save_slot,    -- Alt+Shift+F-slot salva SOLO se lo slot è vuoto.
+Speak Track Params - TrackTake Navigator.lua,14566,track_memory_go_to_f1,    current_section_key = KEY_F1
+Speak Track Params - TrackTake Navigator.lua,14619,track_memory_go_to_f4,    current_section_key = KEY_F4
+Speak Track Params - TrackTake Navigator.lua,14712,track_memory_handle_key,    if char == KEY_DELETE and
+Speak Track Params - TrackTake Navigator.lua,14725,<top level>,-- F1:
+Speak Track Params - TrackTake Navigator.lua,14734,<top level>,-- - Ctrl+Home = prima traccia mantenendo lo stesso parametro.
+Speak Track Params - TrackTake Navigator.lua,14735,<top level>,-- - Ctrl+End  = ultima traccia mantenendo lo stesso parametro.
+Speak Track Params - TrackTake Navigator.lua,14737,<top level>,-- F2 / F3:
+Speak Track Params - TrackTake Navigator.lua,14744,<top level>,-- - Ctrl+Home = prima colonna mantenendo la stessa riga.
+Speak Track Params - TrackTake Navigator.lua,14745,<top level>,-- - Ctrl+End  = ultima colonna mantenendo la stessa riga.
+Speak Track Params - TrackTake Navigator.lua,14747,<top level>,-- F4:
+Speak Track Params - TrackTake Navigator.lua,14854,<top level>,-- 3.8.1 - NAVIGAZIONE F1: RIGHE = TRACCE VISIBILI
+Speak Track Params - TrackTake Navigator.lua,15009,<top level>,-- 3.8.2 - NAVIGAZIONE F2 / F3: COLONNE = BLOCCHI
+Speak Track Params - TrackTake Navigator.lua,15322,<top level>,-- 3.8.3 - NAVIGAZIONE F4: LISTA VERTICALE FX
+Speak Track Params - TrackTake Navigator.lua,15413,grid_fx_move_page,    -- F4 segue la stessa logica di F1/F2/F3:
+Speak Track Params - TrackTake Navigator.lua,15611,<top level>,-- F1:
+Speak Track Params - TrackTake Navigator.lua,15615,<top level>,-- F2 / F3:
+Speak Track Params - TrackTake Navigator.lua,15618,<top level>,-- F4:
+Speak Track Params - TrackTake Navigator.lua,15647,grid_jump_by_initial_in_tracks_row,    -- F1:
+Speak Track Params - TrackTake Navigator.lua,15787,<top level>,"-- EDIT NUMERICO, FILTRO CTRL+F, VERSIONE, TRACK EDIT,"
+Speak Track Params - TrackTake Navigator.lua,15795,<top level>,fx_param_list_return_section_key = KEY_F4
+Speak Track Params - TrackTake Navigator.lua,15812,<top level>,"--   lista mista di tutti i parametri resi visibili in F4,"
+Speak Track Params - TrackTake Navigator.lua,15819,<top level>,-- 4.1 - SPEECH OVERRIDE F1 / F2 / F3 / F4
+Speak Track Params - TrackTake Navigator.lua,15836,get_entry_spoken_label_for_move,        -- In F1:
+Speak Track Params - TrackTake Navigator.lua,15876,get_entry_spoken_label_for_move,        -- F2 / F3:
+Speak Track Params - TrackTake Navigator.lua,16102,<top level>,-- 4.1.2 - POSIZIONE LOGICA F4
+Speak Track Params - TrackTake Navigator.lua,16104,<top level>,-- In F4 la griglia contiene:
+Speak Track Params - TrackTake Navigator.lua,16327,<top level>,-- Ctrl+Shift+C:
+Speak Track Params - TrackTake Navigator.lua,16807,floating_cc_apply_value,        -- Ctrl+Shift+M / titoli corti:
+Speak Track Params - TrackTake Navigator.lua,16885,<top level>,-- Ctrl+Alt+C sul parametro supportato:
+Speak Track Params - TrackTake Navigator.lua,16888,<top level>,-- Shift+C:
+Speak Track Params - TrackTake Navigator.lua,17500,<top level>,-- 4.2.0A - F4 FX PARAM COMBO INTELLIGENTI
+Speak Track Params - TrackTake Navigator.lua,17502,<top level>,-- Solo F4 FX parameters:
+Speak Track Params - TrackTake Navigator.lua,17703,<top level>,-- F4 JSFX integer/raw combo nudge
+Speak Track Params - TrackTake Navigator.lua,17707,<top level>,"-- a tornare allo stato precedente. Qui, solo in F4 e solo su JSFX"
+Speak Track Params - TrackTake Navigator.lua,17831,<top level>,-- F4 text combo map cache
+Speak Track Params - TrackTake Navigator.lua,17833,<top level>,-- Track Param F4 has to be faster than the generic scan.
+Speak Track Params - TrackTake Navigator.lua,18763,<top level>,-- Solo F1:
+Speak Track Params - TrackTake Navigator.lua,18764,<top level>,-- Ctrl+Enter apre/chiude la folder della traccia corrente.
+Speak Track Params - TrackTake Navigator.lua,18795,current_entry_toggle_folder,        -- Ctrl+Enter cicla tra le folder chiuse da questa
+Speak Track Params - TrackTake Navigator.lua,19098,enter_fx_param_list_from_header,    current_section_key = KEY_F4
+Speak Track Params - TrackTake Navigator.lua,19128,exit_fx_param_list,    current_section_key = fx_param_list_return_section_key or KEY_F4
+Speak Track Params - TrackTake Navigator.lua,19310,enter_fx_visible_params_list_from_f4,    current_section_key = KEY_F4
+Speak Track Params - TrackTake Navigator.lua,19518,fx_param_list_confirm,"    -- Track Controls, poi torna a F4 sul parametro confermato."
+Speak Track Params - TrackTake Navigator.lua,19520,fx_param_list_confirm,    -- Enter nella lista parametri visibili F6:
+Speak Track Params - TrackTake Navigator.lua,19524,fx_param_list_confirm,    -- Ctrl+Enter continua a modificare il parametro senza uscire.
+Speak Track Params - TrackTake Navigator.lua,19736,handle_fx_param_list_key,    if char == KEY_ESC then
+Speak Track Params - TrackTake Navigator.lua,19741,handle_fx_param_list_key,    if is_ctrl and is_shift and is_alt and char == KEY_F1 then
+Speak Track Params - TrackTake Navigator.lua,19746,handle_fx_param_list_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,19751,handle_fx_param_list_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,19756,handle_fx_param_list_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_F6 then
+Speak Track Params - TrackTake Navigator.lua,19758,handle_fx_param_list_key,"        -- Se siamo entrati in questa lista con F6 da F4,"
+Speak Track Params - TrackTake Navigator.lua,19759,handle_fx_param_list_key,        -- F6 deve tornare direttamente alla griglia F4.
+Speak Track Params - TrackTake Navigator.lua,19761,handle_fx_param_list_key,"        -- FX header, F6 mantiene invece il vecchio toggle"
+Speak Track Params - TrackTake Navigator.lua,19775,handle_fx_param_list_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_F then
+Speak Track Params - TrackTake Navigator.lua,19780,handle_fx_param_list_key,    if char == KEY_TAB then
+Speak Track Params - TrackTake Navigator.lua,19785,handle_fx_param_list_key,    if char == KEY_BACKSLASH then
+Speak Track Params - TrackTake Navigator.lua,19790,handle_fx_param_list_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,19795,handle_fx_param_list_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,19800,handle_fx_param_list_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,19805,handle_fx_param_list_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,19810,handle_fx_param_list_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,19815,handle_fx_param_list_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,19820,handle_fx_param_list_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,19825,handle_fx_param_list_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,19831,handle_fx_param_list_key,        if char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,19836,handle_fx_param_list_key,        if char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,19841,handle_fx_param_list_key,        if char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,19846,handle_fx_param_list_key,        if char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,19851,handle_fx_param_list_key,        if char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,19856,handle_fx_param_list_key,        if char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,20007,current_entry_enter,    -- F4:
+Speak Track Params - TrackTake Navigator.lua,20018,current_entry_enter,    -- F1:
+Speak Track Params - TrackTake Navigator.lua,20021,current_entry_enter,"    --   Value mode, come Ctrl+Shift+V in F1."
+Speak Track Params - TrackTake Navigator.lua,20023,current_entry_enter,    -- - Le altre colonne F1 continuano con la loro logica enter
+Speak Track Params - TrackTake Navigator.lua,20043,current_entry_enter,    -- F2 / F3:
+Speak Track Params - TrackTake Navigator.lua,20050,current_entry_enter,"    -- Alt+frecce, Ctrl+E, Ctrl+V / Value mode."
+Speak Track Params - TrackTake Navigator.lua,20104,current_entry_enter,    -- F2 / F3:
+Speak Track Params - TrackTake Navigator.lua,20209,<top level>,-- Ctrl+Alt+Shift+F1:
+Speak Track Params - TrackTake Navigator.lua,20341,init_script,        current_section_key = KEY_F1
+Speak Track Params - TrackTake Navigator.lua,20640,handle_value_mode_key,    if char == KEY_ESC then
+Speak Track Params - TrackTake Navigator.lua,20645,handle_value_mode_key,    if is_ctrl and is_shift and is_alt and char == KEY_F1 then
+Speak Track Params - TrackTake Navigator.lua,20654,handle_value_mode_key,"-- - in F1, Ctrl+V è riservato a Paste tracks with routing,"
+Speak Track Params - TrackTake Navigator.lua,20655,handle_value_mode_key,--   quindi Value mode si chiude con Ctrl+Shift+V.
+Speak Track Params - TrackTake Navigator.lua,20656,handle_value_mode_key,"-- - fuori da F1, Ctrl+V resta il comando normale per uscire"
+Speak Track Params - TrackTake Navigator.lua,20660,handle_value_mode_key,if is_ctrl and not is_alt and char == KEY_CTRL_V then
+Speak Track Params - TrackTake Navigator.lua,20676,handle_value_mode_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_E then
+Speak Track Params - TrackTake Navigator.lua,20684,handle_value_mode_key,    -- Alt+Left  = step più fine.
+Speak Track Params - TrackTake Navigator.lua,20685,handle_value_mode_key,    -- Alt+Right = step più grande.
+Speak Track Params - TrackTake Navigator.lua,20687,handle_value_mode_key,    -- F11 / F12 non sono più usati qui:
+Speak Track Params - TrackTake Navigator.lua,20691,handle_value_mode_key,    if is_alt and not is_ctrl and not is_shift and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,20696,handle_value_mode_key,    if is_alt and not is_ctrl and not is_shift and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,20701,handle_value_mode_key,    if char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,20706,handle_value_mode_key,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak Track Params - TrackTake Navigator.lua,20711,handle_value_mode_key,    if char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,20716,handle_value_mode_key,    if char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,20721,handle_value_mode_key,    if char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,20726,handle_value_mode_key,    if char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,20731,handle_value_mode_key,    if char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,20736,handle_value_mode_key,    if char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,20876,<top level>,-- 4.10A - EDIT ALIAS PARAMETRO FX F4
+Speak Track Params - TrackTake Navigator.lua,21037,handle_fx_alias_edit_key,    if char == KEY_ESC then
+Speak Track Params - TrackTake Navigator.lua,21041,handle_fx_alias_edit_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,21045,handle_fx_alias_edit_key,    if char == KEY_BACKSPACE or char == KEY_BACKSPACE_2 then
+Speak Track Params - TrackTake Navigator.lua,21063,handle_fx_alias_edit_key,    if char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,21086,handle_fx_alias_edit_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,21110,handle_fx_alias_edit_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,21134,handle_fx_alias_edit_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,21158,handle_fx_alias_edit_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,21182,handle_fx_alias_edit_key,    if char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,21197,handle_fx_alias_edit_key,    if char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,21212,handle_fx_alias_edit_key,    if char == KEY_TAB then
+Speak Track Params - TrackTake Navigator.lua,21236,<top level>,-- 4.W - TRACK AUTOMATION F1
+Speak Track Params - TrackTake Navigator.lua,21238,<top level>,-- Ctrl+Shift+A in F1:
+Speak Track Params - TrackTake Navigator.lua,21245,<top level>,"-- Gli altri parametri F1 rispondono ""No automation""."
+Speak Track Params - TrackTake Navigator.lua,21868,<top level>,-- Ctrl+Shift+Alt+A globale:
+Speak Track Params - TrackTake Navigator.lua,22662,handle_numeric_edit_key,    if char == KEY_ESC then
+Speak Track Params - TrackTake Navigator.lua,22667,handle_numeric_edit_key,    if is_ctrl and is_shift and is_alt and char == KEY_F1 then
+Speak Track Params - TrackTake Navigator.lua,22672,handle_numeric_edit_key,    if char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,22677,handle_numeric_edit_key,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak Track Params - TrackTake Navigator.lua,22682,handle_numeric_edit_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_E then
+Speak Track Params - TrackTake Navigator.lua,22687,handle_numeric_edit_key,    if char == KEY_BACKSPACE or char == KEY_BACKSPACE_2 then
+Speak Track Params - TrackTake Navigator.lua,22693,handle_numeric_edit_key,    if char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,22713,handle_numeric_edit_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,22733,handle_numeric_edit_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,22753,handle_numeric_edit_key,    if char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,22767,handle_numeric_edit_key,    if char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,22801,<top level>,-- 4.13 - FILTRO CTRL+F
+Speak Track Params - TrackTake Navigator.lua,23098,handle_filter_edit_key,    if char == KEY_ESC then
+Speak Track Params - TrackTake Navigator.lua,23103,handle_filter_edit_key,    if is_ctrl and is_shift and is_alt and char == KEY_F1 then
+Speak Track Params - TrackTake Navigator.lua,23108,handle_filter_edit_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_F then
+Speak Track Params - TrackTake Navigator.lua,23113,handle_filter_edit_key,    if char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,23118,handle_filter_edit_key,    if char == KEY_TAB or char == KEY_BACKSLASH then
+Speak Track Params - TrackTake Navigator.lua,23123,handle_filter_edit_key,    if char == KEY_BACKSPACE or char == KEY_BACKSPACE_2 then
+Speak Track Params - TrackTake Navigator.lua,23138,handle_filter_edit_key,    if char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,23164,handle_filter_edit_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,23182,handle_filter_edit_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,23200,handle_filter_edit_key,    if char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,23212,handle_filter_edit_key,    if char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,23240,<top level>,-- Solo F1.
+Speak Track Params - TrackTake Navigator.lua,23927,<top level>,-- Ctrl+Delete:
+Speak Track Params - TrackTake Navigator.lua,23970,<top level>,-- 4.15.1 - NAVIGAZIONE FOLDER F1
+Speak Track Params - TrackTake Navigator.lua,23972,<top level>,-- Ctrl+Page Up   = folder precedente
+Speak Track Params - TrackTake Navigator.lua,23973,<top level>,-- Ctrl+Page Down = folder successiva
+Speak Track Params - TrackTake Navigator.lua,24065,handle_grid_key,    if char == KEY_ESC then
+Speak Track Params - TrackTake Navigator.lua,24081,handle_grid_key,    if is_ctrl and is_shift and is_alt and char == KEY_F1 then
+Speak Track Params - TrackTake Navigator.lua,24087,handle_grid_key,    -- F2 / F3:
+Speak Track Params - TrackTake Navigator.lua,24088,handle_grid_key,    -- Ctrl+Shift+A = show/hide automation envelope for useful
+Speak Track Params - TrackTake Navigator.lua,24095,handle_grid_key,        if is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,24100,handle_grid_key,        if is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24112,handle_grid_key,    -- F4:
+Speak Track Params - TrackTake Navigator.lua,24113,handle_grid_key,    -- Ctrl+Shift+Freccia su/giù sposta fisicamente l'FX
+Speak Track Params - TrackTake Navigator.lua,24115,handle_grid_key,"    -- Solo nella griglia F4 normale, non nella lista parametri."
+Speak Track Params - TrackTake Navigator.lua,24119,handle_grid_key,        if is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,24124,handle_grid_key,        if is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24129,handle_grid_key,        if is_shift and not is_ctrl and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,24134,handle_grid_key,        if is_shift and not is_ctrl and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24139,handle_grid_key,        if is_ctrl and is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,24144,handle_grid_key,        if is_ctrl and is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24151,handle_grid_key,-- F4:
+Speak Track Params - TrackTake Navigator.lua,24152,handle_grid_key,-- Ctrl+B = toggle bypass FX corrente.
+Speak Track Params - TrackTake Navigator.lua,24153,handle_grid_key,-- Ctrl+D = toggle Delta Solo FX corrente.
+Speak Track Params - TrackTake Navigator.lua,24157,handle_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_B then
+Speak Track Params - TrackTake Navigator.lua,24162,handle_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_D then
+Speak Track Params - TrackTake Navigator.lua,24167,handle_grid_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_F5 then
+Speak Track Params - TrackTake Navigator.lua,24172,handle_grid_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_F6 then
+Speak Track Params - TrackTake Navigator.lua,24182,handle_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,24188,handle_grid_key,    if is_ctrl and is_shift and not is_alt and char == KEY_CTRL_S then
+Speak Track Params - TrackTake Navigator.lua,24193,handle_grid_key,    if is_ctrl and is_shift and not is_alt and char == KEY_CTRL_R then
+Speak Track Params - TrackTake Navigator.lua,24199,handle_grid_key,    -- F1 track selection / editing.
+Speak Track Params - TrackTake Navigator.lua,24213,handle_grid_key,        if not is_ctrl and is_shift and not is_alt and char == KEY_SPACE then
+Speak Track Params - TrackTake Navigator.lua,24218,handle_grid_key,        if is_ctrl and is_shift and not is_alt and char == KEY_SPACE then
+Speak Track Params - TrackTake Navigator.lua,24223,handle_grid_key,        if not is_ctrl and not is_shift and not is_alt and char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,24228,handle_grid_key,        if is_ctrl and not is_shift and not is_alt and char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,24238,handle_grid_key,        if is_shift and not is_ctrl and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,24243,handle_grid_key,        if is_shift and not is_ctrl and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24248,handle_grid_key,        if is_shift and not is_ctrl and not is_alt and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,24253,handle_grid_key,        if is_shift and not is_ctrl and not is_alt and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24258,handle_grid_key,        if is_ctrl and is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,24263,handle_grid_key,        if is_ctrl and is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24268,handle_grid_key,        if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_X then
+Speak Track Params - TrackTake Navigator.lua,24273,handle_grid_key,        if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_C then
+Speak Track Params - TrackTake Navigator.lua,24279,handle_grid_key,        -- F1:
+Speak Track Params - TrackTake Navigator.lua,24280,handle_grid_key,        -- Ctrl+V resta Paste tracks with routing.
+Speak Track Params - TrackTake Navigator.lua,24281,handle_grid_key,        -- Ctrl+Shift+V entra / esce da Value mode.
+Speak Track Params - TrackTake Navigator.lua,24285,handle_grid_key,        -- F1:
+Speak Track Params - TrackTake Navigator.lua,24286,handle_grid_key,        -- Ctrl+Alt+Page Up/Down: navigazione tra folder.
+Speak Track Params - TrackTake Navigator.lua,24290,handle_grid_key,        if is_ctrl and not is_shift and is_alt and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,24295,handle_grid_key,        if is_ctrl and not is_shift and is_alt and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24300,handle_grid_key,        if is_ctrl and is_shift and not is_alt and char == KEY_CTRL_V then
+Speak Track Params - TrackTake Navigator.lua,24305,handle_grid_key,        if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_V then
+Speak Track Params - TrackTake Navigator.lua,24310,handle_grid_key,        if is_alt and is_shift and not is_ctrl and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,24315,handle_grid_key,        if is_alt and is_shift and not is_ctrl and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24322,handle_grid_key,    -- F2/F3:
+Speak Track Params - TrackTake Navigator.lua,24329,handle_grid_key,       char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,24337,handle_grid_key,       char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,24345,handle_grid_key,       char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,24352,handle_grid_key,    -- F4:
+Speak Track Params - TrackTake Navigator.lua,24359,handle_grid_key,       char == KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,24476,handle_grid_key,    -- Ctrl+Shift+I sui soli campi Volume: imposta il range del parametro.
+Speak Track Params - TrackTake Navigator.lua,24478,handle_grid_key,    -- Ctrl+I resta libero per il marker precedente.
+Speak Track Params - TrackTake Navigator.lua,24479,handle_grid_key,    -- Alt+I non viene più usato.
+Speak Track Params - TrackTake Navigator.lua,24482,handle_grid_key,    if is_ctrl and is_shift and not is_alt and char == KEY_CTRL_I then
+Speak Track Params - TrackTake Navigator.lua,24489,handle_grid_key,    -- Ctrl+F:
+Speak Track Params - TrackTake Navigator.lua,24490,handle_grid_key,"    -- filtro coerente per F1, F2, F3, F4."
+Speak Track Params - TrackTake Navigator.lua,24493,handle_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_F then
+Speak Track Params - TrackTake Navigator.lua,24500,handle_grid_key,    -- F1 = Tracks.
+Speak Track Params - TrackTake Navigator.lua,24501,handle_grid_key,    -- F2 = Sends.
+Speak Track Params - TrackTake Navigator.lua,24502,handle_grid_key,    -- F3 = Receives.
+Speak Track Params - TrackTake Navigator.lua,24503,handle_grid_key,    -- F4 = FX parameters.
+Speak Track Params - TrackTake Navigator.lua,24513,handle_grid_key,    -- Alt+Left  = step più fine.
+Speak Track Params - TrackTake Navigator.lua,24514,handle_grid_key,    -- Alt+Right = step più grande.
+Speak Track Params - TrackTake Navigator.lua,24516,handle_grid_key,    -- F11 / F12 non sono più usati qui:
+Speak Track Params - TrackTake Navigator.lua,24520,handle_grid_key,    if is_alt and not is_ctrl and not is_shift and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,24525,handle_grid_key,    if is_alt and not is_ctrl and not is_shift and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,24530,handle_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_V then
+Speak Track Params - TrackTake Navigator.lua,24535,handle_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_CTRL_E then
+Speak Track Params - TrackTake Navigator.lua,24540,handle_grid_key,    if char == KEY_TAB then
+Speak Track Params - TrackTake Navigator.lua,24545,handle_grid_key,    if char == KEY_BACKSLASH then
+Speak Track Params - TrackTake Navigator.lua,24551,handle_grid_key,    -- Ctrl+Enter:
+Speak Track Params - TrackTake Navigator.lua,24552,handle_grid_key,"    -- resta solo per F4, dove apre la lista parametri se sei"
+Speak Track Params - TrackTake Navigator.lua,24553,handle_grid_key,    -- su un header FX. In F1 la gestione folder è stata spostata
+Speak Track Params - TrackTake Navigator.lua,24557,handle_grid_key,    if is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,24566,handle_grid_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_ENTER then
+Speak Track Params - TrackTake Navigator.lua,24577,handle_grid_key,        if char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,24582,handle_grid_key,        if char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24587,handle_grid_key,        if char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,24592,handle_grid_key,        if char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24598,handle_grid_key,        -- Alt+Home / Alt+End sui valori.
+Speak Track Params - TrackTake Navigator.lua,24601,handle_grid_key,        -- Alt+Home = massimo.
+Speak Track Params - TrackTake Navigator.lua,24602,handle_grid_key,        -- Alt+End  = minimo.
+Speak Track Params - TrackTake Navigator.lua,24605,handle_grid_key,        if char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,24610,handle_grid_key,        if char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,24624,handle_grid_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_UP then
+Speak Track Params - TrackTake Navigator.lua,24629,handle_grid_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24634,handle_grid_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,24639,handle_grid_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,24644,handle_grid_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,24649,handle_grid_key,    if not is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,24654,handle_grid_key,    if char == KEY_HOME then
+Speak Track Params - TrackTake Navigator.lua,24670,handle_grid_key,    if char == KEY_END then
+Speak Track Params - TrackTake Navigator.lua,24717,<top level>,-- Ctrl+Spazio:
+Speak Track Params - TrackTake Navigator.lua,24727,<top level>,-- Ctrl+P:
+Speak Track Params - TrackTake Navigator.lua,24769,transport_play_pause_from_script,"    -- Se sta suonando o registrando, Ctrl+Spazio deve mettere"
+Speak Track Params - TrackTake Navigator.lua,24808,transport_space_from_script,    -- pausa fatta con Ctrl+Spazio REAPER può restare nello
+Speak Track Params - TrackTake Navigator.lua,24831,<top level>,-- 5.0.1 - POLLING CTRL+SPAZIO VIA JS_VKeys_GetState
+Speak Track Params - TrackTake Navigator.lua,24833,<top level>,-- Ctrl+Spazio non arriva in modo affidabile da gfx.getchar():
+Speak Track Params - TrackTake Navigator.lua,24855,transport_space_set_intercept,"        local ok = pcall(reaper.JS_VKeys_Intercept, VK_SPACE, 1)"
+Speak Track Params - TrackTake Navigator.lua,24865,transport_space_set_intercept,"        pcall(reaper.JS_VKeys_Intercept, VK_SPACE, -1)"
+Speak Track Params - TrackTake Navigator.lua,24877,transport_space_release_intercept,    -- Con Ctrl+Space usiamo JS_VKeys_Intercept per impedire
+Speak Track Params - TrackTake Navigator.lua,24879,transport_space_release_intercept,"    -- Se poi usciamo con Ctrl+Tab o la finestra viene chiusa,"
+Speak Track Params - TrackTake Navigator.lua,24885,transport_space_release_intercept,"        pcall(reaper.JS_VKeys_Intercept, VK_SPACE, -1)"
+Speak Track Params - TrackTake Navigator.lua,24908,poll_transport_space_shortcuts,    local space_down = (state:byte(VK_SPACE) or 0) ~= 0
+Speak Track Params - TrackTake Navigator.lua,24944,should_swallow_space_queue_char,    if char ~= KEY_SPACE then
+Speak Track Params - TrackTake Navigator.lua,24950,should_swallow_space_queue_char,    -- evento della stessa pressione Ctrl+Spazio. Non deve mai
+Speak Track Params - TrackTake Navigator.lua,24969,<top level>,-- F1:
+Speak Track Params - TrackTake Navigator.lua,24972,<top level>,-- F2/F3:
+Speak Track Params - TrackTake Navigator.lua,24975,<top level>,-- F4:
+Speak Track Params - TrackTake Navigator.lua,25010,switch_section_by_key,"    -- Quando si entra in F1, la griglia delle tracce parte"
+Speak Track Params - TrackTake Navigator.lua,25061,switch_section_by_key,    -- F2 / F3:
+Speak Track Params - TrackTake Navigator.lua,25104,switch_section_by_key,    -- F4:
+Speak Track Params - TrackTake Navigator.lua,25151,<top level>,"-- Se l'utente è dentro l'edit del filtro e preme F1/F2/F3/F4,"
+Speak Track Params - TrackTake Navigator.lua,25161,close_filter_edit_for_section_change,    -- Cambio sezione da F1/F2/F3/F4:
+Speak Track Params - TrackTake Navigator.lua,25181,<top level>,-- F1/F2/F3/F4 devono sempre liberare lo script da qualunque
+Speak Track Params - TrackTake Navigator.lua,25192,close_temporary_mode_for_section_change,"    -- Filtro Ctrl+F: cancella solo l'edit in corso, non"
+Speak Track Params - TrackTake Navigator.lua,25239,close_temporary_mode_for_section_change,    -- Lista parametri FX / lista visibili F6:
+Speak Track Params - TrackTake Navigator.lua,25275,<top level>,-- Ctrl+Z:
+Speak Track Params - TrackTake Navigator.lua,25278,<top level>,-- Ctrl+Shift+Z:
+Speak Track Params - TrackTake Navigator.lua,25548,get_item_navigation_track,"    -- dello script, come fanno F2, F3 e F4."
+Speak Track Params - TrackTake Navigator.lua,25555,get_item_navigation_track,"    -- Se in F1 il cursore interno è su una traccia diversa,"
+Speak Track Params - TrackTake Navigator.lua,25917,go_to_marker_ordinal_from_script,    -- così Ctrl+1..0 resta utile anche con marker rinumerati.
+Speak Track Params - TrackTake Navigator.lua,26059,handle_marker_navigation_key,    if char == KEY_CTRL_I then
+Speak Track Params - TrackTake Navigator.lua,26063,handle_marker_navigation_key,    if char == KEY_CTRL_O then
+Speak Track Params - TrackTake Navigator.lua,26100,handle_global_reaper_navigation_action,    -- Ctrl+1..0 = marker 1..10 ordinati per posizione.
+Speak Track Params - TrackTake Navigator.lua,26101,handle_global_reaper_navigation_action,    -- Ctrl+I / Ctrl+O = marker precedente / successivo.
+Speak Track Params - TrackTake Navigator.lua,26112,handle_global_reaper_navigation_action,    if is_ctrl and not is_shift and not is_alt and char == KEY_RIGHT then
+Speak Track Params - TrackTake Navigator.lua,26116,handle_global_reaper_navigation_action,    if is_ctrl and not is_shift and not is_alt and char == KEY_LEFT then
+Speak Track Params - TrackTake Navigator.lua,26126,handle_global_reaper_navigation_action,    if is_shift and is_alt and not is_ctrl and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,26130,handle_global_reaper_navigation_action,    if is_shift and is_alt and not is_ctrl and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,26134,handle_global_reaper_navigation_action,    if is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,26138,handle_global_reaper_navigation_action,    if is_ctrl and not is_shift and not is_alt and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,26142,handle_global_reaper_navigation_action,    if is_ctrl and is_shift and is_alt and char == KEY_PAGE_DOWN then
+Speak Track Params - TrackTake Navigator.lua,26146,handle_global_reaper_navigation_action,    if is_ctrl and is_shift and is_alt and char == KEY_PAGE_UP then
+Speak Track Params - TrackTake Navigator.lua,26161,<top level>,-- Ctrl+Tab:
+Speak Track Params - TrackTake Navigator.lua,26437,<top level>,-- Ctrl+Q:
+Speak Track Params - TrackTake Navigator.lua,26625,prepare_track_for_ctrl_tab_fx_switch,    -- Ctrl+Tab deve consegnare a FX Params una traccia reale
+Speak Track Params - TrackTake Navigator.lua,26626,prepare_track_for_ctrl_tab_fx_switch,    -- e chiara. Durante la normale navigazione F1 il cursore
+Speak Track Params - TrackTake Navigator.lua,26664,switch_to_fx_params_script,    -- Ctrl+Tab non lascia l'utente senza nessuno dei due script.
+Speak Track Params - TrackTake Navigator.lua,26669,switch_to_fx_params_script,    -- ha selezionato manualmente la traccia con Shift+Space.
+Speak Track Params - TrackTake Navigator.lua,26700,ctrl_tab_to_fx_params_key,    if not is_ctrl or is_shift or is_alt or char ~= KEY_TAB then
+Speak Track Params - TrackTake Navigator.lua,26705,ctrl_tab_to_fx_params_key,        return js_vkey_down_now(VK_TAB) and not js_vkey_down_now(VK_I)
+Speak Track Params - TrackTake Navigator.lua,26722,handle_key,    -- ESC durante Ctrl+Alt+C / Fixed CC learn:
+Speak Track Params - TrackTake Navigator.lua,26726,handle_key,    if char == KEY_ESC and
+Speak Track Params - TrackTake Navigator.lua,26738,handle_key,    if char ~= KEY_DELETE then
+Speak Track Params - TrackTake Navigator.lua,26743,handle_key,    -- Ctrl+Alt+Shift+F1 globale.
+Speak Track Params - TrackTake Navigator.lua,26746,handle_key,    if ctrl_down() and shift_down() and alt_down() and char == KEY_F1 then
+Speak Track Params - TrackTake Navigator.lua,26752,handle_key,    -- Ctrl+Q globale:
+Speak Track Params - TrackTake Navigator.lua,26757,handle_key,    if char == KEY_CTRL_Q then
+Speak Track Params - TrackTake Navigator.lua,26763,handle_key,    -- Ctrl+Tab globale: passa al fratello FX Params.
+Speak Track Params - TrackTake Navigator.lua,26771,handle_key,    -- Ctrl+Shift+J globale:
+Speak Track Params - TrackTake Navigator.lua,26777,handle_key,    if ctrl_down() and shift_down() and not alt_down() and char == KEY_CTRL_J then
+Speak Track Params - TrackTake Navigator.lua,26782,handle_key,    -- Shift+C globale:
+Speak Track Params - TrackTake Navigator.lua,26787,handle_key,    if not ctrl_down() and shift_down() and not alt_down() and char == KEY_C then
+Speak Track Params - TrackTake Navigator.lua,26792,handle_key,    -- Ctrl+Alt+C globale sui parametri traccia supportati:
+Speak Track Params - TrackTake Navigator.lua,26794,handle_key,    -- Ctrl+C resta libero per la copia tracce.
+Speak Track Params - TrackTake Navigator.lua,26798,handle_key,       (char == KEY_CTRL_C or char == KEY_CTRL_ALT_C) then
+Speak Track Params - TrackTake Navigator.lua,26806,handle_key,    -- Ctrl+Delete globale fuori da F1:
+Speak Track Params - TrackTake Navigator.lua,26808,handle_key,    -- In F1 mantiene anche il comportamento storico più sotto.
+Speak Track Params - TrackTake Navigator.lua,26812,handle_key,       char == KEY_DELETE and current_section_id ~= SECTION_TRACKS then
+Speak Track Params - TrackTake Navigator.lua,26820,handle_key,    -- Ctrl+Shift+C globale:
+Speak Track Params - TrackTake Navigator.lua,26824,handle_key,    if ctrl_down() and shift_down() and not alt_down() and char == KEY_CTRL_C then
+Speak Track Params - TrackTake Navigator.lua,26830,handle_key,    -- Ctrl+T globale:
+Speak Track Params - TrackTake Navigator.lua,26832,handle_key,"    -- In gfx.getchar(), Ctrl+T arriva come 20."
+Speak Track Params - TrackTake Navigator.lua,26840,handle_key,    -- Ctrl+Shift+M: attiva / disattiva i titoli dettagliati
+Speak Track Params - TrackTake Navigator.lua,26843,handle_key,    -- Nota: in gfx Ctrl+M usa lo stesso codice di Enter.
+Speak Track Params - TrackTake Navigator.lua,26844,handle_key,    -- Ctrl+Shift+M può quindi coincidere con Ctrl+Shift+Enter;
+Speak Track Params - TrackTake Navigator.lua,26845,handle_key,    -- lo usiamo come comando globale perché Ctrl+Shift+Enter
+Speak Track Params - TrackTake Navigator.lua,26852,handle_key,       char == KEY_CTRL_M then
+Speak Track Params - TrackTake Navigator.lua,26858,handle_key,    -- Ctrl+M reale globale:
+Speak Track Params - TrackTake Navigator.lua,26861,handle_key,    -- compresa F4 FX parameters.
+Speak Track Params - TrackTake Navigator.lua,26863,handle_key,    -- Ctrl+M viene distinto da Enter / Ctrl+Enter usando
+Speak Track Params - TrackTake Navigator.lua,26865,handle_key,    -- fisico M è realmente premuto. Quindi Ctrl+Enter in F4
+Speak Track Params - TrackTake Navigator.lua,26871,handle_key,        -- Dentro la lista parametri FX Ctrl+M deve essere
+Speak Track Params - TrackTake Navigator.lua,26873,handle_key,"        -- gfx.getchar vede Ctrl+M come codice 13, la lista lo"
+Speak Track Params - TrackTake Navigator.lua,26874,handle_key,        -- può trattare come Ctrl+Enter e aggiungere/togliere
+Speak Track Params - TrackTake Navigator.lua,26894,handle_key,    -- Ctrl+Z = Undo.
+Speak Track Params - TrackTake Navigator.lua,26895,handle_key,    -- Ctrl+Shift+Z = Redo.
+Speak Track Params - TrackTake Navigator.lua,26902,handle_key,    if ctrl_down() and not alt_down() and char == KEY_CTRL_Z then
+Speak Track Params - TrackTake Navigator.lua,26911,handle_key,    -- F5 Audio Pin Connector.
+Speak Track Params - TrackTake Navigator.lua,26912,handle_key,"    -- Va gestito prima del cambio sezione globale, così F4/Esc"
+Speak Track Params - TrackTake Navigator.lua,26926,handle_key,    -- F1/F2/F3/F4 fanno sempre: Esc silenzioso + sezione.
+Speak Track Params - TrackTake Navigator.lua,26934,handle_key,    -- Edit alias parametro FX F4.
+Speak Track Params - TrackTake Navigator.lua,26963,handle_key,    -- Ctrl+Shift+Alt+A globale:
+Speak Track Params - TrackTake Navigator.lua,26965,handle_key,    -- Ctrl+Shift+A resta libero per l'automazione del
+Speak Track Params - TrackTake Navigator.lua,26966,handle_key,    -- singolo controllo in F1/F2/F3/F4.
+Speak Track Params - TrackTake Navigator.lua,26980,handle_key,       char == KEY_CTRL_P then
+Speak Track Params - TrackTake Navigator.lua,26985,handle_key,    if char == KEY_SPACE then
+Speak Track Params - TrackTake Navigator.lua,26995,handle_key,        -- F1: Shift+Spazio seleziona / deseleziona la traccia
+Speak Track Params - TrackTake Navigator.lua,26997,handle_key,"        -- Lasciamo anche Ctrl+Shift+Spazio come compatibilità,"
+Speak Track Params - TrackTake Navigator.lua,26998,handle_key,        -- ma il comando principale richiesto è Shift+Spazio.
+Speak Track Params - TrackTake Navigator.lua,27035,handle_key,    -- F6 Track MIDI.
+Speak Track Params - TrackTake Navigator.lua,27037,handle_key,"    -- F6 ora appartiene alla traccia corrente, non a un FX."
+Speak Track Params - TrackTake Navigator.lua,27039,handle_key,"    -- un plug-in. Se siamo nella pagina F6, passa direttamente"
+Speak Track Params - TrackTake Navigator.lua,27059,handle_key,    -- Attive solo nella griglia F1 e F4.
+Speak Track Params - TrackTake Navigator.lua,27060,handle_key,"    -- F2, F3 e lista parametri FX non hanno accesso."
+Speak Track Params - TrackTake Navigator.lua,27077,<top level>,-- Serve a F2/F3/F4:
+Speak Track Params - TrackTake Navigator.lua,27122,validate_runtime_context,    -- F5 Audio Pin Connector.
+Speak Track Params - TrackTake Navigator.lua,27149,validate_runtime_context,    -- F6 Track MIDI.
+Speak Track Params - TrackTake Navigator.lua,27151,validate_runtime_context,"    -- F6 riguarda la traccia corrente. Non dipende da un FX,"
+Speak Track Params - TrackTake Navigator.lua,27161,validate_runtime_context,            current_section_key = KEY_F1
+Speak Track Params - TrackTake Navigator.lua,27189,validate_runtime_context,            current_section_key = KEY_F1
+Speak Track Params - TrackTake Navigator.lua,27212,validate_runtime_context,"        -- La lista ""Visible parameters"" aperta da F4 con F6"
+Speak Track Params - TrackTake Navigator.lua,27235,validate_runtime_context,"                switch_section_by_key(KEY_F1, true)"
+Speak Track Params - TrackTake Navigator.lua,27244,validate_runtime_context,    -- F1 Tracks.
+Speak Track Params - TrackTake Navigator.lua,27279,validate_runtime_context,    -- F2 / F3 / F4.
+Speak Track Params - TrackTake Navigator.lua,27287,validate_runtime_context,"        switch_section_by_key(KEY_F1, true)"
+Speak Track Params - TrackTake Navigator.lua,27421,exit_script,    fx_param_list_return_section_key = KEY_F4
+Speak Track Params - TrackTake Navigator.lua,27460,<top level>,"-- F1/F2/F3 restano funzioni deterministiche, ma non hanno"
+Speak Track Params - TrackTake Navigator.lua,27461,<top level>,-- CC obbligati. F4 può usare mappa Plugin oppure ProjectTrack.
+Speak Track Params - TrackTake Navigator.lua,27462,<top level>,-- ProjectTrack crea anche Tracks/Projects/Default/F4 quando il
+Speak Track Params - TrackTake Navigator.lua,27844,<top level>,-- 5.6B - F4 PARAMETER ORDER PER PROJECT / TRACK
+Speak Track Params - TrackTake Navigator.lua,27846,<top level>,-- Shift+Up / Shift+Down in F4 moves only the selected FX
+Speak Track Params - TrackTake Navigator.lua,27847,<top level>,-- parameter inside the current track's F4 list.
+Speak Track Params - TrackTake Navigator.lua,27849,<top level>,-- ProjectTrack F4 CCs:
+Speak Track Params - TrackTake Navigator.lua,27850,<top level>,-- Tracks/Projects/<Project>/F4/<track>.txt
+Speak Track Params - TrackTake Navigator.lua,28480,track_fixed_cc_label_for_duplicate,    -- F4 FX params:
+Speak Track Params - TrackTake Navigator.lua,28688,track_fixed_cc_clear_all_links,    -- Ora Ctrl+Delete lavora sul parametro corrente in F1/F2/F3/F4.
+Speak Track Params - TrackTake Navigator.lua,28868,track_fixed_cc_apply_info_to_entry,                -- In F4 la navigazione FX TCP è già sul parametro:
+Speak Track Params - TrackTake Navigator.lua,29143,<top level>,-- 5.6B - CTRL+T CC SPEECH PER PARAMETRO / OVERRIDE
+Speak Track Params - TrackTake Navigator.lua,29146,<top level>,-- Ctrl+T non è globale. Abilita/disabilita il parlato dei
+Speak Track Params - TrackTake Navigator.lua,29149,<top level>,-- F1/F2/F3: stato salvato nel TXT principale Tracks/Track CC Map.txt.
+Speak Track Params - TrackTake Navigator.lua,29150,<top level>,-- F4 Plugin scope: stato salvato nello stesso TXT principale.
+Speak Track Params - TrackTake Navigator.lua,29151,<top level>,"-- F4 ProjectTrack scope: stato salvato nel TXT F4 del progetto/traccia,"

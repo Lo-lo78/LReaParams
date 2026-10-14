@@ -1,0 +1,319 @@
+Version=3
+PluginRaw=JS: Synthetic FX 024
+LastParam=255	Parameter 255
+LastEntry=group	8
+LastArea=grid
+SlotAccessMode=group
+CustomOrderView=plugin
+QuickGroup=
+
+[CustomOrder]
+
+[DefaultValues]
+0	Parameter 0	0.5
+1	Parameter 1	1.0
+2	Parameter 2	0.0
+3	Parameter 3	0.0
+4	Parameter 4	0.3
+5	Parameter 5	0.0
+6	Parameter 6	0.15
+7	Parameter 7	0.5
+8	Parameter 8	0.5
+9	Parameter 9	0.0046889653016568
+10	Parameter 10	0.0
+11	Parameter 11	0.90482177734375
+12	Parameter 12	1.0
+13	Parameter 13	1.0
+14	Parameter 14	0.048
+15	Parameter 15	0.4578125
+16	Parameter 16	0.09
+17	Parameter 17	0.32
+18	Parameter 18	0.62293333333333
+19	Parameter 19	0.044
+20	Parameter 20	0.07
+21	Parameter 21	0.071428571428571
+22	Parameter 22	0.4975
+23	Parameter 23	0.099
+24	Parameter 24	0.6
+25	Parameter 25	0.50390625
+26	Parameter 26	0.11637212404135
+27	Parameter 27	1.0
+28	Parameter 28	1.0
+29	Parameter 29	0.16005335111704
+30	Parameter 30	1.0
+31	Parameter 31	0.57708333333333
+32	Parameter 32	1.0
+33	Parameter 33	0.10220440881764
+34	Parameter 34	0.071786310517529
+35	Parameter 35	0.32
+36	Parameter 36	1.0
+37	Parameter 37	1.0
+38	Parameter 38	0.57
+39	Parameter 39	1.0
+40	Parameter 40	1.0
+41	Parameter 41	0.0
+42	Parameter 42	0.5
+43	Parameter 43	0.16666666666667
+44	Parameter 44	0.45378151260504
+45	Parameter 45	0.25
+46	Parameter 46	1.0
+47	Parameter 47	0.4
+48	Parameter 48	0.090309278350515
+49	Parameter 49	0.33333333333333
+50	Parameter 50	0.76
+51	Parameter 51	1.0
+52	Parameter 52	1.0
+53	Parameter 53	0.76
+54	Parameter 54	0.84
+55	Parameter 55	0.8
+56	Parameter 56	1.0
+57	Parameter 57	0.0
+58	Parameter 58	0.475
+59	Parameter 59	0.5
+60	Parameter 60	0.5
+61	Parameter 61	0.0025
+62	Parameter 62	0.012
+63	Parameter 63	0.0
+64	Parameter 64	0.125
+65	Parameter 65	0.625
+66	Parameter 66	0.5
+67	Parameter 67	0.5
+68	Parameter 68	1.0
+69	Parameter 69	0.03
+70	Parameter 70	0.04
+71	Parameter 71	1.0
+72	Parameter 72	0.04
+73	Parameter 73	0.0075
+74	Parameter 74	0.015
+75	Parameter 75	0.0075
+76	Parameter 76	0.005
+77	Parameter 77	0.0
+78	Parameter 78	0.36
+79	Parameter 79	0.87721518987342
+80	Parameter 80	1.0
+81	Parameter 81	1.0
+82	Parameter 82	0.32929292929293
+83	Parameter 83	1.0
+84	Parameter 84	0.49579831932773
+85	Parameter 85	0.48
+86	Parameter 86	0.66386554621849
+87	Parameter 87	0.24
+88	Parameter 88	0.3
+89	Parameter 89	0.2234309623431
+90	Parameter 90	0.32
+91	Parameter 91	1.0
+92	Parameter 92	0.25
+93	Parameter 93	0.45
+94	Parameter 94	0.25
+95	Parameter 95	1.0
+96	Parameter 96	0.35
+97	Parameter 97	0.31282051282051
+98	Parameter 98	0.3
+99	Parameter 99	0.5
+100	Parameter 100	0.5
+101	Parameter 101	0.5
+102	Parameter 102	0.16666666666667
+103	Parameter 103	1.0
+104	Parameter 104	0.2
+105	Parameter 105	0.5
+106	Parameter 106	0.36
+107	Parameter 107	1.0
+108	Parameter 108	0.76666666666667
+109	Parameter 109	0.58974358974359
+110	Parameter 110	0.0
+111	Parameter 111	0.52
+112	Parameter 112	0.04
+113	Parameter 113	0.08
+114	Parameter 114	0.22
+115	Parameter 115	1.0
+116	Parameter 116	0.25773195876289
+117	Parameter 117	1.0
+118	Parameter 118	1.0
+119	Parameter 119	1.0
+120	Parameter 120	0.76
+121	Parameter 121	1.0
+122	Parameter 122	0.348
+123	Parameter 123	0.33333333333333
+124	Parameter 124	0.61
+125	Parameter 125	1.0
+126	Parameter 126	0.44
+127	Parameter 127	0.52
+128	Parameter 128	0.079899497487437
+129	Parameter 129	0.1
+130	Parameter 130	0.98608695652174
+131	Parameter 131	0.31658291457286
+132	Parameter 132	0.35
+133	Parameter 133	0.25
+134	Parameter 134	1.0
+135	Parameter 135	0.25
+136	Parameter 136	0.41666666666667
+137	Parameter 137	0.5
+138	Parameter 138	0.5
+139	Parameter 139	0.16666666666667
+140	Parameter 140	1.0
+141	Parameter 141	0.44
+142	Parameter 142	0.36
+143	Parameter 143	0.44
+144	Parameter 144	0.6
+145	Parameter 145	0.32040816326531
+146	Parameter 146	0.68
+147	Parameter 147	0.32
+148	Parameter 148	1.0
+149	Parameter 149	1.0
+150	Parameter 150	0.125
+151	Parameter 151	0.73888888888889
+152	Parameter 152	0.28
+153	Parameter 153	0.92
+154	Parameter 154	1.0
+155	Parameter 155	0.36263157894737
+156	Parameter 156	0.5
+157	Parameter 157	0.039664804469274
+158	Parameter 158	1.0
+159	Parameter 159	0.52
+160	Parameter 160	0.43697478991597
+161	Parameter 161	0.42
+162	Parameter 162	0.0
+163	Parameter 163	0.39698492462312
+164	Parameter 164	0.16
+165	Parameter 165	0.0
+166	Parameter 166	0.20677966101695
+167	Parameter 167	0.22
+168	Parameter 168	0.5
+169	Parameter 169	0.0
+170	Parameter 170	0.5
+171	Parameter 171	0.5
+172	Parameter 172	0.16666666666667
+173	Parameter 173	1.0
+174	Parameter 174	0.36
+175	Parameter 175	0.5
+176	Parameter 176	0.55
+177	Parameter 177	0.55
+178	Parameter 178	0.022222222222222
+179	Parameter 179	0.84
+180	Parameter 180	1.0
+181	Parameter 181	0.16
+182	Parameter 182	0.085427135678392
+183	Parameter 183	0.0
+184	Parameter 184	0.11
+185	Parameter 185	0.72
+186	Parameter 186	0.92
+187	Parameter 187	0.39848993288591
+188	Parameter 188	1.0
+189	Parameter 189	1.0
+190	Parameter 190	0.23949579831933
+191	Parameter 191	0.4
+192	Parameter 192	1.0
+193	Parameter 193	0.22222222222222
+194	Parameter 194	0.10126582278481
+195	Parameter 195	0.18
+196	Parameter 196	0.31658291457286
+197	Parameter 197	0.84
+198	Parameter 198	0.0
+199	Parameter 199	0.089544772386193
+200	Parameter 200	0.047021943573668
+201	Parameter 201	0.072100313479624
+202	Parameter 202	0.5
+203	Parameter 203	0.5
+204	Parameter 204	0.925
+205	Parameter 205	0.925
+206	Parameter 206	0.408014571949
+207	Parameter 207	0.33970856102004
+208	Parameter 208	0.875
+209	Parameter 209	0.33333333333333
+210	Parameter 210	0.2
+211	Parameter 211	0.0
+212	Parameter 212	0.5
+213	Parameter 213	0.0
+214	Parameter 214	0.5
+215	Parameter 215	0.5
+216	Parameter 216	0.16666666666667
+217	Parameter 217	0.8
+218	Parameter 218	0.12
+219	Parameter 219	0.5
+220	Parameter 220	1.0
+221	Parameter 221	0.32101910828025
+222	Parameter 222	0.01001001001001
+223	Parameter 223	0.087719298245614
+224	Parameter 224	0.5
+225	Parameter 225	0.39130434782609
+226	Parameter 226	0.0
+227	Parameter 227	0.4
+228	Parameter 228	0.76
+229	Parameter 229	0.84
+230	Parameter 230	0.56
+231	Parameter 231	0.0
+232	Parameter 232	0.92
+233	Parameter 233	1.0
+234	Parameter 234	0.19478260869565
+235	Parameter 235	0.44117647058824
+236	Parameter 236	0.175
+237	Parameter 237	0.08
+238	Parameter 238	0.15
+239	Parameter 239	0.5
+240	Parameter 240	0.5
+241	Parameter 241	0.66666666666667
+242	Parameter 242	0.0008001600320064
+243	Parameter 243	0.035807161432286
+244	Parameter 244	0.58
+245	Parameter 245	0.0004000400040004
+246	Parameter 246	1.0
+247	Parameter 247	0.01
+248	Parameter 248	1.0
+249	Parameter 249	0.6
+250	Parameter 250	0.28
+251	Parameter 251	0.6
+252	Parameter 252	0.13188647746244
+253	Parameter 253	0.0
+254	Parameter 254	0.51
+255	Parameter 255	0.5
+256	Parameter 256	0.0
+257	Parameter 257	1.0
+258	Parameter 258	0.0
+
+[ParamSlots]
+
+[GroupSlots]
+1=57	Parameter 57\n169	Parameter 169\n213	Parameter 213\n0	Parameter 0\n58	Parameter 58\n99	Parameter 99\n136	Parameter 136\n168	Parameter 168\n212	Parameter 212\n240	Parameter 240
+2=57	Parameter 57\n99	Parameter 99\n100	Parameter 100\n101	Parameter 101\n102	Parameter 102\n103	Parameter 103\n104	Parameter 104\n105	Parameter 105\n106	Parameter 106\n107	Parameter 107\n108	Parameter 108\n109	Parameter 109\n110	Parameter 110\n111	Parameter 111\n112	Parameter 112\n113	Parameter 113\n114	Parameter 114\n115	Parameter 115\n116	Parameter 116\n117	Parameter 117\n118	Parameter 118\n119	Parameter 119\n120	Parameter 120\n121	Parameter 121\n122	Parameter 122\n123	Parameter 123\n124	Parameter 124\n125	Parameter 125\n126	Parameter 126\n127	Parameter 127\n128	Parameter 128\n129	Parameter 129\n130	Parameter 130\n131	Parameter 131\n132	Parameter 132\n133	Parameter 133\n134	Parameter 134\n135	Parameter 135
+3=57	Parameter 57\n136	Parameter 136\n137	Parameter 137\n138	Parameter 138\n139	Parameter 139\n140	Parameter 140\n141	Parameter 141\n142	Parameter 142\n143	Parameter 143\n144	Parameter 144\n145	Parameter 145\n146	Parameter 146\n147	Parameter 147\n148	Parameter 148\n149	Parameter 149\n150	Parameter 150\n151	Parameter 151\n152	Parameter 152\n153	Parameter 153\n154	Parameter 154\n155	Parameter 155\n156	Parameter 156\n157	Parameter 157\n158	Parameter 158\n159	Parameter 159\n160	Parameter 160\n161	Parameter 161\n162	Parameter 162\n163	Parameter 163\n164	Parameter 164\n165	Parameter 165\n166	Parameter 166\n167	Parameter 167
+4=57	Parameter 57\n58	Parameter 58\n59	Parameter 59\n60	Parameter 60\n61	Parameter 61\n62	Parameter 62\n63	Parameter 63\n64	Parameter 64\n65	Parameter 65\n66	Parameter 66\n67	Parameter 67\n68	Parameter 68\n69	Parameter 69\n70	Parameter 70\n71	Parameter 71\n72	Parameter 72\n73	Parameter 73\n74	Parameter 74\n75	Parameter 75\n76	Parameter 76\n77	Parameter 77\n78	Parameter 78\n79	Parameter 79\n80	Parameter 80\n81	Parameter 81\n82	Parameter 82\n83	Parameter 83\n84	Parameter 84\n85	Parameter 85\n86	Parameter 86\n87	Parameter 87\n88	Parameter 88\n89	Parameter 89\n90	Parameter 90\n91	Parameter 91\n92	Parameter 92\n93	Parameter 93\n94	Parameter 94\n95	Parameter 95\n96	Parameter 96\n97	Parameter 97\n98	Parameter 98
+5=57	Parameter 57\n0	Parameter 0\n1	Parameter 1\n2	Parameter 2\n3	Parameter 3\n4	Parameter 4\n5	Parameter 5\n6	Parameter 6\n7	Parameter 7\n8	Parameter 8\n9	Parameter 9\n10	Parameter 10\n11	Parameter 11\n12	Parameter 12\n13	Parameter 13\n14	Parameter 14\n15	Parameter 15\n16	Parameter 16\n17	Parameter 17\n18	Parameter 18\n19	Parameter 19\n20	Parameter 20\n21	Parameter 21\n22	Parameter 22\n23	Parameter 23\n24	Parameter 24\n25	Parameter 25\n26	Parameter 26\n27	Parameter 27\n28	Parameter 28\n29	Parameter 29\n30	Parameter 30\n31	Parameter 31\n32	Parameter 32\n33	Parameter 33\n34	Parameter 34\n35	Parameter 35\n36	Parameter 36\n37	Parameter 37\n38	Parameter 38\n39	Parameter 39\n40	Parameter 40\n41	Parameter 41\n42	Parameter 42\n43	Parameter 43\n44	Parameter 44\n45	Parameter 45\n46	Parameter 46
+6=57	Parameter 57\n169	Parameter 169\n168	Parameter 168\n170	Parameter 170\n171	Parameter 171\n172	Parameter 172\n173	Parameter 173\n174	Parameter 174\n175	Parameter 175\n176	Parameter 176\n177	Parameter 177\n178	Parameter 178\n179	Parameter 179\n180	Parameter 180\n181	Parameter 181\n182	Parameter 182\n183	Parameter 183\n184	Parameter 184\n185	Parameter 185\n186	Parameter 186\n187	Parameter 187\n188	Parameter 188\n189	Parameter 189\n190	Parameter 190\n191	Parameter 191\n192	Parameter 192\n193	Parameter 193\n194	Parameter 194\n195	Parameter 195\n196	Parameter 196\n197	Parameter 197
+7=57	Parameter 57\n213	Parameter 213\n212	Parameter 212\n214	Parameter 214\n215	Parameter 215\n216	Parameter 216\n217	Parameter 217\n218	Parameter 218\n219	Parameter 219\n220	Parameter 220\n221	Parameter 221\n222	Parameter 222\n223	Parameter 223\n224	Parameter 224\n225	Parameter 225\n226	Parameter 226\n227	Parameter 227\n228	Parameter 228\n229	Parameter 229\n230	Parameter 230\n231	Parameter 231\n232	Parameter 232\n233	Parameter 233\n234	Parameter 234\n235	Parameter 235\n236	Parameter 236\n237	Parameter 237\n238	Parameter 238\n239	Parameter 239
+8=57	Parameter 57\n240	Parameter 240\n241	Parameter 241\n242	Parameter 242\n243	Parameter 243\n244	Parameter 244\n245	Parameter 245\n246	Parameter 246\n247	Parameter 247\n248	Parameter 248\n249	Parameter 249\n250	Parameter 250\n251	Parameter 251\n252	Parameter 252\n253	Parameter 253\n254	Parameter 254\n255	Parameter 255
+9=47	Parameter 47\n48	Parameter 48\n49	Parameter 49\n50	Parameter 50\n51	Parameter 51\n52	Parameter 52\n53	Parameter 53\n54	Parameter 54\n55	Parameter 55\n56	Parameter 56
+10=198	Parameter 198\n199	Parameter 199\n200	Parameter 200\n201	Parameter 201\n202	Parameter 202\n203	Parameter 203\n204	Parameter 204\n205	Parameter 205\n206	Parameter 206\n207	Parameter 207\n208	Parameter 208\n209	Parameter 209\n210	Parameter 210\n211	Parameter 211
+
+[Extra]
+custom_order_grid_size_v1=10
+grid_size_v1=8
+group_grid_size_v1::slot::1=10
+group_grid_size_v1::slot::10=10
+group_grid_size_v1::slot::2=10
+group_grid_size_v1::slot::3=10
+group_grid_size_v1::slot::4=10
+group_grid_size_v1::slot::5=10
+group_grid_size_v1::slot::6=10
+group_grid_size_v1::slot::7=10
+group_grid_size_v1::slot::8=8
+group_grid_size_v1::slot::9=10
+group_last_position_v1::slot::1=2	169	Synthetic
+group_last_position_v1::slot::10=7	204	Synthetic1 (Synthetic
+group_last_position_v1::slot::2=17	114	Synthetic3Synthetic
+group_last_position_v1::slot::3=1	57	Synthetic
+group_last_position_v1::slot::4=1	57	Synthetic
+group_last_position_v1::slot::5=3	1	Synthetic
+group_last_position_v1::slot::6=26	192	Synthetic
+group_last_position_v1::slot::7=1	57	Synthetic
+group_last_position_v1::slot::8=17	255	Synthetic
+group_last_position_v1::slot::9=2	48	Synthetic60 (Synthetic
+group_slot_name_v1::slot::1=Synthetic& Synthetic
+group_slot_name_v1::slot::10=Synthetic
+group_slot_name_v1::slot::2=Synthetic
+group_slot_name_v1::slot::3=Synthetic
+group_slot_name_v1::slot::4=Synthetic
+group_slot_name_v1::slot::5=Synthetic
+group_slot_name_v1::slot::6=Synthetic
+group_slot_name_v1::slot::7=Synthetic
+group_slot_name_v1::slot::8=Synthetic
+group_slot_name_v1::slot::9=Synthetic

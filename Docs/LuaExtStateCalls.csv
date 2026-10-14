@@ -1,0 +1,212 @@
+﻿module,line,api,exact_call,native_import
+Speak FX Params - TrackTake Navigator.lua,3117,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        CC_FOCUS_SESSION_ACTIVE_KEY,
+        """",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3124,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        CC_FOCUS_SESSION_CHANNEL_KEY,
+        """",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3131,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        CC_FOCUS_SESSION_CC_KEY,
+        """",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3138,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        CC_FOCUS_SESSION_STATUS_KEY,
+        """",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3155,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        CC_FOCUS_SESSION_ACTIVE_KEY,
+        ""1"",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3162,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        CC_FOCUS_SESSION_CHANNEL_KEY,
+        tostring(cc_focus_channel),
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3169,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        CC_FOCUS_SESSION_CC_KEY,
+        tostring(cc_focus_cc),
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3176,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        CC_FOCUS_SESSION_STATUS_KEY,
+        tostring(cc_focus_status_byte or 0),
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3188,GetExtState,"reaper.GetExtState(
+            EXT_SECTION,
+            CC_FOCUS_SESSION_ACTIVE_KEY
+        )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3199,GetExtState,"reaper.GetExtState(
+                EXT_SECTION,
+                CC_FOCUS_SESSION_CHANNEL_KEY
+            )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3207,GetExtState,"reaper.GetExtState(
+                EXT_SECTION,
+                CC_FOCUS_SESSION_CC_KEY
+            )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3215,GetExtState,"reaper.GetExtState(
+                EXT_SECTION,
+                CC_FOCUS_SESSION_STATUS_KEY
+            )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3730,GetExtState,"reaper.GetExtState(
+        EXT_SECTION,
+        fx_compare_make_session_key()
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3743,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        fx_compare_make_session_key(),
+        fx_compare_encode_state(state),
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,3758,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        fx_compare_make_session_key(),
+        """",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,7243,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        EXT_STALE_ITEM_GUID_KEY,
+        """",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,7250,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        EXT_STALE_ITEM_TRACK_KEY,
+        """",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,7272,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        EXT_STALE_ITEM_GUID_KEY,
+        item_guid,
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,7279,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        EXT_STALE_ITEM_TRACK_KEY,
+        track_id,
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,7293,GetExtState,"reaper.GetExtState(EXT_SECTION, EXT_STALE_ITEM_GUID_KEY)",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,7296,GetExtState,"reaper.GetExtState(EXT_SECTION, EXT_STALE_ITEM_TRACK_KEY)",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,20203,GetExtState,"reaper.GetExtState(EXT_SECTION, EXT_RECENT_SEARCHES)",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,20229,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        EXT_RECENT_SEARCHES,
+        table.concat(lines, ""\n""),
+        true
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,26510,SetExtState,"reaper.SetExtState(
+        EXT_SECTION,
+        key,
+        tostring(value or """"),
+        true
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak FX Params - TrackTake Navigator.lua,26527,GetExtState,"reaper.GetExtState(EXT_SECTION, key)",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,647,GetExtState,"reaper.GetExtState(VOLUME_RANGE_EXT_SECTION, volume_range_ext_key(key))",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,670,SetExtState,"reaper.SetExtState(
+            VOLUME_RANGE_EXT_SECTION,
+            volume_range_ext_key(key),
+            volume_range_encode(min_db, max_db),
+            true
+        )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2068,SetExtState,"reaper.SetExtState(
+        TRACK_MEMORY_EXT_SECTION,
+        track_memory_ext_key(slot),
+        txt,
+        false -- sessione REAPER soltanto: niente salvataggio su disco
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2086,GetExtState,"reaper.GetExtState(
+            TRACK_MEMORY_EXT_SECTION,
+            track_memory_ext_key(slot)
+        )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2110,SetExtState,"reaper.SetExtState(
+        TRACK_MEMORY_EXT_SECTION,
+        track_memory_ext_key(slot),
+        """",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2163,SetExtState,"reaper.SetExtState(
+        CURSOR_MEMORY_EXT_SECTION,
+        CURSOR_MEMORY_ENABLED_KEY,
+        cursor_memory_enabled and ""1"" or ""0"",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2255,GetExtState,"reaper.GetExtState(CURSOR_MEMORY_EXT_SECTION, CURSOR_MEMORY_ENABLED_KEY)",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2261,GetExtState,"reaper.GetExtState(CURSOR_MEMORY_EXT_SECTION, CURSOR_MEMORY_LAST_KEY)",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2281,GetExtState,"reaper.GetExtState(
+            CURSOR_MEMORY_EXT_SECTION,
+            cursor_memory_section_key(section_id)
+        )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2309,SetExtState,"reaper.SetExtState(
+        CURSOR_MEMORY_EXT_SECTION,
+        cursor_memory_section_key(section_id),
+        txt,
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2332,SetExtState,"reaper.SetExtState(
+        CURSOR_MEMORY_EXT_SECTION,
+        CURSOR_MEMORY_LAST_KEY,
+        section_id,
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2716,SetExtState,"reaper.SetExtState(
+        TITLE_DETAIL_EXT_SECTION,
+        TITLE_DETAIL_ENABLED_KEY,
+        title_detail_enabled and ""1"" or ""0"",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,2734,GetExtState,"reaper.GetExtState(TITLE_DETAIL_EXT_SECTION, TITLE_DETAIL_ENABLED_KEY)",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,16427,SetExtState,"reaper.SetExtState(
+        FLOAT_CC_EXT_SECTION,
+        FLOAT_CC_EXT_ACTIVE,
+        floating_cc_enabled and ""1"" or ""0"",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,16434,SetExtState,"reaper.SetExtState(
+        FLOAT_CC_EXT_SECTION,
+        FLOAT_CC_EXT_CH,
+        tostring(floating_cc_channel or -1),
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,16441,SetExtState,"reaper.SetExtState(
+        FLOAT_CC_EXT_SECTION,
+        FLOAT_CC_EXT_CC,
+        tostring(floating_cc_number or -1),
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,16456,GetExtState,"reaper.GetExtState(
+        FLOAT_CC_EXT_SECTION,
+        FLOAT_CC_EXT_ACTIVE
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,16462,GetExtState,"reaper.GetExtState(
+            FLOAT_CC_EXT_SECTION,
+            FLOAT_CC_EXT_CH
+        )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,16469,GetExtState,"reaper.GetExtState(
+            FLOAT_CC_EXT_SECTION,
+            FLOAT_CC_EXT_CC
+        )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,16944,SetExtState,"reaper.SetExtState(
+        TRACK_FIXED_CC_EXT_SECTION,
+        TRACK_FIXED_CC_EXT_ENABLED,
+        track_fixed_cc_map_enabled and ""1"" or ""0"",
+        false
+    )",PENDING PHASE 5; no legacy ExtState writes in phase 0
+Speak Track Params - TrackTake Navigator.lua,16960,GetExtState,"reaper.GetExtState(TRACK_FIXED_CC_EXT_SECTION, TRACK_FIXED_CC_EXT_ENABLED)",PENDING PHASE 5; no legacy ExtState writes in phase 0

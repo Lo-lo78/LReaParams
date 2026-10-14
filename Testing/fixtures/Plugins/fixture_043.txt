@@ -1,0 +1,76 @@
+Version=3
+PluginRaw=JS: Synthetic FX 043
+LastParam=16	Parameter 16
+LastEntry=all
+LastArea=grid
+SlotAccessMode=param
+CustomOrderView=plugin
+QuickGroup=
+
+[CustomOrder]
+
+[DefaultValues]
+0	Parameter 0	0.20754717290401
+1	Parameter 1	0.30188679695129
+2	Parameter 2	0.94339621067047
+3	Parameter 3	0.22641509771347
+4	Parameter 4	0.3584905564785
+5	Parameter 5	0.0
+6	Parameter 6	0.47169810533524
+7	Parameter 7	0.81132078170776
+8	Parameter 8	0.1698113232851
+9	Parameter 9	1.0
+10	Parameter 10	0.0
+11	Parameter 11	0.019999999552965
+12	Parameter 12	0.93000000715256
+13	Parameter 13	0.5
+14	Parameter 14	0.5
+15	Parameter 15	0.38461539149284
+16	Parameter 16	0.72750002145767
+17	Parameter 17	0.53947371244431
+18	Parameter 18	0.30000001192093
+19	Parameter 19	0.69999998807907
+20	Parameter 20	0.5
+21	Parameter 21	0.5
+22	Parameter 22	0.52499997615814
+23	Parameter 23	0.83333331346512
+24	Parameter 24	0.0
+25	Parameter 25	0.0
+26	Parameter 26	1.0
+27	Parameter 27	0.0
+28	Parameter 28	0.017000000923872
+29	Parameter 29	0.0
+30	Parameter 30	0.96875
+31	Parameter 31	0.0
+32	Parameter 32	0.02449999935925
+33	Parameter 33	0.0
+34	Parameter 34	0.93229168653488
+35	Parameter 35	0.0
+36	Parameter 36	0.017500000074506
+37	Parameter 37	0.0
+38	Parameter 38	0.96875
+39	Parameter 39	0.0
+40	Parameter 40	0.023000000044703
+41	Parameter 41	0.0
+42	Parameter 42	0.93229168653488
+43	Parameter 43	0.921875
+44	Parameter 44	0.0
+45	Parameter 45	0.75555557012558
+46	Parameter 46	0.34482759237289
+47	Parameter 47	0.0
+48	Parameter 48	0.921875
+49	Parameter 49	0.0
+50	Parameter 50	0.78888887166977
+51	Parameter 51	0.34482759237289
+52	Parameter 52	0.0
+53	Parameter 53	0.0
+54	Parameter 54	0.0
+55	Parameter 55	1.0
+56	Parameter 56	0.0
+
+[ParamSlots]
+
+[GroupSlots]
+
+[Extra]
+grid_size_v1=10

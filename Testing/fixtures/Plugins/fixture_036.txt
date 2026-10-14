@@ -1,0 +1,47 @@
+Version=3
+PluginRaw=JS: Synthetic FX 036
+LastParam=213	Parameter 213
+LastEntry=all
+LastArea=grid
+SlotAccessMode=param
+CustomOrderView=plugin
+QuickGroup=
+
+[CustomOrder]
+
+[DefaultValues]
+0	Parameter 0	0.33333333333333
+1	Parameter 1	0.0
+2	Parameter 2	0.04
+3	Parameter 3	0.0006
+4	Parameter 4	0.05
+5	Parameter 5	0.75
+6	Parameter 6	0.035
+7	Parameter 7	0.5
+8	Parameter 8	0.5
+9	Parameter 9	0.0
+10	Parameter 10	0.66666666666667
+11	Parameter 11	0.48833333333333
+12	Parameter 12	0.0090653329165364
+13	Parameter 13	1.0
+14	Parameter 14	0.5203125
+15	Parameter 15	1.0
+16	Parameter 16	1.0
+17	Parameter 17	0.05511811023622
+18	Parameter 18	0.59375
+19	Parameter 19	0.625
+20	Parameter 20	0.5
+21	Parameter 21	0.2
+22	Parameter 22	0.5
+23	Parameter 23	0.5
+24	Parameter 24	0.0
+25	Parameter 25	1.0
+26	Parameter 26	0.0
+
+[ParamSlots]
+
+[GroupSlots]
+
+[Extra]
+grid_size_v1=10
+param_step_scales_v1=0	Synthetic	Synthetic3:8\Synthetic9	Synthetic	Synthetic3:6\Synthetic11	Synthetic	Synthetic3:6\Synthetic12	Synthetic	Synthetic3:5\Synthetic13	Synthetic	Synthetic3:6\Synthetic14	Synthetic	Synthetic3:8\Synthetic15	Synthetic	Synthetic3:9\Synthetic16	Synthetic	Synthetic3:10\Synthetic19	Synthetic	Synthetic3:7\Synthetic20	Synthetic	Synthetic3:9\Synthetic22	Synthetic	Synthetic3:10\Synthetic23	Synthetic	Synthetic3:9\Synthetic25	Synthetic	Synthetic3:7\Synthetic32	Synthetic	Synthetic3:10\Synthetic54	Synthetic	Synthetic3:9\Synthetic99	Synthetic	Synthetic3:9\Synthetic150	Synthetic	Synthetic3:8\Synthetic151	Synthetic	Synthetic3:8\Synthetic155	Synthetic	Synthetic3:9
