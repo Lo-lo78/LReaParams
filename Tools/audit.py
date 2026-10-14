@@ -46,8 +46,16 @@ def main():
     for row in rows:
         check(hashlib.sha256((ROOT/'Legacy'/row['file']).read_bytes()).hexdigest()==row['sha256'],'Original Lua changed')
     all_cpp='\n'.join(p.read_text() for p in (ROOT/'src').glob('*.cpp'))
-    for forbidden in [r'CreateWindow(?:Ex)?[AW]?\s*\(',r'SetWindowsHookExW\(WH_KEYBOARD_LL',r'SetProjExtState\s*\(',r'SetExtState\s*\(']:
+    for forbidden in [r'SetWindowsHookExW\(WH_KEYBOARD_LL',r'SetProjExtState\s*\(',r'SetExtState\s*\(']:
         check(not re.search(forbidden,all_cpp),'Unexpected window/global hook/state write')
+    # One purpose-built offscreen title proxy is allowed; forbid other window creation.
+    title_src=(ROOT/'src/TitleProxy.cpp').read_text()
+    check(title_src.count('CreateWindowExW(')==1,'Expected one title proxy')
+    for marker in ['WS_EX_TOOLWINDOW','-32000','SW_HIDE','DestroyWindow','UnregisterClassW','SetForegroundWindow','WM_KEYDOWN']:
+        check(marker in title_src,'Title proxy lifecycle contract missing: '+marker)
+    for cpp in (ROOT/'src').glob('*.cpp'):
+        if cpp.name != 'TitleProxy.cpp':
+            check(not re.search(r'CreateWindow(?:Ex)?[AW]?\s*\(',cpp.read_text()),'Unexpected window creation: '+cpp.name)
     check('PM_REMOVE' in all_cpp and 'CallNextHookEx' in all_cpp,'Thread hook lifecycle contract missing')
     corpus(ROOT/'Testing/fixtures')
     if len(sys.argv)>1: corpus(Path(sys.argv[1]))

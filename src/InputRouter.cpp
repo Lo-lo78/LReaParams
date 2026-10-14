@@ -24,8 +24,14 @@ bool InputRouter::start(InputBackend backend) {
     exitRequested_ = false; current_ = this;
     if (backend == InputBackend::sdkAccelerator) {
         registered_ = api_->Register("accelerator", &accelerator_) != 0;
-        capturing_ = registered_;
+        // Escape must be consumed before REAPER's native Escape command.
+        // A thread-local WH_GETMESSAGE hook intercepts Escape ONLY. All other
+        // navigation keys still use the REAPER accelerator backend.
+        escapeHookOnly_ = true;
+        if (registered_) hook_ = SetWindowsHookExW(WH_GETMESSAGE, hook, nullptr, threadId_);
+        capturing_ = registered_ && hook_ != nullptr;
     } else {
+        escapeHookOnly_ = false;
         // Thread-specific hook: no WH_KEYBOARD_LL, no global/process injection, no window.
         hook_ = SetWindowsHookExW(WH_GETMESSAGE, hook, nullptr, threadId_);
         capturing_ = hook_ != nullptr;
@@ -38,7 +44,8 @@ void InputRouter::stop() noexcept {
     if (registered_) { api_->Register("-accelerator", &accelerator_); registered_ = false; }
     if (hook_) { UnhookWindowsHookEx(hook_); hook_ = nullptr; }
     if (current_ == this) current_ = nullptr;
-    swallowed_.fill(nullptr); head_ = tail_ = 0; originalRoot_ = floating_ = nullptr; exitRequested_ = false;
+    swallowed_.fill(nullptr); head_ = tail_ = 0; originalRoot_ = floating_ = nullptr;
+    exitRequested_ = false; escapeHookOnly_ = false;
 }
 void InputRouter::requestExit() noexcept { capturing_ = false; exitRequested_ = true; head_ = tail_ = 0; }
 void InputRouter::refreshAllowedWindows(HWND floating) noexcept { floating_ = floating; }
@@ -76,6 +83,9 @@ bool InputRouter::route(MSG& message, bool removed) noexcept {
         return capturing_ && consumedFor && consumedFor == message.hwnd;
     }
     if (!capturing_) return false;
+    // NVDA uses Insert or Numpad Insert as an NVDA modifier by default.
+    // Do not treat an NVDA gesture such as NVDA+T as an unknown navigation key.
+    if ((GetKeyState(VK_INSERT) & 0x8000) || (GetKeyState(VK_NUMPAD0) & 0x8000)) return false;
     // Give every F12 combination to OSARA. Never toggle help ourselves.
     if (vk == VK_F12) { requestExit(); return false; }
     if (vk == VK_CONTROL || vk == VK_SHIFT || vk == VK_MENU || vk == VK_LCONTROL || vk == VK_RCONTROL ||
@@ -104,7 +114,13 @@ LRESULT CALLBACK InputRouter::hook(int code, WPARAM param, LPARAM data) noexcept
     auto* self = current_;
     if (code >= 0 && self && data && param == PM_REMOVE) {
         auto& message = *reinterpret_cast<MSG*>(data);
-        if (self->route(message, true)) { message.message = WM_NULL; message.wParam = 0; message.lParam = 0; }
+        // With the SDK accelerator selected, hook only Escape and let REAPER
+        // handle all other keys through its registered accelerator.
+        if (!self->escapeHookOnly_ ||
+            ((message.message == WM_KEYDOWN || message.message == WM_SYSKEYDOWN ||
+              message.message == WM_KEYUP || message.message == WM_SYSKEYUP) && message.wParam == VK_ESCAPE)) {
+            if (self->route(message, true)) { message.message = WM_NULL; message.wParam = 0; message.lParam = 0; }
+        }
     }
     return CallNextHookEx(nullptr, code, param, data);
 }

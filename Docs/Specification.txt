@@ -1,3 +1,5 @@
+TEST3 IMPLEMENTATION OVERRIDE (2026-10-15): The previously proposed Exit current navigation action is REMOVED from the registered actions and Extensions submenu. Escape is now handled internally by InputRouter using a thread-scoped Escape-only WH_GETMESSAGE hook when the SDK accelerator backend is selected. This is experimental until tested in REAPER. Track Params F1 uses 9 horizontal columns per track, with Up/Down rows and Left/Right columns, following the legacy Lua. FX Params Ctrl+Home and Ctrl+End jump to the first and last FX parameter.
+
 LREAPARAMS - HANDOFF TECNICO PER ASTRA 6.0 WORK
 ============================================================
 Data specifica: 14 ottobre 2026

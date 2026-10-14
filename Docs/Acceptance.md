@@ -6,7 +6,7 @@ compilazione e test nativi del formato/storage, non l'accessibilità della DLL.
 
 ## Primo giro, circa 5 minuti
 
-1. Metti la DLL in UserPlugins e riavvia. Cerca le otto azioni LReaParams.
+1. Metti la DLL in UserPlugins e riavvia. Cerca le nove azioni LReaParams (l'azione Exit è stata rimossa: Escape è interno).
    Nessuna finestra di navigazione deve apparire né ricevere focus.
 2. A navigazione spenta prova frecce, lettere, Spazio, Ctrl+Spazio e F12: REAPER
    e OSARA devono comportarsi come prima.
@@ -14,6 +14,9 @@ compilazione e test nativi del formato/storage, non l'accessibilità della DLL.
    attivala dal plugin. Tab deve leggere un parametro. Su/Giù devono scorrerlo.
    Alt+Su deve cambiare il valore nella GUI reale; Ctrl+Z, dopo uscita, lo annulla.
 4. Invio entra in Value; Su modifica; Esc torna in Grid; un altro Esc esce.
+   In TEST3 prova anche Ctrl+Home/Ctrl+End per estremi assoluti FX.
+   Per Track Params F1 prova frecce Su/Giù per tracce e Sinistra/Destra
+   per i nove campi orizzontali della riga, senza cambiare la selezione TCP.
 5. Riattiva e premi F12: la navigazione cessa e Shortcut Help deve funzionare.
    Esci da Shortcut Help con F12, poi riattiva FX Params esplicitamente.
 6. Se le frecce non arrivano in una GUI, scegli Settings → Sì per l'hook del
@@ -75,3 +78,19 @@ Indica versione REAPER/OSARA/NVDA, nome del plugin, track o take, docked/floatin
 backend selezionato, tasto premuto e cosa viene pronunciato. Per un errore di
 compilazione incolla il primo errore e le righe circostanti del job build-windows.
 Non serve creare token, dare accesso al repository o eseguire build locali.
+
+## TEST4: titoli virtuali e memorie
+
+All'attivazione dei navigatori OSARA deve annunciare la modalità con un
+singolo messaggio che include il titolo e il parametro/traccia iniziale.
+NVDA+T deve continuare a leggere il titolo REAPER: un titolo finestra
+separato richiederebbe un oggetto finestra accessibile, che non fa parte
+architettura senza finestre della DLL.
+
+Il menu Memories espone solo voci preparatorie, senza scrittura di dati.
+Tasti funzione riservati: FX F1–F11, Track F4–F11; F12 restituito a OSARA.
+
+
+### TEST5 NVDA title proxy
+
+Verificare NVDA+T, F1/F2, F12, Esc, ritorno focus, Alt+Tab e nessun ostacolo grafico con un collaboratore vedente. Il proxy e' sperimentale e disattivabile dal menu. Vedere `Docs/TitleProxyTest.md`.

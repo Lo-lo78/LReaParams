@@ -28,7 +28,7 @@ private:
     HHOOK hook_{};
     HWND main_{}, originalRoot_{}, floating_{};
     DWORD threadId_{};
-    bool registered_ = false, capturing_ = false, exitRequested_ = false;
+    bool registered_ = false, capturing_ = false, exitRequested_ = false, escapeHookOnly_ = false;
     std::array<HWND, 256> swallowed_{};
     std::array<Key, 128> queue_{};
     std::size_t head_ = 0, tail_ = 0;

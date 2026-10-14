@@ -1,4 +1,4 @@
-# Stato della consegna — 0.0.3 TEST2 Native Test
+# Stato della consegna — 0.0.5 TEST4 Native Test
 
 Progetto sorgente GitHub-ready, senza compilazioni, binari o test runtime locali.
 Il workflow Windows x64 eseguirà la prima compilazione e i test C++.
@@ -7,7 +7,7 @@ Il workflow Windows x64 eseguirà la prima compilazione e i test C++.
 
 | Componente | Stato |
 | --- | --- |
-| DLL, menu Extensions, 8 azioni stabili | Presente, non testato in REAPER |
+| DLL, menu Extensions e 9 azioni, 2 memorie riservate | Presente, non testato in REAPER |
 | OSARA outputMessage e Shortcut Help | Integrato, verifica in REAPER necessaria |
 | Due backend tastiera senza finestra | Sperimentali, da collaudare |
 | FX Params | Rilevamento FX da track/take selezionati; FX singolo diretto, browser multi-FX e Monitor FX master; griglia/Value, normalizzati reali e Undo, ricerca Ctrl+F, Home/End/Page |
@@ -38,3 +38,16 @@ Il workflow Windows x64 eseguirà la prima compilazione e i test C++.
 
 **Non usare questa versione come sostituta definitiva dei Lua.** Le funzioni
 non portate rimangono in `Legacy` e sono esplicitamente previste.
+
+## TEST4
+
+- Annuncio vocale del titolo virtuale delle due navigazioni a fine attivazione,
+  senza creare HWND né alterare il titolo di REAPER.
+- Menu `Memories` dedicato con FX Memories e Track Memories ancora da
+  implementare, e Parameter Library da migrare.
+- Riserva F1–F11 in FX Params e F4–F11 in Track Params.
+  F1–F3 di Track Params restano operativi per la navigazione delle pagine;
+  F12 rimane a OSARA. Non sono ancora implementate funzioni di memoria.
+
+
+TEST5 0.0.6: ripristinato FX F1/F2 per griglia; introdotta finestra Win32 titolata da un pixel fuori schermo per NVDA+T (attiva solo nella navigazione, disattivabile dal menu). Prova runtime non eseguita.

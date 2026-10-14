@@ -17,6 +17,8 @@ public:
     bool accepts(const Key& key) const noexcept override;
     void handle(const Key& key) override;
     void announce() override;
+    void announceTitle() override;
+    std::wstring windowTitle() const override;
     HWND floatingWindow() const override;
     bool uiStillOpen() const override;
 private:
@@ -26,6 +28,7 @@ private:
     void browserMove(int delta);
     int count() const;
     std::string parameterName() const;
+    std::string currentParameterSpeech() const;
     void nudge(int direction, bool big);
     void setValue(double value);
     void navigate(int delta);

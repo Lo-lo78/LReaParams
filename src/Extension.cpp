@@ -2,6 +2,7 @@
 #include "lrp/FxNavigator.h"
 #include "lrp/TrackNavigator.h"
 #include "lrp/InputRouter.h"
+#include "lrp/TitleProxy.h"
 #include "lrp/Storage.h"
 #include <shellapi.h>
 #include <array>
@@ -27,7 +28,7 @@ struct Action {
 };
 class Extension {
 public:
-    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_) {}
+    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_), titleProxy_(info->hwnd_main) {}
     ~Extension() { shutdown(); }
     void init() {
         if (REAPERAPI_LoadAPI(info_.GetFunc) != 0) throw std::runtime_error("Required REAPER API missing");
@@ -61,13 +62,15 @@ public:
     }
     void exitNavigation(bool announce) {
         const bool wasActive = current_ && current_->active();
-        input_.stop(); navigator_.end(); trackNavigator_.end(); current_ = nullptr;
+        input_.stop(); titleProxy_.hideAndRestore(); titleProxyActive_ = false;
+        navigator_.end(); trackNavigator_.end(); current_ = nullptr;
         refreshToggles();
         if (announce && wasActive) speak("LReaParams navigation off");
     }
     void fail() noexcept {
         // Fail open at the ABI boundary: unregister capture, discard queued commands.
-        input_.stop(); navigator_.end(); trackNavigator_.end(); current_ = nullptr;
+        input_.stop(); titleProxy_.hideAndRestore(); titleProxyActive_ = false;
+        navigator_.end(); trackNavigator_.end(); current_ = nullptr;
         if (RefreshToolbar2 && GetCurrentThreadId() == mainThread_) refreshToggles();
         OutputDebugStringW(L"LReaParams: navigation stopped after a callback failure.\n");
     }
@@ -78,6 +81,7 @@ public:
         if (command == actions_[0].command) return current_ == &navigator_ && navigator_.active() ? 1 : 0;
         if (command == actions_[1].command) return current_ == &trackNavigator_ && trackNavigator_.active() ? 1 : 0;
         if (command == actions_[2].command) return 0;
+        if (command == actions_[9].command) return titleModeEnabled_ ? 1 : 0;
         return -1;
     }
     bool action(int command) {
@@ -97,7 +101,14 @@ public:
             if (desired->begin()) {
                 current_ = desired;
                 input_.select(*desired);
-                if (!input_.start(backend_)) { exitNavigation(false); speak("Keyboard capture unavailable"); }
+                // The one-pixel offscreen window is optional but enabled by default.
+                // While it owns foreground focus, WH_GETMESSAGE is more reliable
+                // than REAPER's accelerator, which targets its own windows.
+                titleProxyActive_ = titleModeEnabled_ && titleProxy_.activate(
+                    desired->windowTitle(), [this] { exitNavigation(false); });
+                const InputBackend selected = titleProxyActive_ ? InputBackend::mainThreadHook : backend_;
+                if (!input_.start(selected)) { exitNavigation(false); speak("Keyboard capture unavailable"); }
+                else desired->announceTitle();
                 refreshToggles();
             }
             break;
@@ -106,31 +117,50 @@ public:
             exitNavigation(false);
             speak("Parameter Library has not yet been migrated. Imported library files are preserved in LReaParams Params.");
             break;
-        case 3: exitNavigation(true); break;
-        case 4:
+        case 3:
             exitNavigation(false);
             announceImport_ = true;
             speak(importer_.start(resource_) ? "Import started" : "Import already running");
             break;
-        case 5: {
+        case 4: {
             exitNavigation(false);
             const auto root = resource_ / L"LReaParams";
             const auto result = reinterpret_cast<INT_PTR>(ShellExecuteW(info_.hwnd_main, L"open", root.c_str(), nullptr, nullptr, SW_SHOWNORMAL));
             if (result <= 32) speak("Cannot open data folder. Initial import may still be running.");
             break;
         }
-        case 6: {
+        case 5: {
             exitNavigation(false);
             const int answer = MessageBoxW(info_.hwnd_main,
-                L"Native test keyboard backend, current REAPER session only.\n\nYes: main REAPER thread hook (WH_GETMESSAGE).\nNo: REAPER SDK accelerator (default).\nCancel: keep current setting.\n\nUse the hook only to compare FX windows which the SDK accelerator cannot reach.",
+                L"Native test keyboard backend, current REAPER session only.\n\nYes: main REAPER thread hook (WH_GETMESSAGE).\nNo: REAPER SDK accelerator plus Escape-only hook (default).\nCancel: keep current setting.\n\nCapture is confined to REAPER's main thread and active navigator.",
                 L"LReaParams Settings", MB_YESNOCANCEL | MB_ICONINFORMATION);
             if (answer == IDYES) backend_ = InputBackend::mainThreadHook;
             else if (answer == IDNO) backend_ = InputBackend::sdkAccelerator;
             break;
         }
+        case 6:
+            exitNavigation(false);
+            ShowMessageBox("LReaParams 0.0.6 TEST5 NATIVE\n\n"
+                "FX: F1/F2 change grid height again. Ctrl+Home/End jump to first/last parameter.\n"
+                "Track: F1 Tracks, F2 Sends, F3 Receives.\n"
+                "NVDA+T: an experimental 1x1 offscreen title window is active while navigating.\n"
+                "The true FX interface stays visible and the title proxy is removed on exit.\n"
+                "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
+                "Use 'NVDA title window (1px)' to disable the experiment if necessary.\n\n"
+                "Memories and full Lua migration remain unfinished.", "About LReaParams", 0);
+            break;
         case 7:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.3 TEST2 NATIVE\nPartial native navigation, not the full Lua migration.\n\nFX selection: one FX opens directly; multiple FX open a spoken browser.\nUp/Down selects; Enter opens; Esc cancels. Alt+B reopens the FX browser.\nFX grid: Up/Down within column; Left/Right between columns.\nEnter: Value/Grid. Alt+Up/Down: value. Alt+PageUp/Down: large step.\nF1/F2: column height. Alt+Left/Right: test sensitivity.\nTab: read parameter. Esc: Value to Grid, then exit.\nF12: exit and pass to OSARA. Unmapped keys exit and pass to REAPER.\n\nTrack Params supports basic track and send controls. Parameter Library and advanced Lua features remain pending.\nSee Docs/Acceptance.md before testing.", "About LReaParams", 0);
+            speak("LReaParams - FX Memories. Memory management is reserved for a later test; no memory was changed.");
+            break;
+        case 8:
+            exitNavigation(false);
+            speak("LReaParams - Track Memories. Memory management is reserved for a later test; no memory was changed.");
+            break;
+        case 9:
+            exitNavigation(false);
+            titleModeEnabled_ = !titleModeEnabled_;
+            speak(titleModeEnabled_ ? "NVDA title window enabled" : "NVDA title window disabled");
             break;
         default: break;
         }
@@ -143,6 +173,7 @@ public:
             if (announceImport_) { speak(report->summary()); announceImport_ = false; }
         }
         if (!current_ || !current_->active()) return;
+        if (titleProxyActive_ && !titleProxy_.active()) { exitNavigation(false); return; }
         if (shortcutHelp() || input_.exitRequested() || !current_->contextUnchanged() || !current_->uiStillOpen() || !input_.environmentSafe()) {
             exitNavigation(false); return;
         }
@@ -153,18 +184,37 @@ public:
             if (!current_->contextUnchanged() || GetFocus() != key.window) { exitNavigation(false); return; }
             current_->handle(key);
             if (!current_->active()) { exitNavigation(false); speak("LReaParams navigation off"); break; }
+            if (titleProxyActive_) titleProxy_.updateTitle(current_->windowTitle());
         }
     }
     void menu(const char* id, HMENU menu, int flag) {
         if (!id || std::strcmp(id, "Main extensions") != 0) return;
         if (flag == 0) {
             HMENU sub = CreatePopupMenu(); if (!sub) return;
-            for (const auto& a : actions_) AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(a.command), a.menu);
+            // Keep all memory management in its own submenu. Its current
+            // actions announce that the Lua migration is not finished.
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[0].command), actions_[0].menu);
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[1].command), actions_[1].menu);
+            HMENU memories = CreatePopupMenu();
+            if (memories) {
+                AppendMenuW(memories, MF_STRING, static_cast<UINT_PTR>(actions_[7].command), actions_[7].menu);
+                AppendMenuW(memories, MF_STRING, static_cast<UINT_PTR>(actions_[8].command), actions_[8].menu);
+                AppendMenuW(memories, MF_SEPARATOR, 0, nullptr);
+                AppendMenuW(memories, MF_STRING, static_cast<UINT_PTR>(actions_[2].command), actions_[2].menu);
+                if (!AppendMenuW(sub, MF_POPUP, reinterpret_cast<UINT_PTR>(memories), L"Memories"))
+                    DestroyMenu(memories);
+            }
+            AppendMenuW(sub, MF_SEPARATOR, 0, nullptr);
+            for (int i = 3; i <= 5; ++i)
+                AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[i].command), actions_[i].menu);
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[9].command), actions_[9].menu);
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[6].command), actions_[6].menu);
             if (!AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(sub), L"LReaParams")) DestroyMenu(sub);
         } else if (flag == 1) updateMenu(menu);
     }
     void shutdown() noexcept {
-        input_.stop(); navigator_.end(); trackNavigator_.end(); current_ = nullptr;
+        input_.stop(); titleProxy_.shutdown(); titleProxyActive_ = false;
+        navigator_.end(); trackNavigator_.end(); current_ = nullptr;
         if (timerRegistered_) info_.Register("-timer", reinterpret_cast<void*>(timerHook));
         if (menuRegistered_) info_.Register("-hookcustommenu", reinterpret_cast<void*>(menuHook));
         if (toggleRegistered_) info_.Register("-toggleaction", reinterpret_cast<void*>(toggleHook));
@@ -178,6 +228,8 @@ private:
         for (int i = 0; i < GetMenuItemCount(menu); ++i) {
             if (HMENU sub = GetSubMenu(menu, i)) updateMenu(sub);
             const auto command = GetMenuItemID(menu, i);
+            if (command == static_cast<UINT>(actions_[9].command))
+                CheckMenuItem(menu, command, MF_BYCOMMAND | (titleModeEnabled_ ? MF_CHECKED : MF_UNCHECKED));
             for (int a : {0, 1}) {
                 if (command != static_cast<UINT>(actions_[a].command)) continue;
                 const Navigator* target = a == 0 ? static_cast<const Navigator*>(&navigator_) : static_cast<const Navigator*>(&trackNavigator_);
@@ -192,19 +244,23 @@ private:
     TrackNavigator trackNavigator_;
     Navigator* current_ = nullptr;
     InputRouter input_;
+    TitleProxy titleProxy_;
     ImportWorker importer_;
     fs::path resource_;
     InputBackend backend_ = InputBackend::sdkAccelerator;
     bool hookRegistered_ = false, toggleRegistered_ = false, menuRegistered_ = false, timerRegistered_ = false, announceImport_ = false;
-    std::array<Action, 8> actions_{{
+    bool titleModeEnabled_ = true, titleProxyActive_ = false;
+    std::array<Action, 10> actions_{{
         {"LREAPARAMSFXPARAMS", "LReaParams: FX Params (native test)", L"FX Params"},
         {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params (basic native controls)", L"Track Params (basic controls)"},
         {"LREAPARAMSPARAMETERLIBRARY", "LReaParams: Parameter Library (pending migration)", L"Parameter Library (pending migration)"},
-        {"LREAPARAMSEXIT", "LReaParams: Exit current navigation", L"Exit current navigation"},
         {"LREAPARAMSIMPORTLEGACY", "LReaParams: Import legacy profiles", L"Import legacy profiles"},
         {"LREAPARAMSOPENDATAFOLDER", "LReaParams: Open Data Folder", L"Open Data Folder"},
         {"LREAPARAMSSETTINGS", "LReaParams: Settings", L"Settings"},
-        {"LREAPARAMSABOUT", "LReaParams: About LReaParams", L"About LReaParams"}
+        {"LREAPARAMSABOUT", "LReaParams: About LReaParams", L"About LReaParams"},
+        {"LREAPARAMSFXMEMORIES", "LReaParams: FX Memories (future)", L"FX Memories (future)"},
+        {"LREAPARAMSTRACKMEMORIES", "LReaParams: Track Memories (future)", L"Track Memories (future)"},
+        {"LREAPARAMSNVDATITLE", "LReaParams: Toggle NVDA window title (experimental)", L"NVDA title window (1px)"}
     }};
 };
 bool actionHook(KbdSectionInfo*, int command, int, int, int, HWND) noexcept {

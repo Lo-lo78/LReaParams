@@ -112,14 +112,8 @@ bool FxNavigator::begin() {
     browserMode_ = entries_.size() > 1;
     searchMode_ = false; search_.clear();
     valueMode_ = false; stepScale_ = 0; columns_ = 10;
-    if (browserMode_) {
-        speech_("FX browser. Up or Down to choose, Enter to open, Escape to exit.");
-        browserAnnounce();
-        return true;
-    }
+    if (browserMode_) return true;
     if (!selectFx(0)) { end(); return false; }
-    speech_("FX Params. " + entries_[0].name);
-    announce();
     return true;
 }
 void FxNavigator::browserAnnounce() {
@@ -183,6 +177,7 @@ bool FxNavigator::uiStillOpen() const {
 }
 bool FxNavigator::accepts(const Key& k) const noexcept {
     if (!active_) return false;
+    // Restore TEST3's F1/F2 grid height controls. F12 remains OSARA's.
     if (browserMode_) {
         if (k.alt || k.ctrl || k.shift) return false;
         return k.vk == VK_ESCAPE || k.vk == VK_RETURN || k.vk == VK_TAB ||
@@ -192,6 +187,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     }
     if (k.alt && !k.ctrl && !k.shift && k.vk == 'B') return entries_.size() > 1;
     if (k.ctrl && !k.alt && !k.shift && k.vk == 'F') return true;
+    if (k.ctrl && !k.alt && !k.shift && (k.vk == VK_HOME || k.vk == VK_END)) return true;
     if (searchMode_) {
         if (k.alt || k.ctrl) return false;
         return k.vk == VK_ESCAPE || k.vk == VK_RETURN || k.vk == VK_BACK ||
@@ -204,12 +200,33 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_F1 || k.vk == VK_F2 ||
         k.vk == VK_HOME || k.vk == VK_END || k.vk == VK_PRIOR || k.vk == VK_NEXT;
 }
-void FxNavigator::announce() {
+std::string FxNavigator::currentParameterSpeech() const {
     if (!valid()) throw std::runtime_error("FX context changed");
     char text[4096]{};
     const bool ok = take_ ? TakeFX_GetFormattedParamValue(take_, fx_, parameter_, text, sizeof(text)) : TrackFX_GetFormattedParamValue(track_, fx_, parameter_, text, sizeof(text));
     const double v = take_ ? TakeFX_GetParamNormalized(take_, fx_, parameter_) : TrackFX_GetParamNormalized(track_, fx_, parameter_);
-    speech_(parameterName_ + ", " + (ok && text[0] ? std::string(text) : std::to_string(v)));
+    return parameterName_ + ", " + (ok && text[0] ? std::string(text) : std::to_string(v));
+}
+void FxNavigator::announce() {
+    speech_(currentParameterSpeech());
+}
+void FxNavigator::announceTitle() {
+    if (!active_) return;
+    if (browserMode_) {
+        speech_("LReaParams - FX Params - FX browser. " +
+                std::to_string(browserIndex_ + 1) + " of " + std::to_string(entries_.size()) +
+                ", " + entries_[browserIndex_].name);
+    } else {
+        speech_("LReaParams - FX Params - " +
+                std::string(valueMode_ ? "Value" : "Grid") + ". " +
+                entries_[browserIndex_].name + ". " + currentParameterSpeech());
+    }
+}
+std::wstring FxNavigator::windowTitle() const {
+    if (!active_) return L"LReaParams - FX Params";
+    if (browserMode_) return L"LReaParams - FX Params - FX Browser";
+    if (searchMode_) return L"LReaParams - FX Params - Find Parameter";
+    return valueMode_ ? L"LReaParams - FX Params - Value" : L"LReaParams - FX Params - Grid";
 }
 void FxNavigator::navigate(int delta) {
     const int next = std::clamp(parameter_ + delta, 0, count_ - 1);
@@ -276,8 +293,8 @@ void FxNavigator::handle(const Key& k) {
         if (k.vk == VK_ESCAPE) { end(); return; }
         if (k.vk == VK_RETURN) {
             if (!k.repeat && selectFx(browserIndex_)) {
-                speech_("FX Params. " + entries_[browserIndex_].name);
-                announce();
+                speech_("LReaParams - FX Params - Grid. " +
+                        entries_[browserIndex_].name + ". " + currentParameterSpeech());
             }
             return;
         }
@@ -308,10 +325,12 @@ void FxNavigator::handle(const Key& k) {
     }
     if (k.alt && k.vk == 'B' && entries_.size() > 1) {
         browserMode_ = true; valueMode_ = false; searchMode_ = false;
-        speech_("FX browser"); browserAnnounce(); return;
+        speech_("LReaParams - FX Params - FX browser. " +
+                std::to_string(browserIndex_ + 1) + " of " + std::to_string(entries_.size()) +
+                ", " + entries_[browserIndex_].name); return;
     }
     if (k.ctrl && k.vk == 'F') {
-        if (!k.repeat) { searchMode_ = !searchMode_; search_.clear(); speech_(searchMode_ ? "Find parameter. Type letters or digits, Up or Down next match, Enter accept, Escape cancel." : "Find cancelled"); }
+        if (!k.repeat) { searchMode_ = !searchMode_; search_.clear(); speech_(searchMode_ ? "LReaParams - FX Params - Find parameter. Type letters or digits, Up or Down next match, Enter accept, Escape cancel." : "Find cancelled"); }
         return;
     }
     if (searchMode_) {
@@ -327,8 +346,10 @@ void FxNavigator::handle(const Key& k) {
         }
         return;
     }
-    if (k.vk == VK_ESCAPE) { if (valueMode_) { valueMode_ = false; speech_("Grid"); } else end(); return; }
-    if (k.vk == VK_RETURN) { if (k.repeat) return; valueMode_ = !valueMode_; speech_(valueMode_ ? "Value" : "Grid"); return; }
+    if (k.ctrl && !k.alt && !k.shift && k.vk == VK_HOME) { navigate(-parameter_); return; }
+    if (k.ctrl && !k.alt && !k.shift && k.vk == VK_END) { navigate(count_ - parameter_ - 1); return; }
+    if (k.vk == VK_ESCAPE) { if (valueMode_) { valueMode_ = false; speech_("LReaParams - FX Params - Grid"); } else end(); return; }
+    if (k.vk == VK_RETURN) { if (k.repeat) return; valueMode_ = !valueMode_; speech_(valueMode_ ? "LReaParams - FX Params - Value" : "LReaParams - FX Params - Grid"); return; }
     if (k.vk == VK_TAB) { announce(); return; }
     if (!valueMode_ && k.vk == VK_HOME) { navigate(-parameter_); return; }
     if (!valueMode_ && k.vk == VK_END) { navigate(count_ - parameter_ - 1); return; }
