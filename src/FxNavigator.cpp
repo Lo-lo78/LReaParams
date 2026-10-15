@@ -469,8 +469,8 @@ void FxNavigator::announce() {
 }
 void FxNavigator::announceTitle() {
     if (!active_) return;
-    speech_("FX Params - " + entries_[browserIndex_].name +
-            ", " + contextName() + ". " + currentParameterSpeech());
+    speech_("FX Params - " + contextName() + " - " +
+            entries_[browserIndex_].name + ". " + currentParameterSpeech());
 }
 namespace {
 std::wstring wideUtf8(const std::string& str) {
@@ -486,8 +486,8 @@ std::wstring wideUtf8(const std::string& str) {
 std::wstring FxNavigator::windowTitle() const {
     if (!active_) return L"FX Params";
     // Keep Grid out of the title as requested; Value is explicit on entry.
-    return L"FX Params - " + wideUtf8(entries_[browserIndex_].name) +
-           L", " + wideUtf8(contextName()) +
+    return L"FX Params - " + wideUtf8(contextName()) + L" - " +
+           wideUtf8(entries_[browserIndex_].name) +
            (searchMode_ ? L" - Find Parameter" : valueMode_ ? L" - Value" : L"");
 }
 std::string FxNavigator::reviewLine() const {
@@ -591,14 +591,17 @@ void FxNavigator::handle(const Key& k) {
     if (k.ctrl && k.vk == VK_HOME) { navigate(-parameter_); return; }
     if (k.ctrl && k.vk == VK_END) { navigate(count_ - 1 - parameter_); return; }
     if (k.vk == VK_ESCAPE) {
-        if (valueMode_) { valueMode_ = false; speech_("FX Params - Grid"); }
+        if (valueMode_) { valueMode_ = false; announceTitle(); }
         else end();
         return;
     }
     if (k.vk == VK_RETURN) {
         if (k.repeat) return;
+        // The same path as Track Params: enter a real Win32 Value slider,
+        // with full accessible review text. Do not open a second FX editor.
         valueMode_ = !valueMode_;
-        speech_(valueMode_ ? "Value, " + currentParameterSpeech() : "FX Params - Grid. " + currentParameterSpeech());
+        if (valueMode_) speech_(reviewLine());
+        else announceTitle();
         return;
     }
     if (k.vk == VK_F1 || k.vk == VK_F2) {

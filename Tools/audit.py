@@ -104,6 +104,18 @@ def main():
           'switchOwnedWindow' in (ROOT/'src/InputRouter.cpp').read_text(),
           'TEST13 native accessible Value slider missing')
     track_src=(ROOT/'src/TrackNavigator.cpp').read_text()
+    # TEST15: leave full context available on explicit NVDA review and row
+    # changes, but do not repeat the track name on each horizontal parameter.
+    check('void TrackNavigator::announce() { speech_(parameterValueSpeech()); }' in track_src and
+          'row_ = next; track_ = rows_[row_].track; announceTrack();' in track_src and
+          'if (!k.repeat) announceTrack();' in track_src and
+          'if (!valueMode_) return currentParameterSpeech();' in track_src,
+          'TEST15 contextual Track speech contract missing')
+    check('if (valueMode_) speech_(reviewLine());' in fx_source and
+          'void TitleProxy::syncValueControl' in title_src and
+          'SetFocus(slider_);' in title_src and
+          'titleProxy_.reassertFocusAfterNavigationKey();' in (ROOT/'src/Extension.cpp').read_text(),
+          'TEST15 native FX Value focus handoff contract missing')
     check(track_src.count('entries_.push_back(')==14, 'F2/F3 must have 14 fields per column')
     for marker in ['moveDetailColumn', 'VK_RETURN', 'Entry::midiFollowsFader',
                    'detailIndex_ * detailHeight + parameter_', 'toggle(*e)']:

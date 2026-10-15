@@ -88,6 +88,7 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
     keyboardKey_ = std::move(keyboardKey);
     title_ = title;
     sliderMode_ = false;
+    sliderLabel_.clear();
     ShowWindow(slider_, SW_HIDE);
     ShowWindow(edit_, SW_SHOW);
     reviewText_ = toWide(initialReviewLine);
@@ -107,22 +108,31 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
 void TitleProxy::syncValueControl(bool valueMode, const std::string& parameter, double position) {
     if (!window_ || !IsWindowVisible(window_) || !slider_) return;
     if (valueMode) {
-        // Native trackbar range is a representation only: REAPER remains
-        // authoritative. Do not forward TBM's native keyboard editing into FX.
+        // FX Params and Track Params deliberately use the very same real
+        // TRACKBAR_CLASSW, not a simulated Value field. REAPER is authoritative
+        // for all key handling; this trackbar reflects its normalized position.
         const double safe = std::isfinite(position) ? std::clamp(position, 0.0, 1.0) : 0.0;
         const int scaled = static_cast<int>(std::lround(safe * 10000.0));
         if (static_cast<int>(SendMessageW(slider_, TBM_GETPOS, 0, 0)) != scaled)
             SendMessageW(slider_, TBM_SETPOS, FALSE, scaled);
-    }
-    if (valueMode == sliderMode_) return;
-    if (valueMode) {
         const std::wstring label = L"Value, " + toWide(parameter);
-        SetWindowTextW(slider_, label.c_str());
-        ShowWindow(edit_, SW_HIDE);
-        ShowWindow(slider_, SW_SHOW);
-        sliderMode_ = true;
-        SetFocus(slider_);
-    } else {
+        if (label != sliderLabel_) {
+            sliderLabel_ = label;
+            // Only change the native name when the focused PARAMETER changes,
+            // never on each nudge: this avoids duplicate NVDA name-change events.
+            SetWindowTextW(slider_, sliderLabel_.c_str());
+        }
+        if (!sliderMode_) {
+            ShowWindow(edit_, SW_HIDE);
+            ShowWindow(slider_, SW_SHOW);
+            sliderMode_ = true;
+            // Put actual Windows keyboard focus on the trackbar. Changing just
+            // the title or review text would leave NVDA on the Grid control.
+            SetFocus(slider_);
+        }
+        return;
+    }
+    if (sliderMode_) {
         ShowWindow(slider_, SW_HIDE);
         ShowWindow(edit_, SW_SHOW);
         sliderMode_ = false;
@@ -184,6 +194,7 @@ void TitleProxy::shutdown() noexcept {
         SetWindowLongPtrW(slider_, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(originalSliderProc_));
     if (window_) { DestroyWindow(window_); window_ = nullptr; }
     edit_ = slider_ = nullptr;
+    sliderLabel_.clear();
     originalEditProc_ = originalSliderProc_ = nullptr;
     if (classRegistered_) { UnregisterClassW(kClass, instance_); classRegistered_ = false; }
 }

@@ -151,12 +151,13 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.14 TEST13 TRACK SWITCH AND NATIVE VALUE\n\n"
+            ShowMessageBox("LReaParams 0.0.16 TEST15 TRACK SPEECH AND VALUE SLIDER\n\n"
                 "FX: Ctrl+Up/Down changes FX. Ctrl+Shift+Up/Down switches to tracks with FX, restoring the last FX and parameter per track.\n"
                 "FX: F1/F2 grid height. Ctrl+Home/End absolute. Alt+Left/Right steps -10 to +10.\n"
-                "Track: F1 track rows; F2/F3 accessible only if sends/receives exist. Alt+Left/Right adjusts continuous steps.\n"
+                "Track: Left/Right announces only parameter and value; Up/Down changes track and speaks its name. Ctrl+R reviews full context.\n"
+                "Track: F1 rows; F2/F3 only when sends/receives exist. Alt+Left/Right adjusts continuous steps.\n"
                 "A native Windows trackbar owns keyboard focus in Value; Grid retains the quiet STATIC review label.\n"
-                "NVDA+T reads FX/track titles without the LReaParams prefix; NVDA+Up queries the parameter and value.\n"
+                "NVDA+T: FX Params - track - FX name; Track Params - track (and page for Sends/Receives). NVDA+Up queries parameter and value.\n"
                 "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
                 "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"
                 "Memories and full Lua migration remain unfinished.", "About LReaParams", 0);
@@ -208,8 +209,18 @@ public:
                 const HWND oldKeyboard = titleProxy_.hwnd();
                 titleProxy_.syncValueControl(current_->nativeValueSlider(),
                                              current_->sliderLabel(), current_->valueFraction());
-                if (titleProxy_.hwnd() != oldKeyboard && !input_.switchOwnedWindow(titleProxy_.hwnd())) {
-                    exitNavigation(false); return;
+                if (titleProxy_.hwnd() != oldKeyboard) {
+                    // FX plugins may asynchronously restore focus while their
+                    // formatted parameter value is queried. Recover the native
+                    // slider focus BEFORE rebinding the owned keyboard, subject
+                    // to the usual modal/edit-field safety checks. This is
+                    // especially important on FX Value entry and mirrors the
+                    // proven Track Params path.
+                    titleProxy_.reassertFocusAfterNavigationKey();
+                    if (!input_.switchOwnedWindow(titleProxy_.hwnd())) {
+                        OutputDebugStringW(L"LReaParams: native Value/Grid focus transition failed.\n");
+                        exitNavigation(false); return;
+                    }
                 }
                 // Only recover keyboard focus after a meaningful change.
                 // At the grid boundary this must be completely silent.

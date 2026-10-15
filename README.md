@@ -1,14 +1,14 @@
-# LReaParams — TEST13 (0.0.14)
+# LReaParams — TEST15 (0.0.16)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
 
-La TEST13 parte da TEST12 e mantiene l'importazione dei vecchi profili,
+La TEST15 parte da TEST14 e mantiene l'importazione dei vecchi profili,
 la navigazione FX e Track, il controllo di tastiera e la memoria in RAM.
 
 ## FX Params
 
-- Titolo NVDA+T: `FX Params - VST3: Pro-Q 4 (FabFilter), Track 1` (senza
+- Titolo NVDA+T: `FX Params - bass - VST3: Pro-Q 4 (FabFilter)` (senza
   `LReaParams` e senza `Grid`). In Value il titolo aggiunge `- Value`.
 - **Ctrl+Su/Giù:** FX precedente/successivo nella catena corrente.
 - **Ctrl+Maiusc+Su/Giù:** traccia precedente/successiva contenente FX con
@@ -26,6 +26,15 @@ la navigazione FX e Track, il controllo di tastiera e la memoria in RAM.
 
 ## Track Params
 
+- Titolo NVDA+T: `Track Params - bass` in F1, `Track Params - bass - Sends`
+  in F2 e `Track Params - bass - Receives` in F3. I nomi delle tracce
+  vengono aggiornati durante la navigazione e convertiti da UTF-8 a Unicode.
+- Lo stesso ordine finestra / traccia / FX è utilizzato negli annunci di
+  apertura, senza il prefisso LReaParams e senza il suffisso Grid.
+
+- Nella pagina F1, le frecce Sinistra/Destra pronunciano soltanto
+  **parametro e valore**; Su/Giù cambia traccia e aggiunge il nome della
+  traccia. Ctrl+R e NVDA+Su mantengono la rilettura del contesto completo.
 - Anche qui la variazione di un parametro parla solo il valore.
 - Alt+Sinistra/Destra imposta Step da -10 a +10. Questa scala modifica
   esclusivamente volume, pan e width (traccia e send/receive); la gestione
@@ -46,4 +55,6 @@ la navigazione FX e Track, il controllo di tastiera e la memoria in RAM.
 - La sintesi vocale finale, il riconoscimento del controllo slider da parte
   di NVDA e il focus devono essere verificati realmente in REAPER con OSARA.
 
-Vedere `Docs/TEST13_TRACK_SWITCH_VALUE.md` per la checklist dei test.
+Vedere `Docs/TEST13_TRACK_SWITCH_VALUE.md` per la checklist TEST13 e
+`Docs/TEST14_WINDOW_TITLES.md` per il controllo dei titoli.
+`Docs/TEST15_TRACK_SPEECH_FX_VALUE.md` per le nuove prove su annunci e Value.

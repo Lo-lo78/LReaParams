@@ -50,6 +50,7 @@ private:
     bool classRegistered_ = false;
     std::wstring title_;
     std::wstring reviewText_;
+    std::wstring sliderLabel_;
     std::function<void()> closeNavigator_;
     std::function<bool(HWND, UINT, bool)> keyboardKey_;
 };

@@ -47,6 +47,8 @@ private:
     std::string trackName() const;
     std::string detailPeerName(int category, int index) const;
     std::string currentParameterSpeech() const;
+    std::string parameterValueSpeech() const;
+    void announceTrack();
     std::string valueText(const Entry&, double) const;
     const Entry* current() const;
     std::vector<TrackRow> rows_;

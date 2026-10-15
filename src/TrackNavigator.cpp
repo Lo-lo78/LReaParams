@@ -14,6 +14,16 @@ double amp(double decibels) { return decibels <= minDb ? 0.0 : std::pow(10.0, de
 std::string num(double v, int places = 1) {
     std::ostringstream o; o << std::fixed << std::setprecision(places) << v; return o.str();
 }
+// REAPER track names use UTF-8; convert them for the native NVDA window title.
+std::wstring wideUtf8(const std::string& text) {
+    if (text.empty()) return {};
+    const int length = MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, nullptr, 0);
+    if (length <= 0) return {};
+    std::wstring converted(static_cast<size_t>(length), L'\0');
+    if (!MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, converted.data(), length)) return {};
+    converted.resize(static_cast<size_t>(length - 1));
+    return converted;
+}
 }
 
 bool TrackNavigator::begin() {
@@ -295,22 +305,36 @@ std::string TrackNavigator::sliderLabel() const {
     const auto* e = current();
     return e ? e->title : "";
 }
-void TrackNavigator::announce() { speech_(currentParameterSpeech()); }
+// Grid movement within the same track announces only the focused control.
+// The full track/parameter/value context stays available for NVDA+Up,
+// Ctrl+R and changes of track row.
+std::string TrackNavigator::parameterValueSpeech() const {
+    if (!contextUnchanged()) throw std::runtime_error("Track context changed");
+    const auto* e = current();
+    if (!e) return page_ == Page::sends ? "No sends" :
+                   page_ == Page::receives ? "No receives" : "No parameters";
+    return e->title + ", " + valueText(*e, get(*e));
+}
+void TrackNavigator::announce() { speech_(parameterValueSpeech()); }
+void TrackNavigator::announceTrack() { speech_(currentParameterSpeech()); }
 void TrackNavigator::announceTitle() {
     if (!active_) return;
-    const char* name = page_ == Page::tracks ? "Tracks" : page_ == Page::sends ? "Sends" : "Receives";
-    speech_("Track Params - " + std::string(name) +
-        (valueMode_ ? " - Value. " : " - Grid. ") + currentParameterSpeech());
+    const std::string pageSuffix = page_ == Page::tracks ? "" :
+                                   page_ == Page::sends ? " - Sends" : " - Receives";
+    speech_("Track Params - " + trackName() + pageSuffix +
+            (valueMode_ ? " - Value. " : ". ") + currentParameterSpeech());
 }
 std::wstring TrackNavigator::windowTitle() const {
     if (!active_) return L"Track Params";
-    const wchar_t* name = page_ == Page::tracks ? L"Tracks" : page_ == Page::sends ? L"Sends" : L"Receives";
-    return std::wstring(L"Track Params - ") + name + (valueMode_ ? L" - Value" : L"");
+    const wchar_t* pageSuffix = page_ == Page::tracks ? L"" :
+                                page_ == Page::sends ? L" - Sends" : L" - Receives";
+    return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + pageSuffix +
+           (valueMode_ ? L" - Value" : L"");
 }
 void TrackNavigator::moveTrack(int delta) {
     if (page_ != Page::tracks) return;
     const int next = std::clamp(row_ + delta, 0, static_cast<int>(rows_.size()) - 1);
-    if (next != row_) { row_ = next; track_ = rows_[row_].track; announce(); }
+    if (next != row_) { row_ = next; track_ = rows_[row_].track; announceTrack(); }
 }
 void TrackNavigator::moveParameter(int delta) {
     if (entries_.empty()) return;
@@ -362,7 +386,7 @@ void TrackNavigator::nudge(int direction, bool coarse) {
 void TrackNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     if (k.ctrl && !k.alt && !k.shift && k.vk == 'R') {
-        if (!k.repeat) announce();  // explicit parameter review via OSARA
+        if (!k.repeat) announceTrack();  // explicit full review via OSARA
         return;
     }
     if (k.vk == VK_ESCAPE) {
