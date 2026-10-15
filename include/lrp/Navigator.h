@@ -6,7 +6,7 @@
 
 namespace lrp {
 struct Key { UINT vk{}; bool ctrl{}, alt{}, shift{}, repeat{}; HWND window{}; };
-// All native navigators share one input owner. No control uses a hidden window.
+// All native navigators share one owned, offscreen keyboard window.
 class Navigator {
 public:
     virtual ~Navigator() = default;
@@ -19,7 +19,7 @@ public:
     virtual void announce() = 0;
     virtual void announceTitle() = 0; // one OSARA announcement at mode entry
     virtual std::wstring windowTitle() const = 0; // NVDA+T
-    virtual std::string reviewLine() const = 0; // NVDA+Up, native read-only EDIT caret
+    virtual std::string reviewLine() const = 0; // native accessible static text; no edit caret
     virtual HWND floatingWindow() const { return nullptr; }
     virtual bool uiStillOpen() const { return true; }
 };

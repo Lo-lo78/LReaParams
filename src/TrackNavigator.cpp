@@ -70,7 +70,7 @@ bool TrackNavigator::contextUnchanged() const {
 
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.shift) return false;
-    if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END);
+    if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END || k.vk == 'R');
     if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END;
     switch (k.vk) {
         case VK_ESCAPE: case VK_RETURN:
@@ -338,6 +338,10 @@ void TrackNavigator::nudge(int direction, bool coarse) {
 }
 void TrackNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
+    if (k.ctrl && !k.alt && !k.shift && k.vk == 'R') {
+        if (!k.repeat) announce();  // explicit parameter review via OSARA
+        return;
+    }
     if (k.vk == VK_ESCAPE) {
         if (valueMode_) { valueMode_ = false; announceTitle(); }
         else if (page_ != Page::tracks) selectPage(Page::tracks);

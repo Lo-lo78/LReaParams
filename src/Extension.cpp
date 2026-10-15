@@ -114,7 +114,7 @@ public:
                 if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
                     exitNavigation(false); speak("Keyboard capture unavailable"); }
                 else {
-                    // The initial review text is already in the EDIT before focus.
+                    // The accessible non-editable review label is populated before focus.
                     // Issue one explicit contextual OSARA announcement.
                     desired->announceTitle();
                 }
@@ -153,7 +153,7 @@ public:
                 "FX: Ctrl+Up/Down changes FX directly; last FX, parameter and grid settings are remembered per track/take for this REAPER session.\n"
                 "FX: F1/F2 grid height. Ctrl+Home/End absolute.\n"
                 "Track: F1 track rows, F2/F3 fourteen vertical fields per send/receive column.\n"
-                "Like the Lua, an offscreen window owns the keyboard; a read-only EDIT exposes the NVDA review line.\n"
+                "Like the Lua, an offscreen window owns the keyboard; a STATIC label avoids NVDA caret echo.\n"
                 "NVDA+T reads track/FX titles; NVDA+Up in FX reads parameter and value only.\n"
                 "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
                 "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"

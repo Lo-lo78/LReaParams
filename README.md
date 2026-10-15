@@ -1,14 +1,19 @@
-# LReaParams — TEST10 (0.0.11)
+# LReaParams — TEST11 (0.0.12)
 
-Sorgenti C++ soltanto. Compilazione esclusivamente tramite GitHub Actions.
+**Solo codice sorgente C++.** Compilazione esclusivamente tramite GitHub Actions.
 
-TEST10 corregge Alt+Home (massimo) e Alt+End (minimo) in FX e Track,
-riduce gli annunci ai bordi della navigazione e prepara il testo di NVDA
-prima di assegnare il focus. Il titolo di FX Params è ora coerente con
-l'annuncio completo di OSARA.
+Questa versione affronta la lettura involontaria delle lettere da parte di NVDA:
+la finestra da un pixel ora mette il focus su un controllo **STATIC**, non più
+su un campo `EDIT`. Lo spostamento dei parametri è annunciato soltanto dalle
+chiamate intenzionali a OSARA. La griglia non invia annunci quando non cambia
+posizione; non esiste un cursore di editazione per leggere caratteri ai bordi.
 
-**Il progetto non è stato compilato localmente.** I controlli statici non
-sostituiscono la prova in REAPER con NVDA e OSARA.
+**Ctrl+R**: ripete espressamente il parametro corrente con OSARA, in FX Params
+e Track Params. È un metodo affidabile anche se NVDA+Freccia Su non dovesse
+leggere il testo statico in assenza di cursore di sistema. **NVDA+T** conserva
+il titolo di navigazione con nome dell'effetto/traccia.
 
-Vedi `Docs/TEST10_EDGE_SPEECH_NVDA.md` e `Docs/TEST9_SESSION_MEMORY.md`.
-La migrazione completa dei Lua rimane in corso.
+I controlli per valori, F1–F3, Alt+Home/End, Ctrl+Su/Giù tra FX, memoria di
+sessione e importazione dei profili sono invariati.
+
+Leggere `Docs/TEST11_QUIET_FOCUS.md`. Non è stata eseguita alcuna build locale.

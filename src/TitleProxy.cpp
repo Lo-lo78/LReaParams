@@ -33,10 +33,13 @@ bool TitleProxy::ensureWindow() {
         WS_POPUP | WS_CAPTION, -32000, -32000, 1, 1,
         host_, nullptr, instance_, this);
     if (!window_) return false;
-    // Standard Windows EDIT is deliberately used instead of custom-drawn text:
-    // NVDA can inspect its real caret with NVDA+Up, even off screen.
-    edit_ = CreateWindowExW(0, L"EDIT", L"", WS_CHILD | WS_VISIBLE |
-        ES_READONLY | ES_AUTOHSCROLL, 0, 0, 1, 1,
+    // TEST11: a focused EDIT caused NVDA's own caret/character echo on each
+    // arrow key.  At the grid boundary this produced speech even though the
+    // navigator and OSARA had correctly said nothing.  Use a focusable native
+    // STATIC instead: Windows/NVDA see text, but there is NO SYSTEM CARET.
+    // Its parent is still the offscreen one-pixel titled keyboard owner.
+    edit_ = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE |
+        WS_TABSTOP | SS_NOTIFY | SS_LEFT, 0, 0, 1, 1,
         window_, nullptr, instance_, nullptr);
     if (!edit_) { DestroyWindow(window_); window_ = nullptr; return false; }
     SetWindowLongPtrW(edit_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
@@ -62,12 +65,10 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
     title_ = title;
     reviewText_ = toWide(initialReviewLine);
     if (reviewText_.size() > 8192) reviewText_.resize(8192);
-    // Populate the native review line BEFORE the EDIT receives focus.
-    // Changing a focused EDIT immediately after activation caused NVDA to
-    // announce the window, then an empty edit, then its changed text.
+    // Populate the static review label before focus.  Do not place the system
+    // caret in any editable control.  Only OSARA reads keyboard movement.
     SetWindowTextW(window_, title_.c_str());
     SetWindowTextW(edit_, reviewText_.c_str());
-    SendMessageW(edit_, EM_SETSEL, 0, 0);
     ShowWindow(window_, SW_SHOW);
     SetForegroundWindow(window_);
     SetFocus(edit_);
@@ -87,8 +88,6 @@ void TitleProxy::updateReviewLine(const std::string& utf8Text) {
     if (line == reviewText_) return;
     reviewText_ = std::move(line);
     SetWindowTextW(edit_, reviewText_.c_str());
-    // Keep the system caret on the single line. No selection is highlighted.
-    SendMessageW(edit_, EM_SETSEL, 0, 0);
 }
 void TitleProxy::reassertFocusAfterNavigationKey() noexcept {
     if (!window_ || !edit_ || !IsWindowVisible(window_) || !IsWindowEnabled(host_)) return;
@@ -150,15 +149,17 @@ LRESULT CALLBACK TitleProxy::windowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
 LRESULT CALLBACK TitleProxy::editProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
     auto* self = reinterpret_cast<TitleProxy*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     if (!self || !self->originalEditProc_) return DefWindowProcW(hwnd, msg, wp, lp);
-    if (msg == WM_GETDLGCODE) return DLGC_WANTALLKEYS;
+    // STATIC controls normally don't need the arrows.  This focusable one
+    // owns every navigation key; no edit selection or caret event can occur.
+    if (msg == WM_GETDLGCODE) return DLGC_WANTALLKEYS | DLGC_WANTARROWS | DLGC_WANTCHARS;
     if ((msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) && wp == VK_F12) {
         if (!(lp & (1LL << 30))) self->onF12(lp);
         return 0;
     }
     if ((msg == WM_KEYUP || msg == WM_SYSKEYUP) && wp == VK_F12) return 0;
     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
-        // NVDA's own gesture interception happens before this window proc.
-        // Navigation keys never modify the native read-only review line.
+        // NVDA's own gestures run before this handler.  Other keys are
+        // consumed here: the text label has no caret to move/echo.
         try { if (self->keyboardKey_) self->keyboardKey_(static_cast<UINT>(wp), (lp & (1LL << 30)) != 0); }
         catch (...) {
             auto close = std::move(self->closeNavigator_);

@@ -76,3 +76,17 @@ del focus; lo stato del controllo EDIT viene aggiornato soltanto quando cambia.
 La riga corrente NVDA viene impostata prima di dare il focus e il titolo FX
 usa il prefisso LReaParams. I messaggi automatici di NVDA sul ruolo EDIT non
 sono completamente controllabili dalla DLL. Non compilato né testato in REAPER.
+
+## TEST11 — lettura NVDA senza cursore EDIT (solo sorgente)
+
+Diagnosi TEST10: il campo EDIT focalizzato aveva un caret reale; NVDA
+continuava a parlare anche quando le griglie si fermavano correttamente
+al primo o ultimo elemento. TEST11 utilizza un controllo STATIC focalizzabile
+privo di cursore di sistema. I movimenti reali sono annunciati da OSARA,
+mentre quelli senza cambiamento restano silenziosi. Aggiunto Ctrl+R per
+rileggere intenzionalmente il parametro tramite OSARA in FX e Track.
+
+NVDA+T rimane gestito dal titolo della finestra. NVDA+Freccia Su è da
+verificare: senza il caret dell'EDIT potrebbe non leggere la riga; una
+futura integrazione UIA TextPattern sarebbe necessaria se ciò avviene.
+Build/test runtime da eseguire SOLO su GitHub Actions e REAPER.

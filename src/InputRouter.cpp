@@ -67,8 +67,8 @@ bool InputRouter::safeTarget(HWND target) const noexcept {
     if (GetWindowThreadProcessId(target, &pid) != threadId_ || pid != GetCurrentProcessId()) return false;
     GUITHREADINFO info{sizeof(info)};
     if (!GetGUIThreadInfo(threadId_, &info) || (info.flags & (GUI_INMENUMODE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE | GUI_INMOVESIZE))) return false;
-    // The owned native EDIT has a system caret by design (NVDA+Up).
-    // The owned, focused keyboard window is a legitimate navigation target.
+    // The owned native STATIC has no caret.  It still legitimately owns the
+    // keyboard; never mistake it for another REAPER editable control.
     // Do not override it using GetTouchedOrFocusedFX (the TEST5 failure).
     if (ownedWindow_ && target == ownedWindow_)
         return GetFocus() == ownedWindow_ &&

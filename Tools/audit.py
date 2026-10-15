@@ -50,12 +50,15 @@ def main():
         check(not re.search(forbidden,all_cpp),'Unexpected window/global hook/state write')
     # One purpose-built offscreen title proxy is allowed; forbid other window creation.
     title_src=(ROOT/'src/TitleProxy.cpp').read_text()
-    check(title_src.count('CreateWindowExW(')==2,'Expected titled owner window and one native EDIT child')
+    check(title_src.count('CreateWindowExW(')==2,'Expected titled owner window and one focusable text child')
     for marker in ['WS_EX_TOOLWINDOW','-32000','SW_HIDE','DestroyWindow','UnregisterClassW','SetForegroundWindow','WM_KEYDOWN']:
         check(marker in title_src,'Title proxy lifecycle contract missing: '+marker)
-    check('ES_READONLY' in title_src and 'EM_SETSEL' in title_src and
-          'updateReviewLine' in title_src and 'WM_GETDLGCODE' in title_src,
-          'NVDA native review line missing')
+    check('L"STATIC"' in title_src and 'SS_NOTIFY' in title_src and
+          'WS_TABSTOP' in title_src and 'updateReviewLine' in title_src and
+          'WM_GETDLGCODE' in title_src,
+          'TEST11 focused non-editable text label missing')
+    check('L"EDIT"' not in title_src and 'EM_SETSEL' not in title_src,
+          'An EDIT caret would reintroduce NVDA character chatter')
     # TEST9 regression markers: the native session memory must survive end()/begin()
     # without accidentally writing to REAPER project state or legacy TXT files.
     fx_header=(ROOT/'include/lrp/FxNavigator.h').read_text()
@@ -69,7 +72,7 @@ def main():
     check('SetExtState' not in fx_source and 'SetProjExtState' not in fx_source,
           'Session FX memory must not write REAPER state')
     # TEST10 source regressions: absolute value direction, quiet boundaries,
-    # and pre-focused NVDA review content (does not substitute runtime tests).
+    # and focused non-editable accessible content (runtime behavior unverified).
     check('k.vk == VK_HOME) setValue(1)' in fx_source and
           'k.vk == VK_END) setValue(0)' in fx_source,
           'FX Alt+Home/End must use maximum/minimum in that order')
@@ -83,7 +86,7 @@ def main():
           'Boundary must not send redundant review/focus updates')
     check('desired->windowTitle(), desired->reviewLine()' in (ROOT/'src/Extension.cpp').read_text() and
           'reviewText_ = toWide(initialReviewLine)' in title_src,
-          'Initial native review line must be filled before focus')
+          'Initial native text must be filled before focus')
     check('L"LReaParams - FX Params - "' in fx_source,
           'FX native window must have consistent LReaParams title')
     track_src=(ROOT/'src/TrackNavigator.cpp').read_text()
@@ -105,6 +108,8 @@ def main():
     check('WM_SYSKEYDOWN' in title_src and 'keyboardKey_' in title_src and
           'DLGC_WANTALLKEYS' in title_src,
           'Window procedure keyboard ownership missing')
+    check("k.vk == 'R'" in fx_source and "k.vk == 'R'" in (ROOT/'src/TrackNavigator.cpp').read_text(),
+          'Explicit Ctrl+R parameter review missing')
     check('reassertFocusAfterNavigationKey' in title_src,
           'Post-parameter-change focus recovery missing')
     corpus(ROOT/'Testing/fixtures')

@@ -5,9 +5,10 @@
 
 namespace lrp {
 // Keyboard owner in the style of the original Lua gfx window.
-// A top-level 1px window keeps the NVDA+T title; its focused native read-only
-// EDIT child exposes a real Windows text caret so NVDA+Up can read one line.
-// No custom NVDA plugin, keyboard hook, or screen overlay is required.
+// A top-level 1px window keeps the NVDA+T title; its focused native STATIC
+// child has no system text caret (no unsolicited NVDA character echo).
+// It exposes the current parameter as native accessible text. NVDA+Up is
+// experimental without an EDIT caret; Ctrl+R repeats the current item via OSARA.
 class TitleProxy final {
 public:
     explicit TitleProxy(HWND host) noexcept : host_(host) {}
@@ -17,7 +18,7 @@ public:
     bool activate(const std::wstring& title, const std::string& initialReviewLine,
                   std::function<void()> closeNavigator,
                   std::function<bool(UINT, bool)> keyboardKey);
-    HWND hwnd() const noexcept { return edit_; } // focus owner for InputRouter
+    HWND hwnd() const noexcept { return edit_; } // non-editable focus owner for InputRouter
     void updateTitle(const std::wstring& title);
     void updateReviewLine(const std::string& utf8Text);
     void reassertFocusAfterNavigationKey() noexcept;

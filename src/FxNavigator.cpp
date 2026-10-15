@@ -332,7 +332,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (k.ctrl) {
         if (k.alt) return false;
         return k.vk == VK_HOME || k.vk == VK_END ||
-               k.vk == VK_UP || k.vk == VK_DOWN || k.vk == 'F';
+               k.vk == VK_UP || k.vk == VK_DOWN || k.vk == 'F' || k.vk == 'R';
     }
     if (searchMode_) {
         if (k.alt) return false;
@@ -451,6 +451,10 @@ void FxNavigator::searchPreview() {
 }
 void FxNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
+    if (k.ctrl && !k.alt && !k.shift && k.vk == 'R') {
+        if (!k.repeat) announce();  // explicit repeat, never automatic at edges
+        return;
+    }
     if (k.ctrl && !k.alt && !k.shift && (k.vk == VK_UP || k.vk == VK_DOWN)) {
         if (!k.repeat) switchFx(k.vk == VK_UP ? -1 : 1);
         return;
