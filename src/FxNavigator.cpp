@@ -303,7 +303,7 @@ void FxNavigator::switchFx(int direction) {
                                 : TrackFX_GetNumParams(track_, entries_[i].index);
         if (count <= 0) continue;
         if (!selectFx(i)) return;
-        speech_(entries_[browserIndex_].name + ". " + currentParameterSpeech());
+        speech_(contextName() + ". " + fxDisplayName() + (isBypassed()?". Bypassed":"") + ". " + currentParameterSpeech());
         return;
     }
     // First/last FX is deliberately silent, like the edges of the grid.
@@ -387,7 +387,7 @@ void FxNavigator::switchTrack(int direction) {
     // Mirror the Lua: select the actual REAPER track only after successful switch.
     SetOnlyTrackSelected(target);
     UpdateArrange();
-    speech_(contextName() + ". " + entries_[browserIndex_].name + ". " + currentParameterSpeech());
+    speech_(contextName() + ". " + fxDisplayName() + (isBypassed()?". Bypassed":"") + ". " + currentParameterSpeech());
 }
 std::string FxNavigator::contextName() const {
     if (!track_) return "";
@@ -400,7 +400,143 @@ std::string FxNavigator::contextName() const {
         else context = "Track";
     }
     if (take_) context = "Take FX, " + context;
+    else if (track_ == GetMasterTrack(project_) && (fx_ & 0x1000000)) context = "Monitor FX";
     return context;
+}
+std::string FxNavigator::fxDisplayName() const {
+    if (browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size())) return "FX";
+    const auto& name=entries_[browserIndex_].name;
+    // Keep "Monitor: " in the profile key and session memory for old .fx files;
+    // remove it only from speech and the window title.
+    const std::string monitorPrefix="Monitor: ";
+    if ((fx_ & 0x1000000) && name.rfind(monitorPrefix,0)==0)
+        return name.substr(monitorPrefix.size());
+    return name;
+}
+bool FxNavigator::isBypassed() const {
+    return valid() && !(take_ ? TakeFX_GetEnabled(take_,fx_)
+                                 : TrackFX_GetEnabled(track_,fx_));
+}
+std::string FxNavigator::statusSuffix() const {
+    if (!valid()) return {};
+    std::string result;
+    if (isBypassed()) result += " - Bypassed";
+    int delta=-1;
+    if (deltaParameter(track_,take_,fx_,delta)) {
+        const double v=take_?TakeFX_GetParamNormalized(take_,fx_,delta):TrackFX_GetParamNormalized(track_,fx_,delta);
+        if (v>0.5) result += " - Delta Solo";
+    }
+    return result;
+}
+void FxNavigator::toggleBypass() {
+    if (!valid()) return;
+    const bool enabled = !isBypassed();
+    if (take_) TakeFX_SetEnabled(take_,fx_,!enabled);
+    else TrackFX_SetEnabled(track_,fx_,!enabled);
+    speech_(enabled ? "Bypassed" : "Enabled");
+}
+// Only use the host's special *last* wrapper parameter when its label proves
+// it is Delta. Never mistake a plugin's ordinary parameter for a wrapper.
+bool FxNavigator::deltaParameter(MediaTrack* tr,MediaItem_Take* tk,int fx,int& index) const {
+    index=-1;
+    if (!tr && !tk) return false;
+    const int n=tk?TakeFX_GetNumParams(tk,fx):TrackFX_GetNumParams(tr,fx);
+    if(n<=0)return false;
+    char label[256]{};
+    const bool named=tk?TakeFX_GetParamName(tk,fx,n-1,label,sizeof(label)):
+                        TrackFX_GetParamName(tr,fx,n-1,label,sizeof(label));
+    if(!named)return false;
+    std::string name=label;
+    std::transform(name.begin(),name.end(),name.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+    if(name!="delta" && name!="delta solo")return false;
+    index=n-1;return true;
+}
+void FxNavigator::toggleDeltaSolo() {
+    int delta=-1;
+    if(!valid() || !deltaParameter(track_,take_,fx_,delta)) {
+        speech_("Delta Solo unavailable for this FX");return;
+    }
+    const double old=take_?TakeFX_GetParamNormalized(take_,fx_,delta):TrackFX_GetParamNormalized(track_,fx_,delta);
+    const double next=old>0.5?0.0:1.0;
+    const bool ok=take_?TakeFX_SetParamNormalized(take_,fx_,delta,next):TrackFX_SetParamNormalized(track_,fx_,delta,next);
+    if(!ok){speech_("Delta Solo not changed");return;}
+    if(take_)TakeFX_EndParamEdit(take_,fx_,delta);else TrackFX_EndParamEdit(track_,fx_,delta);
+    speech_(next>0.5?"Delta Solo on":"Delta Solo off");
+}
+void FxNavigator::clearProjectDeltaSolo() {
+    if(!project_)return;
+    // Prefer the host command: it covers containers and all FX scopes.
+    int clearAction=0;
+    KbdSectionInfo* main=SectionFromUniqueID(0);
+    if(main && kbd_enumerateActions) for(int i=0;i<25000;++i) {
+        const char* name=nullptr;
+        int id=kbd_enumerateActions(main,i,&name);
+        if(id<=0)break;
+        if(name && std::strstr(name,"Clear delta solo for all project FX")) {clearAction=id;break;}
+    }
+    // Count host wrapper Delta toggles where this version of REAPER exposes
+    // them. This allows a truthful brief no-op announcement.
+    int active=0,known=0;
+    auto inspect=[&](MediaTrack* tr,MediaItem_Take* tk,int fx) {
+        int id=-1;
+        if(!deltaParameter(tr,tk,fx,id))return;
+        ++known;
+        if((tk?TakeFX_GetParamNormalized(tk,fx,id):TrackFX_GetParamNormalized(tr,fx,id))>0.5)++active;
+    };
+    auto scanTrack=[&](MediaTrack* tr) {
+        if(!tr)return;
+        for(int fx=0;fx<TrackFX_GetCount(tr);++fx)inspect(tr,nullptr,fx);
+        for(int fx=0;fx<TrackFX_GetRecCount(tr);++fx)inspect(tr,nullptr,0x1000000+fx);
+        for(int itemIndex=0;itemIndex<GetTrackNumMediaItems(tr);++itemIndex) {
+            MediaItem* item=GetTrackMediaItem(tr,itemIndex);
+            if(!item)continue;
+            for(int ti=0;ti<CountTakes(item);++ti) {
+                MediaItem_Take* tk=GetTake(item,ti);
+                if(tk)for(int fx=0;fx<TakeFX_GetCount(tk);++fx)inspect(tr,tk,fx);
+            }
+        }
+    };
+    scanTrack(GetMasterTrack(project_));
+    for(int i=0;i<CountTracks(project_);++i)scanTrack(GetTrack(project_,i));
+    if(clearAction) {
+        // Always run the native project-wide command: it also clears Delta
+        // Solo inside nested FX containers not covered by the wrapper scan.
+        Main_OnCommand(clearAction,0);
+        speech_(known>0 && active==0 ? "No Delta Solo" : "Delta Solo cleared");
+        return;
+    }
+    if(known>0 && active==0) {speech_("No Delta Solo");return;}
+    // Local wrapper fallback if the native action is absent or translated.
+    int cleared=0;
+    auto clearOne=[&](MediaTrack* tr,MediaItem_Take* tk,int fx) {
+        int id=-1;if(!deltaParameter(tr,tk,fx,id))return;
+        const double old=tk?TakeFX_GetParamNormalized(tk,fx,id):TrackFX_GetParamNormalized(tr,fx,id);
+        if(old<=0.5)return;
+        const bool ok=tk?TakeFX_SetParamNormalized(tk,fx,id,0):TrackFX_SetParamNormalized(tr,fx,id,0);
+        if(ok){++cleared;if(tk)TakeFX_EndParamEdit(tk,fx,id);else TrackFX_EndParamEdit(tr,fx,id);}
+    };
+    auto clearTrack=[&](MediaTrack* tr) {
+        if(!tr)return;
+        for(int i=0;i<TrackFX_GetCount(tr);++i)clearOne(tr,nullptr,i);
+        for(int i=0;i<TrackFX_GetRecCount(tr);++i)clearOne(tr,nullptr,0x1000000+i);
+        for(int i=0;i<GetTrackNumMediaItems(tr);++i) {
+            MediaItem* item=GetTrackMediaItem(tr,i);if(!item)continue;
+            for(int j=0;j<CountTakes(item);++j){MediaItem_Take* tk=GetTake(item,j);
+                if(tk)for(int k=0;k<TakeFX_GetCount(tk);++k)clearOne(tr,tk,k);}
+        }
+    };
+    clearTrack(GetMasterTrack(project_));
+    for(int i=0;i<CountTracks(project_);++i)clearTrack(GetTrack(project_,i));
+    speech_(cleared?"Delta Solo cleared":"No Delta Solo found");
+}
+void FxNavigator::runLuaFunctionAction(int command) {
+    if(Main_OnCommand) Main_OnCommand(command,0);
+}
+void FxNavigator::toggleSlotAccess() {
+    slotMode_ = slotMode_ == 0 ? 1 : 0;
+    fxOrder_.groupSlotMode = slotMode_==0;
+    saveStructure();
+    speech_(slotMode_==0?"Groups":"Memory positions");
 }
 bool FxNavigator::selectFx(int index) {
     if (index < 0 || index >= static_cast<int>(entries_.size())) return false;
@@ -472,8 +608,13 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_SPACE||
         (k.vk>='A'&&k.vk<='Z')||(k.vk>='0'&&k.vk<='9')||
         (k.ctrl&&k.vk=='F');
+    if ((k.vk==VK_F10||k.vk==VK_F11||k.vk==VK_F12) && k.alt) return false; // OSARA peak watchers
     if (k.vk == VK_F12) return false; // always reserved for OSARA shortcut help
+    if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F10)) return false; // future Parameter Library
     if (k.ctrl && !k.alt && k.vk == 'L') return true;
+    if (!k.ctrl && k.alt && !k.shift && k.vk == 'G') return true;
+    if (k.ctrl && !k.alt && ((k.vk=='B' && !k.shift)||k.vk=='D')) return true;
+    if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F3 || k.vk==VK_F5 || k.vk==VK_F6 || k.vk==VK_F9)) return true;
     if ((k.vk == VK_F7 || k.vk == VK_F8) && !k.ctrl && !k.alt && !k.shift) return true;
     if (k.ctrl && k.vk == 'G' && !k.alt && !k.shift) return true;
     if (k.ctrl && k.vk == 'M' && !k.alt && !k.shift) return true;
@@ -523,7 +664,7 @@ void FxNavigator::announceTitle() {
     if (!active_) return;
     if(memoryManager_){speakMemory("FX Memories");return;}
     speech_("FX Params - " + contextName() + " - " +
-            entries_[browserIndex_].name + ". " + currentParameterSpeech());
+            fxDisplayName() + (isBypassed()?". Bypassed":"") + ". " + currentParameterSpeech());
 }
 namespace {
 std::wstring wideUtf8(const std::string& str) {
@@ -538,10 +679,10 @@ std::wstring wideUtf8(const std::string& str) {
 }
 std::wstring FxNavigator::windowTitle() const {
     if (!active_) return L"FX Params";
-    if (memoryManager_) return L"FX Memories - " + wideUtf8(contextName()) + L" - " + wideUtf8(entries_[browserIndex_].name);
+    if (memoryManager_) return L"FX Memories - " + wideUtf8(contextName()) + L" - " + wideUtf8(fxDisplayName()) + wideUtf8(statusSuffix());
     // Keep Grid out of the title as requested; Value is explicit on entry.
     return L"FX Params - " + wideUtf8(contextName()) + L" - " +
-           wideUtf8(entries_[browserIndex_].name) +
+           wideUtf8(fxDisplayName()) + wideUtf8(statusSuffix()) +
            (textEdit_ ? L" - Rename" : searchMode_ ? L" - Find Parameter" : valueMode_ ? L" - Value" :
             editF7_ ? L" - F7 Edit" : L"");
 }
@@ -618,6 +759,12 @@ void FxNavigator::handle(const Key& k) {
     if (memoryManager_) {memoryNavigate(k);return;}
     if (textEdit_) { handleTextEdit(k); return; }
     if(k.vk==VK_F8 && !k.ctrl && !k.alt && !k.shift){if(!k.repeat)openFxMemories(false);return;}
+    if (!k.ctrl && k.alt && !k.shift && k.vk=='G') {toggleSlotAccess();return;}
+    if (k.ctrl && !k.alt && !k.shift && k.vk=='B') {if(!k.repeat)toggleBypass();return;}
+    if (k.ctrl && !k.alt && k.vk=='D') {
+        if(!k.repeat){if(k.shift)clearProjectDeltaSolo();else toggleDeltaSolo();}
+        return;
+    }
     if (k.ctrl && !k.alt && !k.shift && (k.vk=='G' || k.vk=='M')) {
         slotMode_=k.vk=='G'?0:1;
         fxOrder_.groupSlotMode=slotMode_==0;
@@ -694,6 +841,19 @@ void FxNavigator::handle(const Key& k) {
         else if(editF7_)exitF7();else if(groupSlot_){groupSlot_=0;rebuildView(parameter_);announce();}else end();return;}
     if(k.vk==VK_RETURN){if(k.repeat)return;valueMode_=!valueMode_;
         if (valueMode_) speech_(reviewLine()); else announceTitle(); return;}
+    // Tab describes the active parameter ordering; inside F7 it still
+    // reports the selection count (handled earlier in handleF7).
+    if (!k.ctrl && !k.alt && !k.shift && k.vk==VK_TAB) {
+        speech_(fxOrder_.custom?"Custom Order":"Plugin Order");return;
+    }
+    if (!k.ctrl && !k.alt && !k.shift && k.vk==VK_F3) {
+        speech_("Grid "+std::to_string(columns_)+". Step "+std::to_string(stepScale_)+
+                ". "+(slotMode_==0?"Group slots":"Memory slots"));return;
+    }
+    if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F5||k.vk==VK_F6||k.vk==VK_F9)) {
+        if(!k.repeat)runLuaFunctionAction(k.vk==VK_F5?40280:k.vk==VK_F6?40281:40282);
+        return;
+    }
     if(k.vk==VK_F1||k.vk==VK_F2){
         const int next=std::clamp(columns_+(k.vk==VK_F1?-1:1),1,200);
         if(next!=columns_){columns_=next;rememberPosition();speech_("Grid "+std::to_string(columns_));}return;

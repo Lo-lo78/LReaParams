@@ -1,4 +1,4 @@
-# LReaParams — TEST20 (0.0.21)
+# LReaParams — TEST21 (0.0.22)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
@@ -120,3 +120,17 @@ The command assigned to Track Params in REAPER Main Action List now opens FX Par
 The single letter **P is NOT hardcoded**. It is user-assigned to the FX Params action in REAPER Main Action List. The guarded SDK accelerator bridge tries to honor that current assignment from the focused FX selection list. **Ctrl+Shift+P IS hardcoded only for the focused native FX list**, where it opens FX Params, regardless of whether that shortcut is assigned to Track Params in the Main Action List. Outside the FX list, Ctrl+Shift+P is not intercepted and can run Track Params via the user's Main assignment. Other keys assigned to Track Params are no longer automatically redirected from FX Chain.
 
 This is a source-only TEST20 revision requiring runtime validation in REAPER/OSARA, and does not verify hook ordering or accessibility behavior. See `Docs/TEST20_FX_CHAIN_KEY_ROUTING.md`.
+
+## TEST21 — FX Params: controllo fuori F7
+
+- Master FX: `FX Params - Master - <nome FX>`; Monitor FX: `FX Params - Monitor FX - <nome FX>`. I vecchi prefissi `Monitor: ` sono conservati **solo** nelle chiavi dei profili `.fx` per non romperne la compatibilità.
+- Ctrl+B: bypass dell'istanza Track/Master/Monitor/Take; il titolo mostra `- Bypassed` se necessario.
+- Ctrl+D: Delta Solo sull'FX corrente **solo quando REAPER espone il controllo wrapper Delta**; non si modifica un parametro generico in caso contrario.
+- Ctrl+Shift+D: ricerca l'azione REAPER `FX: Clear delta solo for all project FX`; messaggio breve se le istanze analizzabili non hanno Delta Solo. Fallback sugli FX con wrapper Delta rilevabile; container non coperti dal fallback.
+- Tab fuori F7: `Plugin Order` / `Custom Order`. In F7 conserva il conteggio dei selezionati.
+- F3: `Grid N. Step N. Group slots` oppure `Memory slots`.
+- Alt+G alterna Groups / Memory positions e conserva la scelta nel profilo. Ctrl+G / Ctrl+M restano invariati.
+- F5, F6 e F9 chiamano le azioni native REAPER 40280, 40281, 40282 come il Lua.
+- F10 senza modificatori è lasciato alla futura Parameter Library. Alt+F10/F11/F12 rimangono liberi per i watcher OSARA.
+
+**Non compilare localmente:** revisione statica soltanto. La compatibilità esatta dei comandi e del wrapper Delta va verificata usando REAPER e GitHub Actions.

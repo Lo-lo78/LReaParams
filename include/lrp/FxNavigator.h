@@ -70,6 +70,15 @@ private:
     void restoreParameterPosition();
     void rememberPosition();
     std::string contextName() const;
+    std::string fxDisplayName() const;
+    std::string statusSuffix() const;
+    bool isBypassed() const;
+    void toggleBypass();
+    bool deltaParameter(MediaTrack* track, MediaItem_Take* take, int fx, int& index) const;
+    void toggleDeltaSolo();
+    void clearProjectDeltaSolo();
+    void runLuaFunctionAction(int command);
+    void toggleSlotAccess();
     int count() const;
     std::string parameterName() const;
     std::string currentParameterSpeech() const;
