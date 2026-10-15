@@ -22,6 +22,10 @@ jobs:
         run: python Testing/test22_static.py
       - name: Verify TEST23 accessibility and FX-default contracts (source only)
         run: python Testing/test23_static.py
+      - name: Verify TEST24 F7 selection, Custom Order and rename contracts (source only)
+        run: python Testing/test24_static.py
+      - name: Verify TEST25 group, F8 and quoted-search contracts (source only)
+        run: python Testing/test25_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

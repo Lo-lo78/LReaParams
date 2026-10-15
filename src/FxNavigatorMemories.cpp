@@ -138,8 +138,26 @@ void FxNavigator::memoryLoad(bool toEdit) {
     const MemoryEntry entry=col[static_cast<size_t>(memoryRow_)];
     // A selected memory must never mutate an unrelated FX: navigation is
     // built from the *current* plugin's verified ProfileRaw and FX GUID.
+    if(memoryCol_==2 && !toEdit) {
+        // Hidden list has no Enter operation. Use Delete to unhide while
+        // staying in the manager; this avoids accidental restoration.
+        return;
+    }
     if(memoryCol_==6) {
-        resetAllToDefault();
+        if(toEdit) {speech_("Default has no F7 editor. Press Enter to restore");return;}
+        // Same reset engine as Ctrl+Shift+Backspace. If it cannot restore
+        // (notably structural ReaEQ), remain in F8 with all data intact.
+        if(!resetAllToDefault(false))return;
+        memoryReturnF7_=false;
+        memoryReturnF7Filter_.clear();
+        memoryReturnGroup_=0;
+        memoryReturnParam_=parameter_;
+        memoryReturnPosition_=-1;
+        fxOrder_.custom=false;
+        saveStructure();
+        memoryStandalone_=false;
+        memoryExit(false);
+        speech_("Default restored. Plugin Order. "+currentParameterSpeech());
         return;
     }
     if(memoryCol_==3) {
@@ -156,7 +174,10 @@ void FxNavigator::memoryLoad(bool toEdit) {
             rebuildMemoryColumns();
         }
         if(memoryCol_==5)fxOrder_.custom=true;
-        if(memoryCol_==3 && fxOrder_.hidden.count(entry.param))fxOrder_.custom=false;
+        // A position pointing to a hidden Custom Order parameter can still be
+        // reached in Plugin Order, which always exposes every native FX param.
+        if((memoryCol_==0 || memoryCol_==3) && fxOrder_.hidden.count(entry.param))
+            fxOrder_.custom=false;
         // Escape/Enter returns to the FX grid at the requested parameter;
         // duplicates retain the selected raw occurrence, not just the ID.
         memoryReturnGroup_=0;
@@ -174,6 +195,7 @@ void FxNavigator::memoryLoad(bool toEdit) {
         memoryReturnParam_=fxOrder_.groups[entry.slot].front();
     } else if(memoryCol_==4) {
         fxOrder_.custom=true;
+        saveStructure();
         memoryReturnGroup_=0;
         memoryReturnPosition_=-1;
     }

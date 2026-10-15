@@ -150,7 +150,7 @@ std::string patchProfile(const std::string& input,const std::string& view,
 }
 void FxOrder::reset() noexcept {
     custom=false;groupSlotMode=false;order.clear();aliases.clear();hidden.clear();groups.clear();groupNames.clear();paramSlots.clear();ccLinks.clear();
-    file_.clear();resource_.clear();rawName_.clear();loadedDigest_.clear();paramName_={};count_=0;profile_={};loaded_=existed_=false;
+    file_.clear();resource_.clear();rawName_.clear();loadedDigest_.clear();paramName_={};count_=0;profile_={};loaded_=existed_=false;customCreated_=false;
 }
 void FxOrder::normalize() {
     std::vector<int> kept;
@@ -213,6 +213,7 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
     }
     loaded_=true;
     custom=profile_.headers.at("CustomOrderView")=="custom";
+    customCreated_=custom || !profile_.sections["CustomOrder"].empty();
     groupSlotMode=profile_.headers.at("SlotAccessMode")=="group";
     for(const auto& row:profile_.sections["CustomOrder"]) {
         int id=0;std::string name,alias;
@@ -260,14 +261,16 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
         }
     }
     normalize();
+    // Older Lua profiles may contain a custom order without an explicit view flag.
+    if(hasRealModifications())customCreated_=true;
 }
 bool FxOrder::save() {
     if(!loaded_ || resource_.empty())return false;
     normalize();
-    const bool modified=hasRealModifications();
-    const std::string view=(custom && modified)?"custom":"plugin";
+    const bool stored=storedCustomOrder();
+    const std::string view=(custom && stored)?"custom":"plugin";
     std::vector<std::string> orderLines;
-    if(modified)for(int id:order)orderLines.push_back(lineFor(id,paramName_(id),aliases.count(id)?aliases[id]:""));
+    if(stored)for(int id:order)orderLines.push_back(lineFor(id,paramName_(id),aliases.count(id)?aliases[id]:""));
     std::map<std::string,std::string> extra;
     for(const auto& row:profile_.sections["Extra"]) {
         const auto p=row.find('=');if(p==std::string::npos)continue;
@@ -318,7 +321,14 @@ bool FxOrder::save() {
 
 namespace lrp {
 bool FxOrder::storedCustomOrder() const noexcept {
-    return hasRealModifications();
+    return customCreated_ || hasRealModifications();
+}
+bool FxOrder::createCustomOrder() {
+    if(storedCustomOrder()) { custom=true; return true; }
+    custom=true;
+    customCreated_=true;
+    if(!save()) { custom=false;customCreated_=false;return false; }
+    return true;
 }
 bool FxOrder::hasDefaultValues() const noexcept {
     const auto it=profile_.sections.find("DefaultValues");
@@ -381,7 +391,7 @@ bool FxOrder::deleteCcLink(int param) {
 }
 void FxOrder::deleteCustomOrder() {
     order.clear();for(int id=0;id<count_;++id)order.push_back(id);
-    aliases.clear();hidden.clear();custom=false;
+    aliases.clear();hidden.clear();custom=false;customCreated_=false;
     if(!save())throw ProfileError("Cannot save deleted Custom Order");
 }
 }

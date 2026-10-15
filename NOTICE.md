@@ -27,3 +27,7 @@ TEST20 (0.0.21): only Ctrl+Shift+P hardcoded when native FX Chain list is focuse
 TEST22 (0.0.23): Home/End order corrected in FX grid and memory navigation; Bypassed/Delta Solo moved before context/plugin in speech and NVDA title. No local compilation.
 
 TEST23 (0.0.24): F7 filtered search and undo/redo; native Win32 EDIT for rename/search, group labels, Alt+G/Alt+M, Backspace resets and default memory snapshots. No local build.
+
+TEST24 (0.0.25): selected F7 parameters announced; Tab position counts, explicit F7 Custom Order creation and context-aware group/parameter rename. No local build.
+
+TEST25 (0.0.26): Ctrl+Fn repeated group returns Plugin Order; F8 Enter navigates outside edit except Hidden, F8 Default restores and exits to Plugin Order; quoted word-boundary search. No local build.

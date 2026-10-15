@@ -1,4 +1,4 @@
-# LReaParams — TEST23 (0.0.24)
+# LReaParams — TEST25 (0.0.26)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
@@ -181,3 +181,51 @@ casella EDIT, annuncio iniziale della rinomina, combinazioni Maiusc nella
 selezione a serpente e differenze fra FX statici, plugin con parametri dinamici
 (in particolare ReaEQ) e plugin in FX Chain. Il formato `.fx` e le schede
 Lua non sono state intenzionalmente sostituite o eliminate.
+
+## TEST24 — F7 selection, Custom Order creation and accessible rename
+
+- **F7** is the only action that creates a previously absent Custom Order; the
+  initial unmodified order is saved as a real `.fx` custom profile. Ctrl+L
+  only switches between **existing** Plugin/Custom views. While a Group is open
+  or inside F7, Ctrl+L cannot switch away from the current editing context.
+- Within F7, moving to a selected occurrence speaks `Selected, <parameter>,
+  <value>`; NVDA+Up also includes the selected state. Duplicated parameters
+  are selected independently by occurrence, even after an F7 search filter.
+- **Tab** outside F7: `Custom Order. 4 of 234` (or Plugin Order, or current
+  Group name). Inside F7: `Edit: Custom Order. 5 selected. 4 of 234` (or
+  `Edit: Group ...`); the denominator is the visible active list.
+- **Alt+G** sets Group slot access; **Alt+M** sets Position slot access. Removed
+  Ctrl+G / Ctrl+M aliases. Ctrl+Enter **in F7** renames the open Group only
+  in Alt+G mode; in Alt+M mode it renames the current parameter. Ctrl+Enter
+  outside F7 says `Press F7 to rename`. A Group must first be opened to name it.
+- **Ctrl+F** opens the same native Windows EDIT Unicode field both inside
+  and outside F7. Enter outside F7 locates a parameter in the current list;
+  inside F7 applies a filtered view without discarding F7 selections.
+
+No local CMake, Visual Studio or native builds. Requires testing in GitHub Actions
+then REAPER with NVDA/OSARA, especially the lifetime of the native text focus.
+
+
+## TEST25 — uscita dai gruppi, Invio F8, ricerca tra virgolette
+
+- **Alt+G, Ctrl+F1…F11**: se il gruppo indicato è già aperto,
+  richiamare lo stesso slot chiude il gruppo e va **esattamente in Plugin Order**
+  (non torna automaticamente alla Custom Order). Anche da F7 lascia l'editor.
+- **F8, Invio**: su Memory positions, Groups, MIDI CC, Custom Order e
+  Copied parameters torna alla griglia FX Params **fuori da F7**, sul
+  parametro, sulla copia o nel gruppo scelto. In Hidden parameters Invio
+  non ha alcun effetto: Canc resta l'operazione per ripristinare.
+- **F8, Default values, Invio**: usa lo stesso reset dell'intero plugin
+  di Ctrl+Maiusc+Backspace. Solo se riesce, esce da F8 e torna in
+  **Plugin Order**. ReaEQ con snapshot strutturale non implementato è
+  protetto: nessun reset fittizio né uscita dalla finestra.
+- **Ctrl+F** in e fuori F7: fra virgolette, ricerca per parole consecutive.
+  Le parole iniziali devono corrispondere completamente e l'ultima può
+  essere un prefisso: `"slot 1 fil"` trova `Slot 1 Filter` ma non
+  `Slot 10 Filter`. Un'unica parola fra virgolette, come `"kick"`,
+  richiede l'intera parola. Senza virgolette resta la ricerca per sottostringa.
+- Le selezioni F7 filtrate mantengono i riferimenti alle occorrenze originali.
+  I profili `.fx` e la memoria della sessione rimangono compatibili.
+
+Le prove di compilazione avvengono **solo tramite GitHub Actions**.
+Le verifiche statiche non sostituiscono il test effettivo con REAPER/OSARA/NVDA.

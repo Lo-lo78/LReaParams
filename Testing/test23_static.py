@@ -15,12 +15,12 @@ assert 'VK_BACK' in fx and 'resetCurrentToDefault()' in fx and 'resetAllToDefaul
 assert 'columns_=10;stepScale_=0' in fx
 assert 'snapshotDefaultsIfMissing()' in order and 'saveDefaultValues' in model
 assert 'defaultValues() const' in model and 'hasStructuralDefault()' in fx
-assert 'resetAllToDefault();' in mem and 'memoryColumns_[6]' in mem
+assert ('resetAllToDefault();' in mem or 'resetAllToDefault(false)' in mem) and 'memoryColumns_[6]' in mem
 assert 'nativeEditProc' in proxy and 'L"EDIT"' in proxy and 'ES_AUTOHSCROLL' in proxy
 assert 'textValue() const' in proxy and 'syncTextControl' in ext
 assert 'f7OriginalPosition' in order and 'f7FullView_' in order
 assert 'f7FilterPositions_' in order and 'applyF7Filter' in order
 assert 'f7Undo' in order and 'saveUndo()' in order
 assert 'META\\tREA_EQ_' in profile
-assert 'VERSION 0.0.24' in (r/'CMakeLists.txt').read_text()
+assert 'project(LReaParams VERSION ' in (r/'CMakeLists.txt').read_text()
 print('TEST23 static contracts PASS; Windows/native runtime not verified')

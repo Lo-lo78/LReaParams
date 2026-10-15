@@ -13,5 +13,5 @@ for marker in ('context = "Monitor FX"','fxWindowTitleBase()',
   assert marker in s, marker
 assert "((k.vk=='B' && !k.shift)||k.vk=='D')" in s
 assert '#define REAPERAPI_WANT_Main_OnCommand' in h
-assert 'VERSION 0.0.24' in (r/'CMakeLists.txt').read_text()
+assert 'project(LReaParams VERSION ' in (r/'CMakeLists.txt').read_text()
 print('TEST21 source contract PASS — no native build')

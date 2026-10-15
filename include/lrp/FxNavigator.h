@@ -90,17 +90,22 @@ private:
     void chooseSlotAccess(int mode);
     std::string groupLabel(int slot) const;
     void resetCurrentToDefault();
-    void resetAllToDefault();
+    bool resetAllToDefault(bool announceResult = true);
     void resetGridAndStep();
     void snapshotDefaultsIfMissing();
     int count() const;
     std::string parameterName() const;
     std::string currentParameterSpeech() const;
+    std::string editorParameterSpeech() const;
+    std::string viewPositionSpeech() const;
     std::string formattedValue() const;
     void nudge(int direction, bool big);
     void setValue(double value);
     void navigate(int delta);
     void findMatching(bool forward);
+    // Quoted queries match adjacent words: whole preceding words and a
+    // possible final prefix. A quoted single word requires a whole word.
+    static bool matchesSearch(const std::string& label, const std::string& query);
     void searchPreview();
     void loadFxOrder();
     enum class MemoryKind { position, group, hidden, cc, custom, copies, defaults };

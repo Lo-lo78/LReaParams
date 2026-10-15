@@ -32,5 +32,5 @@ assert 'status.empty() ? " - " : ". " + status + ". "' in fx
 assert 'speech_(fxWindowTitleBase() + ". " + currentParameterSpeech());' in fx
 assert 'if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));' in fx
 assert 'while (visibleName.size() > 1' in fx
-assert 'VERSION 0.0.24' in (r/'CMakeLists.txt').read_text()
+assert 'project(LReaParams VERSION ' in (r/'CMakeLists.txt').read_text()
 print('TEST22 source contracts PASS — host behavior not tested')

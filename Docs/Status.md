@@ -129,3 +129,17 @@ Undo/Redo locale Ctrl+Z/Y. Snapshot automatico solo al primo accesso ai plugin n
 visualizzato nella colonna Default Values del navigatore F8; ripristino strutturale ReaEQ
 non disponibile e bloccato deliberatamente. Profilo Lua V3 preservato. Solo sorgente,
 nessuna compilazione locale né test effettivo NVDA.
+
+
+## Stato corrente TEST25 (0.0.26) — solo sorgente
+
+Le descrizioni TEST4–TEST11 precedenti documentano le fasi storiche e
+**non sono una fotografia aggiornata** della DLL. Alla TEST25 sono presenti
+Custom Order e l'editor F7, la gestione FX Memories F8 (parziale), Master/
+Monitor FX, campi EDIT nativi, Value slider, memorie di posizione e gruppi.
+La TEST25 aggiunge l'uscita del gruppo verso Plugin Order alla seconda
+pressione Ctrl+Fn, il caricamento con Invio da F8 fuori dall'editor, la
+ricerca tra virgolette e il ritorno in Plugin Order con il reset Default.
+Sono ancora mancanti il reset strutturale ReaEQ, le funzioni MIDI avanzate,
+Parameter Library e altre caratteristiche del Lua. Audit solo statico:
+non sono state eseguite build né prove su REAPER in questa consegna.

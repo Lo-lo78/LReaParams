@@ -46,7 +46,7 @@ void FxNavigator::loadFxOrder() {
     visible_=fxOrder_.visibleOrder();
     int preference=-1;
     if(auto* memory=contextMemory())for(const auto& pos:memory->positions)
-        if(guidSame(&pos.fxGuid,fxGuid_)) {preference=pos.viewPosition;f7Selected_=pos.f7Selected;fxOrder_.custom=pos.customView;break;}
+        if(guidSame(&pos.fxGuid,fxGuid_)) {preference=pos.viewPosition;f7Selected_=pos.f7Selected;fxOrder_.custom=pos.customView && fxOrder_.storedCustomOrder();break;}
     rebuildView(parameter_,preference);
     snapshotDefaultsIfMissing();
 }
@@ -88,12 +88,9 @@ void FxNavigator::applyF7Filter(const std::string& query, bool speak) {
     if(query.empty()){if(speak)speech_("Search cleared. "+currentParameterSpeech());return;}
     f7FullView_=visible_;
     f7FilterPositions_.clear();
-    std::string needle=query;
-    std::transform(needle.begin(),needle.end(),needle.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
     for(int i=0;i<static_cast<int>(f7FullView_.size());++i){
-        std::string label=fxOrder_.label(f7FullView_[static_cast<size_t>(i)]);
-        std::transform(label.begin(),label.end(),label.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
-        if(label.find(needle)!=std::string::npos)f7FilterPositions_.push_back(i);
+        const std::string label=fxOrder_.label(f7FullView_[static_cast<size_t>(i)]);
+        if(matchesSearch(label,query))f7FilterPositions_.push_back(i);
     }
     f7FilterQuery_=query;
     if(f7FilterPositions_.empty()){
@@ -141,14 +138,22 @@ void FxNavigator::saveStructure() {
     rememberPosition();
 }
 void FxNavigator::enterF7() {
-    if(!fxOrder_.custom && !groupSlot_) {speech_("F7 not available in Plugin order");return;}
+    // F7 is the deliberate creation boundary. Ctrl+L never invents a custom
+    // profile. Editing always shows Custom Order, never Plugin Order.
+    if(!groupSlot_ && !fxOrder_.storedCustomOrder()) {
+        if(!fxOrder_.createCustomOrder()) {speech_("Cannot create Custom Order");return;}
+    } else if(!groupSlot_ && !fxOrder_.custom) {
+        fxOrder_.custom=true;saveStructure();
+    }
+    if(!groupSlot_)rebuildView(parameter_);
     undoStack_.clear();redoStack_.clear();
     f7ReturnParam_=parameter_;f7ReturnPos_=viewPos_;f7ReturnGroup_=groupSlot_;
     clearF7Filter();
     editF7_=true;valueMode_=false;groupEditAll_=false;
     f7SnakePath_.clear();f7SnakeDirections_.clear();f7BaseSelection_=f7Selected_;
-    speech_(std::string(groupSlot_?"Edit "+groupLabel(groupSlot_):"Edit Custom order")+
-        ". "+std::to_string(f7Selected_.size())+" selected. "+currentParameterSpeech());
+    speech_(std::string(groupSlot_?"Edit: "+groupLabel(groupSlot_):"Edit: Custom Order")+
+        ". "+std::to_string(f7Selected_.size())+" selected. "+
+        viewPositionSpeech()+". "+editorParameterSpeech());
 }
 void FxNavigator::exitF7() {
     clearF7Filter();
@@ -186,7 +191,7 @@ void FxNavigator::selectF7(bool shift,int target,const std::string& direction) {
     f7Selected_=f7BaseSelection_;
     for(int p:f7SnakePath_)f7Selected_.insert(f7OriginalPosition(p));
     rememberPosition();
-    speech_("Selected "+std::to_string(f7Selected_.size())+". "+currentParameterSpeech());
+    speech_("Selected "+std::to_string(f7Selected_.size())+". "+editorParameterSpeech());
 }
 void FxNavigator::doCopy(bool cut) {
     if(!editF7_)return;
@@ -309,6 +314,18 @@ std::string FxNavigator::groupLabel(int slot) const {
     return label;
 }
 void FxNavigator::openGroup(int slot) {
+    // Ctrl+Fn on the already active group is a direct exit to Plugin Order.
+    // It must not depend on the view (Custom/Plugin) used before opening it.
+    if(groupSlot_==slot) {
+        clearF7Filter();
+        editF7_=false;groupEditAll_=false;valueMode_=false;
+        f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
+        groupSlot_=0;fxOrder_.custom=false;
+        rebuildView(parameter_);
+        saveStructure();
+        speech_("Plugin Order. "+currentParameterSpeech());
+        return;
+    }
     clearF7Filter();
     const auto it=fxOrder_.groups.find(slot);
     if(it==fxOrder_.groups.end()||it->second.empty()){speech_("Group "+std::to_string(slot)+" empty");return;}
@@ -448,18 +465,19 @@ bool FxNavigator::handleF7(const Key& k) {
         speech_(std::string(f7Selected_.count(f7OriginalPosition(viewPos_))?"Selected ":"Unselected ")+currentParameterSpeech());return true;
     }
     if(!k.ctrl&&!k.shift&&!k.alt&&k.vk==VK_TAB){
-        speech_((groupSlot_?groupLabel(groupSlot_)+". ":"Custom Order. ")+
-                std::to_string(f7Selected_.size())+" selected"+
+        speech_((groupSlot_?"Edit: "+groupLabel(groupSlot_):"Edit: Custom Order")+". "+
+                std::to_string(f7Selected_.size())+" selected. "+viewPositionSpeech()+
                 (f7FilterActive_?". Filter "+f7FilterQuery_:""));return true;
     }
     if(k.ctrl&&!k.shift&&!k.alt&&k.vk==VK_RETURN){
-        textEdit_=true;textEditParam_=groupSlot_?-1:parameter_;
-        textBuffer_=groupSlot_?fxOrder_.groupNames[groupSlot_]:displayName();
+        if(slotMode_==0 && !groupSlot_) {speech_("Open a group to rename");return true;}
+        textEdit_=true;textEditParam_=(slotMode_==0)?-1:parameter_;
+        textBuffer_=(textEditParam_<0)?fxOrder_.groupNames[groupSlot_]:displayName();
         const int needed=MultiByteToWideChar(CP_UTF8,0,textBuffer_.c_str(),-1,nullptr,0);
         textWide_.assign(static_cast<size_t>(std::max(0,needed)),L'\0');
         if(needed>0) {MultiByteToWideChar(CP_UTF8,0,textBuffer_.c_str(),-1,textWide_.data(),needed);textWide_.pop_back();}
         textCursor_=textWide_.size();textFresh_=true;
-        speech_(std::string(groupSlot_?"Edit group name. ":"Edit param name. ")+textBuffer_);
+        speech_(std::string(textEditParam_<0?"Edit group name. ":"Edit param name. ")+textBuffer_);
         return true;
     }
     if(k.ctrl&&k.alt&&!k.shift&&(k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT)) {

@@ -27,6 +27,7 @@ public:
     std::map<int, int> paramSlots;
     bool hasRealModifications() const;
     bool storedCustomOrder() const noexcept;
+    bool createCustomOrder(); // F7: persist an initial, unmodified Custom Order
     bool hasDefaultValues() const noexcept;
     int defaultValueCount() const noexcept;
     std::map<int,double> defaultValues() const;
@@ -45,6 +46,6 @@ private:
     std::function<std::string(int)> paramName_;
     int count_ = 0;
     Profile profile_{};
-    bool loaded_ = false, existed_ = false;
+    bool loaded_ = false, existed_ = false, customCreated_ = false;
 };
 }

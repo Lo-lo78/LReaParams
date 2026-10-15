@@ -594,11 +594,11 @@ void FxNavigator::resetCurrentToDefault() {
     if(take_)TakeFX_EndParamEdit(take_,fx_,parameter_);else TrackFX_EndParamEdit(track_,fx_,parameter_);
     speech_("Reset. "+currentParameterSpeech());
 }
-void FxNavigator::resetAllToDefault() {
-    if(!valid())return;
-    if(fxOrder_.hasStructuralDefault()) {speech_("Structural ReaEQ default not yet migrated. No change");return;}
+bool FxNavigator::resetAllToDefault(bool announceResult) {
+    if(!valid())return false;
+    if(fxOrder_.hasStructuralDefault()) {speech_("Structural ReaEQ default not yet migrated. No change");return false;}
     const auto values=fxOrder_.defaultValues();
-    if(values.empty()){speech_("No default snapshot");return;}
+    if(values.empty()){speech_("No default snapshot");return false;}
     Undo_BeginBlock2(project_);
     int restored=0;
     for(const auto& [id,value]:values) {
@@ -607,7 +607,9 @@ void FxNavigator::resetAllToDefault() {
         if(ok) {++restored;if(take_)TakeFX_EndParamEdit(take_,fx_,id);else TrackFX_EndParamEdit(track_,fx_,id);}
     }
     Undo_EndBlock2(project_,"LReaParams: restore FX defaults",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
-    speech_("Reset "+std::to_string(restored)+" parameters. "+currentParameterSpeech());
+    if(restored==0) {speech_("No parameters restored");return false;}
+    if(announceResult)speech_("Reset "+std::to_string(restored)+" parameters. "+currentParameterSpeech());
+    return true;
 }
 void FxNavigator::resetGridAndStep() {
     columns_=10;stepScale_=0;speech_("Grid 10. Step 0");
@@ -698,8 +700,6 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (k.ctrl && !k.alt && ((k.vk=='B' && !k.shift)||k.vk=='D')) return true;
     if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F3 || k.vk==VK_F5 || k.vk==VK_F6 || k.vk==VK_F9)) return true;
     if ((k.vk == VK_F7 || k.vk == VK_F8) && !k.ctrl && !k.alt && !k.shift) return true;
-    if (k.ctrl && k.vk == 'G' && !k.alt && !k.shift) return true;
-    if (k.ctrl && k.vk == 'M' && !k.alt && !k.shift) return true;
     if (k.ctrl && !k.alt && k.vk >= VK_F1 && k.vk <= VK_F11) return true;
     if (editF7_) {
         if (k.ctrl && !k.alt && (k.vk=='A'||k.vk=='C'||k.vk=='X'||k.vk=='V'||k.vk=='Z'||k.vk=='Y'||k.vk==VK_DELETE||k.vk==VK_RETURN))return true;
@@ -712,7 +712,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (k.shift) return false;
     if (k.ctrl) {
         if (k.alt) return false;
-        return k.vk == VK_HOME || k.vk == VK_END ||
+        return k.vk == VK_HOME || k.vk == VK_END || VK_RETURN == k.vk ||
                k.vk == VK_UP || k.vk == VK_DOWN || k.vk == 'F' || k.vk == 'R';
     }
     return k.vk == VK_ESCAPE || k.vk == VK_RETURN || k.vk == VK_F1 || k.vk == VK_F2 ||
@@ -732,6 +732,16 @@ std::string FxNavigator::formattedValue() const {
 std::string FxNavigator::currentParameterSpeech() const {
     return displayName() + ", " + formattedValue();
 }
+std::string FxNavigator::editorParameterSpeech() const {
+    // Selection is an OCCURRENCE index, not a parameter ID: duplicate entries
+    // in a Custom Order must be announced independently, including filters.
+    const bool selected=editF7_ && !visible_.empty() &&
+        f7Selected_.count(f7OriginalPosition(viewPos_)) != 0;
+    return (selected ? "Selected " : "") + currentParameterSpeech();
+}
+std::string FxNavigator::viewPositionSpeech() const {
+    return std::to_string(visible_.empty()?0:viewPos_+1) + " of " + std::to_string(visible_.size());
+}
 double FxNavigator::valueFraction() const {
     if (!valid()) return 0;
     return std::clamp(take_ ? TakeFX_GetParamNormalized(take_, fx_, parameter_)
@@ -740,7 +750,7 @@ double FxNavigator::valueFraction() const {
 std::string FxNavigator::sliderLabel() const { return displayName(); }
 void FxNavigator::announce() {
     if(memoryManager_) {speakMemory();return;}
-    speech_(currentParameterSpeech());
+    speech_(editF7_ ? editorParameterSpeech() : currentParameterSpeech());
 }
 void FxNavigator::announceTitle() {
     if (!active_) return;
@@ -773,7 +783,8 @@ std::string FxNavigator::reviewLine() const {
     if (textEdit_) return "Edit name, " + textBuffer_;
     if (searchMode_) return "Find parameter, " + search_;
     if (editF7_ && !valueMode_)
-        return currentParameterSpeech() + ". " + std::to_string(f7Selected_.size()) + " selected";
+        return editorParameterSpeech() + ". " + viewPositionSpeech() + ". " +
+            std::to_string(f7Selected_.size()) + " selected";
     return valueMode_ ? "Value, " + currentParameterSpeech() : currentParameterSpeech();
 }
 void FxNavigator::navigate(int delta) {
@@ -815,16 +826,51 @@ std::string lowerAscii(std::string value) {
     for (char& c : value) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     return value;
 }
+bool wordByte(unsigned char c) {
+    // Preserve UTF-8 multibyte sequences as word content; ASCII punctuation
+    // and whitespace separate words. Comparison remains ASCII-insensitive.
+    return std::isalnum(c) || c >= 128;
+}
+std::vector<std::string> words(const std::string& input) {
+    std::vector<std::string> out;
+    std::string token;
+    for(unsigned char c:input) {
+        if(wordByte(c))token.push_back(static_cast<char>(std::tolower(c)));
+        else if(!token.empty()) {out.push_back(std::move(token));token.clear();}
+    }
+    if(!token.empty())out.push_back(std::move(token));
+    return out;
+}
+}
+bool FxNavigator::matchesSearch(const std::string& label,const std::string& query) {
+    if(query.empty())return false;
+    if(query.size()<2 || query.front()!='"' || query.back()!='"')
+        return lowerAscii(label).find(lowerAscii(query))!=std::string::npos;
+    const auto wanted=words(query.substr(1,query.size()-2));
+    const auto available=words(label);
+    if(wanted.empty() || wanted.size()>available.size())return false;
+    for(size_t start=0;start+wanted.size()<=available.size();++start) {
+        bool match=true;
+        for(size_t i=0;i<wanted.size();++i) {
+            const bool last=i+1==wanted.size();
+            // One quoted word means that exact word. In a multiword quoted
+            // query the last word can be a prefix ("slot 1 fil").
+            if(last && wanted.size()>1) {
+                if(available[start+i].compare(0,wanted[i].size(),wanted[i])!=0) {match=false;break;}
+            } else if(available[start+i]!=wanted[i]) {match=false;break;}
+        }
+        if(match)return true;
+    }
+    return false;
 }
 void FxNavigator::findMatching(bool forward) {
     if (search_.empty()) { speech_("Search is empty"); return; }
-    const std::string needle = lowerAscii(search_);
     const int total = static_cast<int>(visible_.size());
     if(total<=0){speech_("No visible parameters");return;}
     for (int offset = 1; offset <= total; ++offset) {
         const int pos = (viewPos_ + (forward ? offset : -offset) + total * 2) % total;
         const int id = visible_[pos];
-        if (lowerAscii(fxOrder_.label(id)).find(needle) != std::string::npos) {
+        if (matchesSearch(fxOrder_.label(id),search_)) {
             positionChanged(pos, false);
             speech_("Match " + std::to_string(pos + 1) + ", " + displayName());
             return;
@@ -849,7 +895,6 @@ void FxNavigator::handle(const Key& k) {
         if(!k.repeat){if(k.shift)clearProjectDeltaSolo();else toggleDeltaSolo();}
         return;
     }
-    if (k.ctrl && !k.alt && !k.shift && (k.vk=='G'||k.vk=='M')) {chooseSlotAccess(k.vk=='G'?0:1);return;}
     if (k.ctrl && !k.alt && k.vk>=VK_F1 && k.vk<=VK_F11) {
         const int slot=static_cast<int>(k.vk-VK_F1)+1;
         if(slotMode_==0){if(k.shift)saveGroup(slot);else openGroup(slot);return;}
@@ -867,16 +912,16 @@ void FxNavigator::handle(const Key& k) {
         return;
     }
     if (k.ctrl && !k.alt && !k.shift && k.vk=='L') {
+        if (groupSlot_) {speech_("Group active. Ctrl+L unavailable");return;}
         if (searchMode_) { searchMode_=false;search_.clear();speech_("Find cancelled");return; }
         if (textEdit_) return;
-        if (editF7_)exitF7();
-        if (groupSlot_) {groupSlot_=0;groupEditAll_=false;rebuildView(parameter_);speech_("Group closed. "+currentParameterSpeech());return;}
+        if (editF7_) {speech_("Exit F7 first");return;}
+        if (!fxOrder_.storedCustomOrder()) {speech_("No Custom Order. Press F7");return;}
         const int old=parameter_;
         fxOrder_.custom=!fxOrder_.custom;
         rebuildView(old);
-        if (fxOrder_.hasRealModifications()) saveStructure();
-        else rememberPosition();
-        // Ctrl+L alone is lazy: never creates or rewrites a profile.
+        saveStructure(); // Persist only the view preference; F7 is the creation boundary.
+        // Ctrl+L never creates a previously absent Custom Order.
         speech_(std::string(fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech());
         return;
     }
@@ -886,6 +931,9 @@ void FxNavigator::handle(const Key& k) {
         return;
     }
     if (editF7_ && handleF7(k)) return;
+    if(k.ctrl && !k.shift && !k.alt && k.vk==VK_RETURN) {
+        speech_("Press F7 to rename");return;
+    }
     if (k.ctrl && k.shift && !k.alt && (k.vk==VK_UP||k.vk==VK_DOWN)) {
         if(!k.repeat)switchTrack(k.vk==VK_UP?-1:1);
         return;
@@ -908,7 +956,8 @@ void FxNavigator::handle(const Key& k) {
         else if(k.vk==VK_RETURN){
             const std::string query=search_;
             searchMode_=false;search_.clear();
-            if(editF7_)applyF7Filter(query);else announce();
+            if(editF7_)applyF7Filter(query);
+            else { search_=query; if(!query.empty())findMatching(true); else speech_("Search empty"); search_.clear(); }
         }
         else if(k.vk==VK_UP||k.vk==VK_DOWN)findMatching(k.vk==VK_DOWN);
         else if(k.vk==VK_BACK){if(!search_.empty())search_.pop_back();searchPreview();}
@@ -937,8 +986,8 @@ void FxNavigator::handle(const Key& k) {
     // Tab describes the active parameter ordering; inside F7 it still
     // reports the selection count (handled earlier in handleF7).
     if (!k.ctrl && !k.alt && !k.shift && k.vk==VK_TAB) {
-        speech_(groupSlot_ ? groupLabel(groupSlot_)+(editF7_?". Edit":"") :
-                fxOrder_.custom?"Custom Order":"Plugin Order");return;
+        speech_((groupSlot_ ? groupLabel(groupSlot_) :
+                fxOrder_.custom?"Custom Order":"Plugin Order")+". "+viewPositionSpeech());return;
     }
     if (!k.ctrl && !k.alt && !k.shift && k.vk==VK_F3) {
         speech_("Grid "+std::to_string(columns_)+". Step "+std::to_string(stepScale_)+
