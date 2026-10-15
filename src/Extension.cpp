@@ -148,7 +148,7 @@ public:
                 "Track: F1 rows; F2/F3 only when sends/receives exist. Alt+Left/Right adjusts continuous steps.\n"
                 "A native Windows trackbar owns keyboard focus in Value; Grid retains the quiet STATIC review label.\n"
                 "NVDA+T: FX Params - track - FX name; Track Params - track (and page for Sends/Receives). NVDA+Up queries parameter and value.\n"
-                "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
+                "F12 alone is reserved for future LReaParams commands; Ctrl+F12 recalls group/memory slot 12.\n"
                 "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"
                 "F8 opens seven-column FX Memories. Default reset uses verified normalized snapshots. Structural ReaEQ restoration and advanced MIDI CC remain protected.", "About LReaParams", 0);
             break;

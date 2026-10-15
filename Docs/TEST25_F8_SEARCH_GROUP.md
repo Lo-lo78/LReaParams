@@ -1,5 +1,7 @@
 # TEST25 — Gruppi, FX Memories e ricerca letterale (sorgente)
 
+**Nota:** per il comportamento dei gruppi e dei filtri vale la successiva TEST26; la prova di ritorno obbligatorio a Plugin Order qui sotto è storica e superata.
+
 ## Collaudo REAPER con NVDA
 
 1. Aprire una Custom Order e Alt+G, poi Ctrl+F1 su un gruppo salvato.

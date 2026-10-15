@@ -143,3 +143,11 @@ ricerca tra virgolette e il ritorno in Plugin Order con il reset Default.
 Sono ancora mancanti il reset strutturale ReaEQ, le funzioni MIDI avanzate,
 Parameter Library e altre caratteristiche del Lua. Audit solo statico:
 non sono state eseguite build né prove su REAPER in questa consegna.
+
+## TEST26 (0.0.27) — aggiornamento dopo TEST25
+
+La TEST26 sostituisce la precedente uscita forzata dal gruppo a Plugin Order con il ripristino della vista d'origine (compresa l'eventuale modalità F7), rende raggiungibile il dodicesimo slot Ctrl+F12, usa la stessa griglia filtrata per la ricerca dentro e fuori F7, e riserva Alt+Frecce alla navigazione geometrica sui selezionati in F7. Vedere `Docs/TEST26_GROUP_RETURN_FILTER_SELECTION.md`. Verifiche statiche, senza build locale.
+
+## TEST27 (0.0.28) — rettifica combinazioni
+
+Alt+Maiusc+Frecce sostituisce Alt+Frecce per visitare i parametri selezionati in F7. F12 senza modificatori è riservato a LReaParams e non viene più inoltrato a OSARA mentre la finestra dell'estensione possiede il focus. Ctrl+F12 e Ctrl+Maiusc+F12 conservano lo slot 12. Le sezioni anteriori documentano lo stato delle rispettive versioni storiche. Solo test statici, nessuna compilazione.

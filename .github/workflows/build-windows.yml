@@ -26,6 +26,10 @@ jobs:
         run: python Testing/test24_static.py
       - name: Verify TEST25 group, F8 and quoted-search contracts (source only)
         run: python Testing/test25_static.py
+      - name: Verify TEST26 group return, F12 slots, search filters and F7 selected navigation (source only)
+        run: python Testing/test26_static.py
+      - name: Verify TEST27 F7 Alt+Shift+arrows and reserved F12 (source only)
+        run: python Testing/test27_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

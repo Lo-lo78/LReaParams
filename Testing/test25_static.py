@@ -6,10 +6,10 @@ nav = (root / 'src/FxNavigator.cpp').read_text(encoding='utf-8')
 order = (root / 'src/FxNavigatorOrder.cpp').read_text(encoding='utf-8')
 mem = (root / 'src/FxNavigatorMemories.cpp').read_text(encoding='utf-8')
 header = (root / 'include/lrp/FxNavigator.h').read_text(encoding='utf-8')
-assert 'VERSION 0.0.26' in (root / 'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.28' in (root / 'CMakeLists.txt').read_text()
 assert 'if(groupSlot_==slot)' in order
-assert 'groupSlot_=0;fxOrder_.custom=false;' in order
-assert 'speech_("Plugin Order. "+currentParameterSpeech())' in order
+assert 'groupReturnCustom_=fxOrder_.custom;' in order
+assert 'fxOrder_.custom=wasCustom;' in order
 assert 'bool FxNavigator::matchesSearch' in nav
 assert 'matchesSearch(fxOrder_.label(id),search_)' in nav
 assert 'matchesSearch(label,query)' in order

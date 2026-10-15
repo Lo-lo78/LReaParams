@@ -692,7 +692,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         (k.vk>='A'&&k.vk<='Z')||(k.vk>='0'&&k.vk<='9')||
         (k.ctrl&&k.vk=='F');
     if ((k.vk==VK_F10||k.vk==VK_F11||k.vk==VK_F12) && k.alt) return false; // OSARA peak watchers
-    if (k.vk == VK_F12) return false; // always reserved for OSARA shortcut help
+    if (k.vk == VK_F12 && !k.ctrl) return false; // bare F12 is reserved for future LReaParams commands
     if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F10)) return false; // future Parameter Library
     if (k.ctrl && !k.alt && k.vk == 'L') return true;
     if (k.vk==VK_BACK && !k.alt) return true;
@@ -700,10 +700,10 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (k.ctrl && !k.alt && ((k.vk=='B' && !k.shift)||k.vk=='D')) return true;
     if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F3 || k.vk==VK_F5 || k.vk==VK_F6 || k.vk==VK_F9)) return true;
     if ((k.vk == VK_F7 || k.vk == VK_F8) && !k.ctrl && !k.alt && !k.shift) return true;
-    if (k.ctrl && !k.alt && k.vk >= VK_F1 && k.vk <= VK_F11) return true;
+    if (k.ctrl && !k.alt && k.vk >= VK_F1 && k.vk <= VK_F12) return true;
     if (editF7_) {
         if (k.ctrl && !k.alt && (k.vk=='A'||k.vk=='C'||k.vk=='X'||k.vk=='V'||k.vk=='Z'||k.vk=='Y'||k.vk==VK_DELETE||k.vk==VK_RETURN))return true;
-        if (k.ctrl && k.alt && !k.shift) return k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT;
+        if (!k.ctrl && k.alt && k.shift) return k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT;
         if (k.shift && !k.alt && !k.ctrl) return k.vk==VK_SPACE||k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT;
         if (k.ctrl && k.shift && !k.alt) return k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_DELETE;
         if (!k.alt && !k.ctrl && !k.shift && (k.vk==VK_DELETE||k.vk==VK_TAB))return true;
@@ -895,7 +895,7 @@ void FxNavigator::handle(const Key& k) {
         if(!k.repeat){if(k.shift)clearProjectDeltaSolo();else toggleDeltaSolo();}
         return;
     }
-    if (k.ctrl && !k.alt && k.vk>=VK_F1 && k.vk<=VK_F11) {
+    if (k.ctrl && !k.alt && k.vk>=VK_F1 && k.vk<=VK_F12) {
         const int slot=static_cast<int>(k.vk-VK_F1)+1;
         if(slotMode_==0){if(k.shift)saveGroup(slot);else openGroup(slot);return;}
         if(k.shift){
@@ -917,6 +917,7 @@ void FxNavigator::handle(const Key& k) {
         if (textEdit_) return;
         if (editF7_) {speech_("Exit F7 first");return;}
         if (!fxOrder_.storedCustomOrder()) {speech_("No Custom Order. Press F7");return;}
+        clearF7Filter();
         const int old=parameter_;
         fxOrder_.custom=!fxOrder_.custom;
         rebuildView(old);
@@ -956,8 +957,7 @@ void FxNavigator::handle(const Key& k) {
         else if(k.vk==VK_RETURN){
             const std::string query=search_;
             searchMode_=false;search_.clear();
-            if(editF7_)applyF7Filter(query);
-            else { search_=query; if(!query.empty())findMatching(true); else speech_("Search empty"); search_.clear(); }
+            applyF7Filter(query);
         }
         else if(k.vk==VK_UP||k.vk==VK_DOWN)findMatching(k.vk==VK_DOWN);
         else if(k.vk==VK_BACK){if(!search_.empty())search_.pop_back();searchPreview();}
@@ -980,14 +980,21 @@ void FxNavigator::handle(const Key& k) {
     if (k.ctrl && k.vk==VK_HOME){navigate(-viewPos_);return;}
     if (k.ctrl && k.vk==VK_END){navigate(static_cast<int>(visible_.size())-1-viewPos_);return;}
     if (k.vk==VK_ESCAPE){if(valueMode_){valueMode_=false;announceTitle();}
-        else if(editF7_)exitF7();else if(groupSlot_){groupSlot_=0;rebuildView(parameter_);announce();}else end();return;}
+        else if(f7FilterActive_){
+            clearF7Filter();
+            speech_(std::string(editF7_?"Edit: Search cleared. ":"Search cleared. ")+
+                    (editF7_?editorParameterSpeech():currentParameterSpeech()));
+        }
+        else if(editF7_)exitF7();
+        else if(groupSlot_){openGroup(groupSlot_);}else end();return;}
     if(k.vk==VK_RETURN){if(k.repeat)return;valueMode_=!valueMode_;
         if (valueMode_) speech_(reviewLine()); else announceTitle(); return;}
     // Tab describes the active parameter ordering; inside F7 it still
     // reports the selection count (handled earlier in handleF7).
     if (!k.ctrl && !k.alt && !k.shift && k.vk==VK_TAB) {
         speech_((groupSlot_ ? groupLabel(groupSlot_) :
-                fxOrder_.custom?"Custom Order":"Plugin Order")+". "+viewPositionSpeech());return;
+                fxOrder_.custom?"Custom Order":"Plugin Order")+
+                (f7FilterActive_?". Search results":"")+". "+viewPositionSpeech());return;
     }
     if (!k.ctrl && !k.alt && !k.shift && k.vk==VK_F3) {
         speech_("Grid "+std::to_string(columns_)+". Step "+std::to_string(stepScale_)+

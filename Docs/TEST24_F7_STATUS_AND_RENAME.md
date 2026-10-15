@@ -14,3 +14,5 @@
 
 Verifiche in sola lettura del codice e con script Python; nessuna build locale.
 Le prove NVDA/UI, import profili reali e gli eventi focus richiedono GitHub Actions + REAPER.
+
+**Aggiornamento TEST26:** il punto 6 (ricerca esterna con singolo salto) è superato: ora la ricerca esterna filtra l’intera griglia, come F7.

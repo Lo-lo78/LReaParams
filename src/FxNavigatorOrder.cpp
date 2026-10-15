@@ -1,6 +1,7 @@
 #include "lrp/FxNavigator.h"
 #include <algorithm>
 #include <cctype>
+#include <climits>
 #include <cmath>
 #include <cstring>
 #include <cwchar>
@@ -78,12 +79,16 @@ void FxNavigator::clearF7Filter() {
     const int original=f7OriginalPosition(viewPos_);
     visible_=f7FullView_;
     viewPos_=std::clamp(original,0,std::max(0,static_cast<int>(visible_.size())-1));
-    if(!visible_.empty())parameter_=visible_[static_cast<size_t>(viewPos_)];
+    if(!visible_.empty()){
+        parameter_=visible_[static_cast<size_t>(viewPos_)];
+        parameterName_=parameterName();
+    }
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
     f7SnakePath_.clear();f7SnakeDirections_.clear();
 }
 void FxNavigator::applyF7Filter(const std::string& query, bool speak) {
-    if(!editF7_)return;
+    // This is a shared filtered GRID, not a one-result jump. It works both
+    // outside F7 and in F7, where selections refer to unfiltered occurrences.
     clearF7Filter();
     if(query.empty()){if(speak)speech_("Search cleared. "+currentParameterSpeech());return;}
     f7FullView_=visible_;
@@ -95,13 +100,13 @@ void FxNavigator::applyF7Filter(const std::string& query, bool speak) {
     f7FilterQuery_=query;
     if(f7FilterPositions_.empty()){
         f7FullView_.clear();f7FilterQuery_.clear();
-        if(speak)speech_("No matching parameters. Selection kept");return;
+        if(speak)speech_(editF7_?"No results. Selection kept":"No results");return;
     }
     visible_.clear();
     for(int i:f7FilterPositions_)visible_.push_back(f7FullView_[static_cast<size_t>(i)]);
     f7FilterActive_=true;viewPos_=0;parameter_=visible_.front();parameterName_=parameterName();
-    if(speak)speech_("Filtered "+std::to_string(visible_.size())+" parameters. "+
-            std::to_string(f7Selected_.size())+" selected. "+currentParameterSpeech());
+    if(speak)speech_("Search results. "+std::to_string(visible_.size())+" results. "+
+            (editF7_?std::to_string(f7Selected_.size())+" selected. ":std::string())+currentParameterSpeech());
 }
 FxNavigator::EditHistory FxNavigator::captureHistory() const {
     return {fxOrder_.order,fxOrder_.aliases,fxOrder_.hidden,fxOrder_.groups,fxOrder_.groupNames};
@@ -314,32 +319,80 @@ std::string FxNavigator::groupLabel(int slot) const {
     return label;
 }
 void FxNavigator::openGroup(int slot) {
-    // Ctrl+Fn on the already active group is a direct exit to Plugin Order.
-    // It must not depend on the view (Custom/Plugin) used before opening it.
+    const auto it=fxOrder_.groups.find(slot);
+    // The same Ctrl+Fn closes this group and restores the EXACT source view:
+    // Plugin/Custom Order, F7 edit state, selection and optional search filter.
+    // A different Ctrl+Fn changes groups without replacing that source view.
     if(groupSlot_==slot) {
+        const bool haveOrigin=groupReturnActive_;
+        // Keep the CURRENT editing mode: F7 may have been entered or exited
+        // after loading the group. An editor outside any group is Custom Order.
+        const bool wasEditing=editF7_;
+        const bool wasCustom=wasEditing || groupReturnCustom_;
+        const int oldParam=groupReturnParam_;
+        const int oldPos=groupReturnPosition_;
+        const auto oldSelection=groupReturnSelection_;
+        const auto oldFilter=groupReturnFilter_;
+        if(wasEditing && !fxOrder_.storedCustomOrder() && !fxOrder_.createCustomOrder()) {
+            speech_("Cannot create Custom Order");return;
+        }
+        groupReturnActive_=false;
         clearF7Filter();
-        editF7_=false;groupEditAll_=false;valueMode_=false;
-        f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
-        groupSlot_=0;fxOrder_.custom=false;
-        rebuildView(parameter_);
-        saveStructure();
-        speech_("Plugin Order. "+currentParameterSpeech());
+        groupSlot_=0;groupEditAll_=false;valueMode_=false;
+        f7SnakePath_.clear();f7SnakeDirections_.clear();
+        if(haveOrigin) {
+            fxOrder_.custom=wasCustom;
+            editF7_=wasEditing;
+            f7Selected_=oldSelection;
+            rebuildView(oldParam,oldPos);
+            if(!oldFilter.empty()) {
+                applyF7Filter(oldFilter,false);
+                // Restore the precise occurrence in the filtered grid too,
+                // not only the unfiltered parameter ID (copies can repeat).
+                const auto match=std::find(f7FilterPositions_.begin(),
+                                           f7FilterPositions_.end(),oldPos);
+                if(match!=f7FilterPositions_.end()) {
+                    viewPos_=static_cast<int>(match-f7FilterPositions_.begin());
+                    parameter_=visible_[static_cast<size_t>(viewPos_)];
+                    parameterName_=parameterName();
+                }
+            }
+        } else {
+            editF7_=false;
+            rebuildView(parameter_);
+        }
+        rememberPosition();
+        speech_(std::string(editF7_?"Edit: ":"")+
+                (fxOrder_.custom?"Custom Order":"Plugin Order")+
+                (f7FilterActive_?". Search results":"")+". "+
+                (editF7_?editorParameterSpeech():currentParameterSpeech()));
         return;
     }
-    clearF7Filter();
-    const auto it=fxOrder_.groups.find(slot);
-    if(it==fxOrder_.groups.end()||it->second.empty()){speech_("Group "+std::to_string(slot)+" empty");return;}
-    if(editF7_&&groupSlot_==slot){
-        groupEditAll_=!groupEditAll_;
-        rebuildView(parameter_);f7Selected_.clear();
-        speech_(groupEditAll_?"All parameters in Group edit":"Group parameters in edit");return;
+    if(it==fxOrder_.groups.end()||it->second.empty()){
+        speech_("Group "+std::to_string(slot)+" empty");return;
     }
-    const bool wasEditing=editF7_;
-    if(wasEditing) {editF7_=false;f7Selected_.clear();}
-    groupSlot_=slot;groupEditAll_=false;rebuildView(parameter_);
-    if(wasEditing)enterF7();
-    else speech_(groupLabel(slot)+". "+currentParameterSpeech());
+    if(!groupSlot_) {
+        // Capture ONCE, before entering the first group; do not overwrite it
+        // while switching Group 1 -> Group 2 -> Group 3.
+        groupReturnActive_=true;
+        groupReturnCustom_=fxOrder_.custom;
+        groupReturnEdit_=editF7_;
+        groupReturnParam_=parameter_;
+        groupReturnPosition_=f7FilterActive_?f7OriginalPosition(viewPos_):viewPos_;
+        groupReturnFilter_=f7FilterActive_?f7FilterQuery_:std::string();
+        groupReturnSelection_=f7Selected_;
+    }
+    clearF7Filter();
+    groupSlot_=slot;groupEditAll_=false;valueMode_=false;
+    // Preserve F7 while changing groups. The group list is independent of
+    // Plugin/Custom Order and is never redirected to Plugin Order here.
+    f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
+    rebuildView(parameter_);
+    rememberPosition();
+    speech_(std::string(editF7_?"Edit: ":"")+groupLabel(slot)+". "+
+            (editF7_?editorParameterSpeech():currentParameterSpeech()));
 }
+
 namespace {
 std::string fromWide(const std::wstring& w) {
     if(w.empty())return {};
@@ -480,18 +533,42 @@ bool FxNavigator::handleF7(const Key& k) {
         speech_(std::string(textEditParam_<0?"Edit group name. ":"Edit param name. ")+textBuffer_);
         return true;
     }
-    if(k.ctrl&&k.alt&&!k.shift&&(k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT)) {
+    if(k.alt&&k.shift&&!k.ctrl&&
+       (k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT)) {
+        // Alt+Shift+arrows follow grid geometry among selected parameters,
+        // keeping plain Alt+arrows available for the existing Step/Value keys.
+        // Up/Down stay in their column; Left/Right choose the next column
+        // with a selected cell, preferring the same row in that column.
         if(f7Selected_.empty()){speech_("0 selected");return true;}
-        int delta=(k.vk==VK_UP?-1:k.vk==VK_DOWN?1:k.vk==VK_LEFT?-columns_:columns_);
-        auto it=delta>0?f7Selected_.upper_bound(viewPos_):f7Selected_.lower_bound(viewPos_);
-        if(delta<0){if(it!=f7Selected_.begin())--it;else return true;}
-        if(it!=f7Selected_.end()) {
+        const int height=std::max(1,columns_);
+        const int currentColumn=viewPos_/height, currentRow=viewPos_%height;
+        int best=-1;
+        int bestPrimary=INT_MAX, bestSecondary=INT_MAX;
+        for(int original:f7Selected_) {
+            int pos=original;
             if(f7FilterActive_) {
-                auto found=std::find(f7FilterPositions_.begin(),f7FilterPositions_.end(),*it);
-                if(found!=f7FilterPositions_.end())positionChanged(static_cast<int>(found-f7FilterPositions_.begin()));
-                else speech_("Selected parameter outside current filter");
-            } else positionChanged(*it);
+                const auto found=std::find(f7FilterPositions_.begin(),f7FilterPositions_.end(),original);
+                if(found==f7FilterPositions_.end())continue;
+                pos=static_cast<int>(found-f7FilterPositions_.begin());
+            }
+            if(pos<0 || pos>=static_cast<int>(visible_.size()) || pos==viewPos_)continue;
+            const int col=pos/height, row=pos%height;
+            int primary=0,secondary=0;
+            if(k.vk==VK_UP || k.vk==VK_DOWN) {
+                if(col!=currentColumn)continue;
+                primary=k.vk==VK_UP?currentRow-row:row-currentRow;
+                if(primary<=0)continue;
+            } else {
+                primary=k.vk==VK_LEFT?currentColumn-col:col-currentColumn;
+                if(primary<=0)continue;
+                secondary=std::abs(row-currentRow);
+            }
+            if(primary<bestPrimary || (primary==bestPrimary && secondary<bestSecondary)) {
+                best=pos;bestPrimary=primary;bestSecondary=secondary;
+            }
         }
+        if(best>=0)positionChanged(best);
+        else speech_("No selected parameter in that direction");
         return true;
     }
     if(k.ctrl&&k.shift&&!k.alt&&(k.vk==VK_HOME||k.vk==VK_END)) {

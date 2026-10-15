@@ -113,8 +113,16 @@ bool InputRouter::route(MSG& message, bool removed) noexcept {
     // NVDA uses Insert or Numpad Insert as an NVDA modifier by default.
     // Do not treat an NVDA gesture such as NVDA+T as an unknown navigation key.
     if ((GetKeyState(VK_INSERT) & 0x8000) || (GetKeyState(VK_NUMPAD0) & 0x8000)) return false;
-    // Give every F12 combination to OSARA. Never toggle help ourselves.
-    if (vk == VK_F12) { requestExit(); return false; }
+    // Bare F12 is deliberately unassigned and reserved for this extension.
+    // Never forward it to OSARA/REAPER or close navigation. Ctrl+F12 and
+    // Ctrl+Shift+F12 remain slot 12; Alt+F12 remains free for OSARA watchers.
+    if (vk == VK_F12 && !(GetKeyState(VK_CONTROL) & 0x8000) &&
+        !(GetKeyState(VK_MENU) & 0x8000) && !(GetKeyState(VK_SHIFT) & 0x8000)) {
+        if (!environmentSafe() || !safeTarget(message.hwnd)) { requestExit(); return false; }
+        swallowed_[vk] = message.hwnd;
+        return true;
+    }
+    if (vk == VK_F12 && !(GetKeyState(VK_CONTROL) & 0x8000)) { requestExit(); return false; }
     if (vk == VK_CONTROL || vk == VK_SHIFT || vk == VK_MENU || vk == VK_LCONTROL || vk == VK_RCONTROL ||
         vk == VK_LSHIFT || vk == VK_RSHIFT || vk == VK_LMENU || vk == VK_RMENU) return false;
     if (!environmentSafe() || !safeTarget(message.hwnd)) { requestExit(); return false; }

@@ -1,3 +1,5 @@
+# Aggiornamento TEST27 (0.0.28): il F12 SENZA modificatori ora resta libero e riservato a LReaParams, senza inoltro a OSARA e senza chiusura della finestra di navigazione. Ctrl+F12 e Ctrl+Maiusc+F12 mantengono la memoria 12; Alt+Maiusc+Frecce naviga i selezionati in F7. Le istruzioni storiche su F12/Alt+Frecce riportate sotto descrivono versioni precedenti e sono superate. Per il collaudo attuale: Docs/TEST27_KEYS_F12.md.
+
 TEST3 IMPLEMENTATION OVERRIDE (2026-10-15): The previously proposed Exit current navigation action is REMOVED from the registered actions and Extensions submenu. Escape is now handled internally by InputRouter using a thread-scoped Escape-only WH_GETMESSAGE hook when the SDK accelerator backend is selected. This is experimental until tested in REAPER. Track Params F1 uses 9 horizontal columns per track, with Up/Down rows and Left/Right columns, following the legacy Lua. FX Params Ctrl+Home and Ctrl+End jump to the first and last FX parameter.
 
 LREAPARAMS - HANDOFF TECNICO PER ASTRA 6.0 WORK

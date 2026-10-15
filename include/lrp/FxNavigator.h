@@ -17,7 +17,7 @@ public:
     bool begin() override;
     bool openFxMemories(bool standalone = false);
     bool isMemoryManager() const noexcept { return memoryManager_; } // seven-column Lua F8 navigator
-    void end() noexcept override { active_ = false; valueMode_ = false; searchMode_ = false; editF7_ = false; textEdit_ = false; memoryManager_ = false; memoryStandalone_ = false; groupSlot_ = 0; search_.clear(); entries_.clear(); count_ = 0; }
+    void end() noexcept override { active_ = false; valueMode_ = false; searchMode_ = false; editF7_ = false; textEdit_ = false; memoryManager_ = false; memoryStandalone_ = false; groupSlot_ = 0; groupReturnActive_ = false; f7FilterActive_ = false; f7FullView_.clear(); f7FilterPositions_.clear(); f7FilterQuery_.clear(); search_.clear(); entries_.clear(); count_ = 0; }
     bool active() const noexcept override { return active_; }
     bool valid() const;
     bool contextUnchanged() const override;
@@ -158,6 +158,11 @@ private:
     std::filesystem::path resourceRoot_;
     std::vector<int> visible_;
     int viewPos_ = 0;
+    // The view from which the first group was loaded (also across group switches).
+    bool groupReturnActive_ = false, groupReturnCustom_ = false, groupReturnEdit_ = false;
+    int groupReturnParam_ = 0, groupReturnPosition_ = 0;
+    std::string groupReturnFilter_;
+    std::set<int> groupReturnSelection_;
     int groupSlot_ = 0, slotMode_ = 0; // 0 = Groups; 1 = memory positions (pending)
     bool editF7_ = false, textEdit_ = false, groupEditAll_ = false;
     enum class LastControl { none, step, grid } lastControl_ = LastControl::none;

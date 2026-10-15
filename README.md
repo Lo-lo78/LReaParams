@@ -1,4 +1,4 @@
-# LReaParams — TEST25 (0.0.26)
+# LReaParams — TEST27 (0.0.28)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
@@ -206,11 +206,11 @@ No local CMake, Visual Studio or native builds. Requires testing in GitHub Actio
 then REAPER with NVDA/OSARA, especially the lifetime of the native text focus.
 
 
-## TEST25 — uscita dai gruppi, Invio F8, ricerca tra virgolette
+## TEST25 — F8 e ricerca tra virgolette (uscita gruppo superata da TEST26)
 
-- **Alt+G, Ctrl+F1…F11**: se il gruppo indicato è già aperto,
-  richiamare lo stesso slot chiude il gruppo e va **esattamente in Plugin Order**
-  (non torna automaticamente alla Custom Order). Anche da F7 lascia l'editor.
+- **Nota storica TEST25:** ripetere Ctrl+Fn forzava Plugin Order.
+  **TEST26 sostituisce questo comportamento:** tutti i dodici slot
+  preservano vista di partenza e modalità F7 corrente.
 - **F8, Invio**: su Memory positions, Groups, MIDI CC, Custom Order e
   Copied parameters torna alla griglia FX Params **fuori da F7**, sul
   parametro, sulla copia o nel gruppo scelto. In Hidden parameters Invio
@@ -229,3 +229,21 @@ then REAPER with NVDA/OSARA, especially the lifetime of the native text focus.
 
 Le prove di compilazione avvengono **solo tramite GitHub Actions**.
 Le verifiche statiche non sostituiscono il test effettivo con REAPER/OSARA/NVDA.
+
+## TEST26 — Gruppi, ricerca filtrata e selezioni (storico, corretto da TEST27)
+
+- **Ctrl+F1–Ctrl+F12**: 12 slot disponibili, inclusi Ctrl+F12 e Ctrl+Shift+F12. F12 **senza modificatori** è ora riservato a LReaParams e non attiva comandi (TEST27).
+- Riaprire **lo stesso** gruppo restituisce la vista di partenza: Plugin Order oppure Custom Order e, se era aperto, l'editor F7; un altro Ctrl+Fn passa direttamente a un altro gruppo senza perdere il contesto originario.
+- **Ctrl+F** confermato con Invio crea una vera griglia di risultati sia dentro sia fuori da F7. Le virgolette richiedono una sequenza di parole intere (ultima parola come prefisso se la ricerca contiene più parole); ad esempio `"slot 1 fil"` trova `Slot 1 Filter` ma non `Slot 10 Filter`. Tab riporta il numero dei risultati correnti. Esc fuori F7 cancella dapprima il filtro.
+- **Alt+Maiusc+Frecce in F7** (correzione TEST27): visita solo celle selezionate, rispettando colonne e righe reali. Alt+Maiusc+Su/Giù si muove nella colonna; Alt+Maiusc+Sinistra/Destra salta alla colonna successiva/precedente con selezioni, mantenendo per quanto possibile la riga. Le selezioni nascoste dal filtro non vengono perse.
+- Un gruppo non altera automaticamente l'ordine originale o quello personalizzato salvato.
+
+Questa versione contiene verifiche **statiche**; nessun compilatore locale è stato eseguito.
+
+## TEST27 — Correzione combinazioni F7 e riserva F12
+
+- **Alt+Maiusc+Frecce**, solo dentro F7: naviga tra i parametri selezionati mantenendo la geometria della griglia. **Alt+Frecce da sole** non effettuano più questa navigazione e conservano il comportamento originale su Step e valori.
+- **F12 da solo** non esegue azioni e non esce dalla finestra LReaParams: resta riservato a una funzione futura dell'estensione, senza inoltro all'aiuto OSARA.
+- **Ctrl+F12 / Ctrl+Maiusc+F12** continuano a usare lo slot 12. **Alt+F10/F11/F12** e le combinazioni Maiusc correlate restano destinate ai watcher OSARA.
+
+Verifiche statiche soltanto. La compilazione viene eseguita dall'utente tramite GitHub Actions.

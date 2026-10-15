@@ -31,3 +31,10 @@ TEST23 (0.0.24): F7 filtered search and undo/redo; native Win32 EDIT for rename/
 TEST24 (0.0.25): selected F7 parameters announced; Tab position counts, explicit F7 Custom Order creation and context-aware group/parameter rename. No local build.
 
 TEST25 (0.0.26): Ctrl+Fn repeated group returns Plugin Order; F8 Enter navigates outside edit except Hidden, F8 Default restores and exits to Plugin Order; quoted word-boundary search. No local build.
+
+TEST26 (0.0.27): supersedes TEST25's unconditional Plugin Order group exit;
+restores the originating order and current F7 state, adds Ctrl+F12 as group/position
+slot 12 without claiming OSARA's bare F12, filters the grid for Ctrl+F in both
+modes, and navigates selected F7 grid cells with Alt+arrows. No local build.
+
+TEST27 (0.0.28): Alt+Shift+arrows navigates selected F7 parameters; bare F12 is reserved and inert while LReaParams owns focus. Ctrl+F12 and Ctrl+Shift+F12 retain slot 12. No local build.

@@ -291,7 +291,14 @@ LRESULT CALLBACK TitleProxy::nativeEditProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM 
     if(!self || !self->originalNativeEditProc_)return DefWindowProcW(hwnd,msg,wp,lp);
     if(msg==WM_GETDLGCODE)return DLGC_WANTALLKEYS | DLGC_WANTARROWS | DLGC_WANTCHARS;
     if((msg==WM_KEYDOWN||msg==WM_SYSKEYDOWN) && wp==VK_F12) {
-        if(!(lp & (1LL<<30)))self->onF12(lp);return 0;
+        if(GetKeyState(VK_CONTROL)&0x8000){
+            try{if(self->keyboardKey_)self->keyboardKey_(hwnd,VK_F12,(lp & (1LL<<30))!=0);}
+            catch(...){auto close=std::move(self->closeNavigator_);try{if(close)close();}catch(...){}}
+        } else if((GetKeyState(VK_MENU)&0x8000) || (GetKeyState(VK_SHIFT)&0x8000)) {
+            if(!(lp & (1LL<<30)))self->onF12(lp);
+        }
+        // Bare F12 intentionally does nothing (reserved for LReaParams).
+        return 0;
     }
     if((msg==WM_KEYDOWN||msg==WM_SYSKEYDOWN) &&
        (wp==VK_RETURN||wp==VK_ESCAPE||wp==VK_UP||wp==VK_DOWN||
@@ -320,7 +327,13 @@ LRESULT TitleProxy::dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, 
     }
     if (msg == WM_GETDLGCODE) return DLGC_WANTALLKEYS | DLGC_WANTARROWS | DLGC_WANTCHARS;
     if ((msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) && wp == VK_F12) {
-        if (!(lp & (1LL << 30))) onF12(lp);
+        if (GetKeyState(VK_CONTROL) & 0x8000) {
+            try { if (keyboardKey_) keyboardKey_(hwnd, VK_F12, (lp & (1LL << 30)) != 0); }
+            catch (...) { auto close=std::move(closeNavigator_); try { if(close)close(); } catch (...) {} }
+        } else if ((GetKeyState(VK_MENU) & 0x8000) || (GetKeyState(VK_SHIFT) & 0x8000)) {
+            if (!(lp & (1LL << 30))) onF12(lp);
+        }
+        // Bare F12 is a reserved no-op; keep this keyboard owner focused.
         return 0;
     }
     if ((msg == WM_KEYUP || msg == WM_SYSKEYUP) && wp == VK_F12) return 0;
