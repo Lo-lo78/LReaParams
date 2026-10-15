@@ -1,4 +1,4 @@
-# LReaParams — TEST18 (0.0.19)
+# LReaParams — TEST20 (0.0.21)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
@@ -110,3 +110,13 @@ sono necessari prima di usare la DLL per modificare profili importanti.
   procedura di test sono in `Docs/TEST18_FX_MEMORIES.md`.
 
 **Non compilato localmente; build prevista soltanto tramite GitHub Actions.**
+
+## TEST19 — Contextual shortcuts for REAPER FX Chain
+
+The command assigned to Track Params in REAPER Main Action List now opens FX Params while the native FX Chain list is focused; FX Params also uses the selected FX and its actual owner. A guarded SDK accelerator bridge attempts to recognize the shortcuts assigned to either action (including P and Ctrl+Shift+P when configured) without capturing ordinary typing elsewhere. This remains an uncompiled experiment requiring a Windows/REAPER/OSARA test. See `Docs/TEST19_FX_CHAIN_SHORTCUTS.md`.
+
+## TEST20 — FX Chain shortcut clarification
+
+The single letter **P is NOT hardcoded**. It is user-assigned to the FX Params action in REAPER Main Action List. The guarded SDK accelerator bridge tries to honor that current assignment from the focused FX selection list. **Ctrl+Shift+P IS hardcoded only for the focused native FX list**, where it opens FX Params, regardless of whether that shortcut is assigned to Track Params in the Main Action List. Outside the FX list, Ctrl+Shift+P is not intercepted and can run Track Params via the user's Main assignment. Other keys assigned to Track Params are no longer automatically redirected from FX Chain.
+
+This is a source-only TEST20 revision requiring runtime validation in REAPER/OSARA, and does not verify hook ordering or accessibility behavior. See `Docs/TEST20_FX_CHAIN_KEY_ROUTING.md`.

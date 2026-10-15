@@ -9,6 +9,8 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <cctype>
+#include <algorithm>
 
 namespace lrp {
 namespace {
@@ -18,6 +20,7 @@ bool actionHook(KbdSectionInfo*, int, int, int, int, HWND) noexcept;
 int toggleHook(int) noexcept;
 void menuHook(const char*, void*, int) noexcept;
 void timerHook() noexcept;
+int fxChainShortcutHook(MSG*, accelerator_register_t*) noexcept;
 struct Action {
     const char* id;
     const char* description;
@@ -43,11 +46,19 @@ public:
             a.registered = info_.Register("gaccel", &a.accel) != 0;
             if (!a.registered) throw std::runtime_error("Cannot register action");
         }
+        // The FX chain can consume letter keys before the Main section sees them.
+        // The key bridge only activates on REAPER's focused FX list (ID 1076).
+        // Ctrl+Shift+P is its explicit context shortcut; all other FX keys
+        // come only from the user's Main Action List bindings for FX Params.
+        fxChainAccel_.translateAccel = fxChainShortcutHook;
+        fxChainAccel_.isLocal = true;
+        fxChainAccel_.user = this;
+        fxChainAccelRegistered_ = info_.Register("<accelerator", &fxChainAccel_) != 0;
         hookRegistered_ = info_.Register("hookcommand2", reinterpret_cast<void*>(actionHook)) != 0;
         toggleRegistered_ = info_.Register("toggleaction", reinterpret_cast<void*>(toggleHook)) != 0;
         menuRegistered_ = info_.Register("hookcustommenu", reinterpret_cast<void*>(menuHook)) != 0;
         timerRegistered_ = info_.Register("timer", reinterpret_cast<void*>(timerHook)) != 0;
-        if (!hookRegistered_ || !toggleRegistered_ || !menuRegistered_ || !timerRegistered_) throw std::runtime_error("Callback registration failed");
+        if (!hookRegistered_ || !toggleRegistered_ || !menuRegistered_ || !timerRegistered_ || !fxChainAccelRegistered_) throw std::runtime_error("Callback registration failed");
         AddExtensionsMainMenu();
         importer_.start(resource_); // no REAPER APIs are called by this worker
     }
@@ -129,7 +140,7 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.19 TEST18 FX MEMORIES\n\n"
+            ShowMessageBox("LReaParams 0.0.21 TEST20 FX CHAIN KEY ROUTING\n\n"
                 "FX: Ctrl+Up/Down changes FX. Ctrl+Shift+Up/Down switches to tracks with FX, restoring the last FX and parameter per track.\n"
                 "FX: Ctrl+L Plugin / Custom Order, F7 edits Custom Order; Shift+Space selects, Ctrl+X/C/V moves or copies, Ctrl+Delete hides.\n"
                 "FX: F1/F2 grid height. Ctrl+Home/End absolute. Alt+Left/Right steps -10 to +10.\n"
@@ -164,6 +175,77 @@ public:
         default: break;
         }
         return true;
+    }
+    // This uses the same focused-FX query that OSARA uses. Restrict to the
+    // native FX selection list, NOT the VST UI or any user-editable control.
+    bool isFocusedFxList() const noexcept {
+        if (GetCurrentThreadId() != mainThread_ || !IsWindowEnabled(info_.hwnd_main)) return false;
+        HWND focus = GetFocus();
+        if (!focus || GetDlgCtrlID(focus) != 1076) return false;
+        DWORD pid = 0;
+        if (GetWindowThreadProcessId(focus, &pid) != mainThread_ || pid != GetCurrentProcessId()) return false;
+        GUITHREADINFO threadInfo{sizeof(threadInfo)};
+        if (!GetGUIThreadInfo(mainThread_, &threadInfo) ||
+            (threadInfo.flags & (GUI_INMENUMODE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE | GUI_INMOVESIZE)) ||
+            threadInfo.hwndCaret) return false;
+        int tr = -1, item = -1, take = -1, fx = -1, state = 0;
+        return GetTouchedOrFocusedFX(1, &tr, &item, &take, &fx, &state) && !(state & 1);
+    }
+    // Ctrl+Shift+P is the sole hardcoded FX Chain chord. It intentionally
+    // overrides the Track Params assignment only while the focused FX list
+    // owns the keyboard; the same chord still opens Track Params in TCP.
+    bool fixedFxChainShortcutMatches(MSG* msg) const noexcept {
+        return msg && (msg->message == WM_KEYDOWN || msg->message == WM_SYSKEYDOWN) &&
+               msg->wParam == 'P' &&
+               (GetKeyState(VK_CONTROL) & 0x8000) &&
+               (GetKeyState(VK_SHIFT) & 0x8000) &&
+               !(GetKeyState(VK_MENU) & 0x8000) &&
+               !(GetKeyState(VK_INSERT) & 0x8000) &&
+               !(GetKeyState(VK_NUMPAD0) & 0x8000);
+    }
+    // Other keys (including P) must be configured by the user in REAPER's
+    // Main Action List for the FX Params action; never hardcode a bare P.
+    bool actionShortcutMatches(MSG* msg) const noexcept {
+        if (!msg || (msg->message != WM_KEYDOWN && msg->message != WM_SYSKEYDOWN) ||
+            msg->wParam > 255) return false;
+        const UINT vk = static_cast<UINT>(msg->wParam);
+        if (vk == VK_CONTROL || vk == VK_SHIFT || vk == VK_MENU ||
+            vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_LSHIFT ||
+            vk == VK_RSHIFT || vk == VK_LMENU || vk == VK_RMENU ||
+            (GetKeyState(VK_INSERT) & 0x8000) || (GetKeyState(VK_NUMPAD0) & 0x8000)) return false;
+        ACCEL accel{};
+        accel.fVirt = FVIRTKEY;
+        if (GetKeyState(VK_CONTROL) & 0x8000) accel.fVirt |= FCONTROL;
+        if (GetKeyState(VK_SHIFT) & 0x8000) accel.fVirt |= FSHIFT;
+        if (GetKeyState(VK_MENU) & 0x8000) accel.fVirt |= FALT;
+        accel.key = static_cast<WORD>(vk);
+        char current[256]{};
+        kbd_formatKeyName(&accel, current);
+        const auto normalize = [](const char* txt) {
+            std::string value;
+            for (const unsigned char* p = reinterpret_cast<const unsigned char*>(txt); *p; ++p)
+                if (!std::isspace(*p)) value.push_back(static_cast<char>(std::tolower(*p)));
+            return value;
+        };
+        const std::string currentDesc = normalize(current);
+        if (currentDesc.empty()) return false;
+        KbdSectionInfo* section = SectionFromUniqueID(0);
+        if (!section) return false;
+        const int command = actions_[0].command; // FX Params ONLY
+        const int count = CountActionShortcuts(section, command);
+        for (int i = 0; i < count; ++i) {
+            char desc[256]{};
+            if (GetActionShortcutDesc(section, command, i, desc, sizeof(desc)) &&
+                currentDesc == normalize(desc)) return true;
+        }
+        return false;
+    }
+    int interceptFxChainShortcut(MSG* msg) {
+        if (!isFocusedFxList() || shortcutHelp() || current_ && current_->active() ||
+            !(fixedFxChainShortcutMatches(msg) || actionShortcutMatches(msg))) return 0;
+        // Use the same normal launch path, shared session memory and access API.
+        // Return 1 so REAPER won't also process the original key for search.
+        return action(actions_[0].command) ? 1 : 0;
     }
     void launchNavigator(Navigator* desired) {
                 current_ = desired;
@@ -267,6 +349,10 @@ public:
     void shutdown() noexcept {
         input_.stop(); titleProxy_.shutdown(); titleProxyActive_ = false;
         navigator_.end(); trackNavigator_.end(); current_ = nullptr;
+        if (fxChainAccelRegistered_) {
+            info_.Register("-accelerator", &fxChainAccel_);
+            fxChainAccelRegistered_ = false;
+        }
         if (timerRegistered_) info_.Register("-timer", reinterpret_cast<void*>(timerHook));
         if (menuRegistered_) info_.Register("-hookcustommenu", reinterpret_cast<void*>(menuHook));
         if (toggleRegistered_) info_.Register("-toggleaction", reinterpret_cast<void*>(toggleHook));
@@ -302,6 +388,8 @@ private:
     InputBackend backend_ = InputBackend::sdkAccelerator;
     bool hookRegistered_ = false, toggleRegistered_ = false, menuRegistered_ = false, timerRegistered_ = false, announceImport_ = false;
     bool titleModeEnabled_ = true, titleProxyActive_ = false;
+    accelerator_register_t fxChainAccel_{};
+    bool fxChainAccelRegistered_ = false;
     std::array<Action, 10> actions_{{
         {"LREAPARAMSFXPARAMS", "LReaParams: FX Params (native test)", L"FX Params"},
         {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params (basic native controls)", L"Track Params (basic controls)"},
@@ -315,6 +403,15 @@ private:
         {"LREAPARAMSNVDATITLE", "LReaParams: Toggle Lua-style keyboard focus window", L"Lua-style keyboard window (1px)"}
     }};
 };
+int fxChainShortcutHook(MSG* msg, accelerator_register_t* ctx) noexcept {
+    try {
+        auto* source = ctx ? static_cast<Extension*>(ctx->user) : nullptr;
+        return source ? source->interceptFxChainShortcut(msg) : 0;
+    } catch (...) {
+        if (app) app->fail();
+        return 0; // Fail open: REAPER keeps the keystroke.
+    }
+}
 bool actionHook(KbdSectionInfo*, int command, int, int, int, HWND) noexcept {
     try { return app && app->action(command); } catch (...) { if (app) app->fail(); return true; }
 }

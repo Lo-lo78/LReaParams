@@ -5,6 +5,10 @@
 #define REAPERAPI_WANT_GetResourcePath
 #define REAPERAPI_WANT_EnumProjects
 #define REAPERAPI_WANT_GetTouchedOrFocusedFX
+#define REAPERAPI_WANT_CountActionShortcuts
+#define REAPERAPI_WANT_GetActionShortcutDesc
+#define REAPERAPI_WANT_SectionFromUniqueID
+#define REAPERAPI_WANT_kbd_formatKeyName
 #define REAPERAPI_WANT_GetTrack
 #define REAPERAPI_WANT_GetMasterTrack
 #define REAPERAPI_WANT_GetTrackMediaItem

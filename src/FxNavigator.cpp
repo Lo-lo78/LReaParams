@@ -26,10 +26,31 @@ bool FxNavigator::begin() {
     project_ = EnumProjects(-1, nullptr, 0);
     if (!project_) { speech_("No REAPER project"); return false; }
     track_ = nullptr; take_ = nullptr;
+    // Follow OSARA's GetTouchedOrFocusedFX logic when REAPER's FX list owns
+    // focus. The visible chain might belong to a track not currently selected.
+    // Never use the last-touched FX here: that might be from another track.
+    if (GetDlgCtrlID(GetFocus()) == 1076) {
+        int tr = -1, item = -1, takeIdx = -1, fx = -1, state = 0;
+        if (GetTouchedOrFocusedFX(1, &tr, &item, &takeIdx, &fx, &state) && !(state & 1)) {
+            MediaTrack* owner = tr == -1 ? GetMasterTrack(project_) : GetTrack(project_, tr);
+            if (owner && ValidatePtr2(project_, owner, "MediaTrack*")) {
+                if (item >= 0 && takeIdx >= 0) {
+                    MediaItem* mediaItem = GetTrackMediaItem(owner, item);
+                    MediaItem_Take* wantedTake = mediaItem ? GetTake(mediaItem, takeIdx) : nullptr;
+                    if (wantedTake && TakeFX_GetCount(wantedTake) > 0) {
+                        track_ = owner; take_ = wantedTake;
+                    }
+                } else if (TrackFX_GetCount(owner) > 0 ||
+                           (owner == GetMasterTrack(project_) && TrackFX_GetRecCount(owner) > 0)) {
+                    track_ = owner;
+                }
+            }
+        }
+    }
     MediaTrack* master = GetMasterTrack(project_);
     const bool masterSelected = master && GetMediaTrackInfo_Value(master, "I_SELECTED") > 0.5;
     // An already visible FX chain wins over cursor context (as in the Lua).
-    if (masterSelected && (TrackFX_GetChainVisible(master) >= 0 || TrackFX_GetRecChainVisible(master) >= 0)) {
+    if (!track_ && masterSelected && (TrackFX_GetChainVisible(master) >= 0 || TrackFX_GetRecChainVisible(master) >= 0)) {
         track_ = master;
     }
     if (!track_) {
