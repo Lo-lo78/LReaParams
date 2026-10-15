@@ -90,3 +90,14 @@ NVDA+T rimane gestito dal titolo della finestra. NVDA+Freccia Su è da
 verificare: senza il caret dell'EDIT potrebbe non leggere la riga; una
 futura integrazione UIA TextPattern sarebbe necessaria se ciò avviene.
 Build/test runtime da eseguire SOLO su GitHub Actions e REAPER.
+
+## TEST12 — evitare doppi annunci OSARA/NVDA (0.0.13)
+
+La TEST11 inviava SetWindowTextW al controllo STATIC focalizzato ogni volta
+che cambiavano nome o valore. Questa chiamata può produrre un evento di
+accessibilità pronunciato da NVDA oltre al messaggio esplicito di OSARA.
+TEST12 conserva il testo di review in memoria e risponde passivamente alle
+richieste WM_GETTEXT/WM_GETTEXTLENGTH, senza modificare il testo Win32 del
+controllo già focalizzato durante la navigazione. Non sono cambiati tasti,
+layout delle griglie, memoria di sessione o logica dei bordi. I test NVDA
+restano da eseguire in REAPER. NESSUNA compilazione locale eseguita.

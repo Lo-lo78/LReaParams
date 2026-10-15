@@ -1,5 +1,6 @@
 #include "lrp/TitleProxy.h"
 #include <algorithm>
+#include <cwchar>
 #include <utility>
 
 namespace lrp {
@@ -33,11 +34,12 @@ bool TitleProxy::ensureWindow() {
         WS_POPUP | WS_CAPTION, -32000, -32000, 1, 1,
         host_, nullptr, instance_, this);
     if (!window_) return false;
-    // TEST11: a focused EDIT caused NVDA's own caret/character echo on each
-    // arrow key.  At the grid boundary this produced speech even though the
-    // navigator and OSARA had correctly said nothing.  Use a focusable native
-    // STATIC instead: Windows/NVDA see text, but there is NO SYSTEM CARET.
-    // Its parent is still the offscreen one-pixel titled keyboard owner.
+    // TEST12: keep a STATIC keyboard owner, but do not mutate its native
+    // caption while it owns focus.  SetWindowTextW would broadcast a native
+    // accessibility name/text-change event, which NVDA can speak on top of
+    // the explicit OSARA announcement.  We expose the latest review text
+    // ON DEMAND via WM_GETTEXT/WM_GETTEXTLENGTH instead.  No edit caret,
+    // no artificial name-change event for each parameter movement.
     edit_ = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE |
         WS_TABSTOP | SS_NOTIFY | SS_LEFT, 0, 0, 1, 1,
         window_, nullptr, instance_, nullptr);
@@ -65,10 +67,11 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
     title_ = title;
     reviewText_ = toWide(initialReviewLine);
     if (reviewText_.size() > 8192) reviewText_.resize(8192);
-    // Populate the static review label before focus.  Do not place the system
-    // caret in any editable control.  Only OSARA reads keyboard movement.
+    // The child STATIC's stored caption is deliberately constant (empty).
+    // Its window procedure answers WM_GETTEXT with reviewText_ when NVDA or
+    // another client explicitly asks.  We never call SetWindowTextW(edit_)
+    // during navigation: only OSARA should initiate movement speech.
     SetWindowTextW(window_, title_.c_str());
-    SetWindowTextW(edit_, reviewText_.c_str());
     ShowWindow(window_, SW_SHOW);
     SetForegroundWindow(window_);
     SetFocus(edit_);
@@ -86,8 +89,10 @@ void TitleProxy::updateReviewLine(const std::string& utf8Text) {
     auto line = toWide(utf8Text);
     if (line.size() > 8192) line.resize(8192);
     if (line == reviewText_) return;
+    // Passive update: expose new text on the next explicit query, without
+    // firing EVENT_OBJECT_NAMECHANGE/other Windows accessibility events.
+    // Avoid SetWindowTextW on the focused STATIC at all costs.
     reviewText_ = std::move(line);
-    SetWindowTextW(edit_, reviewText_.c_str());
 }
 void TitleProxy::reassertFocusAfterNavigationKey() noexcept {
     if (!window_ || !edit_ || !IsWindowVisible(window_) || !IsWindowEnabled(host_)) return;
@@ -149,6 +154,19 @@ LRESULT CALLBACK TitleProxy::windowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
 LRESULT CALLBACK TitleProxy::editProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
     auto* self = reinterpret_cast<TitleProxy*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     if (!self || !self->originalEditProc_) return DefWindowProcW(hwnd, msg, wp, lp);
+    // Keep the parameter and value queryable without changing the focused
+    // native STATIC caption.  UI clients which obtain its window text on
+    // demand see the latest value, but NVDA is not signalled on each movement.
+    if (msg == WM_GETTEXTLENGTH)
+        return static_cast<LRESULT>(self->reviewText_.size());
+    if (msg == WM_GETTEXT) {
+        if (!lp || !wp) return 0;
+        auto* target = reinterpret_cast<wchar_t*>(lp);
+        const auto length = std::min(self->reviewText_.size(), static_cast<size_t>(wp - 1));
+        if (length) std::wmemcpy(target, self->reviewText_.data(), length);
+        target[length] = L'\0';
+        return static_cast<LRESULT>(length);
+    }
     // STATIC controls normally don't need the arrows.  This focusable one
     // owns every navigation key; no edit selection or caret event can occur.
     if (msg == WM_GETDLGCODE) return DLGC_WANTALLKEYS | DLGC_WANTARROWS | DLGC_WANTCHARS;

@@ -59,6 +59,14 @@ def main():
           'TEST11 focused non-editable text label missing')
     check('L"EDIT"' not in title_src and 'EM_SETSEL' not in title_src,
           'An EDIT caret would reintroduce NVDA character chatter')
+    # TEST12: parameter text must be queryable by NVDA WITHOUT notifying it
+    # of every move.  The Win32 focus owner must never change its text using
+    # SetWindowTextW, which generates a second unsolicited accessibility event.
+    check('if (msg == WM_GETTEXTLENGTH)' in title_src and
+          'if (msg == WM_GETTEXT)' in title_src and
+          'SetWindowTextW(edit_,' not in '\n'.join(line for line in title_src.splitlines()
+                                        if not line.lstrip().startswith('//')),
+          'Focused native text must be updated passively, not via name-change events')
     # TEST9 regression markers: the native session memory must survive end()/begin()
     # without accidentally writing to REAPER project state or legacy TXT files.
     fx_header=(ROOT/'include/lrp/FxNavigator.h').read_text()

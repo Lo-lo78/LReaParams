@@ -7,8 +7,10 @@ namespace lrp {
 // Keyboard owner in the style of the original Lua gfx window.
 // A top-level 1px window keeps the NVDA+T title; its focused native STATIC
 // child has no system text caret (no unsolicited NVDA character echo).
-// It exposes the current parameter as native accessible text. NVDA+Up is
-// experimental without an EDIT caret; Ctrl+R repeats the current item via OSARA.
+// The focused STATIC's caption never changes. Its subclass responds to
+// explicit WM_GETTEXT queries with the current parameter and value without
+// raising text-change notifications that could duplicate OSARA speech.
+// NVDA+Up is experimental without an EDIT caret; Ctrl+R always reviews via OSARA.
 class TitleProxy final {
 public:
     explicit TitleProxy(HWND host) noexcept : host_(host) {}

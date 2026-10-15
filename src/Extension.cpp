@@ -149,11 +149,11 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.11 TEST10 NAVIGATION AND NVDA\n\n"
+            ShowMessageBox("LReaParams 0.0.13 TEST12 QUIET ACCESSIBILITY\n\n"
                 "FX: Ctrl+Up/Down changes FX directly; last FX, parameter and grid settings are remembered per track/take for this REAPER session.\n"
                 "FX: F1/F2 grid height. Ctrl+Home/End absolute.\n"
                 "Track: F1 track rows, F2/F3 fourteen vertical fields per send/receive column.\n"
-                "Like the Lua, an offscreen window owns the keyboard; a STATIC label avoids NVDA caret echo.\n"
+                "Like the Lua, an offscreen window owns the keyboard; a STATIC label exposes text on demand, without announcing text changes.\n"
                 "NVDA+T reads track/FX titles; NVDA+Up in FX reads parameter and value only.\n"
                 "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
                 "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"
