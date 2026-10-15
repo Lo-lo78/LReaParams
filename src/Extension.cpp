@@ -151,10 +151,10 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.16 TEST15 TRACK SPEECH AND VALUE SLIDER\n\n"
+            ShowMessageBox("LReaParams 0.0.17 TEST16 TRACK NVDA REVIEW\n\n"
                 "FX: Ctrl+Up/Down changes FX. Ctrl+Shift+Up/Down switches to tracks with FX, restoring the last FX and parameter per track.\n"
                 "FX: F1/F2 grid height. Ctrl+Home/End absolute. Alt+Left/Right steps -10 to +10.\n"
-                "Track: Left/Right announces only parameter and value; Up/Down changes track and speaks its name. Ctrl+R reviews full context.\n"
+                "Track: Left/Right and NVDA+Up review parameter and value only; Up/Down changes track and speaks its name. Ctrl+R reviews full context.\n"
                 "Track: F1 rows; F2/F3 only when sends/receives exist. Alt+Left/Right adjusts continuous steps.\n"
                 "A native Windows trackbar owns keyboard focus in Value; Grid retains the quiet STATIC review label.\n"
                 "NVDA+T: FX Params - track - FX name; Track Params - track (and page for Sends/Receives). NVDA+Up queries parameter and value.\n"

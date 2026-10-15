@@ -104,13 +104,14 @@ def main():
           'switchOwnedWindow' in (ROOT/'src/InputRouter.cpp').read_text(),
           'TEST13 native accessible Value slider missing')
     track_src=(ROOT/'src/TrackNavigator.cpp').read_text()
-    # TEST15: leave full context available on explicit NVDA review and row
-    # changes, but do not repeat the track name on each horizontal parameter.
+    # TEST16: NVDA+Up uses the passive reviewLine, now parameter/value ONLY.
+    # Moving tracks still speaks track context; explicit Ctrl+R stays full.
     check('void TrackNavigator::announce() { speech_(parameterValueSpeech()); }' in track_src and
           'row_ = next; track_ = rows_[row_].track; announceTrack();' in track_src and
           'if (!k.repeat) announceTrack();' in track_src and
-          'if (!valueMode_) return currentParameterSpeech();' in track_src,
-          'TEST15 contextual Track speech contract missing')
+          'if (!valueMode_) return parameterValueSpeech();' in track_src and
+          'std::string TrackNavigator::reviewLine() const' in track_src,
+          'TEST16 native NVDA Track review contract missing')
     check('if (valueMode_) speech_(reviewLine());' in fx_source and
           'void TitleProxy::syncValueControl' in title_src and
           'SetFocus(slider_);' in title_src and

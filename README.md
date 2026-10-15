@@ -1,9 +1,9 @@
-# LReaParams — TEST15 (0.0.16)
+# LReaParams — TEST16 (0.0.17)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
 
-La TEST15 parte da TEST14 e mantiene l'importazione dei vecchi profili,
+La TEST16 parte da TEST15 e mantiene l'importazione dei vecchi profili,
 la navigazione FX e Track, il controllo di tastiera e la memoria in RAM.
 
 ## FX Params
@@ -34,7 +34,7 @@ la navigazione FX e Track, il controllo di tastiera e la memoria in RAM.
 
 - Nella pagina F1, le frecce Sinistra/Destra pronunciano soltanto
   **parametro e valore**; Su/Giù cambia traccia e aggiunge il nome della
-  traccia. Ctrl+R e NVDA+Su mantengono la rilettura del contesto completo.
+  traccia. Ctrl+R mantiene la rilettura del contesto completo; **NVDA+Su legge solo parametro e valore** come FX Params.
 - Anche qui la variazione di un parametro parla solo il valore.
 - Alt+Sinistra/Destra imposta Step da -10 a +10. Questa scala modifica
   esclusivamente volume, pan e width (traccia e send/receive); la gestione
@@ -58,3 +58,7 @@ la navigazione FX e Track, il controllo di tastiera e la memoria in RAM.
 Vedere `Docs/TEST13_TRACK_SWITCH_VALUE.md` per la checklist TEST13 e
 `Docs/TEST14_WINDOW_TITLES.md` per il controllo dei titoli.
 `Docs/TEST15_TRACK_SPEECH_FX_VALUE.md` per le nuove prove su annunci e Value.
+
+## TEST16 — Modifica di accessibilità mirata
+
+In Grid, la lettura passiva con NVDA+Freccia Su espone soltanto parametro e valore, senza ripetere la traccia o la pagina. L’annuncio di cambio traccia, Ctrl+R, il titolo NVDA+T e gli slider Value rimangono invariati. Vedere `Docs/TEST16_TRACK_NVDA_REVIEW.md`.

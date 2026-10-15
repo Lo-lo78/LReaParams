@@ -17,3 +17,5 @@ I riferimenti al suo sorgente servono a verificare il contratto delle API.
 Le fixture pubblicabili sono sintetiche: nomi di plugin, parametri, celle,
 progetti e GUID personali sono sostituiti. Gli originali di dati.zip non sono
 inclusi. README e Docs distinguono implementazione, test e porting pendente.
+
+TEST16 (0.0.17): Track Params passive NVDA+Up review reduced to parameter and value in Grid; contextual row announcements and Ctrl+R unchanged. No local compilation.

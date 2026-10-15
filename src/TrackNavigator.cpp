@@ -285,9 +285,12 @@ std::string TrackNavigator::currentParameterSpeech() const {
 }
 std::string TrackNavigator::reviewLine() const {
     if (!active_) return "";
-    if (!valueMode_) return currentParameterSpeech();
+    // NVDA+Up in Grid reviews only the parameter and value, like FX Params.
+    // Track/page names remain available via NVDA+T. Moving between tracks
+    // continues to announce the track name; Ctrl+R still reviews context.
+    if (!valueMode_) return parameterValueSpeech();
     const auto* e = current();
-    return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : currentParameterSpeech();
+    return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
 }
 bool TrackNavigator::nativeValueSlider() const {
     if (!active_ || !valueMode_) return false;
