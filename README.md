@@ -1,4 +1,4 @@
-# LReaParams — TEST21 (0.0.22)
+# LReaParams — TEST22 (0.0.23)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
@@ -134,3 +134,21 @@ This is a source-only TEST20 revision requiring runtime validation in REAPER/OSA
 - F10 senza modificatori è lasciato alla futura Parameter Library. Alt+F10/F11/F12 rimangono liberi per i watcher OSARA.
 
 **Non compilare localmente:** revisione statica soltanto. La compatibilità esatta dei comandi e del wrapper Delta va verificata usando REAPER e GitHub Actions.
+
+## TEST22 — Navigazione Home/End e stati FX
+
+- In FX Params, Ctrl+Home va al **primo** parametro globale; Ctrl+End all'**ultimo**.
+  Home/End agiscono analogamente sul primo/ultimo parametro della colonna corrente.
+- Nella selezione Shift+Home/End in F7 e nelle colonne F8 vale la stessa direzione.
+  In FX Memories Ctrl+Home/End sceglie la prima/ultima colonna non vuota.
+- In FX Value e con Alt, Home continua a impostare il massimo ed End il minimo
+  (comportamento Lua precedente); la correzione riguarda solo la navigazione nella griglia.
+- Cambiando effetto vengono annunciati **prima** Monitor FX/Master/traccia,
+  poi Bypassed e Delta Solo **solo se attivi**, quindi nome dell'FX, parametro e valore.
+  Per esempio: `Monitor FX. Bypassed. Delta Solo. side JS: acendan_Center Control. Center Level (dB), -120.0`.
+- Titolo NVDA+T con entrambi gli stati: `FX Params. Bypassed - Delta Solo. Monitor FX - side JS: acendan_Center Control`.
+  Senza stati resta l'ordine precedente: `FX Params - Monitor FX - plugin`.
+- Resta il limite della TEST21: Delta Solo è riconosciuto solo quando il wrapper
+  REAPER espone l'ultimo parametro col nome `Delta` o `Delta Solo`.
+
+La TEST22 è solo sorgente e richiede verifica con GitHub Actions, REAPER e NVDA.

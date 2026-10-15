@@ -3,7 +3,7 @@ from pathlib import Path
 r=Path(__file__).resolve().parents[1]
 s=(r/'src/FxNavigator.cpp').read_text()
 h=(r/'include/lrp/ReaperApi.h').read_text()
-for marker in ('context = "Monitor FX"','wideUtf8(fxDisplayName()) + wideUtf8(statusSuffix())',
+for marker in ('context = "Monitor FX"','fxWindowTitleBase()',
   'toggleBypass()', 'toggleDeltaSolo()', 'clearProjectDeltaSolo()',
   'deltaParameter(', '"No Delta Solo"', '"Clear delta solo for all project FX"',
   'k.vk==VK_F3', 'k.vk==VK_F5', 'k.vk==VK_F6', 'k.vk==VK_F9',
@@ -13,5 +13,5 @@ for marker in ('context = "Monitor FX"','wideUtf8(fxDisplayName()) + wideUtf8(st
   assert marker in s, marker
 assert "((k.vk=='B' && !k.shift)||k.vk=='D')" in s
 assert '#define REAPERAPI_WANT_Main_OnCommand' in h
-assert 'VERSION 0.0.22' in (r/'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.23' in (r/'CMakeLists.txt').read_text()
 print('TEST21 source contract PASS — no native build')

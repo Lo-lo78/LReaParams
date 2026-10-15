@@ -71,7 +71,11 @@ private:
     void rememberPosition();
     std::string contextName() const;
     std::string fxDisplayName() const;
-    std::string statusSuffix() const;
+    // Spoken context and window-title state share the same source of truth.
+    bool deltaSoloActive() const;
+    std::string statusSummary() const;
+    std::string fxContextAnnouncement() const;
+    std::string fxWindowTitleBase(bool memories = false) const;
     bool isBypassed() const;
     void toggleBypass();
     bool deltaParameter(MediaTrack* track, MediaItem_Take* take, int fx, int& index) const;

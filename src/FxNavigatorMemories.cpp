@@ -244,10 +244,10 @@ void FxNavigator::memoryNavigate(const Key& k) {
         return;
     }
     if(k.ctrl && !k.alt && !k.shift && (k.vk==VK_HOME || k.vk==VK_END)) {
-        for(int c=k.vk==VK_HOME?6:0;c>=0&&c<7;c+=(k.vk==VK_HOME?-1:1))
+        for(int c=k.vk==VK_HOME?0:6;c>=0&&c<7;c+=(k.vk==VK_HOME?1:-1))
             if(!memoryColumns_[static_cast<size_t>(c)].empty()){
-                memoryCol_=c;memoryRow_=k.vk==VK_HOME?
-                    static_cast<int>(memoryColumns_[static_cast<size_t>(c)].size())-1:0;
+                memoryCol_=c;memoryRow_=k.vk==VK_HOME?0:
+                    static_cast<int>(memoryColumns_[static_cast<size_t>(c)].size())-1;
                 speakMemory();return;
             }
         speakMemory();return;
@@ -259,8 +259,8 @@ void FxNavigator::memoryNavigate(const Key& k) {
         if(k.vk==VK_UP || k.vk==VK_DOWN || k.vk==VK_PRIOR || k.vk==VK_NEXT || k.vk==VK_HOME || k.vk==VK_END) {
             if(!size){speakMemory();return;}
             int target=memoryRow_;
-            if(k.vk==VK_HOME)target=size-1; // Lua Home/End intentionally reversed
-            else if(k.vk==VK_END)target=0;
+            if(k.vk==VK_HOME)target=0;
+            else if(k.vk==VK_END)target=size-1;
             else if(k.vk==VK_UP)target--;
             else if(k.vk==VK_DOWN)target++;
             else if(k.vk==VK_PRIOR || k.vk==VK_NEXT) {

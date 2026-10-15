@@ -95,7 +95,7 @@ def main():
     check('desired->windowTitle(), desired->reviewLine()' in (ROOT/'src/Extension.cpp').read_text() and
           'reviewText_ = toWide(initialReviewLine)' in title_src,
           'Initial native text must be filled before focus')
-    check('L"FX Params - "' in fx_source and 'L"LReaParams - FX Params - "' not in fx_source,
+    check('fxWindowTitleBase()' in fx_source and 'L"LReaParams - FX Params - "' not in fx_source,
           'FX NVDA+T title must not contain LReaParams')
     check('switchTrack(' in fx_source and 'SetOnlyTrackSelected(' in fx_source and
           'std::clamp(stepScale_' in fx_source and '-10, 10)' in fx_source,

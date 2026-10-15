@@ -303,7 +303,7 @@ void FxNavigator::switchFx(int direction) {
                                 : TrackFX_GetNumParams(track_, entries_[i].index);
         if (count <= 0) continue;
         if (!selectFx(i)) return;
-        speech_(contextName() + ". " + fxDisplayName() + (isBypassed()?". Bypassed":"") + ". " + currentParameterSpeech());
+        speech_(fxContextAnnouncement());
         return;
     }
     // First/last FX is deliberately silent, like the edges of the grid.
@@ -387,7 +387,7 @@ void FxNavigator::switchTrack(int direction) {
     // Mirror the Lua: select the actual REAPER track only after successful switch.
     SetOnlyTrackSelected(target);
     UpdateArrange();
-    speech_(contextName() + ". " + fxDisplayName() + (isBypassed()?". Bypassed":"") + ". " + currentParameterSpeech());
+    speech_(fxContextAnnouncement());
 }
 std::string FxNavigator::contextName() const {
     if (!track_) return "";
@@ -409,24 +409,49 @@ std::string FxNavigator::fxDisplayName() const {
     // Keep "Monitor: " in the profile key and session memory for old .fx files;
     // remove it only from speech and the window title.
     const std::string monitorPrefix="Monitor: ";
-    if ((fx_ & 0x1000000) && name.rfind(monitorPrefix,0)==0)
-        return name.substr(monitorPrefix.size());
-    return name;
+    std::string visibleName = (fx_ & 0x1000000) && name.rfind(monitorPrefix,0)==0
+        ? name.substr(monitorPrefix.size()) : name;
+    // REAPER can supply display names ending in a period. Add exactly one
+    // sentence separator in FX-switch announcements, not two consecutive dots.
+    while (visibleName.size() > 1 &&
+           (visibleName.back() == '.' || visibleName.back() == ' ')) visibleName.pop_back();
+    return visibleName;
 }
 bool FxNavigator::isBypassed() const {
     return valid() && !(take_ ? TakeFX_GetEnabled(take_,fx_)
                                  : TrackFX_GetEnabled(track_,fx_));
 }
-std::string FxNavigator::statusSuffix() const {
-    if (!valid()) return {};
-    std::string result;
-    if (isBypassed()) result += " - Bypassed";
-    int delta=-1;
-    if (deltaParameter(track_,take_,fx_,delta)) {
-        const double v=take_?TakeFX_GetParamNormalized(take_,fx_,delta):TrackFX_GetParamNormalized(track_,fx_,delta);
-        if (v>0.5) result += " - Delta Solo";
-    }
-    return result;
+bool FxNavigator::deltaSoloActive() const {
+    if (!valid()) return false;
+    int delta = -1;
+    if (!deltaParameter(track_, take_, fx_, delta)) return false;
+    const double value = take_ ? TakeFX_GetParamNormalized(take_, fx_, delta)
+                               : TrackFX_GetParamNormalized(track_, fx_, delta);
+    return value > 0.5;
+}
+std::string FxNavigator::statusSummary() const {
+    // A disabled state is deliberately omitted: no "Enabled" or "Delta off".
+    const bool bypassed = isBypassed();
+    const bool delta = deltaSoloActive();
+    if (bypassed && delta) return "Bypassed - Delta Solo";
+    if (bypassed) return "Bypassed";
+    if (delta) return "Delta Solo";
+    return {};
+}
+std::string FxNavigator::fxContextAnnouncement() const {
+    // After changing FX, speak context, active states, plugin, parameter/value.
+    std::string message = contextName() + ". ";
+    if (isBypassed()) message += "Bypassed. ";
+    if (deltaSoloActive()) message += "Delta Solo. ";
+    return message + fxDisplayName() + ". " + currentParameterSpeech();
+}
+std::string FxNavigator::fxWindowTitleBase(bool memories) const {
+    const std::string name = memories ? "FX Memories" : "FX Params";
+    const std::string status = statusSummary();
+    // Keep legacy title layout in the normal state, but precede context and FX
+    // with active states (matching the exact requested Bypassed/Delta order).
+    return name + (status.empty() ? " - " : ". " + status + ". ") +
+           contextName() + " - " + fxDisplayName();
 }
 void FxNavigator::toggleBypass() {
     if (!valid()) return;
@@ -663,8 +688,7 @@ void FxNavigator::announce() {
 void FxNavigator::announceTitle() {
     if (!active_) return;
     if(memoryManager_){speakMemory("FX Memories");return;}
-    speech_("FX Params - " + contextName() + " - " +
-            fxDisplayName() + (isBypassed()?". Bypassed":"") + ". " + currentParameterSpeech());
+    speech_(fxWindowTitleBase() + ". " + currentParameterSpeech());
 }
 namespace {
 std::wstring wideUtf8(const std::string& str) {
@@ -679,10 +703,9 @@ std::wstring wideUtf8(const std::string& str) {
 }
 std::wstring FxNavigator::windowTitle() const {
     if (!active_) return L"FX Params";
-    if (memoryManager_) return L"FX Memories - " + wideUtf8(contextName()) + L" - " + wideUtf8(fxDisplayName()) + wideUtf8(statusSuffix());
-    // Keep Grid out of the title as requested; Value is explicit on entry.
-    return L"FX Params - " + wideUtf8(contextName()) + L" - " +
-           wideUtf8(fxDisplayName()) + wideUtf8(statusSuffix()) +
+    if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));
+    // Keep Grid out of the title; position Bypassed/Delta BEFORE context/FX.
+    return wideUtf8(fxWindowTitleBase()) +
            (textEdit_ ? L" - Rename" : searchMode_ ? L" - Find Parameter" : valueMode_ ? L" - Value" :
             editF7_ ? L" - F7 Edit" : L"");
 }
@@ -835,8 +858,8 @@ void FxNavigator::handle(const Key& k) {
         }
         return;
     }
-    if (k.ctrl && k.vk==VK_HOME){navigate(static_cast<int>(visible_.size())-1-viewPos_);return;}
-    if (k.ctrl && k.vk==VK_END){navigate(-viewPos_);return;}
+    if (k.ctrl && k.vk==VK_HOME){navigate(-viewPos_);return;}
+    if (k.ctrl && k.vk==VK_END){navigate(static_cast<int>(visible_.size())-1-viewPos_);return;}
     if (k.vk==VK_ESCAPE){if(valueMode_){valueMode_=false;announceTitle();}
         else if(editF7_)exitF7();else if(groupSlot_){groupSlot_=0;rebuildView(parameter_);announce();}else end();return;}
     if(k.vk==VK_RETURN){if(k.repeat)return;valueMode_=!valueMode_;
@@ -871,8 +894,8 @@ void FxNavigator::handle(const Key& k) {
     if(visible_.empty())return;
     const int start=(viewPos_/columns_)*columns_;
     const int end=std::min(static_cast<int>(visible_.size())-1,start+columns_-1);
-    if(k.vk==VK_HOME){navigate(end-viewPos_);return;}
-    if(k.vk==VK_END){navigate(start-viewPos_);return;}
+    if(k.vk==VK_HOME){navigate(start-viewPos_);return;}
+    if(k.vk==VK_END){navigate(end-viewPos_);return;}
     if(k.vk==VK_PRIOR||k.vk==VK_NEXT){
         const int target=std::clamp(viewPos_+(k.vk==VK_PRIOR?-5:5),start,end);
         navigate(target-viewPos_);return;

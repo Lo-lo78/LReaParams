@@ -18,6 +18,8 @@ jobs:
         run: python Tools/audit.py
       - name: Verify TEST21 shortcut and title contracts (source only)
         run: python Testing/test21_static.py
+      - name: Verify TEST22 Home/End and FX status contracts (source only)
+        run: python Testing/test22_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

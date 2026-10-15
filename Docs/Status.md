@@ -105,3 +105,17 @@ restano da eseguire in REAPER. NESSUNA compilazione locale eseguita.
 ## TEST17 — FX Params Custom Order / F7
 
 Il codice sorgente aggiunge Ctrl+L, caricamento e salvataggio profili FX `.fx`, selezione F7, copia/taglia/incolla per occorrenza, gruppi e alias, con backup e controllo di modifiche concorrenti. Audit Python passato. Compatibilità runtime NVDA e REAPER non verificata: **non eseguire test distruttivi su profili originali**. F7 è ancora una migrazione parziale: F8, ricerca filtrata, gruppi avanzati e l’editor accessibile nativo dei nomi rimangono da completare.
+
+## TEST22 — Stati FX prima del nome e Home/End coerenti
+
+In FX Params la navigazione Ctrl+Home/End e Home/End punta rispettivamente al
+primo/ultimo parametro globale e della colonna. Lo stesso ordine viene
+applicato alla selezione F7 e a Home/End e Ctrl+Home/End in FX Memories F8.
+La regolazione dei valori con Alt/Value non è cambiata rispetto al Lua.
+
+I messaggi quando si cambia FX presentano context, Bypassed (se attivo),
+Delta Solo (se attivo), nome FX e parametro/valore. NVDA+T presenta gli stati
+subito dopo FX Params e prima di Monitor FX / Master / nome traccia, con
+la forma `FX Params. Bypassed - Delta Solo. Monitor FX - Nome FX`.
+La rilevazione di Delta Solo mantiene il limite documentato nella TEST21.
+**Nessuna build locale eseguita; richiede prova reale in REAPER.**

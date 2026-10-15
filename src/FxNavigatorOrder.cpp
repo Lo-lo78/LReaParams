@@ -401,8 +401,8 @@ bool FxNavigator::handleF7(const Key& k) {
         else if(k.vk==VK_RIGHT)target=std::min(static_cast<int>(visible_.size())-1,viewPos_+columns_);
         else if(k.vk==VK_PRIOR)target=std::max(start,viewPos_-5);
         else if(k.vk==VK_NEXT)target=std::min(end,viewPos_+5);
-        else if(k.vk==VK_HOME)target=end;
-        else if(k.vk==VK_END)target=start;
+        else if(k.vk==VK_HOME)target=start;
+        else if(k.vk==VK_END)target=end;
         selectF7(true,target,keyName(k));return true;
     }
     return false;
