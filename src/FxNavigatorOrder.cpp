@@ -236,6 +236,36 @@ void FxNavigator::selectF7(bool shift,int target,const std::string& direction,bo
     speech_("Selected "+std::to_string(f7Selected_.size())+". "+editorParameterSpeech());
 }
 
+void FxNavigator::selectF7ToGlobalEdge(bool toEnd) {
+    // In F7, Ctrl+Shift+Home/End selects the range from the CURRENT cell
+    // to the beginning/end of the entire visible grid. Ctrl+Home/End alone
+    // only navigates; Ctrl+A still selects everything.
+    if(visible_.empty())return;
+    const int target=toEnd?static_cast<int>(visible_.size())-1:0;
+    if(target==viewPos_)return; // repeated movement at either edge is silent
+    const int origin=viewPos_;
+    const int first=std::min(origin,target);
+    const int last=std::max(origin,target);
+
+    // Replace the selection *inside this grid* so nothing behind the origin
+    // remains selected. In a filtered grid, protect selections of elements
+    // that are temporarily not visible; they belong to another search pass.
+    for(int pos=0;pos<static_cast<int>(visible_.size());++pos)
+        f7Selected_.erase(f7OriginalPosition(pos));
+    for(int pos=first;pos<=last;++pos)
+        f7Selected_.insert(f7OriginalPosition(pos));
+
+    // A new contiguous range becomes a stable selection; a subsequent
+    // Shift+arrow starts a fresh snake instead of extending an old path.
+    f7SnakePath_.clear();f7SnakeDirections_.clear();
+    f7BaseSelection_=f7Selected_;f7SnakeUnselect_=false;
+    viewPos_=target;
+    parameter_=visible_[static_cast<size_t>(viewPos_)];
+    parameterName_=parameterName();
+    rememberPosition();
+    speech_(std::to_string(f7Selected_.size())+" selected. "+editorParameterSpeech());
+}
+
 void FxNavigator::doCopy(bool cut) {
     if(!editF7_)return;
     clip_.clear();
@@ -610,9 +640,9 @@ bool FxNavigator::handleF7(const Key& k) {
         return true;
     }
     if(k.ctrl&&k.shift&&!k.alt&&(k.vk==VK_HOME||k.vk==VK_END)) {
-        f7Selected_.clear();for(int i=0;i<static_cast<int>(visible_.size());++i)f7Selected_.insert(f7OriginalPosition(i));
-        f7SnakePath_.clear();f7SnakeDirections_.clear();rememberPosition();
-        speech_("Selected all. "+std::to_string(f7Selected_.size())+" selected");return true;
+        // Only Ctrl+Shift selects an interval to the global grid edge.
+        // Ctrl+Home/End without Shift falls through to normal navigation.
+        selectF7ToGlobalEdge(k.vk==VK_END);return true;
     }
     if(k.shift&&!k.ctrl&&!k.alt &&
        (k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||

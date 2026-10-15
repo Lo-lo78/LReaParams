@@ -126,6 +126,7 @@ private:
     void enterF7();
     void exitF7();
     void selectF7(bool shift, int target, const std::string& direction = "", bool sweep = false);
+    void selectF7ToGlobalEdge(bool toEnd);
     bool handleF7(const Key& key);
     void saveStructure();
     struct EditHistory { std::vector<int> order; std::map<int,std::string> aliases;

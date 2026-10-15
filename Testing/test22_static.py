@@ -6,8 +6,8 @@ f7=(r/'src/FxNavigatorOrder.cpp').read_text()
 f8=(r/'src/FxNavigatorMemories.cpp').read_text()
 h=(r/'include/lrp/FxNavigator.h').read_text()
 # Standard order: Ctrl+Home global first; Ctrl+End global last.
-assert 'if (k.ctrl && k.vk==VK_HOME){navigate(-viewPos_);return;}' in fx
-assert 'if (k.ctrl && k.vk==VK_END){navigate(static_cast<int>(visible_.size())-1-viewPos_);return;}' in fx
+assert 'if (k.ctrl && !k.shift && !k.alt && k.vk==VK_HOME){navigate(-viewPos_);return;}' in fx
+assert 'if (k.ctrl && !k.shift && !k.alt && k.vk==VK_END){navigate(static_cast<int>(visible_.size())-1-viewPos_);return;}' in fx
 assert 'if(k.vk==VK_HOME){navigate(start-viewPos_);return;}' in fx
 assert 'if(k.vk==VK_END){navigate(end-viewPos_);return;}' in fx
 assert 'if (k.vk == VK_HOME) setValue(1)' in fx

@@ -977,8 +977,8 @@ void FxNavigator::handle(const Key& k) {
         }
         return;
     }
-    if (k.ctrl && k.vk==VK_HOME){navigate(-viewPos_);return;}
-    if (k.ctrl && k.vk==VK_END){navigate(static_cast<int>(visible_.size())-1-viewPos_);return;}
+    if (k.ctrl && !k.shift && !k.alt && k.vk==VK_HOME){navigate(-viewPos_);return;}
+    if (k.ctrl && !k.shift && !k.alt && k.vk==VK_END){navigate(static_cast<int>(visible_.size())-1-viewPos_);return;}
     if (k.vk==VK_ESCAPE){if(valueMode_){valueMode_=false;announceTitle();}
         else if(f7FilterActive_){
             clearF7Filter();

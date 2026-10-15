@@ -6,7 +6,7 @@ fx=(root/'src/FxNavigator.cpp').read_text()
 order=(root/'src/FxNavigatorOrder.cpp').read_text()
 router=(root/'src/InputRouter.cpp').read_text()
 proxy=(root/'src/TitleProxy.cpp').read_text()
-assert 'VERSION 0.0.29' in (root/'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.31' in (root/'CMakeLists.txt').read_text()
 assert 'groupReturnEdit_' in h and 'groupReturnCustom_' in h
 assert 'groupReturnFilter_' in h and 'groupReturnSelection_' in h
 assert 'groupReturnActive_=true;' in order and 'groupReturnActive_=false;' in order

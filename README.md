@@ -1,4 +1,4 @@
-# LReaParams — TEST28 (0.0.29)
+# LReaParams — TEST30 (0.0.31)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
@@ -258,3 +258,32 @@ Verifiche statiche soltanto. La compilazione viene eseguita dall'utente tramite 
 - Le selezioni sono memorizzate per *occorrenza*, anche con parametri duplicati e ricerca filtrata; le selezioni di filtri precedenti rimangono conservate.
 
 La semantica di Home/End resta quella corretta in TEST22 (Home all'inizio, End alla fine). La revisione e i test automatici sono statici: **nessuna compilazione locale**. Verificare in REAPER la lettura NVDA e il passaggio da una direzione all'altra del serpente.
+
+## TEST29 — Selezione Ctrl+Home / Ctrl+End in F7
+
+In **Edit F7**, Ctrl+Home seleziona tutti i parametri dal corrente al primo
+dell'intera griglia, **Ctrl+End** tutti quelli dal corrente all'ultimo.
+Ctrl+Maiusc+Home/End usa lo stesso intervallo al posto del precedente
+"seleziona tutto". I parametri nella direzione opposta rispetto al punto
+di partenza rimangono deselezionati. La selezione in altri risultati di una
+ricerca filtrata viene invece conservata. Una volta raggiunto il bordo,
+ulteriori pressioni sono silenziose. **Ctrl+A** continua a selezionare tutto.
+
+Fuori F7, Ctrl+Home/End continua a spostare il focus senza selezionare.
+Maiusc+Home/End seleziona all'interno della colonna (TEST28).
+Nessuna compilazione locale: verificare il comportamento con REAPER/NVDA.
+
+## TEST30 — Separazione Ctrl+Home/End e Ctrl+Maiusc+Home/End
+
+Correzione alla TEST29, valida **anche dentro F7**:
+
+- **Ctrl+Home:** si sposta al primo parametro della griglia, senza cambiare la selezione.
+- **Ctrl+End:** si sposta all'ultimo parametro della griglia, senza cambiare la selezione.
+- **Ctrl+Maiusc+Home:** seleziona il tratto dal corrente al primo parametro.
+- **Ctrl+Maiusc+End:** seleziona il tratto dal corrente all'ultimo parametro.
+- **Ctrl+A** seleziona tutti i parametri. **Maiusc+Home/End** resta limitato alla colonna.
+
+La selezione continua ignora i parametri dietro la posizione iniziale e rimane
+silenziosa al bordo. I filtri e le selezioni non visibili seguono la TEST29.
+La TEST30 sostituisce la mappatura errata dei tasti descritta nella TEST29.
+Nessuna compilazione locale; il funzionamento in REAPER/NVDA va verificato.
