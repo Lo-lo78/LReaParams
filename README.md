@@ -1,10 +1,11 @@
-# LReaParams — TEST16 (0.0.17)
+# LReaParams — TEST18 (0.0.19)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
 
-La TEST16 parte da TEST15 e mantiene l'importazione dei vecchi profili,
-la navigazione FX e Track, il controllo di tastiera e la memoria in RAM.
+La TEST18 continua dalla TEST17 e conserva importazione dei vecchi profili,
+navigazione FX e Track, controllo di tastiera e memoria in RAM. Aggiunge
+l'ordine personalizzato e le principali funzioni dell'editor F7 di FX Params.
 
 ## FX Params
 
@@ -62,3 +63,50 @@ Vedere `Docs/TEST13_TRACK_SWITCH_VALUE.md` per la checklist TEST13 e
 ## TEST16 — Modifica di accessibilità mirata
 
 In Grid, la lettura passiva con NVDA+Freccia Su espone soltanto parametro e valore, senza ripetere la traccia o la pagina. L’annuncio di cambio traccia, Ctrl+R, il titolo NVDA+T e gli slider Value rimangono invariati. Vedere `Docs/TEST16_TRACK_NVDA_REVIEW.md`.
+
+## TEST17 — FX Custom Order / F7 (sorgente, senza build)
+
+- **Ctrl+L**: Plugin order / Custom order. L'accesso a una Custom Order
+  virtuale, ancora identica all'ordine originale, non crea alcun profilo.
+  L'ordine dei parametri usa sempre gli indici nativi REAPER per l'audio.
+- Importazione *applicata* dei profili `.fx` già migrati, identificati
+  con `PluginRaw`. L'ordine salvato conserva duplicati, alias e hidden.
+  Le nuove modifiche sono scritte nel `.fx` nativo con backup e verifica
+  preventiva che nessun altro processo abbia modificato lo stesso file.
+- F7: modifica strutturale solo in Custom Order o dentro un Group; selezione
+  Ctrl+A / Shift+Spazio, serpente Shift+frecce, Tab per il conteggio; Cut/Copy/Paste
+  strutturale con Ctrl+X/C/V; Ctrl+Canc nasconde anche senza selezione; Canc deseleziona;
+  Ctrl+Invio permette un alias Unicode o il nome del gruppo.
+- Ctrl+G / Ctrl+M sceglie Group / Memory positions per gli slot;
+  Ctrl+F1…F11 richiama, Ctrl+Maiusc+F1…F11 salva nello scope corrente.
+  Gli slot di gruppo e i memory positions vengono conservati nel profilo.
+- In F7 Ctrl+Maiusc+Canc ripristina *tutti* i parametri nascosti: è una
+  misura di recupero temporanea aggiunta perché il pannello completo F8
+  per gestire i parametri nascosti non è ancora disponibile.
+- **Non ancora equivalenti al Lua**: Default Snapshot completo in F8,
+  esecuzione dei MIDI CC, le viste Search filtrate di F7, la gestione completa dei Group
+  con selezioni per occorrenza e percorsi indipendenti, gli editor avanzati
+  dei nomi e i parametri virtuali ReaEQ/ReaComp/ReaGate/Compare.
+  In questa TEST17 è migrato il nucleo operativo di F7, non l'intera
+  matrice di tutte le scorciatoie del Lua da oltre 37.000 righe.
+
+Vedere `Docs/TEST17_CUSTOM_ORDER_F7.md` per collaudo e limiti. I test in REAPER
+sono necessari prima di usare la DLL per modificare profili importanti.
+
+## TEST18 — FX Memories, azione separata e vista F8
+
+- REAPER Action List: **LReaParams: FX Memories**, comando
+  `_LREAPARAMSFXMEMORIES` (senza `(future)`): apre la vista autonoma.
+- La vista F8 integrata in FX Params si apre **dall'editor F7**.
+  La modalità autonoma e F7 condividono la stessa implementazione e gli stessi
+  profili `.fx`, quindi non esistono due memorie separate.
+- Sette colonne come nel Lua: Memory positions, Groups, Hidden parameters,
+  MIDI CC, Custom order, Copied parameters, Default values.
+- Caricamento e cancellazione delle posizioni, dei gruppi, degli hidden,
+  della Custom order e delle singole copie. MIDI CC può essere cancellato
+  insieme ai campi di learn REAPER; Default Snapshot è **solo consultabile**
+  finché non viene migrato il reset completo del Lua.
+- Navigazione e ritorno a griglia/editor seguono il Lua; i tasti e la
+  procedura di test sono in `Docs/TEST18_FX_MEMORIES.md`.
+
+**Non compilato localmente; build prevista soltanto tramite GitHub Actions.**

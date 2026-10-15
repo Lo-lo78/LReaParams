@@ -19,6 +19,8 @@
 #define REAPERAPI_WANT_TrackFX_GetParamName
 #define REAPERAPI_WANT_TakeFX_GetParamName
 #define REAPERAPI_WANT_TrackFX_GetFXName
+#define REAPERAPI_WANT_TakeFX_SetNamedConfigParm
+#define REAPERAPI_WANT_TrackFX_SetNamedConfigParm
 #define REAPERAPI_WANT_TakeFX_GetFXName
 #define REAPERAPI_WANT_TrackFX_GetFormattedParamValue
 #define REAPERAPI_WANT_TakeFX_GetFormattedParamValue

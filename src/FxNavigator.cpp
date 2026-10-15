@@ -258,6 +258,9 @@ void FxNavigator::rememberPosition() {
             pos.parameterName = parameterName_;
             pos.gridHeight = columns_;
             pos.stepScale = stepScale_;
+            pos.viewPosition = viewPos_;
+            pos.customView = fxOrder_.custom;
+            pos.f7Selected = f7Selected_;
             return;
         }
     }
@@ -267,6 +270,9 @@ void FxNavigator::rememberPosition() {
     pos.parameterName = parameterName_;
     pos.gridHeight = columns_;
     pos.stepScale = stepScale_;
+    pos.viewPosition = viewPos_;
+    pos.customView = fxOrder_.custom;
+    pos.f7Selected = f7Selected_;
     state.positions.push_back(std::move(pos));
 }
 void FxNavigator::switchFx(int direction) {
@@ -324,6 +330,11 @@ void FxNavigator::switchTrack(int direction) {
     const int previousBrowser = browserIndex_, previousFx = fx_, previousParameter = parameter_;
     const int previousCount = count_, previousColumns = columns_, previousStep = stepScale_;
     const auto previousParameterName = parameterName_;
+    const auto previousOrder = fxOrder_;
+    const auto previousVisible = visible_;
+    const auto previousSelection = f7Selected_;
+    const int previousViewPos = viewPos_, previousGroup = groupSlot_;
+    const bool previousEditF7 = editF7_;
     const bool previousValueMode = valueMode_, previousHadUi = hadUi_, previousSearchMode = searchMode_;
     const auto previousSearch = search_;
     track_ = target; take_ = nullptr; trackGuid_ = *guid;
@@ -345,6 +356,9 @@ void FxNavigator::switchTrack(int direction) {
         browserIndex_ = previousBrowser; fx_ = previousFx; parameter_ = previousParameter;
         count_ = previousCount; columns_ = previousColumns; stepScale_ = previousStep;
         parameterName_ = previousParameterName;
+        fxOrder_ = previousOrder; visible_ = previousVisible;
+        f7Selected_ = previousSelection; viewPos_ = previousViewPos;
+        groupSlot_ = previousGroup; editF7_ = previousEditF7;
         valueMode_ = previousValueMode; hadUi_ = previousHadUi;
         searchMode_ = previousSearchMode; search_ = previousSearch;
         speech_("Track switch failed"); return;
@@ -380,6 +394,7 @@ bool FxNavigator::selectFx(int index) {
     parameterName_ = parameterName();
     hadUi_ = take_ ? TakeFX_GetOpen(take_, fx_) : TrackFX_GetOpen(track_, fx_);
     browserIndex_ = index;
+    loadFxOrder();
     valueMode_ = false; searchMode_ = false; search_.clear();
     rememberPosition();
     return true;
@@ -421,6 +436,34 @@ bool FxNavigator::uiStillOpen() const {
 }
 bool FxNavigator::accepts(const Key& k) const noexcept {
     if (!active_) return false;
+    if (memoryManager_) {
+        if(k.vk==VK_F12)return false;
+        if(k.ctrl)return !k.alt && !k.shift && (k.vk==VK_HOME||k.vk==VK_END);
+        if(k.shift)return false;
+        if(k.alt)return k.vk==VK_LEFT||k.vk==VK_RIGHT;
+        return k.vk==VK_ESCAPE||k.vk==VK_F7||k.vk==VK_F8||
+               k.vk==VK_TAB||k.vk==VK_RETURN||k.vk==VK_DELETE||
+               k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||
+               k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT;
+    }
+    if (textEdit_) return true;
+    if (searchMode_) return k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_BACK||
+        k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_SPACE||
+        (k.vk>='A'&&k.vk<='Z')||(k.vk>='0'&&k.vk<='9')||
+        (k.ctrl&&k.vk=='F');
+    if (k.vk == VK_F12) return false; // always reserved for OSARA shortcut help
+    if (k.ctrl && !k.alt && k.vk == 'L') return true;
+    if ((k.vk == VK_F7 || k.vk == VK_F8) && !k.ctrl && !k.alt && !k.shift) return true;
+    if (k.ctrl && k.vk == 'G' && !k.alt && !k.shift) return true;
+    if (k.ctrl && k.vk == 'M' && !k.alt && !k.shift) return true;
+    if (k.ctrl && !k.alt && k.vk >= VK_F1 && k.vk <= VK_F11) return true;
+    if (editF7_) {
+        if (k.ctrl && !k.alt && (k.vk=='A'||k.vk=='C'||k.vk=='X'||k.vk=='V'||k.vk==VK_DELETE||k.vk==VK_RETURN))return true;
+        if (k.ctrl && k.alt && !k.shift) return k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT;
+        if (k.shift && !k.alt && !k.ctrl) return k.vk==VK_SPACE||k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT;
+        if (k.ctrl && k.shift && !k.alt) return k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_DELETE;
+        if (!k.alt && !k.ctrl && !k.shift && (k.vk==VK_DELETE||k.vk==VK_TAB))return true;
+    }
     if (k.ctrl && k.shift && !k.alt) return k.vk == VK_UP || k.vk == VK_DOWN;
     if (k.shift) return false;
     if (k.ctrl) {
@@ -428,22 +471,9 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         return k.vk == VK_HOME || k.vk == VK_END ||
                k.vk == VK_UP || k.vk == VK_DOWN || k.vk == 'F' || k.vk == 'R';
     }
-    if (searchMode_) {
-        if (k.alt) return false;
-        return k.vk == VK_ESCAPE || k.vk == VK_RETURN || k.vk == VK_BACK ||
-            k.vk == VK_UP || k.vk == VK_DOWN || (k.vk >= 'A' && k.vk <= 'Z') ||
-            (k.vk >= '0' && k.vk <= '9') || k.vk == VK_SPACE;
-    }
-    if (k.alt)
-        return k.vk == VK_UP || k.vk == VK_DOWN ||
-               k.vk == VK_PRIOR || k.vk == VK_NEXT ||
-               k.vk == VK_LEFT || k.vk == VK_RIGHT ||
-               k.vk == VK_HOME || k.vk == VK_END;
-    // TAB remains unassigned for a future feature, never announces anything.
-    return k.vk == VK_ESCAPE || k.vk == VK_RETURN ||
-           k.vk == VK_LEFT || k.vk == VK_RIGHT || k.vk == VK_UP ||
-           k.vk == VK_DOWN || k.vk == VK_F1 || k.vk == VK_F2 ||
-           k.vk == VK_HOME || k.vk == VK_END ||
+    return k.vk == VK_ESCAPE || k.vk == VK_RETURN || k.vk == VK_F1 || k.vk == VK_F2 ||
+           k.vk == VK_HOME || k.vk == VK_END || k.vk == VK_TAB ||
+           k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_LEFT || k.vk == VK_RIGHT ||
            k.vk == VK_PRIOR || k.vk == VK_NEXT;
 }
 std::string FxNavigator::formattedValue() const {
@@ -456,19 +486,21 @@ std::string FxNavigator::formattedValue() const {
     return ok && text[0] ? std::string(text) : std::to_string(v);
 }
 std::string FxNavigator::currentParameterSpeech() const {
-    return parameterName_ + ", " + formattedValue();
+    return displayName() + ", " + formattedValue();
 }
 double FxNavigator::valueFraction() const {
     if (!valid()) return 0;
     return std::clamp(take_ ? TakeFX_GetParamNormalized(take_, fx_, parameter_)
                             : TrackFX_GetParamNormalized(track_, fx_, parameter_), 0.0, 1.0);
 }
-std::string FxNavigator::sliderLabel() const { return parameterName_; }
+std::string FxNavigator::sliderLabel() const { return displayName(); }
 void FxNavigator::announce() {
+    if(memoryManager_) {speakMemory();return;}
     speech_(currentParameterSpeech());
 }
 void FxNavigator::announceTitle() {
     if (!active_) return;
+    if(memoryManager_){speakMemory("FX Memories");return;}
     speech_("FX Params - " + contextName() + " - " +
             entries_[browserIndex_].name + ". " + currentParameterSpeech());
 }
@@ -485,19 +517,27 @@ std::wstring wideUtf8(const std::string& str) {
 }
 std::wstring FxNavigator::windowTitle() const {
     if (!active_) return L"FX Params";
+    if (memoryManager_) return L"FX Memories - " + wideUtf8(contextName()) + L" - " + wideUtf8(entries_[browserIndex_].name);
     // Keep Grid out of the title as requested; Value is explicit on entry.
     return L"FX Params - " + wideUtf8(contextName()) + L" - " +
            wideUtf8(entries_[browserIndex_].name) +
-           (searchMode_ ? L" - Find Parameter" : valueMode_ ? L" - Value" : L"");
+           (textEdit_ ? L" - Rename" : searchMode_ ? L" - Find Parameter" : valueMode_ ? L" - Value" :
+            editF7_ ? L" - F7 Edit" : L"");
 }
 std::string FxNavigator::reviewLine() const {
     // NVDA+Up: ONLY the current parameter and its formatted value.
-    return active_ ? (valueMode_ ? "Value, " + currentParameterSpeech() : currentParameterSpeech()) : "";
+    if (!active_) return "";
+    if (memoryManager_) return memoryReview();
+    if (textEdit_) return "Edit name, " + textBuffer_;
+    if (editF7_ && !valueMode_)
+        return currentParameterSpeech() + ". " + std::to_string(f7Selected_.size()) + " selected";
+    return valueMode_ ? "Value, " + currentParameterSpeech() : currentParameterSpeech();
 }
 void FxNavigator::navigate(int delta) {
-    const int next = std::clamp(parameter_ + delta, 0, count_ - 1);
-    if (next == parameter_) return;
-    parameter_ = next; parameterName_ = parameterName(); rememberPosition(); announce();
+    if (visible_.empty()) return;
+    const int next = std::clamp(viewPos_ + delta, 0, static_cast<int>(visible_.size()) - 1);
+    if (next == viewPos_) return;
+    positionChanged(next);
 }
 void FxNavigator::setValue(double value) {
     if (!valid()) throw std::runtime_error("FX context changed");
@@ -536,15 +576,13 @@ std::string lowerAscii(std::string value) {
 void FxNavigator::findMatching(bool forward) {
     if (search_.empty()) { speech_("Search is empty"); return; }
     const std::string needle = lowerAscii(search_);
-    for (int offset = 1; offset <= count_; ++offset) {
-        const int index = (parameter_ + (forward ? offset : -offset) + count_ * 2) % count_;
-        char name[4096]{};
-        const bool ok = take_ ? TakeFX_GetParamName(take_, fx_, index, name, sizeof(name)) :
-            TrackFX_GetParamName(track_, fx_, index, name, sizeof(name));
-        if (ok && lowerAscii(name).find(needle) != std::string::npos) {
-            parameter_ = index; parameterName_ = name;
-            rememberPosition();
-            speech_("Match " + std::to_string(parameter_ + 1) + ", " + parameterName_);
+    const int total = static_cast<int>(visible_.size());
+    for (int offset = 1; offset <= total; ++offset) {
+        const int pos = (viewPos_ + (forward ? offset : -offset) + total * 2) % total;
+        const int id = visible_[pos];
+        if (lowerAscii(fxOrder_.label(id)).find(needle) != std::string::npos) {
+            positionChanged(pos, false);
+            speech_("Match " + std::to_string(pos + 1) + ", " + displayName());
             return;
         }
     }
@@ -556,90 +594,114 @@ void FxNavigator::searchPreview() {
 }
 void FxNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
-    if (k.ctrl && k.shift && !k.alt && (k.vk == VK_UP || k.vk == VK_DOWN)) {
-        if (!k.repeat) switchTrack(k.vk == VK_UP ? -1 : 1);
-        return;
+    if (memoryManager_) {memoryNavigate(k);return;}
+    if (textEdit_) { handleTextEdit(k); return; }
+    if(k.vk==VK_F8 && !k.ctrl && !k.alt && !k.shift){if(!k.repeat)openFxMemories(false);return;}
+    if (k.ctrl && !k.alt && !k.shift && (k.vk=='G' || k.vk=='M')) {
+        slotMode_=k.vk=='G'?0:1;
+        fxOrder_.groupSlotMode=slotMode_==0;
+        saveStructure();
+        speech_(slotMode_==0?"Groups":"Memory positions");return;
     }
-    if (k.ctrl && !k.alt && !k.shift && k.vk == 'R') {
-        if (!k.repeat) announce();  // explicit repeat, never automatic at edges
-        return;
-    }
-    if (k.ctrl && !k.alt && !k.shift && (k.vk == VK_UP || k.vk == VK_DOWN)) {
-        if (!k.repeat) switchFx(k.vk == VK_UP ? -1 : 1);
-        return;
-    }
-    if (k.ctrl && k.vk == 'F') {
-        if (!k.repeat) {
-            searchMode_ = !searchMode_; search_.clear();
-            speech_(searchMode_ ? "Find parameter. Type and use Up or Down; Enter accepts; Escape cancels." : "Find cancelled");
+    if (k.ctrl && !k.alt && k.vk>=VK_F1 && k.vk<=VK_F11) {
+        const int slot=static_cast<int>(k.vk-VK_F1)+1;
+        if(slotMode_==0){if(k.shift)saveGroup(slot);else openGroup(slot);return;}
+        if(k.shift){
+            if(fxOrder_.paramSlots.count(slot)) {speech_("Slot occupied. Memory position "+std::to_string(slot));return;}
+            fxOrder_.paramSlots[slot]=parameter_;saveStructure();
+            speech_("Saved memory position "+std::to_string(slot)+". "+currentParameterSpeech());
+        } else {
+            auto saved=fxOrder_.paramSlots.find(slot);
+            if(saved==fxOrder_.paramSlots.end()){speech_("Memory position "+std::to_string(slot)+" empty");return;}
+            const auto located=std::find(visible_.begin(),visible_.end(),saved->second);
+            if(located==visible_.end()){speech_("Memory position hidden or not in this group");return;}
+            positionChanged(static_cast<int>(std::distance(visible_.begin(),located)));
         }
         return;
     }
-    if (searchMode_) {
-        if (k.vk == VK_ESCAPE) { searchMode_ = false; search_.clear(); speech_("Find cancelled"); }
-        else if (k.vk == VK_RETURN) { searchMode_ = false; search_.clear(); announce(); }
-        else if (k.vk == VK_UP || k.vk == VK_DOWN) findMatching(k.vk == VK_DOWN);
-        else if (k.vk == VK_BACK) { if (!search_.empty()) search_.pop_back(); searchPreview(); }
-        else if (search_.size() < 64) {
-            if (k.vk >= 'A' && k.vk <= 'Z') search_.push_back(static_cast<char>(k.vk));
-            else if (k.vk >= '0' && k.vk <= '9') search_.push_back(static_cast<char>(k.vk));
-            else if (k.vk == VK_SPACE) search_.push_back(' ');
+    if (k.ctrl && !k.alt && !k.shift && k.vk=='L') {
+        if (searchMode_) { searchMode_=false;search_.clear();speech_("Find cancelled");return; }
+        if (textEdit_) return;
+        if (editF7_)exitF7();
+        if (groupSlot_) {groupSlot_=0;groupEditAll_=false;rebuildView(parameter_);speech_("Group closed. "+currentParameterSpeech());return;}
+        const int old=parameter_;
+        fxOrder_.custom=!fxOrder_.custom;
+        rebuildView(old);
+        if (fxOrder_.hasRealModifications()) saveStructure();
+        else rememberPosition();
+        // Ctrl+L alone is lazy: never creates or rewrites a profile.
+        speech_(std::string(fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech());
+        return;
+    }
+    if (k.vk==VK_F7 && !k.ctrl && !k.alt && !k.shift) {
+        if(k.repeat)return;
+        if(editF7_)exitF7();else enterF7();
+        return;
+    }
+    if (editF7_ && handleF7(k)) return;
+    if (k.ctrl && k.shift && !k.alt && (k.vk==VK_UP||k.vk==VK_DOWN)) {
+        if(!k.repeat)switchTrack(k.vk==VK_UP?-1:1);
+        return;
+    }
+    if (k.ctrl && !k.alt && !k.shift && k.vk=='R') {
+        if(!k.repeat)announce();return;
+    }
+    if(k.ctrl && !k.alt && !k.shift && (k.vk==VK_UP||k.vk==VK_DOWN)) {
+        if(!k.repeat)switchFx(k.vk==VK_UP?-1:1);return;
+    }
+    if(k.ctrl && !k.alt && !k.shift && k.vk=='F') {
+        if(!k.repeat) {searchMode_=!searchMode_;search_.clear();
+            speech_(searchMode_?"Find parameter. Type and use Up or Down; Enter accepts; Escape cancels.":"Find cancelled");}
+        return;
+    }
+    if(searchMode_) {
+        if(k.vk==VK_ESCAPE){searchMode_=false;search_.clear();speech_("Find cancelled");}
+        else if(k.vk==VK_RETURN){searchMode_=false;search_.clear();announce();}
+        else if(k.vk==VK_UP||k.vk==VK_DOWN)findMatching(k.vk==VK_DOWN);
+        else if(k.vk==VK_BACK){if(!search_.empty())search_.pop_back();searchPreview();}
+        else if(search_.size()<64) {
+            if(k.vk>='A'&&k.vk<='Z')search_+=static_cast<char>(k.vk);
+            else if(k.vk>='0'&&k.vk<='9')search_+=static_cast<char>(k.vk);
+            else if(k.vk==VK_SPACE)search_+=' ';
             searchPreview();
         }
         return;
     }
-    if (k.ctrl && k.vk == VK_HOME) { navigate(-parameter_); return; }
-    if (k.ctrl && k.vk == VK_END) { navigate(count_ - 1 - parameter_); return; }
-    if (k.vk == VK_ESCAPE) {
-        if (valueMode_) { valueMode_ = false; announceTitle(); }
-        else end();
-        return;
+    if (k.ctrl && k.vk==VK_HOME){navigate(static_cast<int>(visible_.size())-1-viewPos_);return;}
+    if (k.ctrl && k.vk==VK_END){navigate(-viewPos_);return;}
+    if (k.vk==VK_ESCAPE){if(valueMode_){valueMode_=false;announceTitle();}
+        else if(editF7_)exitF7();else if(groupSlot_){groupSlot_=0;rebuildView(parameter_);announce();}else end();return;}
+    if(k.vk==VK_RETURN){if(k.repeat)return;valueMode_=!valueMode_;
+        if (valueMode_) speech_(reviewLine()); else announceTitle(); return;}
+    if(k.vk==VK_F1||k.vk==VK_F2){
+        const int next=std::clamp(columns_+(k.vk==VK_F1?-1:1),1,200);
+        if(next!=columns_){columns_=next;rememberPosition();speech_("Grid "+std::to_string(columns_));}return;
     }
-    if (k.vk == VK_RETURN) {
-        if (k.repeat) return;
-        // The same path as Track Params: enter a real Win32 Value slider,
-        // with full accessible review text. Do not open a second FX editor.
-        valueMode_ = !valueMode_;
-        if (valueMode_) speech_(reviewLine());
-        else announceTitle();
-        return;
-    }
-    if (k.vk == VK_F1 || k.vk == VK_F2) {
-        const int next = std::clamp(columns_ + (k.vk == VK_F1 ? -1 : 1), 1, 200);
-        if (next != columns_) { columns_ = next; rememberPosition(); speech_("Grid " + std::to_string(columns_)); }
-        return;
-    }
-    // Alt+Home/End also work in Grid; plain Home/End in Value edit the value.
-    if (k.alt || valueMode_) {
-        if (k.vk == VK_LEFT || k.vk == VK_RIGHT) {
-            const int next = std::clamp(stepScale_ + (k.vk == VK_LEFT ? -1 : 1), -10, 10);
-            if (next != stepScale_) { stepScale_ = next; rememberPosition(); speech_("Step " + std::to_string(stepScale_)); }
-        } // Requested convention for both navigators: Home maximum, End minimum.
-        else if (k.vk == VK_HOME) setValue(1);
+    if(k.alt||valueMode_) {
+        if(k.vk==VK_LEFT||k.vk==VK_RIGHT){
+            const int next=std::clamp(stepScale_+(k.vk==VK_LEFT?-1:1),-10,10);
+            if(next!=stepScale_){stepScale_=next;rememberPosition();speech_("Step "+std::to_string(stepScale_));}
+        }else if (k.vk == VK_HOME) setValue(1);
         else if (k.vk == VK_END) setValue(0);
-        else if (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT)
-            nudge(k.vk == VK_UP || k.vk == VK_PRIOR ? 1 : -1, k.vk == VK_PRIOR || k.vk == VK_NEXT);
+        else if(k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_PRIOR||k.vk==VK_NEXT)
+            nudge(k.vk==VK_UP||k.vk==VK_PRIOR?1:-1,k.vk==VK_PRIOR||k.vk==VK_NEXT);
         return;
     }
-    // Grid is column-major: each column contains 'columns_' vertical rows.
-    const int start = (parameter_ / columns_) * columns_;
-    const int end = std::min(count_ - 1, start + columns_ - 1);
-    if (k.vk == VK_HOME) { navigate(start - parameter_); return; }
-    if (k.vk == VK_END) { navigate(end - parameter_); return; }
-    if (k.vk == VK_PRIOR || k.vk == VK_NEXT) {
-        // Page Up/Down stays WITHIN the current column, including its short
-        // final column; it never spills into the next column.
-        const int step = k.vk == VK_PRIOR ? -5 : 5;
-        const int target = std::clamp(parameter_ + step, start, end);
-        navigate(target - parameter_); return;
+    if(visible_.empty())return;
+    const int start=(viewPos_/columns_)*columns_;
+    const int end=std::min(static_cast<int>(visible_.size())-1,start+columns_-1);
+    if(k.vk==VK_HOME){navigate(end-viewPos_);return;}
+    if(k.vk==VK_END){navigate(start-viewPos_);return;}
+    if(k.vk==VK_PRIOR||k.vk==VK_NEXT){
+        const int target=std::clamp(viewPos_+(k.vk==VK_PRIOR?-5:5),start,end);
+        navigate(target-viewPos_);return;
     }
-    if (k.vk == VK_LEFT || k.vk == VK_RIGHT) {
-        const int target = parameter_ + (k.vk == VK_LEFT ? -columns_ : columns_);
-        // A missing cell in a short final column is a silent boundary.
-        if (target >= 0 && target < count_) navigate(target - parameter_);
+    if(k.vk==VK_LEFT||k.vk==VK_RIGHT){
+        const int target=viewPos_+(k.vk==VK_LEFT?-columns_:columns_);
+        if(target>=0&&target<static_cast<int>(visible_.size()))navigate(target-viewPos_);
         return;
     }
-    if (k.vk == VK_UP && parameter_ > start) navigate(-1);
-    else if (k.vk == VK_DOWN && parameter_ < end) navigate(1);
+    if(k.vk==VK_UP&&viewPos_>start)navigate(-1);
+    else if(k.vk==VK_DOWN&&viewPos_<end)navigate(1);
 }
 }

@@ -1,0 +1,281 @@
+#include "lrp/FxNavigator.h"
+#include <algorithm>
+#include <cmath>
+#include <initializer_list>
+#include <map>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+
+namespace lrp {
+namespace {
+constexpr const char* names[] = {"Memory positions", "Groups", "Hidden parameters", "MIDI CC",
+                                 "Custom order", "Copied parameters", "Default values"};
+}
+bool FxNavigator::openFxMemories(bool standalone) {
+    if (!active_ || !valid()) return false;
+    if(memoryManager_) {memoryExit();return true;}
+    // As in Lua, F8 from the normal FX grid is only available while editing
+    // with F7. The dedicated REAPER action is explicitly independent of F7.
+    if(!standalone && !editF7_) {
+        speech_(fxOrder_.custom?"F8 available in F7":"F8 not available in Plugin order");
+        return false;
+    }
+    memoryReturnF7_=editF7_;
+    memoryReturnParam_=parameter_;
+    memoryReturnPosition_=viewPos_;
+    memoryReturnGroup_=groupSlot_;
+    memoryStandalone_=standalone;
+    valueMode_=false;
+    searchMode_=false;
+    memoryManager_=true;
+    rebuildMemoryColumns();
+    memoryCol_=0;
+    while(memoryCol_<7 && memoryColumns_[static_cast<size_t>(memoryCol_)].empty())++memoryCol_;
+    if(memoryCol_==7)memoryCol_=0;
+    memoryRow_=0;
+    if(!standalone)speakMemory("Parameter Navigator");
+    return true;
+}
+void FxNavigator::rebuildMemoryColumns() {
+    for(auto& col:memoryColumns_)col.clear();
+    // Columns match the Lua F8 editor's visual and keyboard order, including
+    // non-consecutive real Group and Memory slot numbers.
+    for(const auto& pair:fxOrder_.paramSlots) {
+        MemoryEntry e;e.slot=pair.first;e.param=pair.second;
+        e.label=(e.param>=0&&e.param<count_)?fxOrder_.label(e.param):"Missing parameter";
+        memoryColumns_[0].push_back(std::move(e));
+    }
+    for(const auto& pair:fxOrder_.groups) {
+        if(pair.second.empty())continue;
+        MemoryEntry e;e.slot=pair.first;
+        const auto it=fxOrder_.groupNames.find(e.slot);
+        const std::string groupName=it!=fxOrder_.groupNames.end()?it->second:std::string();
+        e.label=(groupName.empty()?std::string():groupName+". ")+
+                std::to_string(pair.second.size())+" parameters";
+        memoryColumns_[1].push_back(std::move(e));
+    }
+    for(int id=0;id<count_;++id)if(fxOrder_.hidden.count(id)){
+        MemoryEntry e;e.param=id;e.label=fxOrder_.label(id);
+        memoryColumns_[2].push_back(std::move(e));
+    }
+    // MIDI CC links are loaded from the legacy Lua profile. Unlinking does
+    // not touch native REAPER learn state until the MIDI CC engine is ported.
+    for(const auto& pair:fxOrder_.ccLinks) {
+        MemoryEntry e;e.param=pair.first;
+        e.label=fxOrder_.label(pair.first)+". "+pair.second;
+        memoryColumns_[3].push_back(std::move(e));
+    }
+    if(fxOrder_.storedCustomOrder()) {
+        MemoryEntry e;e.label=std::to_string(fxOrder_.order.size())+" parameters";
+        memoryColumns_[4].push_back(std::move(e));
+    }
+    std::map<int,int> counts;
+    for(int pos=0;pos<static_cast<int>(fxOrder_.order.size());++pos) {
+        const int id=fxOrder_.order[static_cast<size_t>(pos)];
+        if(++counts[id] > 1) {
+            MemoryEntry e;e.param=id;e.rawPos=pos;e.occurrence=counts[id];
+            e.label=fxOrder_.label(id)+". Copy "+std::to_string(e.occurrence);
+            memoryColumns_[5].push_back(std::move(e));
+        }
+    }
+    if(fxOrder_.hasDefaultValues()) {
+        MemoryEntry e;e.label=std::to_string(fxOrder_.defaultValueCount())+" parameters";
+        memoryColumns_[6].push_back(std::move(e));
+    }
+}
+bool FxNavigator::memoryHasEntries() const {
+    for(const auto& column:memoryColumns_)if(!column.empty())return true;
+    return false;
+}
+std::string FxNavigator::memoryColumnName() const {
+    return names[static_cast<size_t>(std::clamp(memoryCol_,0,6))];
+}
+std::string FxNavigator::memoryReview() const {
+    if(!memoryManager_)return {};
+    if(!memoryHasEntries())return "Parameter Navigator. No memories";
+    const auto& entries=memoryColumns_[static_cast<size_t>(memoryCol_)];
+    if(entries.empty())return memoryColumnName()+". Empty";
+    const auto& entry=entries[static_cast<size_t>(std::clamp(memoryRow_,0,static_cast<int>(entries.size())-1))];
+    if(memoryCol_==0)return "Memory positions. "+entry.label;
+    if(memoryCol_==1)return "Groups. "+std::to_string(entry.slot)+" "+entry.label;
+    return memoryColumnName()+". "+entry.label;
+}
+void FxNavigator::speakMemory(const std::string& prefix) {
+    speech_(prefix.empty()?memoryReview():prefix+". "+memoryReview());
+}
+void FxNavigator::memoryExit(bool announceReturn) {
+    if(!memoryManager_)return;
+    const bool standalone=memoryStandalone_;
+    memoryManager_=false;memoryStandalone_=false;
+    editF7_=memoryReturnF7_;
+    groupSlot_=memoryReturnGroup_;
+    rebuildView(memoryReturnParam_,memoryReturnPosition_);
+    rememberPosition();
+    if(standalone) {end();return;}
+    if(!announceReturn)return;
+    if(editF7_)
+        speech_("Edit Custom order. "+std::to_string(f7Selected_.size())+" selected. "+currentParameterSpeech());
+    else announce();
+}
+bool FxNavigator::memorySelectColumn(int direction) {
+    for(int c=memoryCol_+direction;c>=0&&c<7;c+=direction) {
+        if(!memoryColumns_[static_cast<size_t>(c)].empty()) {
+            memoryCol_=c;
+            memoryRow_=std::clamp(memoryRow_,0,static_cast<int>(memoryColumns_[static_cast<size_t>(c)].size())-1);
+            speakMemory();return true;
+        }
+    }
+    return false;
+}
+void FxNavigator::memoryLoad(bool toEdit) {
+    const auto& col=memoryColumns_[static_cast<size_t>(memoryCol_)];
+    if(col.empty()){speakMemory();return;}
+    const MemoryEntry entry=col[static_cast<size_t>(memoryRow_)];
+    // A selected memory must never mutate an unrelated FX: navigation is
+    // built from the *current* plugin's verified ProfileRaw and FX GUID.
+    if(memoryCol_==6) {
+        speech_("Default snapshot reset not yet migrated. No parameters changed");return;
+    }
+    if(memoryCol_==3) {
+        if(entry.param<0){speech_("No parameter");return;}
+        // Jump to the parameter; MIDI learn edit is a separate later step.
+    }
+    if(memoryCol_==0 || memoryCol_==2 || memoryCol_==3 || memoryCol_==5) {
+        if(entry.param<0 || entry.param>=count_){speech_("Missing parameter");return;}
+        if(memoryCol_==2) {
+            fxOrder_.hidden.erase(entry.param);
+            saveStructure();
+            fxOrder_.custom=true;
+            if(fxOrder_.hasRealModifications())saveStructure();
+            rebuildMemoryColumns();
+        }
+        if(memoryCol_==5)fxOrder_.custom=true;
+        if(memoryCol_==3 && fxOrder_.hidden.count(entry.param))fxOrder_.custom=false;
+        // Escape/Enter returns to the FX grid at the requested parameter;
+        // duplicates retain the selected raw occurrence, not just the ID.
+        memoryReturnGroup_=0;
+        memoryReturnParam_=entry.param;
+        memoryReturnPosition_=-1;
+        if(entry.rawPos>=0) {
+            int visiblePosition=0;
+            for(int i=0;i<=entry.rawPos && i<static_cast<int>(fxOrder_.order.size());++i)
+                if(!fxOrder_.hidden.count(fxOrder_.order[static_cast<size_t>(i)]))++visiblePosition;
+            memoryReturnPosition_=visiblePosition-1;
+        }
+    } else if(memoryCol_==1) {
+        memoryReturnGroup_=entry.slot;
+        memoryReturnPosition_=0;
+        memoryReturnParam_=fxOrder_.groups[entry.slot].front();
+    } else if(memoryCol_==4) {
+        fxOrder_.custom=true;
+        memoryReturnGroup_=0;
+        memoryReturnPosition_=-1;
+    }
+    const bool standalone=memoryStandalone_;
+    // Enter in standalone F8 selects the memory and opens FX Params. Escape
+    // without selecting returns directly to REAPER (no accidental edit).
+    memoryStandalone_=false;
+    memoryReturnF7_=false;
+    memoryExit(!toEdit);
+    if(toEdit) {
+        if(!fxOrder_.custom && !groupSlot_)fxOrder_.custom=true;
+        rebuildView(parameter_,viewPos_);
+        enterF7();
+    } else if(standalone) {
+        speech_("FX Params. "+currentParameterSpeech());
+    }
+}
+void FxNavigator::memoryDelete() {
+    const auto& col=memoryColumns_[static_cast<size_t>(memoryCol_)];
+    if(col.empty()){speakMemory();return;}
+    const MemoryEntry entry=col[static_cast<size_t>(memoryRow_)];
+    const std::string removed=entry.label;
+    switch(memoryCol_) {
+        case 0: fxOrder_.paramSlots.erase(entry.slot);saveStructure();break;
+        case 1:
+            fxOrder_.groups.erase(entry.slot);fxOrder_.groupNames.erase(entry.slot);
+            if(memoryReturnGroup_==entry.slot) {memoryReturnGroup_=0;memoryReturnPosition_=-1;memoryReturnF7_=false;}
+            saveStructure();break;
+        case 2: fxOrder_.hidden.erase(entry.param);saveStructure();break;
+        case 3:
+            // The legacy Lua removes the profile link and additionally clears
+            // REAPER's native learn fields when the host supports those keys.
+            if(!fxOrder_.deleteCcLink(entry.param))return;
+            for(const char* suffix:{"midi1","midi2","osc"}) {
+                const auto key="param."+std::to_string(entry.param)+".learn."+suffix;
+                if(take_)TakeFX_SetNamedConfigParm(take_,fx_,key.c_str(),"");
+                else TrackFX_SetNamedConfigParm(track_,fx_,key.c_str(),"");
+            }
+            break;
+        case 4: fxOrder_.deleteCustomOrder();groupSlot_=0;memoryReturnGroup_=0;memoryReturnF7_=false;break;
+        case 5: {
+            if(entry.rawPos<0 || entry.rawPos>=static_cast<int>(fxOrder_.order.size()))return;
+            const int id=entry.param;
+            if(std::count(fxOrder_.order.begin(),fxOrder_.order.end(),id)<=1)return;
+            fxOrder_.order.erase(fxOrder_.order.begin()+entry.rawPos);
+            saveStructure();break;
+        }
+        case 6:
+            // Lua's default deletion involves regeneration plus confirmation
+            // and special handling of dynamic ReaEQ bands; never silently
+            // approximate it or corrupt the sound.
+            speech_("Default snapshot deletion is not yet migrated. No changes made");return;
+        default:return;
+    }
+    rebuildMemoryColumns();
+    if(memoryColumns_[static_cast<size_t>(memoryCol_)].empty()) {
+        int first=0;
+        while(first<7 && memoryColumns_[static_cast<size_t>(first)].empty())++first;
+        memoryCol_=first==7?0:first;
+    }
+    const auto& newList=memoryColumns_[static_cast<size_t>(memoryCol_)];
+    memoryRow_=newList.empty()?0:std::clamp(memoryRow_,0,static_cast<int>(newList.size())-1);
+    speech_("Deleted "+removed+". "+(memoryHasEntries()?memoryColumnName():"Parameter Navigator. No memories"));
+}
+void FxNavigator::memoryNavigate(const Key& k) {
+    if(k.repeat && (k.vk==VK_F7||k.vk==VK_F8||k.vk==VK_RETURN||k.vk==VK_DELETE))return;
+    if(k.vk==VK_ESCAPE || (k.vk==VK_F8 && !k.ctrl && !k.alt)) {memoryExit();return;}
+    if(k.vk==VK_TAB){speakMemory();return;}
+    if(k.vk==VK_F7 && !k.ctrl && !k.alt){memoryLoad(true);return;}
+    if(k.alt && !k.ctrl && !k.shift && (k.vk==VK_LEFT || k.vk==VK_RIGHT)) {
+        const int next=std::clamp(stepScale_+(k.vk==VK_LEFT?-1:1),-10,10);
+        if(next!=stepScale_) {stepScale_=next;rememberPosition();speech_("Step "+std::to_string(stepScale_));}
+        return;
+    }
+    if(k.ctrl && !k.alt && !k.shift && (k.vk==VK_HOME || k.vk==VK_END)) {
+        for(int c=k.vk==VK_HOME?6:0;c>=0&&c<7;c+=(k.vk==VK_HOME?-1:1))
+            if(!memoryColumns_[static_cast<size_t>(c)].empty()){
+                memoryCol_=c;memoryRow_=k.vk==VK_HOME?
+                    static_cast<int>(memoryColumns_[static_cast<size_t>(c)].size())-1:0;
+                speakMemory();return;
+            }
+        speakMemory();return;
+    }
+    if(!k.ctrl&&!k.alt&&!k.shift) {
+        if(k.vk==VK_LEFT){memorySelectColumn(-1);return;}
+        if(k.vk==VK_RIGHT){memorySelectColumn(1);return;}
+        const auto size=static_cast<int>(memoryColumns_[static_cast<size_t>(memoryCol_)].size());
+        if(k.vk==VK_UP || k.vk==VK_DOWN || k.vk==VK_PRIOR || k.vk==VK_NEXT || k.vk==VK_HOME || k.vk==VK_END) {
+            if(!size){speakMemory();return;}
+            int target=memoryRow_;
+            if(k.vk==VK_HOME)target=size-1; // Lua Home/End intentionally reversed
+            else if(k.vk==VK_END)target=0;
+            else if(k.vk==VK_UP)target--;
+            else if(k.vk==VK_DOWN)target++;
+            else if(k.vk==VK_PRIOR || k.vk==VK_NEXT) {
+                // Lua: floor(step_multiplier * 5 + .5), at least 2.
+                const int jump=std::clamp(static_cast<int>(5.0*std::pow(2.0,stepScale_)+0.5),2,1000000);
+                target+=(k.vk==VK_PRIOR?-jump:jump);
+            }
+            const int next=std::clamp(target,0,size-1);
+            if(next!=memoryRow_ || k.vk==VK_PRIOR || k.vk==VK_NEXT || k.vk==VK_HOME || k.vk==VK_END) {
+                memoryRow_=next;speakMemory();
+            }
+            return;
+        }
+        if(k.vk==VK_RETURN){memoryLoad(false);return;}
+        if(k.vk==VK_DELETE){memoryDelete();return;}
+    }
+}
+} // namespace lrp

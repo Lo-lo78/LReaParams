@@ -101,3 +101,7 @@ richieste WM_GETTEXT/WM_GETTEXTLENGTH, senza modificare il testo Win32 del
 controllo già focalizzato durante la navigazione. Non sono cambiati tasti,
 layout delle griglie, memoria di sessione o logica dei bordi. I test NVDA
 restano da eseguire in REAPER. NESSUNA compilazione locale eseguita.
+
+## TEST17 — FX Params Custom Order / F7
+
+Il codice sorgente aggiunge Ctrl+L, caricamento e salvataggio profili FX `.fx`, selezione F7, copia/taglia/incolla per occorrenza, gruppi e alias, con backup e controllo di modifiche concorrenti. Audit Python passato. Compatibilità runtime NVDA e REAPER non verificata: **non eseguire test distruttivi su profili originali**. F7 è ancora una migrazione parziale: F8, ricerca filtrata, gruppi avanzati e l’editor accessibile nativo dei nomi rimangono da completare.

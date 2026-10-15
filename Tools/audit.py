@@ -86,7 +86,7 @@ def main():
           'FX Alt+Home/End must use maximum/minimum in that order')
     check('const bool high = k.vk == VK_HOME' in (ROOT/'src/TrackNavigator.cpp').read_text(),
           'Track Alt+Home/End must use maximum/minimum in that order')
-    check('if (next == parameter_) return;' in fx_source and
+    check('if (next == viewPos_) return;' in fx_source and
           'if (next != parameter_)' in (ROOT/'src/TrackNavigator.cpp').read_text(),
           'Grid bounds must not reannounce unchanged selection')
     check('if (newReview != oldReview) titleProxy_.updateReviewLine(newReview);' in (ROOT/'src/Extension.cpp').read_text() and

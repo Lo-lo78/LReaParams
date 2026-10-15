@@ -35,6 +35,7 @@ public:
         mainThread_ = GetCurrentThreadId();
         const char* path = GetResourcePath(); if (!path || !*path) throw std::runtime_error("No resource path");
         resource_ = fs::u8path(path);
+        navigator_.setResourceRoot(resource_);
         for (auto& a : actions_) {
             a.command = info_.Register("command_id", const_cast<char*>(a.id));
             if (a.command <= 0 || a.command > 65535) throw std::runtime_error("Cannot register action ID");
@@ -78,7 +79,7 @@ public:
         for (int i : {0, 1}) if (actions_[i].command) RefreshToolbar2(0, actions_[i].command);
     }
     int toggle(int command) const noexcept {
-        if (command == actions_[0].command) return current_ == &navigator_ && navigator_.active() ? 1 : 0;
+        if (command == actions_[0].command) return current_ == &navigator_ && navigator_.active() && !navigator_.isMemoryManager() ? 1 : 0;
         if (command == actions_[1].command) return current_ == &trackNavigator_ && trackNavigator_.active() ? 1 : 0;
         if (command == actions_[2].command) return 0;
         if (command == actions_[9].command) return titleModeEnabled_ ? 1 : 0;
@@ -98,30 +99,7 @@ public:
             if (!speechAvailable() || !info_.GetFunc("osara_isShortcutHelpEnabled")) {
                 ShowMessageBox("LReaParams requires OSARA with outputMessage and isShortcutHelpEnabled exports. No keyboard capture was installed.", "LReaParams", 0); break;
             }
-            if (desired->begin()) {
-                current_ = desired;
-                input_.select(*desired);
-                // Lua gfx.init-style focus owner: keys go straight from its
-                // Win32 window procedure into the navigator queue, without a
-                // REAPER accelerator/hook. No more fall-through to the TCP.
-                titleProxyActive_ = titleModeEnabled_ && titleProxy_.activate(
-                    desired->windowTitle(), desired->reviewLine(),
-                    [this] { exitNavigation(false); },
-                    [this](HWND window, UINT vk, bool repeat) {
-                        return input_.enqueueOwnedKey(window, vk, repeat);
-                    });
-                if (titleProxyActive_) titleProxy_.syncValueControl(desired->nativeValueSlider(),
-                    desired->sliderLabel(), desired->valueFraction());
-                const InputBackend selected = titleProxyActive_ ? InputBackend::ownedWindow : backend_;
-                if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
-                    exitNavigation(false); speak("Keyboard capture unavailable"); }
-                else {
-                    // The accessible non-editable review label is populated before focus.
-                    // Issue one explicit contextual OSARA announcement.
-                    desired->announceTitle();
-                }
-                refreshToggles();
-            }
+            if (desired->begin()) launchNavigator(desired);
             break;
         }
         case 2:
@@ -151,8 +129,9 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.17 TEST16 TRACK NVDA REVIEW\n\n"
+            ShowMessageBox("LReaParams 0.0.19 TEST18 FX MEMORIES\n\n"
                 "FX: Ctrl+Up/Down changes FX. Ctrl+Shift+Up/Down switches to tracks with FX, restoring the last FX and parameter per track.\n"
+                "FX: Ctrl+L Plugin / Custom Order, F7 edits Custom Order; Shift+Space selects, Ctrl+X/C/V moves or copies, Ctrl+Delete hides.\n"
                 "FX: F1/F2 grid height. Ctrl+Home/End absolute. Alt+Left/Right steps -10 to +10.\n"
                 "Track: Left/Right and NVDA+Up review parameter and value only; Up/Down changes track and speaks its name. Ctrl+R reviews full context.\n"
                 "Track: F1 rows; F2/F3 only when sends/receives exist. Alt+Left/Right adjusts continuous steps.\n"
@@ -160,12 +139,19 @@ public:
                 "NVDA+T: FX Params - track - FX name; Track Params - track (and page for Sends/Receives). NVDA+Up queries parameter and value.\n"
                 "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
                 "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"
-                "Memories and full Lua migration remain unfinished.", "About LReaParams", 0);
+                "F8 opens the seven-column FX Memories navigator. Advanced MIDI CC and Default reset operations are protected until fully migrated.", "About LReaParams", 0);
             break;
-        case 7:
+        case 7: {
+            // Dedicated REAPER action opens the same Lua F8 manager, not a
+            // second profile editor. Use the shared FX navigator and focus owner.
             exitNavigation(false);
-            speak("LReaParams - FX Memories. Memory management is reserved for a later test; no memory was changed.");
+            if (!speechAvailable() || !info_.GetFunc("osara_isShortcutHelpEnabled")) {
+                speak("FX Memories requires OSARA");break;
+            }
+            if(navigator_.begin() && navigator_.openFxMemories(true))
+                launchNavigator(&navigator_);
             break;
+        }
         case 8:
             exitNavigation(false);
             speak("LReaParams - Track Memories. Memory management is reserved for a later test; no memory was changed.");
@@ -178,6 +164,30 @@ public:
         default: break;
         }
         return true;
+    }
+    void launchNavigator(Navigator* desired) {
+                current_ = desired;
+                input_.select(*desired);
+                // Lua gfx.init-style focus owner: keys go straight from its
+                // Win32 window procedure into the navigator queue, without a
+                // REAPER accelerator/hook. No more fall-through to the TCP.
+                titleProxyActive_ = titleModeEnabled_ && titleProxy_.activate(
+                    desired->windowTitle(), desired->reviewLine(),
+                    [this] { exitNavigation(false); },
+                    [this](HWND window, UINT vk, bool repeat) {
+                        return input_.enqueueOwnedKey(window, vk, repeat);
+                    });
+                if (titleProxyActive_) titleProxy_.syncValueControl(desired->nativeValueSlider(),
+                    desired->sliderLabel(), desired->valueFraction());
+                const InputBackend selected = titleProxyActive_ ? InputBackend::ownedWindow : backend_;
+                if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
+                    exitNavigation(false); speak("Keyboard capture unavailable"); }
+                else {
+                    // The accessible non-editable review label is populated before focus.
+                    // Issue one explicit contextual OSARA announcement.
+                    desired->announceTitle();
+                }
+                refreshToggles();
     }
     void tick() {
         if (GetCurrentThreadId() != mainThread_) { fail(); return; }
@@ -233,8 +243,8 @@ public:
         if (!id || std::strcmp(id, "Main extensions") != 0) return;
         if (flag == 0) {
             HMENU sub = CreatePopupMenu(); if (!sub) return;
-            // Keep all memory management in its own submenu. Its current
-            // actions announce that the Lua migration is not finished.
+            // Memory actions have independent REAPER command IDs and launch
+            // their own navigator mode; the FX command preserves the Lua F8 grid.
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[0].command), actions_[0].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[1].command), actions_[1].menu);
             HMENU memories = CreatePopupMenu();
@@ -300,7 +310,7 @@ private:
         {"LREAPARAMSOPENDATAFOLDER", "LReaParams: Open Data Folder", L"Open Data Folder"},
         {"LREAPARAMSSETTINGS", "LReaParams: Settings", L"Settings"},
         {"LREAPARAMSABOUT", "LReaParams: About LReaParams", L"About LReaParams"},
-        {"LREAPARAMSFXMEMORIES", "LReaParams: FX Memories (future)", L"FX Memories (future)"},
+        {"LREAPARAMSFXMEMORIES", "LReaParams: FX Memories", L"FX Memories"},
         {"LREAPARAMSTRACKMEMORIES", "LReaParams: Track Memories (future)", L"Track Memories (future)"},
         {"LREAPARAMSNVDATITLE", "LReaParams: Toggle Lua-style keyboard focus window", L"Lua-style keyboard window (1px)"}
     }};
