@@ -71,9 +71,9 @@ bool TrackNavigator::contextUnchanged() const {
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.shift) return false;
     if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END);
-    if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT;
+    if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END;
     switch (k.vk) {
-        case VK_ESCAPE: case VK_RETURN: case VK_TAB:
+        case VK_ESCAPE: case VK_RETURN:
         case VK_LEFT: case VK_RIGHT: case VK_UP: case VK_DOWN:
         case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT:
         case VK_F1: case VK_F2: case VK_F3: return true;
@@ -182,7 +182,7 @@ void TrackNavigator::put(const Entry& e, double value) {
         e.type == Entry::receiveCount || e.type == Entry::fxCount || e.type == Entry::midiMerge) {
         speech_("Read only"); return;
     }
-    if (get(e) == value) { announce(); return; }
+    if (get(e) == value) return; // silent boundary: no change
     std::string parm = e.parm;
     double raw = value;
     // Preserve unrelated MIDI bits (other bus/channel/fader settings).
@@ -367,7 +367,6 @@ void TrackNavigator::handle(const Key& k) {
         valueMode_ = !valueMode_;
         announceTitle(); return;
     }
-    if (k.vk == VK_TAB) { announce(); return; }
     if (k.ctrl && k.vk == VK_HOME) {
         if (page_ == Page::tracks) moveTrack(-row_);
         else moveDetailColumn(-detailIndex_);
@@ -381,10 +380,21 @@ void TrackNavigator::handle(const Key& k) {
     if (k.alt || valueMode_) {
         if (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT)
             nudge(k.vk == VK_UP || k.vk == VK_PRIOR ? 1 : -1, k.vk == VK_PRIOR || k.vk == VK_NEXT);
-        else if (valueMode_ && (k.vk == VK_HOME || k.vk == VK_END)) {
+        else if (k.vk == VK_HOME || k.vk == VK_END) {
             const auto* e = current();
-            if (e && (e->type == Entry::volume || e->type == Entry::pan || e->type == Entry::width))
-                put(*e, k.vk == VK_HOME ? (e->type == Entry::volume ? 0.0 : -1.0) : 1.0);
+            if (!e) return;
+            const bool high = k.vk == VK_END;
+            switch (e->type) {
+                case Entry::volume: put(*e, high ? amp(maxDb) : 0.0); break;
+                case Entry::pan: case Entry::width: put(*e, high ? 1.0 : -1.0); break;
+                case Entry::flag: case Entry::solo: case Entry::midiFollowsFader: put(*e, high ? 1.0 : 0.0); break;
+                case Entry::audioSourceMode: put(*e, high ? 8.0 : 0.0); break;
+                case Entry::sendType: put(*e, high ? 8.0 : 0.0); break;
+                case Entry::midiSource: put(*e, high ? 31.0 : 0.0); break;
+                case Entry::midiDestination: put(*e, high ? 16.0 : 0.0); break;
+                case Entry::midiSourceBus: case Entry::midiDestinationBus: put(*e, high ? 255.0 : 0.0); break;
+                default: break; // read-only/unfinished fields remain silent
+            }
         }
         return;
     }

@@ -147,11 +147,11 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.8 TEST7 NVDA REVIEW AND ROUTING\n\n"
-                "FX: F1/F2 change grid height again. Ctrl+Home/End jump to first/last parameter.\n"
+            ShowMessageBox("LReaParams 0.0.9 TEST8 NAVIGATION FIXES\n\n"
+                "FX: Ctrl+Up/Down changes FX directly; F1/F2 grid height. Ctrl+Home/End absolute.\n"
                 "Track: F1 track rows, F2/F3 fourteen vertical fields per send/receive column.\n"
                 "Like the Lua, an offscreen window owns the keyboard; a read-only EDIT exposes the NVDA review line.\n"
-                "NVDA+T reads the title and NVDA+Up the current parameter and value.\n"
+                "NVDA+T reads track/FX titles; NVDA+Up in FX reads parameter and value only.\n"
                 "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
                 "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"
                 "Memories and full Lua migration remain unfinished.", "About LReaParams", 0);
