@@ -50,7 +50,8 @@ bool TitleProxy::ensureWindow() {
     return true;
 }
 
-bool TitleProxy::activate(const std::wstring& title, std::function<void()> closeNavigator,
+bool TitleProxy::activate(const std::wstring& title, const std::string& initialReviewLine,
+                          std::function<void()> closeNavigator,
                           std::function<bool(UINT, bool)> keyboardKey) {
     hideAndRestore();
     if (!ensureWindow()) return false;
@@ -59,9 +60,14 @@ bool TitleProxy::activate(const std::wstring& title, std::function<void()> close
     closeNavigator_ = std::move(closeNavigator);
     keyboardKey_ = std::move(keyboardKey);
     title_ = title;
-    reviewText_.clear();
+    reviewText_ = toWide(initialReviewLine);
+    if (reviewText_.size() > 8192) reviewText_.resize(8192);
+    // Populate the native review line BEFORE the EDIT receives focus.
+    // Changing a focused EDIT immediately after activation caused NVDA to
+    // announce the window, then an empty edit, then its changed text.
     SetWindowTextW(window_, title_.c_str());
-    SetWindowTextW(edit_, L"");
+    SetWindowTextW(edit_, reviewText_.c_str());
+    SendMessageW(edit_, EM_SETSEL, 0, 0);
     ShowWindow(window_, SW_SHOW);
     SetForegroundWindow(window_);
     SetFocus(edit_);

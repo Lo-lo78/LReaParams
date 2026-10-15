@@ -119,7 +119,7 @@ void TrackNavigator::buildEntries() {
     }
 }
 bool TrackNavigator::selectPage(Page page) {
-    if (page == page_) { announceTitle(); return true; }
+    if (page == page_) return true; // Repeated page key is silent
     page_ = page;
     parameter_ = detailIndex_ = 0;
     valueMode_ = false;
@@ -383,7 +383,7 @@ void TrackNavigator::handle(const Key& k) {
         else if (k.vk == VK_HOME || k.vk == VK_END) {
             const auto* e = current();
             if (!e) return;
-            const bool high = k.vk == VK_END;
+            const bool high = k.vk == VK_HOME; // Lua: Home maximum, End minimum
             switch (e->type) {
                 case Entry::volume: put(*e, high ? amp(maxDb) : 0.0); break;
                 case Entry::pan: case Entry::width: put(*e, high ? 1.0 : -1.0); break;

@@ -58,3 +58,21 @@ TEST5 0.0.6: ripristinato FX F1/F2 per griglia; introdotta finestra Win32 titola
 
 
 TEST6 0.0.7: la finestra Win32 da 1 px ora è proprietaria reale della tastiera (messaggi dalla WindowProc alla coda InputRouter). Corretto il rifiuto del contesto della finestra che in TEST5 provocava il ritorno al TCP. I tasti non gestiti non vengono mandati a REAPER; recupero del focus dopo un tasto di modifica, senza ricattura continua. Non compilato localmente.
+
+## TEST9 — Memoria sessione FX (sorgente, non compilato)
+
+FX Params ha una memoria C++ in RAM per contesto progetto/traccia/take.
+Ripristina GUID dell’ultimo FX e posizione del parametro, più altezza della
+griglia e scala dei passi. Rispetta una selezione FX esplicitamente cambiata
+nella catena REAPER mentre il navigatore non è attivo. Nessun salvataggio
+permanente e nessuna migrazione completa dei profili ancora. Verifica runtime
+necessaria dopo la compilazione con GitHub Actions.
+
+## TEST10 — limiti silenziosi, Alt+Home/End, titolo NVDA (sorgente)
+
+In FX e Track, Alt+Home indica ora il valore massimo e Alt+End il minimo.
+Le selezioni immutate ai limiti della griglia non provocano reinizializzazioni
+del focus; lo stato del controllo EDIT viene aggiornato soltanto quando cambia.
+La riga corrente NVDA viene impostata prima di dare il focus e il titolo FX
+usa il prefisso LReaParams. I messaggi automatici di NVDA sul ruolo EDIT non
+sono completamente controllabili dalla DLL. Non compilato né testato in REAPER.

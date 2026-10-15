@@ -97,24 +97,38 @@ bool FxNavigator::begin() {
     }
     if (entries_.empty()) { speech_("No FX on selected track or take"); return false; }
 
-    // Select the visible FX if any, else start at the first FX.
-    browserIndex_ = 0;
-    int visible = -1;
-    if (take_) visible = TakeFX_GetChainVisible(take_);
-    else {
-        if (track_ == master && TrackFX_GetRecChainVisible(track_) >= 0)
-            visible = 0x1000000 + TrackFX_GetRecChainVisible(track_);
-        else visible = TrackFX_GetChainVisible(track_);
+    // The Lua prefers a deliberately selected FX in an open chain. However,
+    // a visible chain often keeps its OLD highlight while Ctrl+Up/Down changes
+    // LReaParams's FX. Do not let that stale highlight defeat session memory.
+    // If the host highlight changed since our last navigation, respect it.
+    const int visible = visibleFxIndex();
+    const StoredContext* remembered = contextMemory();
+    int preferred = 0;
+    bool havePreferred = false;
+    if (remembered && remembered->hasLastFx) {
+        const bool externalSelectionChanged =
+            visible >= 0 && visible != remembered->observedVisibleFx;
+        if (!externalSelectionChanged) {
+            preferred = rememberedFxIndex(*remembered);
+            havePreferred = preferred >= 0;
+        }
     }
-    for (size_t i = 0; i < entries_.size(); ++i)
-        if (entries_[i].index == visible) { browserIndex_ = static_cast<int>(i); break; }
+    if (!havePreferred && visible >= 0) {
+        for (size_t i = 0; i < entries_.size(); ++i) {
+            if (entries_[i].index == visible) {
+                preferred = static_cast<int>(i);
+                havePreferred = true;
+                break;
+            }
+        }
+    }
+    if (!havePreferred) preferred = 0;
 
     active_ = true;
     searchMode_ = false; search_.clear();
     valueMode_ = false; stepScale_ = 0; columns_ = 10;
-    // Select the FX already highlighted in REAPER's visible chain. If it has
-    // no parameters, try following FX (then preceding ones). No browser.
-    const int preferred = browserIndex_;
+    // Restore the last navigated FX in this particular track/take context,
+    // not an arbitrary global last-touched FX from another track.
     if (selectFx(preferred)) return true;
     for (int i = preferred + 1; i < static_cast<int>(entries_.size()); ++i)
         if (selectFx(i)) return true;
@@ -122,6 +136,119 @@ bool FxNavigator::begin() {
         if (selectFx(i)) return true;
     speech_("No navigable FX parameters");
     end(); return false;
+}
+FxNavigator::StoredContext* FxNavigator::contextMemory() noexcept {
+    for (auto& state : sessionMemory_) {
+        if (state.project == project_ && state.take == take_ &&
+            same(&state.trackGuid, trackGuid_)) return &state;
+    }
+    return nullptr;
+}
+const FxNavigator::StoredContext* FxNavigator::contextMemory() const noexcept {
+    for (const auto& state : sessionMemory_) {
+        if (state.project == project_ && state.take == take_ &&
+            same(&state.trackGuid, trackGuid_)) return &state;
+    }
+    return nullptr;
+}
+FxNavigator::StoredContext& FxNavigator::ensureContextMemory() {
+    if (auto* found = contextMemory()) return *found;
+    StoredContext state{};
+    state.project = project_;
+    state.trackGuid = trackGuid_;
+    state.take = take_;
+    sessionMemory_.push_back(std::move(state));
+    return sessionMemory_.back();
+}
+int FxNavigator::visibleFxIndex() const {
+    if (!track_) return -1;
+    if (take_) return TakeFX_GetChainVisible(take_);
+    if (track_ == GetMasterTrack(project_)) {
+        const int recVisible = TrackFX_GetRecChainVisible(track_);
+        if (recVisible >= 0) return 0x1000000 + recVisible;
+    }
+    return TrackFX_GetChainVisible(track_);
+}
+int FxNavigator::rememberedFxIndex(const StoredContext& state) const {
+    // First match the native per-instance FX GUID: handles duplicate names,
+    // reordered chains and master/monitor FX without guessing by position.
+    for (size_t i = 0; i < entries_.size(); ++i) {
+        if (same(&entries_[i].guid, state.lastFxGuid))
+            return static_cast<int>(i);
+    }
+    // Match Lua's historical fallback: same FX name, same FX area, same
+    // occurrence number. A replaced FX gets a new GUID but may be equivalent.
+    int occurrence = 0;
+    for (size_t i = 0; i < entries_.size(); ++i) {
+        const bool monitor = (entries_[i].index & 0x1000000) != 0;
+        if (entries_[i].name == state.lastFxName && monitor == state.lastFxMonitor) {
+            ++occurrence;
+            if (occurrence == state.lastFxOccurrence) return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+void FxNavigator::restoreParameterPosition() {
+    parameter_ = 0;
+    columns_ = 10;
+    stepScale_ = 0;
+    if (const auto* state = contextMemory()) {
+        for (const auto& saved : state->positions) {
+            if (!same(&saved.fxGuid, fxGuid_)) continue;
+            columns_ = std::clamp(saved.gridHeight, 1, 200);
+            stepScale_ = std::clamp(saved.stepScale, -6, 6);
+            // Prefer the original parameter index if it still has the same
+            // name; otherwise find that name in the updated plugin parameter list.
+            auto matches = [&](int index) {
+                if (index < 0 || index >= count_) return false;
+                char name[4096]{};
+                const bool ok = take_ ? TakeFX_GetParamName(take_, fx_, index, name, sizeof(name))
+                                      : TrackFX_GetParamName(track_, fx_, index, name, sizeof(name));
+                return ok && saved.parameterName == name;
+            };
+            if (matches(saved.parameter)) { parameter_ = saved.parameter; return; }
+            if (!saved.parameterName.empty()) {
+                for (int i = 0; i < count_; ++i) {
+                    if (matches(i)) { parameter_ = i; return; }
+                }
+            }
+            // If the plugin's parameter layout changed, never restore a stale
+            // numeric index that might control an unrelated parameter.
+            return;
+        }
+    }
+}
+void FxNavigator::rememberPosition() {
+    if (!active_ || !track_ || count_ <= 0 || parameter_ < 0 || parameter_ >= count_ ||
+        browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size())) return;
+    auto& state = ensureContextMemory();
+    state.hasLastFx = true;
+    state.lastFxGuid = fxGuid_;
+    state.lastFxName = entries_[browserIndex_].name;
+    state.lastFxMonitor = (fx_ & 0x1000000) != 0;
+    state.lastFxOccurrence = 0;
+    for (int i = 0; i <= browserIndex_; ++i) {
+        if (entries_[i].name == state.lastFxName &&
+            ((entries_[i].index & 0x1000000) != 0) == state.lastFxMonitor)
+            ++state.lastFxOccurrence;
+    }
+    state.observedVisibleFx = visibleFxIndex();
+    for (auto& pos : state.positions) {
+        if (same(&pos.fxGuid, fxGuid_)) {
+            pos.parameter = parameter_;
+            pos.parameterName = parameterName_;
+            pos.gridHeight = columns_;
+            pos.stepScale = stepScale_;
+            return;
+        }
+    }
+    StoredFxPosition pos{};
+    pos.fxGuid = fxGuid_;
+    pos.parameter = parameter_;
+    pos.parameterName = parameterName_;
+    pos.gridHeight = columns_;
+    pos.stepScale = stepScale_;
+    state.positions.push_back(std::move(pos));
 }
 void FxNavigator::switchFx(int direction) {
     if (direction == 0) return;
@@ -156,11 +283,13 @@ bool FxNavigator::selectFx(int index) {
     const int num = take_ ? TakeFX_GetNumParams(take_, candidate.index) : TrackFX_GetNumParams(track_, candidate.index);
     if (num <= 0) return false;
     fx_ = candidate.index; fxGuid_ = candidate.guid;
-    count_ = num; parameter_ = 0;
+    count_ = num;
+    restoreParameterPosition();
     parameterName_ = parameterName();
     hadUi_ = take_ ? TakeFX_GetOpen(take_, fx_) : TrackFX_GetOpen(track_, fx_);
     browserIndex_ = index;
     valueMode_ = false; searchMode_ = false; search_.clear();
+    rememberPosition();
     return true;
 }
 int FxNavigator::count() const { return take_ ? TakeFX_GetNumParams(take_, fx_) : TrackFX_GetNumParams(track_, fx_); }
@@ -253,7 +382,7 @@ std::wstring FxNavigator::windowTitle() const {
     if (!active_) return L"LReaParams - FX Params";
     const std::wstring mode = searchMode_ ? L"Find Parameter" : valueMode_ ? L"Value" : L"Grid";
     // NVDA+T: context in the window title; never in the NVDA+Up review line.
-    return L"FX Parameters: " + wideUtf8(entries_[browserIndex_].name) +
+    return L"LReaParams - FX Params - " + wideUtf8(entries_[browserIndex_].name) +
            L", " + wideUtf8(contextName()) + L" - " + mode;
 }
 std::string FxNavigator::reviewLine() const {
@@ -263,7 +392,7 @@ std::string FxNavigator::reviewLine() const {
 void FxNavigator::navigate(int delta) {
     const int next = std::clamp(parameter_ + delta, 0, count_ - 1);
     if (next == parameter_) return;
-    parameter_ = next; parameterName_ = parameterName(); announce();
+    parameter_ = next; parameterName_ = parameterName(); rememberPosition(); announce();
 }
 void FxNavigator::setValue(double value) {
     if (!valid()) throw std::runtime_error("FX context changed");
@@ -309,6 +438,7 @@ void FxNavigator::findMatching(bool forward) {
             TrackFX_GetParamName(track_, fx_, index, name, sizeof(name));
         if (ok && lowerAscii(name).find(needle) != std::string::npos) {
             parameter_ = index; parameterName_ = name;
+            rememberPosition();
             speech_("Match " + std::to_string(parameter_ + 1) + ", " + parameterName_);
             return;
         }
@@ -360,16 +490,17 @@ void FxNavigator::handle(const Key& k) {
     }
     if (k.vk == VK_F1 || k.vk == VK_F2) {
         const int next = std::clamp(columns_ + (k.vk == VK_F1 ? -1 : 1), 1, 200);
-        if (next != columns_) { columns_ = next; speech_("Grid " + std::to_string(columns_)); }
+        if (next != columns_) { columns_ = next; rememberPosition(); speech_("Grid " + std::to_string(columns_)); }
         return;
     }
     // Alt+Home/End also work in Grid; plain Home/End in Value edit the value.
     if (k.alt || valueMode_) {
         if (k.vk == VK_LEFT || k.vk == VK_RIGHT) {
             const int next = std::clamp(stepScale_ + (k.vk == VK_LEFT ? -1 : 1), -6, 6);
-            if (next != stepScale_) { stepScale_ = next; speech_("Step scale " + std::to_string(stepScale_)); }
-        } else if (k.vk == VK_HOME) setValue(0);
-        else if (k.vk == VK_END) setValue(1);
+            if (next != stepScale_) { stepScale_ = next; rememberPosition(); speech_("Step scale " + std::to_string(stepScale_)); }
+        } // Requested convention for both navigators: Home maximum, End minimum.
+        else if (k.vk == VK_HOME) setValue(1);
+        else if (k.vk == VK_END) setValue(0);
         else if (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT)
             nudge(k.vk == VK_UP || k.vk == VK_PRIOR ? 1 : -1, k.vk == VK_PRIOR || k.vk == VK_NEXT);
         return;

@@ -14,7 +14,8 @@ public:
     ~TitleProxy() { shutdown(); }
     TitleProxy(const TitleProxy&) = delete;
     TitleProxy& operator=(const TitleProxy&) = delete;
-    bool activate(const std::wstring& title, std::function<void()> closeNavigator,
+    bool activate(const std::wstring& title, const std::string& initialReviewLine,
+                  std::function<void()> closeNavigator,
                   std::function<bool(UINT, bool)> keyboardKey);
     HWND hwnd() const noexcept { return edit_; } // focus owner for InputRouter
     void updateTitle(const std::wstring& title);

@@ -105,7 +105,8 @@ public:
                 // Win32 window procedure into the navigator queue, without a
                 // REAPER accelerator/hook. No more fall-through to the TCP.
                 titleProxyActive_ = titleModeEnabled_ && titleProxy_.activate(
-                    desired->windowTitle(), [this] { exitNavigation(false); },
+                    desired->windowTitle(), desired->reviewLine(),
+                    [this] { exitNavigation(false); },
                     [this](UINT vk, bool repeat) {
                         return input_.enqueueOwnedKey(titleProxy_.hwnd(), vk, repeat);
                     });
@@ -113,7 +114,8 @@ public:
                 if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
                     exitNavigation(false); speak("Keyboard capture unavailable"); }
                 else {
-                    if (titleProxyActive_) titleProxy_.updateReviewLine(desired->reviewLine());
+                    // The initial review text is already in the EDIT before focus.
+                    // Issue one explicit contextual OSARA announcement.
                     desired->announceTitle();
                 }
                 refreshToggles();
@@ -147,8 +149,9 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.9 TEST8 NAVIGATION FIXES\n\n"
-                "FX: Ctrl+Up/Down changes FX directly; F1/F2 grid height. Ctrl+Home/End absolute.\n"
+            ShowMessageBox("LReaParams 0.0.11 TEST10 NAVIGATION AND NVDA\n\n"
+                "FX: Ctrl+Up/Down changes FX directly; last FX, parameter and grid settings are remembered per track/take for this REAPER session.\n"
+                "FX: F1/F2 grid height. Ctrl+Home/End absolute.\n"
                 "Track: F1 track rows, F2/F3 fourteen vertical fields per send/receive column.\n"
                 "Like the Lua, an offscreen window owns the keyboard; a read-only EDIT exposes the NVDA review line.\n"
                 "NVDA+T reads track/FX titles; NVDA+Up in FX reads parameter and value only.\n"
@@ -189,15 +192,21 @@ public:
         while (budget-- && input_.pop(key)) {
             // Validate again after dequeue: a queued key must never address a replacement FX.
             if (!current_->contextUnchanged() || GetFocus() != key.window) { exitNavigation(false); return; }
+            // A boundary key changes neither selection nor value.
+            // Avoid sending redundant title, text or focus updates to NVDA.
+            const std::wstring oldTitle = titleProxyActive_ ? current_->windowTitle() : L"";
+            const std::string oldReview = titleProxyActive_ ? current_->reviewLine() : "";
             current_->handle(key);
             if (!current_->active()) { exitNavigation(false); speak("LReaParams navigation off"); break; }
             if (titleProxyActive_) {
-                titleProxy_.updateTitle(current_->windowTitle());
-                titleProxy_.updateReviewLine(current_->reviewLine());
-                // The Lua reinitializes gfx after changing plugin values.
-                // Recover focus immediately after the handled key, not in a
-                // continuous background loop that would fight the mouse.
-                titleProxy_.reassertFocusAfterNavigationKey();
+                const std::wstring newTitle = current_->windowTitle();
+                const std::string newReview = current_->reviewLine();
+                if (newTitle != oldTitle) titleProxy_.updateTitle(newTitle);
+                if (newReview != oldReview) titleProxy_.updateReviewLine(newReview);
+                // Only recover keyboard focus after a meaningful change.
+                // At the grid boundary this must be completely silent.
+                if (newTitle != oldTitle || newReview != oldReview)
+                    titleProxy_.reassertFocusAfterNavigationKey();
             }
         }
     }

@@ -56,6 +56,36 @@ def main():
     check('ES_READONLY' in title_src and 'EM_SETSEL' in title_src and
           'updateReviewLine' in title_src and 'WM_GETDLGCODE' in title_src,
           'NVDA native review line missing')
+    # TEST9 regression markers: the native session memory must survive end()/begin()
+    # without accidentally writing to REAPER project state or legacy TXT files.
+    fx_header=(ROOT/'include/lrp/FxNavigator.h').read_text()
+    fx_source=(ROOT/'src/FxNavigator.cpp').read_text()
+    for marker in ['sessionMemory_', 'StoredContext', 'StoredFxPosition',
+                   'rememberPosition()', 'restoreParameterPosition()',
+                   'rememberedFxIndex(', 'observedVisibleFx',
+                   'lastFxOccurrence', 'lastFxGuid']:
+        check(marker in fx_header or marker in fx_source,
+              'Session FX memory contract missing: '+marker)
+    check('SetExtState' not in fx_source and 'SetProjExtState' not in fx_source,
+          'Session FX memory must not write REAPER state')
+    # TEST10 source regressions: absolute value direction, quiet boundaries,
+    # and pre-focused NVDA review content (does not substitute runtime tests).
+    check('k.vk == VK_HOME) setValue(1)' in fx_source and
+          'k.vk == VK_END) setValue(0)' in fx_source,
+          'FX Alt+Home/End must use maximum/minimum in that order')
+    check('const bool high = k.vk == VK_HOME' in (ROOT/'src/TrackNavigator.cpp').read_text(),
+          'Track Alt+Home/End must use maximum/minimum in that order')
+    check('if (next == parameter_) return;' in fx_source and
+          'if (next != parameter_)' in (ROOT/'src/TrackNavigator.cpp').read_text(),
+          'Grid bounds must not reannounce unchanged selection')
+    check('if (newReview != oldReview) titleProxy_.updateReviewLine(newReview);' in (ROOT/'src/Extension.cpp').read_text() and
+          'if (newTitle != oldTitle || newReview != oldReview)' in (ROOT/'src/Extension.cpp').read_text(),
+          'Boundary must not send redundant review/focus updates')
+    check('desired->windowTitle(), desired->reviewLine()' in (ROOT/'src/Extension.cpp').read_text() and
+          'reviewText_ = toWide(initialReviewLine)' in title_src,
+          'Initial native review line must be filled before focus')
+    check('L"LReaParams - FX Params - "' in fx_source,
+          'FX native window must have consistent LReaParams title')
     track_src=(ROOT/'src/TrackNavigator.cpp').read_text()
     check(track_src.count('entries_.push_back(')==14, 'F2/F3 must have 14 fields per column')
     for marker in ['moveDetailColumn', 'VK_RETURN', 'Entry::midiFollowsFader',
