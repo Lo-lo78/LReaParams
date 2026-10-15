@@ -19,7 +19,10 @@ public:
     virtual void announce() = 0;
     virtual void announceTitle() = 0; // one OSARA announcement at mode entry
     virtual std::wstring windowTitle() const = 0; // NVDA+T
-    virtual std::string reviewLine() const = 0; // native accessible static text; no edit caret
+    virtual std::string reviewLine() const = 0; // accessible parameter and value on request
+    virtual bool nativeValueSlider() const { return false; }
+    virtual double valueFraction() const { return 0.0; } // 0..1, for native slider only
+    virtual std::string sliderLabel() const { return {}; }
     virtual HWND floatingWindow() const { return nullptr; }
     virtual bool uiStillOpen() const { return true; }
 };

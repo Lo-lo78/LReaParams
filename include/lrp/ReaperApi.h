@@ -45,6 +45,8 @@
 #define REAPERAPI_WANT_GetActiveTake
 #define REAPERAPI_WANT_GetLastTouchedTrack
 #define REAPERAPI_WANT_CountTracks
+#define REAPERAPI_WANT_SetOnlyTrackSelected
+#define REAPERAPI_WANT_UpdateArrange
 #define REAPERAPI_WANT_TrackFX_GetCount
 #define REAPERAPI_WANT_TrackFX_GetRecCount
 #define REAPERAPI_WANT_TakeFX_GetCount

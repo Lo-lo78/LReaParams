@@ -19,6 +19,7 @@ public:
     bool exitRequested() const noexcept { return exitRequested_; }
     bool environmentSafe() const noexcept;
     void refreshAllowedWindows(HWND floating) noexcept;
+    bool switchOwnedWindow(HWND keyboardWindow) noexcept;
 private:
     static int translate(MSG*, accelerator_register_t*) noexcept;
     static LRESULT CALLBACK hook(int, WPARAM, LPARAM) noexcept;

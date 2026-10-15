@@ -19,32 +19,38 @@ public:
     TitleProxy& operator=(const TitleProxy&) = delete;
     bool activate(const std::wstring& title, const std::string& initialReviewLine,
                   std::function<void()> closeNavigator,
-                  std::function<bool(UINT, bool)> keyboardKey);
-    HWND hwnd() const noexcept { return edit_; } // non-editable focus owner for InputRouter
+                  std::function<bool(HWND, UINT, bool)> keyboardKey);
+    HWND hwnd() const noexcept { return sliderMode_ ? slider_ : edit_; }
+    void syncValueControl(bool valueMode, const std::string& parameter, double position);
     void updateTitle(const std::wstring& title);
     void updateReviewLine(const std::string& utf8Text);
     void reassertFocusAfterNavigationKey() noexcept;
     void hideAndRestore() noexcept;
     void shutdown() noexcept;
     bool active() const noexcept { return window_ && edit_ && IsWindow(window_) &&
-        GetForegroundWindow() == window_ && GetFocus() == edit_; }
+        GetForegroundWindow() == window_ && GetFocus() == hwnd(); }
 private:
     static LRESULT CALLBACK windowProc(HWND, UINT, WPARAM, LPARAM) noexcept;
     static LRESULT CALLBACK editProc(HWND, UINT, WPARAM, LPARAM) noexcept;
+    static LRESULT CALLBACK sliderProc(HWND, UINT, WPARAM, LPARAM) noexcept;
+    LRESULT dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, WNDPROC original) noexcept;
     bool ensureWindow();
     void onF12(LPARAM keyData) noexcept;
     static constexpr const wchar_t* kClass = L"LReaParams_ReviewWindow_v2";
     HWND host_{};
     HWND window_{};
     HWND edit_{};
+    HWND slider_{};
     HWND originalForeground_{};
     HWND originalFocus_{};
     HINSTANCE instance_{};
     WNDPROC originalEditProc_{};
+    WNDPROC originalSliderProc_{};
+    bool sliderMode_ = false;
     bool classRegistered_ = false;
     std::wstring title_;
     std::wstring reviewText_;
     std::function<void()> closeNavigator_;
-    std::function<bool(UINT, bool)> keyboardKey_;
+    std::function<bool(HWND, UINT, bool)> keyboardKey_;
 };
 } // namespace lrp

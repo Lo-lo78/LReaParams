@@ -47,6 +47,7 @@ bool TrackNavigator::begin() {
     parameter_ = detailIndex_ = 0;
     page_ = Page::tracks;
     valueMode_ = false;
+    stepScale_ = 0;
     buildEntries();
     active_ = true;
     return true;
@@ -71,7 +72,7 @@ bool TrackNavigator::contextUnchanged() const {
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.shift) return false;
     if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END || k.vk == 'R');
-    if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END;
+    if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END || k.vk == VK_LEFT || k.vk == VK_RIGHT;
     switch (k.vk) {
         case VK_ESCAPE: case VK_RETURN:
         case VK_LEFT: case VK_RIGHT: case VK_UP: case VK_DOWN:
@@ -120,6 +121,8 @@ void TrackNavigator::buildEntries() {
 }
 bool TrackNavigator::selectPage(Page page) {
     if (page == page_) return true; // Repeated page key is silent
+    if (page == Page::sends && GetTrackNumSends(track_, 0) <= 0) { speech_("No sends"); return false; }
+    if (page == Page::receives && GetTrackNumSends(track_, -1) <= 0) { speech_("No receives"); return false; }
     page_ = page;
     parameter_ = detailIndex_ = 0;
     valueMode_ = false;
@@ -214,7 +217,7 @@ void TrackNavigator::put(const Entry& e, double value) {
     const bool ok = e.index < 0 ? SetMediaTrackInfo_Value(track_, parm.c_str(), raw) :
         SetTrackSendInfo_Value(track_, e.category, e.index, parm.c_str(), raw);
     if (!ok) throw std::runtime_error("REAPER refused track change");
-    announce();
+    speech_(valueText(e, get(e)));
 }
 std::string TrackNavigator::valueText(const Entry& e, double value) const {
     if (e.type == Entry::header) return (e.category == 0 ? "to " : "from ") + detailPeerName(e.category, e.index);
@@ -271,19 +274,38 @@ std::string TrackNavigator::currentParameterSpeech() const {
         ", " + e->title + ", " + valueText(*e, get(*e));
 }
 std::string TrackNavigator::reviewLine() const {
-    return active_ ? currentParameterSpeech() : "";
+    if (!active_) return "";
+    if (!valueMode_) return currentParameterSpeech();
+    const auto* e = current();
+    return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : currentParameterSpeech();
+}
+bool TrackNavigator::nativeValueSlider() const {
+    if (!active_ || !valueMode_) return false;
+    const auto* e = current();
+    return e && (e->type == Entry::volume || e->type == Entry::pan || e->type == Entry::width);
+}
+double TrackNavigator::valueFraction() const {
+    const auto* e = current();
+    if (!e || !nativeValueSlider()) return 0.0;
+    const double value = get(*e);
+    if (e->type == Entry::volume) return std::clamp((db(value) - minDb) / (maxDb - minDb), 0.0, 1.0);
+    return std::clamp((value + 1.0) / 2.0, 0.0, 1.0);
+}
+std::string TrackNavigator::sliderLabel() const {
+    const auto* e = current();
+    return e ? e->title : "";
 }
 void TrackNavigator::announce() { speech_(currentParameterSpeech()); }
 void TrackNavigator::announceTitle() {
     if (!active_) return;
     const char* name = page_ == Page::tracks ? "Tracks" : page_ == Page::sends ? "Sends" : "Receives";
-    speech_("LReaParams - Track Params - " + std::string(name) +
+    speech_("Track Params - " + std::string(name) +
         (valueMode_ ? " - Value. " : " - Grid. ") + currentParameterSpeech());
 }
 std::wstring TrackNavigator::windowTitle() const {
-    if (!active_) return L"LReaParams - Track Params";
+    if (!active_) return L"Track Params";
     const wchar_t* name = page_ == Page::tracks ? L"Tracks" : page_ == Page::sends ? L"Sends" : L"Receives";
-    return std::wstring(L"LReaParams - Track Params - ") + name + (valueMode_ ? L" - Value" : L" - Grid");
+    return std::wstring(L"Track Params - ") + name + (valueMode_ ? L" - Value" : L"");
 }
 void TrackNavigator::moveTrack(int delta) {
     if (page_ != Page::tracks) return;
@@ -310,10 +332,11 @@ void TrackNavigator::nudge(int direction, bool coarse) {
     const auto* e = current();
     if (!e) return;
     const double old = get(*e);
+    const double factor = std::pow(2.0, stepScale_);
     double next = old;
     switch (e->type) {
-        case Entry::volume: next = amp(std::clamp(db(old) + (coarse ? 3.0 : 0.5) * direction, minDb, maxDb)); break;
-        case Entry::pan: case Entry::width: next = std::clamp(old + direction * (coarse ? 0.1 : 0.01), -1.0, 1.0); break;
+        case Entry::volume: next = amp(std::clamp(db(old) + (coarse ? 3.0 : 0.5) * factor * direction, minDb, maxDb)); break;
+        case Entry::pan: case Entry::width: next = std::clamp(old + direction * (coarse ? 0.1 : 0.01) * factor, -1.0, 1.0); break;
         case Entry::flag: case Entry::solo: case Entry::midiFollowsFader: next = direction > 0 ? 1.0 : 0.0; break;
         case Entry::audioSourceMode: next = std::clamp(old + direction, 0.0, 8.0); break;
         case Entry::sendType: {
@@ -369,7 +392,9 @@ void TrackNavigator::handle(const Key& k) {
             announce(); return;
         }
         valueMode_ = !valueMode_;
-        announceTitle(); return;
+        if (valueMode_) speech_(reviewLine());
+        else announceTitle();
+        return;
     }
     if (k.ctrl && k.vk == VK_HOME) {
         if (page_ == Page::tracks) moveTrack(-row_);
@@ -382,7 +407,11 @@ void TrackNavigator::handle(const Key& k) {
         return;
     }
     if (k.alt || valueMode_) {
-        if (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT)
+        if (k.vk == VK_LEFT || k.vk == VK_RIGHT) {
+            const int next = std::clamp(stepScale_ + (k.vk == VK_LEFT ? -1 : 1), -10, 10);
+            if (next != stepScale_) { stepScale_ = next; speech_("Step " + std::to_string(stepScale_)); }
+        }
+        else if (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT)
             nudge(k.vk == VK_UP || k.vk == VK_PRIOR ? 1 : -1, k.vk == VK_PRIOR || k.vk == VK_NEXT);
         else if (k.vk == VK_HOME || k.vk == VK_END) {
             const auto* e = current();

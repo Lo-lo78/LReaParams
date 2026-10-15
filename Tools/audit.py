@@ -50,7 +50,7 @@ def main():
         check(not re.search(forbidden,all_cpp),'Unexpected window/global hook/state write')
     # One purpose-built offscreen title proxy is allowed; forbid other window creation.
     title_src=(ROOT/'src/TitleProxy.cpp').read_text()
-    check(title_src.count('CreateWindowExW(')==2,'Expected titled owner window and one focusable text child')
+    check(title_src.count('CreateWindowExW(')==3,'Expected titled owner, review label and native Value trackbar')
     for marker in ['WS_EX_TOOLWINDOW','-32000','SW_HIDE','DestroyWindow','UnregisterClassW','SetForegroundWindow','WM_KEYDOWN']:
         check(marker in title_src,'Title proxy lifecycle contract missing: '+marker)
     check('L"STATIC"' in title_src and 'SS_NOTIFY' in title_src and
@@ -95,8 +95,14 @@ def main():
     check('desired->windowTitle(), desired->reviewLine()' in (ROOT/'src/Extension.cpp').read_text() and
           'reviewText_ = toWide(initialReviewLine)' in title_src,
           'Initial native text must be filled before focus')
-    check('L"LReaParams - FX Params - "' in fx_source,
-          'FX native window must have consistent LReaParams title')
+    check('L"FX Params - "' in fx_source and 'L"LReaParams - FX Params - "' not in fx_source,
+          'FX NVDA+T title must not contain LReaParams')
+    check('switchTrack(' in fx_source and 'SetOnlyTrackSelected(' in fx_source and
+          'std::clamp(stepScale_' in fx_source and '-10, 10)' in fx_source,
+          'TEST13 track switch and extended FX step range missing')
+    check('TRACKBAR_CLASSW' in title_src and 'syncValueControl' in title_src and
+          'switchOwnedWindow' in (ROOT/'src/InputRouter.cpp').read_text(),
+          'TEST13 native accessible Value slider missing')
     track_src=(ROOT/'src/TrackNavigator.cpp').read_text()
     check(track_src.count('entries_.push_back(')==14, 'F2/F3 must have 14 fields per column')
     for marker in ['moveDetailColumn', 'VK_RETURN', 'Entry::midiFollowsFader',

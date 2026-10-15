@@ -20,12 +20,17 @@ public:
     void announceTitle() override;
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
+    bool nativeValueSlider() const override { return active_ && valueMode_; }
+    double valueFraction() const override;
+    std::string sliderLabel() const override;
     HWND floatingWindow() const override;
     bool uiStillOpen() const override;
 private:
     struct FxEntry { int index{}; GUID guid{}; std::string name; };
     bool selectFx(int index);
     void switchFx(int direction);
+    void switchTrack(int direction);
+    bool rebuildEntries();
     // Session-only memory (no files, no REAPER ExtState and no RPP changes).
     // A context is identified by project, track GUID and optional take.
     struct StoredFxPosition {
@@ -58,6 +63,7 @@ private:
     int count() const;
     std::string parameterName() const;
     std::string currentParameterSpeech() const;
+    std::string formattedValue() const;
     void nudge(int direction, bool big);
     void setValue(double value);
     void navigate(int delta);

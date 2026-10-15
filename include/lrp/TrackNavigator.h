@@ -19,6 +19,9 @@ public:
     void announceTitle() override;
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
+    bool nativeValueSlider() const override;
+    double valueFraction() const override;
+    std::string sliderLabel() const override;
 private:
     struct Entry {
         std::string title;
@@ -55,6 +58,7 @@ private:
     int row_{};
     int parameter_{};       // F1: 0..8 column; F2/F3: 0..13 vertical field
     int detailIndex_{};     // F2/F3 send/receive column
+    int stepScale_{};       // Alt+Left/Right: -10..+10 for continuous values
     int sends_{}, receives_{};
     Page page_ = Page::tracks;
     bool active_ = false, valueMode_ = false;

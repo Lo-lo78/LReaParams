@@ -1,5 +1,7 @@
 #include "lrp/TitleProxy.h"
 #include <algorithm>
+#include <cmath>
+#include <commctrl.h>
 #include <cwchar>
 #include <utility>
 
@@ -20,7 +22,7 @@ std::wstring toWide(const std::string& text) {
 }
 
 bool TitleProxy::ensureWindow() {
-    if (window_ && IsWindow(window_) && edit_ && IsWindow(edit_)) return true;
+    if (window_ && IsWindow(window_) && edit_ && IsWindow(edit_) && slider_ && IsWindow(slider_)) return true;
     instance_ = GetModuleHandleW(nullptr);
     if (!classRegistered_) {
         WNDCLASSW wc{};
@@ -44,12 +46,32 @@ bool TitleProxy::ensureWindow() {
         WS_TABSTOP | SS_NOTIFY | SS_LEFT, 0, 0, 1, 1,
         window_, nullptr, instance_, nullptr);
     if (!edit_) { DestroyWindow(window_); window_ = nullptr; return false; }
+    INITCOMMONCONTROLSEX classes{sizeof(INITCOMMONCONTROLSEX), ICC_BAR_CLASSES};
+    if (!InitCommonControlsEx(&classes)) {
+        DestroyWindow(window_); window_ = nullptr; edit_ = nullptr; return false;
+    }
+    // A real standard Windows trackbar gives NVDA a native slider role in Value.
+    // The focusable STATIC still owns keyboard input when navigating Grid.
+    slider_ = CreateWindowExW(0, TRACKBAR_CLASSW, L"Value",
+        WS_CHILD | WS_TABSTOP | TBS_HORZ | TBS_NOTICKS,
+        0, 0, 1, 1, window_, nullptr, instance_, nullptr);
+    if (!slider_) { DestroyWindow(window_); window_ = nullptr; edit_ = nullptr; return false; }
+    SendMessageW(slider_, TBM_SETRANGEMIN, FALSE, 0);
+    SendMessageW(slider_, TBM_SETRANGEMAX, FALSE, 10000);
+    SetWindowLongPtrW(slider_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    SetLastError(0);
+    const LONG_PTR previousSlider = SetWindowLongPtrW(slider_, GWLP_WNDPROC,
+                                                       reinterpret_cast<LONG_PTR>(&TitleProxy::sliderProc));
+    if (!previousSlider && GetLastError()) {
+        DestroyWindow(window_); window_ = nullptr; edit_ = slider_ = nullptr; return false;
+    }
+    originalSliderProc_ = reinterpret_cast<WNDPROC>(previousSlider);
     SetWindowLongPtrW(edit_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     SetLastError(0);
     const LONG_PTR old = SetWindowLongPtrW(edit_, GWLP_WNDPROC,
                                            reinterpret_cast<LONG_PTR>(&TitleProxy::editProc));
     if (!old && GetLastError()) {
-        DestroyWindow(window_); window_ = nullptr; edit_ = nullptr; return false;
+        DestroyWindow(window_); window_ = nullptr; edit_ = slider_ = nullptr; return false;
     }
     originalEditProc_ = reinterpret_cast<WNDPROC>(old);
     return true;
@@ -57,7 +79,7 @@ bool TitleProxy::ensureWindow() {
 
 bool TitleProxy::activate(const std::wstring& title, const std::string& initialReviewLine,
                           std::function<void()> closeNavigator,
-                          std::function<bool(UINT, bool)> keyboardKey) {
+                          std::function<bool(HWND, UINT, bool)> keyboardKey) {
     hideAndRestore();
     if (!ensureWindow()) return false;
     originalForeground_ = GetForegroundWindow();
@@ -65,6 +87,9 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
     closeNavigator_ = std::move(closeNavigator);
     keyboardKey_ = std::move(keyboardKey);
     title_ = title;
+    sliderMode_ = false;
+    ShowWindow(slider_, SW_HIDE);
+    ShowWindow(edit_, SW_SHOW);
     reviewText_ = toWide(initialReviewLine);
     if (reviewText_.size() > 8192) reviewText_.resize(8192);
     // The child STATIC's stored caption is deliberately constant (empty).
@@ -77,6 +102,32 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
     SetFocus(edit_);
     if (!active()) { hideAndRestore(); return false; }
     return true;
+}
+
+void TitleProxy::syncValueControl(bool valueMode, const std::string& parameter, double position) {
+    if (!window_ || !IsWindowVisible(window_) || !slider_) return;
+    if (valueMode) {
+        // Native trackbar range is a representation only: REAPER remains
+        // authoritative. Do not forward TBM's native keyboard editing into FX.
+        const double safe = std::isfinite(position) ? std::clamp(position, 0.0, 1.0) : 0.0;
+        const int scaled = static_cast<int>(std::lround(safe * 10000.0));
+        if (static_cast<int>(SendMessageW(slider_, TBM_GETPOS, 0, 0)) != scaled)
+            SendMessageW(slider_, TBM_SETPOS, FALSE, scaled);
+    }
+    if (valueMode == sliderMode_) return;
+    if (valueMode) {
+        const std::wstring label = L"Value, " + toWide(parameter);
+        SetWindowTextW(slider_, label.c_str());
+        ShowWindow(edit_, SW_HIDE);
+        ShowWindow(slider_, SW_SHOW);
+        sliderMode_ = true;
+        SetFocus(slider_);
+    } else {
+        ShowWindow(slider_, SW_HIDE);
+        ShowWindow(edit_, SW_SHOW);
+        sliderMode_ = false;
+        SetFocus(edit_);
+    }
 }
 
 void TitleProxy::updateTitle(const std::wstring& title) {
@@ -95,7 +146,7 @@ void TitleProxy::updateReviewLine(const std::string& utf8Text) {
     reviewText_ = std::move(line);
 }
 void TitleProxy::reassertFocusAfterNavigationKey() noexcept {
-    if (!window_ || !edit_ || !IsWindowVisible(window_) || !IsWindowEnabled(host_)) return;
+    if (!window_ || !hwnd() || !IsWindowVisible(window_) || !IsWindowEnabled(host_)) return;
     HWND front = GetForegroundWindow();
     if (!front) return;
     DWORD pid = 0;
@@ -106,7 +157,7 @@ void TitleProxy::reassertFocusAfterNavigationKey() noexcept {
     // Do not steal focus from a REAPER text-entry field or modal dialog.
     if (front != window_ && gui.hwndCaret) return;
     if (front != window_) SetForegroundWindow(window_);
-    if (GetForegroundWindow() == window_ && GetFocus() != edit_) SetFocus(edit_);
+    if (GetForegroundWindow() == window_ && GetFocus() != hwnd()) SetFocus(hwnd());
 }
 void TitleProxy::hideAndRestore() noexcept {
     if (!window_) return;
@@ -115,6 +166,7 @@ void TitleProxy::hideAndRestore() noexcept {
     const HWND oldFocus = originalFocus_;
     closeNavigator_ = {};
     keyboardKey_ = {};
+    sliderMode_ = false;
     originalForeground_ = originalFocus_ = nullptr;
     if (IsWindowVisible(window_)) ShowWindow(window_, SW_HIDE);
     if (ours) {
@@ -128,9 +180,11 @@ void TitleProxy::shutdown() noexcept {
     hideAndRestore();
     if (edit_ && IsWindow(edit_) && originalEditProc_)
         SetWindowLongPtrW(edit_, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(originalEditProc_));
+    if (slider_ && IsWindow(slider_) && originalSliderProc_)
+        SetWindowLongPtrW(slider_, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(originalSliderProc_));
     if (window_) { DestroyWindow(window_); window_ = nullptr; }
-    edit_ = nullptr;
-    originalEditProc_ = nullptr;
+    edit_ = slider_ = nullptr;
+    originalEditProc_ = originalSliderProc_ = nullptr;
     if (classRegistered_) { UnregisterClassW(kClass, instance_); classRegistered_ = false; }
 }
 void TitleProxy::onF12(LPARAM) noexcept {
@@ -154,33 +208,37 @@ LRESULT CALLBACK TitleProxy::windowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
 LRESULT CALLBACK TitleProxy::editProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
     auto* self = reinterpret_cast<TitleProxy*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     if (!self || !self->originalEditProc_) return DefWindowProcW(hwnd, msg, wp, lp);
-    // Keep the parameter and value queryable without changing the focused
-    // native STATIC caption.  UI clients which obtain its window text on
-    // demand see the latest value, but NVDA is not signalled on each movement.
-    if (msg == WM_GETTEXTLENGTH)
-        return static_cast<LRESULT>(self->reviewText_.size());
+    return self->dispatchKeyOwner(hwnd, msg, wp, lp, self->originalEditProc_);
+}
+LRESULT CALLBACK TitleProxy::sliderProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) noexcept {
+    auto* self = reinterpret_cast<TitleProxy*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+    if (!self || !self->originalSliderProc_) return DefWindowProcW(hwnd, msg, wp, lp);
+    return self->dispatchKeyOwner(hwnd, msg, wp, lp, self->originalSliderProc_);
+}
+LRESULT TitleProxy::dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, WNDPROC original) noexcept {
+    // WM_GETTEXT remains a passive review query: no changing captions while
+    // the value changes, and no duplicate OSARA/native text-change speech.
+    if (msg == WM_GETTEXTLENGTH) return static_cast<LRESULT>(reviewText_.size());
     if (msg == WM_GETTEXT) {
         if (!lp || !wp) return 0;
         auto* target = reinterpret_cast<wchar_t*>(lp);
-        const auto length = std::min(self->reviewText_.size(), static_cast<size_t>(wp - 1));
-        if (length) std::wmemcpy(target, self->reviewText_.data(), length);
+        const auto length = std::min(reviewText_.size(), static_cast<size_t>(wp - 1));
+        if (length) std::wmemcpy(target, reviewText_.data(), length);
         target[length] = L'\0';
         return static_cast<LRESULT>(length);
     }
-    // STATIC controls normally don't need the arrows.  This focusable one
-    // owns every navigation key; no edit selection or caret event can occur.
     if (msg == WM_GETDLGCODE) return DLGC_WANTALLKEYS | DLGC_WANTARROWS | DLGC_WANTCHARS;
     if ((msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) && wp == VK_F12) {
-        if (!(lp & (1LL << 30))) self->onF12(lp);
+        if (!(lp & (1LL << 30))) onF12(lp);
         return 0;
     }
     if ((msg == WM_KEYUP || msg == WM_SYSKEYUP) && wp == VK_F12) return 0;
     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
-        // NVDA's own gestures run before this handler.  Other keys are
-        // consumed here: the text label has no caret to move/echo.
-        try { if (self->keyboardKey_) self->keyboardKey_(static_cast<UINT>(wp), (lp & (1LL << 30)) != 0); }
+        // The OSARA/REAPER navigation backend stays authoritative for ALL keys.
+        // No native trackbar key may edit the control independently of REAPER.
+        try { if (keyboardKey_) keyboardKey_(hwnd, static_cast<UINT>(wp), (lp & (1LL << 30)) != 0); }
         catch (...) {
-            auto close = std::move(self->closeNavigator_);
+            auto close = std::move(closeNavigator_);
             try { if (close) close(); } catch (...) {}
         }
         return 0;
@@ -188,11 +246,11 @@ LRESULT CALLBACK TitleProxy::editProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     if (msg == WM_KEYUP || msg == WM_SYSKEYUP || msg == WM_CHAR ||
         msg == WM_SYSCHAR || msg == WM_DEADCHAR || msg == WM_SYSDEADCHAR) return 0;
     if (msg == WM_CLOSE) {
-        auto close = std::move(self->closeNavigator_);
-        try { if (close) close(); else self->hideAndRestore(); }
-        catch (...) { self->hideAndRestore(); }
+        auto close = std::move(closeNavigator_);
+        try { if (close) close(); else hideAndRestore(); }
+        catch (...) { hideAndRestore(); }
         return 0;
     }
-    return CallWindowProcW(self->originalEditProc_, hwnd, msg, wp, lp);
+    return CallWindowProcW(original, hwnd, msg, wp, lp);
 }
 } // namespace lrp

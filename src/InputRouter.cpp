@@ -61,6 +61,15 @@ void InputRouter::stop() noexcept {
 }
 void InputRouter::requestExit() noexcept { capturing_ = false; exitRequested_ = true; head_ = tail_ = 0; }
 void InputRouter::refreshAllowedWindows(HWND floating) noexcept { floating_ = floating; }
+bool InputRouter::switchOwnedWindow(HWND keyboardWindow) noexcept {
+    if (!capturing_ || !ownedWindow_ || !keyboardWindow || !IsWindow(keyboardWindow) ||
+        GetWindowThreadProcessId(keyboardWindow, nullptr) != threadId_ ||
+        GetForegroundWindow() != GetAncestor(keyboardWindow, GA_ROOT) ||
+        GetFocus() != keyboardWindow) return false;
+    ownedWindow_ = keyboardWindow;
+    originalRoot_ = keyboardWindow;
+    return true;
+}
 bool InputRouter::safeTarget(HWND target) const noexcept {
     if (!target || !IsWindow(target) || !IsWindowEnabled(main_)) return false;
     DWORD pid = 0;
