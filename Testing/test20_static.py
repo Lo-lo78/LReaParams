@@ -13,5 +13,5 @@ assert 'shortcutHelp()' in s
 assert 'GetActionShortcutDesc(section, command' in s
 assert '<accelerator' in s
 assert 'SetWindowsHookEx' not in s
-assert 'VERSION 0.0.23' in (r/'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.24' in (r/'CMakeLists.txt').read_text()
 print('TEST20 static contract PASS; native build and behavior not tested')

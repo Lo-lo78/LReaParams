@@ -28,6 +28,11 @@ public:
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
     bool nativeValueSlider() const override { return active_ && valueMode_ && !memoryManager_; }
+    // Native Windows EDIT control for F7 rename and Ctrl+F search.
+    bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_) && !memoryManager_; }
+    std::string nativeTextValue() const { return textEdit_ ? textBuffer_ : search_; }
+    std::string nativeTextLabel() const { return textEdit_ ? (textEditParam_ < 0 ? "Group name" : "Parameter name") : "Find parameter"; }
+    void setNativeText(const std::string& text);
     double valueFraction() const override;
     std::string sliderLabel() const override;
     HWND floatingWindow() const override;
@@ -82,7 +87,12 @@ private:
     void toggleDeltaSolo();
     void clearProjectDeltaSolo();
     void runLuaFunctionAction(int command);
-    void toggleSlotAccess();
+    void chooseSlotAccess(int mode);
+    std::string groupLabel(int slot) const;
+    void resetCurrentToDefault();
+    void resetAllToDefault();
+    void resetGridAndStep();
+    void snapshotDefaultsIfMissing();
     int count() const;
     std::string parameterName() const;
     std::string currentParameterSpeech() const;
@@ -113,6 +123,14 @@ private:
     void selectF7(bool shift, int target, const std::string& direction = "");
     bool handleF7(const Key& key);
     void saveStructure();
+    struct EditHistory { std::vector<int> order; std::map<int,std::string> aliases;
+        std::set<int> hidden; std::map<int,std::vector<int>> groups;
+        std::map<int,std::string> groupNames; };
+    EditHistory captureHistory() const;
+    void restoreHistory(const EditHistory& state);
+    void saveUndo();
+    void f7Undo(bool redo);
+    std::vector<EditHistory> undoStack_, redoStack_;
     void doCopy(bool cut);
     void doPaste();
     void hideSelected();
@@ -137,8 +155,19 @@ private:
     int viewPos_ = 0;
     int groupSlot_ = 0, slotMode_ = 0; // 0 = Groups; 1 = memory positions (pending)
     bool editF7_ = false, textEdit_ = false, groupEditAll_ = false;
+    enum class LastControl { none, step, grid } lastControl_ = LastControl::none;
+    // F7 filtered view: selection is kept in unfiltered occurrence coordinates.
+    bool f7FilterActive_ = false;
+    std::vector<int> f7FullView_;
+    std::vector<int> f7FilterPositions_;
+    std::string f7FilterQuery_;
+    int f7OriginalPosition(int filteredPos) const;
+    void clearF7Filter();
+    void applyF7Filter(const std::string& query, bool speak = true);
+    int f7FullPosition_ = 0;
     bool memoryManager_ = false, memoryStandalone_ = false;
     bool memoryReturnF7_ = false;
+    std::string memoryReturnF7Filter_;
     int memoryReturnParam_ = 0, memoryReturnPosition_ = 0, memoryReturnGroup_ = 0;
     int memoryCol_ = 0, memoryRow_ = 0;
     std::array<std::vector<MemoryEntry>,7> memoryColumns_{};

@@ -29,6 +29,9 @@ public:
     bool storedCustomOrder() const noexcept;
     bool hasDefaultValues() const noexcept;
     int defaultValueCount() const noexcept;
+    std::map<int,double> defaultValues() const;
+    bool hasStructuralDefault() const noexcept;
+    bool saveDefaultValues(const std::map<int,double>& values);
     std::map<int, std::string> ccLinks; // Lua cc_link_v1::param::n entries
     bool deleteCcLink(int param);
     void deleteCustomOrder();

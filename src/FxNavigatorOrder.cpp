@@ -41,12 +41,14 @@ void FxNavigator::loadFxOrder() {
         return originalName(track_,take_,fx_,id);
     });
     groupSlot_=0;groupEditAll_=false;editF7_=false;searchMode_=false;
+    f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
     slotMode_=fxOrder_.groupSlotMode?0:1;
     visible_=fxOrder_.visibleOrder();
     int preference=-1;
     if(auto* memory=contextMemory())for(const auto& pos:memory->positions)
         if(guidSame(&pos.fxGuid,fxGuid_)) {preference=pos.viewPosition;f7Selected_=pos.f7Selected;fxOrder_.custom=pos.customView;break;}
     rebuildView(parameter_,preference);
+    snapshotDefaultsIfMissing();
 }
 void FxNavigator::rebuildView(int preferParam,int preferPosition) {
     if(groupSlot_ && !groupEditAll_) {
@@ -66,6 +68,66 @@ void FxNavigator::rebuildView(int preferParam,int preferPosition) {
     viewPos_=next;parameter_=visible_[static_cast<size_t>(next)];
     parameterName_=parameterName();
 }
+int FxNavigator::f7OriginalPosition(int filteredPos) const {
+    if(f7FilterActive_ && filteredPos>=0 && filteredPos<static_cast<int>(f7FilterPositions_.size()))
+        return f7FilterPositions_[static_cast<size_t>(filteredPos)];
+    return filteredPos;
+}
+void FxNavigator::clearF7Filter() {
+    if(!f7FilterActive_)return;
+    const int original=f7OriginalPosition(viewPos_);
+    visible_=f7FullView_;
+    viewPos_=std::clamp(original,0,std::max(0,static_cast<int>(visible_.size())-1));
+    if(!visible_.empty())parameter_=visible_[static_cast<size_t>(viewPos_)];
+    f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
+    f7SnakePath_.clear();f7SnakeDirections_.clear();
+}
+void FxNavigator::applyF7Filter(const std::string& query, bool speak) {
+    if(!editF7_)return;
+    clearF7Filter();
+    if(query.empty()){if(speak)speech_("Search cleared. "+currentParameterSpeech());return;}
+    f7FullView_=visible_;
+    f7FilterPositions_.clear();
+    std::string needle=query;
+    std::transform(needle.begin(),needle.end(),needle.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+    for(int i=0;i<static_cast<int>(f7FullView_.size());++i){
+        std::string label=fxOrder_.label(f7FullView_[static_cast<size_t>(i)]);
+        std::transform(label.begin(),label.end(),label.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+        if(label.find(needle)!=std::string::npos)f7FilterPositions_.push_back(i);
+    }
+    f7FilterQuery_=query;
+    if(f7FilterPositions_.empty()){
+        f7FullView_.clear();f7FilterQuery_.clear();
+        if(speak)speech_("No matching parameters. Selection kept");return;
+    }
+    visible_.clear();
+    for(int i:f7FilterPositions_)visible_.push_back(f7FullView_[static_cast<size_t>(i)]);
+    f7FilterActive_=true;viewPos_=0;parameter_=visible_.front();parameterName_=parameterName();
+    if(speak)speech_("Filtered "+std::to_string(visible_.size())+" parameters. "+
+            std::to_string(f7Selected_.size())+" selected. "+currentParameterSpeech());
+}
+FxNavigator::EditHistory FxNavigator::captureHistory() const {
+    return {fxOrder_.order,fxOrder_.aliases,fxOrder_.hidden,fxOrder_.groups,fxOrder_.groupNames};
+}
+void FxNavigator::restoreHistory(const EditHistory& v){
+    clearF7Filter();
+    fxOrder_.order=v.order;fxOrder_.aliases=v.aliases;fxOrder_.hidden=v.hidden;
+    fxOrder_.groups=v.groups;fxOrder_.groupNames=v.groupNames;
+    saveStructure();f7Selected_.clear();rebuildView(parameter_);
+}
+void FxNavigator::saveUndo(){
+    if(!editF7_)return;
+    if(undoStack_.size()>=64)undoStack_.erase(undoStack_.begin());
+    undoStack_.push_back(captureHistory());redoStack_.clear();
+}
+void FxNavigator::f7Undo(bool redo){
+    auto& source=redo?redoStack_:undoStack_;
+    auto& target=redo?undoStack_:redoStack_;
+    if(source.empty()){speech_(redo?"Nothing to redo":"Nothing to undo");return;}
+    target.push_back(captureHistory());
+    const auto state=source.back();source.pop_back();
+    restoreHistory(state);speech_(redo?"Redo. "+currentParameterSpeech():"Undo. "+currentParameterSpeech());
+}
 void FxNavigator::positionChanged(int position,bool speakIt) {
     if(position<0||position>=static_cast<int>(visible_.size())||position==viewPos_)return;
     if(editF7_) {f7SnakePath_.clear();f7SnakeDirections_.clear();}
@@ -80,19 +142,22 @@ void FxNavigator::saveStructure() {
 }
 void FxNavigator::enterF7() {
     if(!fxOrder_.custom && !groupSlot_) {speech_("F7 not available in Plugin order");return;}
+    undoStack_.clear();redoStack_.clear();
     f7ReturnParam_=parameter_;f7ReturnPos_=viewPos_;f7ReturnGroup_=groupSlot_;
+    clearF7Filter();
     editF7_=true;valueMode_=false;groupEditAll_=false;
     f7SnakePath_.clear();f7SnakeDirections_.clear();f7BaseSelection_=f7Selected_;
-    speech_(std::string(groupSlot_?"Edit Group "+std::to_string(groupSlot_):"Edit Custom order")+
+    speech_(std::string(groupSlot_?"Edit "+groupLabel(groupSlot_):"Edit Custom order")+
         ". "+std::to_string(f7Selected_.size())+" selected. "+currentParameterSpeech());
 }
 void FxNavigator::exitF7() {
+    clearF7Filter();
     editF7_=false;valueMode_=false;groupEditAll_=false;
     f7SnakePath_.clear();f7SnakeDirections_.clear();
     groupSlot_=f7ReturnGroup_;
     rebuildView(f7ReturnParam_,f7ReturnPos_);
     rememberPosition();
-    speech_((groupSlot_?"Group. ":fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech());
+    speech_((groupSlot_?groupLabel(groupSlot_)+". ":fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech());
 }
 void FxNavigator::selectF7(bool shift,int target,const std::string& direction) {
     if(visible_.empty())return;
@@ -108,29 +173,27 @@ void FxNavigator::selectF7(bool shift,int target,const std::string& direction) {
         f7BaseSelection_=f7Selected_;
         f7SnakePath_.push_back(viewPos_);
         f7SnakeDirections_.push_back(direction);
-    } else if(f7SnakePath_.back()==viewPos_ &&
-              opposite(f7SnakeDirections_.back(),direction)) {
+    } else if(f7SnakePath_.size()>1 &&
+              target==f7SnakePath_[f7SnakePath_.size()-2]) {
         f7SnakePath_.pop_back();f7SnakeDirections_.pop_back();
-        if(!f7SnakePath_.empty()) {
-            viewPos_=f7SnakePath_.back();parameter_=visible_[static_cast<size_t>(viewPos_)];
-            parameterName_=parameterName();
-        }
+        viewPos_=target;parameter_=visible_[static_cast<size_t>(viewPos_)];
+        parameterName_=parameterName();
     } else if(target!=viewPos_) {
         viewPos_=target;parameter_=visible_[static_cast<size_t>(viewPos_)];
         parameterName_=parameterName();
         f7SnakePath_.push_back(viewPos_);f7SnakeDirections_.push_back(direction);
     }
     f7Selected_=f7BaseSelection_;
-    for(int p:f7SnakePath_)f7Selected_.insert(p);
+    for(int p:f7SnakePath_)f7Selected_.insert(f7OriginalPosition(p));
     rememberPosition();
     speech_("Selected "+std::to_string(f7Selected_.size())+". "+currentParameterSpeech());
 }
 void FxNavigator::doCopy(bool cut) {
     if(!editF7_)return;
     clip_.clear();
-    const auto& source=(groupSlot_&&!groupEditAll_)?fxOrder_.groups[groupSlot_]:visible_;
+    const auto& source=f7FilterActive_?f7FullView_:visible_;
     for(int p:f7Selected_)if(p>=0&&p<static_cast<int>(source.size()))clip_.push_back(source[static_cast<size_t>(p)]);
-    if(clip_.empty()&&!source.empty())clip_.push_back(source[static_cast<size_t>(viewPos_)]);
+    if(clip_.empty()&&!source.empty())clip_.push_back(source[static_cast<size_t>(f7OriginalPosition(viewPos_))]);
     clipCut_=cut;clipPlugin_=entries_[browserIndex_].name;
     clipFxGuid_=fxGuid_;clipSourceGroup_=groupSlot_;clipPositions_.clear();
     const auto& sourceList=groupSlot_?fxOrder_.groups.at(groupSlot_):fxOrder_.order;
@@ -140,7 +203,7 @@ void FxNavigator::doCopy(bool cut) {
     for(int sourceIndex=0;sourceIndex<static_cast<int>(sourceList.size());++sourceIndex) {
         const int id=sourceList[static_cast<size_t>(sourceIndex)];
         if(!groupSlot_ && fxOrder_.hidden.count(id))continue;
-        if((f7Selected_.empty() && visibleIndex==viewPos_)||
+        if((f7Selected_.empty() && visibleIndex==f7OriginalPosition(viewPos_))||
            f7Selected_.count(visibleIndex))clipPositions_.insert(sourceIndex);
         ++visibleIndex;
     }
@@ -153,6 +216,7 @@ void FxNavigator::doPaste() {
     if(clipCut_ && (!guidSame(&clipFxGuid_,fxGuid_) || clipSourceGroup_!=groupSlot_)) {
         speech_("Cut belongs to its original FX and group");return;
     }
+    clearF7Filter();
     std::vector<int>* list=groupSlot_?&fxOrder_.groups[groupSlot_]:&fxOrder_.order;
     if(!groupSlot_&&!fxOrder_.custom){speech_("Plugin order. Read only");return;}
     // Map visible insertion point back into raw Custom order; hidden entries
@@ -183,6 +247,7 @@ void FxNavigator::doPaste() {
     }
     insertionIndex=std::clamp(insertionIndex,0,static_cast<int>(reduced.size()));
     reduced.insert(reduced.begin()+insertionIndex,clip_.begin(),clip_.end());
+    saveUndo();
     list->swap(reduced);
     if(!groupSlot_)fxOrder_.normalize();
     const size_t inserted=clip_.size();
@@ -196,11 +261,14 @@ void FxNavigator::doPaste() {
 }
 void FxNavigator::hideSelected() {
     if(!editF7_)return;
+    const int actualPos=f7OriginalPosition(viewPos_);
+    clearF7Filter();
+    saveUndo();
     if(groupSlot_&&!groupEditAll_) {
         auto& rows=fxOrder_.groups[groupSlot_];
         if(rows.empty())return;
         std::set<int> toRemove=f7Selected_;
-        if(toRemove.empty())toRemove.insert(viewPos_);
+        if(toRemove.empty())toRemove.insert(actualPos);
         for(auto it=toRemove.rbegin();it!=toRemove.rend();++it)
             if(*it>=0&&*it<static_cast<int>(rows.size()))rows.erase(rows.begin()+*it);
         saveStructure();f7Selected_.clear();rebuildView(parameter_);
@@ -210,7 +278,7 @@ void FxNavigator::hideSelected() {
     if(!fxOrder_.custom){speech_("Plugin order. Read only");return;}
     int newlyHidden=0;
     std::set<int> toHide=f7Selected_;
-    if(toHide.empty())toHide.insert(viewPos_);
+    if(toHide.empty())toHide.insert(actualPos);
     for(int pos:toHide)if(pos>=0&&pos<static_cast<int>(visible_.size()))
         if(fxOrder_.hidden.insert(visible_[static_cast<size_t>(pos)]).second)++newlyHidden;
     if(newlyHidden==0){speech_("No new parameters hidden");return;}
@@ -222,17 +290,26 @@ void FxNavigator::hideSelected() {
 void FxNavigator::saveGroup(int slot) {
     if(!editF7_) {speech_("Press F7 to select group parameters");return;}
     std::vector<int> saved;
-    for(int pos:f7Selected_)if(pos>=0&&pos<static_cast<int>(visible_.size()))
-        saved.push_back(visible_[static_cast<size_t>(pos)]);
+    const auto& reference=f7FilterActive_?f7FullView_:visible_;
+    for(int pos:f7Selected_)if(pos>=0&&pos<static_cast<int>(reference.size()))
+        saved.push_back(reference[static_cast<size_t>(pos)]);
     if(saved.empty()){speech_("No selected parameters");return;}
     if(fxOrder_.groups.count(slot)&&!fxOrder_.groups[slot].empty()) {
         speech_("Slot occupied. Group "+std::to_string(slot));return;
     }
+    saveUndo();
     fxOrder_.groups[slot]=std::move(saved);
     saveStructure();
     speech_("Saved Group "+std::to_string(slot)+". "+std::to_string(fxOrder_.groups[slot].size())+" parameters");
 }
+std::string FxNavigator::groupLabel(int slot) const {
+    std::string label="Group "+std::to_string(slot);
+    auto it=fxOrder_.groupNames.find(slot);
+    if(it!=fxOrder_.groupNames.end() && !it->second.empty())label+=". "+it->second;
+    return label;
+}
 void FxNavigator::openGroup(int slot) {
+    clearF7Filter();
     const auto it=fxOrder_.groups.find(slot);
     if(it==fxOrder_.groups.end()||it->second.empty()){speech_("Group "+std::to_string(slot)+" empty");return;}
     if(editF7_&&groupSlot_==slot){
@@ -244,7 +321,7 @@ void FxNavigator::openGroup(int slot) {
     if(wasEditing) {editF7_=false;f7Selected_.clear();}
     groupSlot_=slot;groupEditAll_=false;rebuildView(parameter_);
     if(wasEditing)enterF7();
-    else speech_("Group "+std::to_string(slot)+". "+currentParameterSpeech());
+    else speech_(groupLabel(slot)+". "+currentParameterSpeech());
 }
 namespace {
 std::string fromWide(const std::wstring& w) {
@@ -285,14 +362,17 @@ void copyWide(const std::wstring& value) {
 void FxNavigator::handleTextEdit(const Key& k) {
     if(k.vk==VK_ESCAPE){textEdit_=false;textBuffer_.clear();textWide_.clear();speech_("Rename cancelled");return;}
     if(k.vk==VK_RETURN) {
-        textBuffer_=fromWide(textWide_);
+        // In native Windows EDIT mode, textBuffer_ is supplied by the focus
+        // owner. The old simulated text remains a fallback without TitleProxy.
+        // Native EDIT has already provided textBuffer_ through the owner.
         while(!textBuffer_.empty()&&(textBuffer_.back()==' '||textBuffer_.back()=='\t'))textBuffer_.pop_back();
+        saveUndo();
         if(textEditParam_>=0) {
             const auto original=parameterName_;
             if(textBuffer_.empty()||textBuffer_==original)fxOrder_.aliases.erase(textEditParam_);
             else fxOrder_.aliases[textEditParam_]=textBuffer_;
         } else if(groupSlot_) fxOrder_.groupNames[groupSlot_]=textBuffer_;
-        textEdit_=false;saveStructure();speech_("Name saved. "+displayName());return;
+        textEdit_=false;saveStructure();speech_("Name saved. "+(textEditParam_<0?groupLabel(groupSlot_):displayName()));return;
     }
     if(k.ctrl&&!k.alt&&k.vk=='A') {textFresh_=true;speech_("All selected");return;}
     if(k.ctrl&&!k.alt&&k.vk=='C') {copyWide(textWide_);speech_("Name copied");return;}
@@ -335,11 +415,14 @@ void FxNavigator::handleTextEdit(const Key& k) {
 }
 bool FxNavigator::handleF7(const Key& k) {
     if(!editF7_)return false;
+    if(k.ctrl&&!k.alt&&!k.shift&&(k.vk=='Z'||k.vk=='Y')){
+        if(!k.repeat)f7Undo(k.vk=='Y');return true;
+    }
     if(k.ctrl&&!k.alt&&!k.shift&&(k.vk=='C'||k.vk=='X')){doCopy(k.vk=='X');return true;}
     if(k.ctrl&&!k.alt&&!k.shift&&k.vk=='V'){doPaste();return true;}
     if(k.ctrl&&!k.alt&&!k.shift&&k.vk=='A') {
         f7Selected_.clear();
-        for(int i=0;i<static_cast<int>(visible_.size());++i)f7Selected_.insert(i);
+        for(int i=0;i<static_cast<int>(visible_.size());++i)f7Selected_.insert(f7OriginalPosition(i));
         f7SnakePath_.clear();f7SnakeDirections_.clear();rememberPosition();
         speech_("Selected all. "+std::to_string(f7Selected_.size())+" selected");return true;
     }
@@ -349,6 +432,7 @@ bool FxNavigator::handleF7(const Key& k) {
         if(!fxOrder_.custom){speech_("Plugin order. Read only");return true;}
         const auto count=fxOrder_.hidden.size();
         if(!count){speech_("No hidden parameters");return true;}
+        clearF7Filter();saveUndo();
         fxOrder_.hidden.clear();saveStructure();f7Selected_.clear();
         rebuildView(parameter_);
         speech_("Restored "+std::to_string(count)+" hidden parameters");return true;
@@ -358,12 +442,15 @@ bool FxNavigator::handleF7(const Key& k) {
         rememberPosition();speech_("Unselected all. 0 selected");return true;
     }
     if(k.shift&&!k.ctrl&&!k.alt&&k.vk==VK_SPACE){
-        if(f7Selected_.count(viewPos_))f7Selected_.erase(viewPos_);else f7Selected_.insert(viewPos_);
+        const int selected=f7OriginalPosition(viewPos_);
+        if(f7Selected_.count(selected))f7Selected_.erase(selected);else f7Selected_.insert(selected);
         f7SnakePath_.clear();f7SnakeDirections_.clear();rememberPosition();
-        speech_(std::string(f7Selected_.count(viewPos_)?"Selected ":"Unselected ")+currentParameterSpeech());return true;
+        speech_(std::string(f7Selected_.count(f7OriginalPosition(viewPos_))?"Selected ":"Unselected ")+currentParameterSpeech());return true;
     }
     if(!k.ctrl&&!k.shift&&!k.alt&&k.vk==VK_TAB){
-        speech_(std::to_string(f7Selected_.size())+" selected");return true;
+        speech_((groupSlot_?groupLabel(groupSlot_)+". ":"Custom Order. ")+
+                std::to_string(f7Selected_.size())+" selected"+
+                (f7FilterActive_?". Filter "+f7FilterQuery_:""));return true;
     }
     if(k.ctrl&&!k.shift&&!k.alt&&k.vk==VK_RETURN){
         textEdit_=true;textEditParam_=groupSlot_?-1:parameter_;
@@ -380,11 +467,17 @@ bool FxNavigator::handleF7(const Key& k) {
         int delta=(k.vk==VK_UP?-1:k.vk==VK_DOWN?1:k.vk==VK_LEFT?-columns_:columns_);
         auto it=delta>0?f7Selected_.upper_bound(viewPos_):f7Selected_.lower_bound(viewPos_);
         if(delta<0){if(it!=f7Selected_.begin())--it;else return true;}
-        if(it!=f7Selected_.end())positionChanged(*it);
+        if(it!=f7Selected_.end()) {
+            if(f7FilterActive_) {
+                auto found=std::find(f7FilterPositions_.begin(),f7FilterPositions_.end(),*it);
+                if(found!=f7FilterPositions_.end())positionChanged(static_cast<int>(found-f7FilterPositions_.begin()));
+                else speech_("Selected parameter outside current filter");
+            } else positionChanged(*it);
+        }
         return true;
     }
     if(k.ctrl&&k.shift&&!k.alt&&(k.vk==VK_HOME||k.vk==VK_END)) {
-        f7Selected_.clear();for(int i=0;i<static_cast<int>(visible_.size());++i)f7Selected_.insert(i);
+        f7Selected_.clear();for(int i=0;i<static_cast<int>(visible_.size());++i)f7Selected_.insert(f7OriginalPosition(i));
         f7SnakePath_.clear();f7SnakeDirections_.clear();rememberPosition();
         speech_("Selected all. "+std::to_string(f7Selected_.size())+" selected");return true;
     }

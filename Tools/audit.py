@@ -50,15 +50,16 @@ def main():
         check(not re.search(forbidden,all_cpp),'Unexpected window/global hook/state write')
     # One purpose-built offscreen title proxy is allowed; forbid other window creation.
     title_src=(ROOT/'src/TitleProxy.cpp').read_text()
-    check(title_src.count('CreateWindowExW(')==3,'Expected titled owner, review label and native Value trackbar')
+    check(title_src.count('CreateWindowExW(')==5,'Expected title window, passive review, native Value and native EDIT with label')
     for marker in ['WS_EX_TOOLWINDOW','-32000','SW_HIDE','DestroyWindow','UnregisterClassW','SetForegroundWindow','WM_KEYDOWN']:
         check(marker in title_src,'Title proxy lifecycle contract missing: '+marker)
     check('L"STATIC"' in title_src and 'SS_NOTIFY' in title_src and
           'WS_TABSTOP' in title_src and 'updateReviewLine' in title_src and
           'WM_GETDLGCODE' in title_src,
           'TEST11 focused non-editable text label missing')
-    check('L"EDIT"' not in title_src and 'EM_SETSEL' not in title_src,
-          'An EDIT caret would reintroduce NVDA character chatter')
+    check('L"EDIT"' in title_src and 'EM_SETSEL' in title_src and
+          'nativeEditProc' in title_src and 'nativeEditMode_' in title_src,
+          'Native EDIT must exist for rename and search, separate from quiet Grid')
     # TEST12: parameter text must be queryable by NVDA WITHOUT notifying it
     # of every move.  The Win32 focus owner must never change its text using
     # SetWindowTextW, which generates a second unsolicited accessibility event.

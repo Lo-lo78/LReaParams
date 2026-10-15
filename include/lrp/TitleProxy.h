@@ -20,7 +20,9 @@ public:
     bool activate(const std::wstring& title, const std::string& initialReviewLine,
                   std::function<void()> closeNavigator,
                   std::function<bool(HWND, UINT, bool)> keyboardKey);
-    HWND hwnd() const noexcept { return sliderMode_ ? slider_ : edit_; }
+    HWND hwnd() const noexcept { return nativeEditMode_ ? nativeEdit_ : sliderMode_ ? slider_ : edit_; }
+    void syncTextControl(bool enabled, const std::string& title, const std::string& initialValue);
+    std::string textValue() const;
     void syncValueControl(bool valueMode, const std::string& parameter, double position);
     void updateTitle(const std::wstring& title);
     void updateReviewLine(const std::string& utf8Text);
@@ -33,6 +35,7 @@ private:
     static LRESULT CALLBACK windowProc(HWND, UINT, WPARAM, LPARAM) noexcept;
     static LRESULT CALLBACK editProc(HWND, UINT, WPARAM, LPARAM) noexcept;
     static LRESULT CALLBACK sliderProc(HWND, UINT, WPARAM, LPARAM) noexcept;
+    static LRESULT CALLBACK nativeEditProc(HWND, UINT, WPARAM, LPARAM) noexcept;
     LRESULT dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, WNDPROC original) noexcept;
     bool ensureWindow();
     void onF12(LPARAM keyData) noexcept;
@@ -41,12 +44,16 @@ private:
     HWND window_{};
     HWND edit_{};
     HWND slider_{};
+    HWND nativeEdit_{};
+    HWND nativeLabel_{};
     HWND originalForeground_{};
     HWND originalFocus_{};
     HINSTANCE instance_{};
     WNDPROC originalEditProc_{};
     WNDPROC originalSliderProc_{};
+    WNDPROC originalNativeEditProc_{};
     bool sliderMode_ = false;
+    bool nativeEditMode_ = false;
     bool classRegistered_ = false;
     std::wstring title_;
     std::wstring reviewText_;

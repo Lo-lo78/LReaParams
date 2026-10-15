@@ -1,4 +1,4 @@
-# LReaParams — TEST22 (0.0.23)
+# LReaParams — TEST23 (0.0.24)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
@@ -152,3 +152,32 @@ This is a source-only TEST20 revision requiring runtime validation in REAPER/OSA
   REAPER espone l'ultimo parametro col nome `Delta` o `Delta Solo`.
 
 La TEST22 è solo sorgente e richiede verifica con GitHub Actions, REAPER e NVDA.
+
+## TEST23 — F7, Windows EDIT, FX defaults (source only)
+
+- **Alt+G** seleziona Groups, **Alt+M** seleziona Memory positions. Niente ciclo.
+- **Tab** fuori da F7 pronuncia Plugin Order / Custom Order oppure il nome del Group
+  corrente. F7 mantiene il conteggio dei selezionati e il contesto.
+- **Backspace**: reset singolo dal Default Snapshot verificato.
+- **Ctrl+Shift+Backspace**: reset dell'intero FX con unico blocco Undo REAPER.
+- **Ctrl+Backspace**: ripristina Grid 10 e Step 0.
+- All'apertura di un FX senza snapshot, i valori correnti vengono catturati
+  automaticamente nello snapshot Lua v3 del profilo `.fx` (**solo plugin
+  non-ReaEQ**). Salvare prima un preset iniziale se si desidera usarlo come
+  riferimento. Un snapshot già presente non viene mai sovrascritto.
+- In F8 la colonna Default Values espone lo snapshot e Invio applica il reset.
+  Il reset strutturale di ReaEQ è esplicitamente bloccato fino alla
+  migrazione del chunk; non si improvvisa un reset per indice.
+- Group: caricamento e Tab pronunciano il nome salvato, se presente.
+- Ctrl+Invio in F7 e Ctrl+F usano una **vera casella Windows EDIT Unicode**
+  separata dal campo STATIC silenzioso della Grid e dalla trackbar Value.
+  Invio accetta e Esc annulla. Ctrl+F in F7 filtra la lista mantenendo la
+  selezione negli indici originali; Ctrl+F + Invio vuoto rimuove il filtro.
+- F7 include Ctrl+Z / Ctrl+Y per annullare e ripristinare le modifiche
+  strutturali eseguite nella sessione corrente dell'editor.
+
+**Da verificare tramite GitHub Actions, REAPER, NVDA e OSARA:** messa a fuoco
+casella EDIT, annuncio iniziale della rinomina, combinazioni Maiusc nella
+selezione a serpente e differenze fra FX statici, plugin con parametri dinamici
+(in particolare ReaEQ) e plugin in FX Chain. Il formato `.fx` e le schede
+Lua non sono state intenzionalmente sostituite o eliminate.

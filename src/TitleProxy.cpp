@@ -22,7 +22,7 @@ std::wstring toWide(const std::string& text) {
 }
 
 bool TitleProxy::ensureWindow() {
-    if (window_ && IsWindow(window_) && edit_ && IsWindow(edit_) && slider_ && IsWindow(slider_)) return true;
+    if (window_ && IsWindow(window_) && edit_ && IsWindow(edit_) && slider_ && IsWindow(slider_) && nativeEdit_ && IsWindow(nativeEdit_)) return true;
     instance_ = GetModuleHandleW(nullptr);
     if (!classRegistered_) {
         WNDCLASSW wc{};
@@ -58,6 +58,26 @@ bool TitleProxy::ensureWindow() {
     if (!slider_) { DestroyWindow(window_); window_ = nullptr; edit_ = nullptr; return false; }
     SendMessageW(slider_, TBM_SETRANGEMIN, FALSE, 0);
     SendMessageW(slider_, TBM_SETRANGEMAX, FALSE, 10000);
+    // Standard EDIT + associated STATIC label: NVDA gets caret, selection,
+    // clipboard and text-control semantics from Windows, not a simulated field.
+    nativeLabel_ = CreateWindowExW(0, L"STATIC", L"Find parameter", WS_CHILD | WS_VISIBLE,
+        0, 0, 1, 1, window_, nullptr, instance_, nullptr);
+    ShowWindow(nativeLabel_,SW_HIDE);
+    nativeEdit_ = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
+        WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL | WS_BORDER,
+        0, 0, 1, 1, window_, nullptr, instance_, nullptr);
+    if(!nativeLabel_||!nativeEdit_) {
+        DestroyWindow(window_);window_=nullptr;edit_=slider_=nativeLabel_=nativeEdit_=nullptr;return false;
+    }
+    SendMessageW(nativeEdit_,EM_LIMITTEXT,240,0);
+    SetWindowLongPtrW(nativeEdit_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    SetLastError(0);
+    const auto oldNative = SetWindowLongPtrW(nativeEdit_, GWLP_WNDPROC,
+                                            reinterpret_cast<LONG_PTR>(&TitleProxy::nativeEditProc));
+    if(!oldNative && GetLastError()){
+        DestroyWindow(window_);window_=nullptr;edit_=slider_=nativeLabel_=nativeEdit_=nullptr;return false;
+    }
+    originalNativeEditProc_=reinterpret_cast<WNDPROC>(oldNative);
     SetWindowLongPtrW(slider_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     SetLastError(0);
     const LONG_PTR previousSlider = SetWindowLongPtrW(slider_, GWLP_WNDPROC,
@@ -87,8 +107,10 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
     closeNavigator_ = std::move(closeNavigator);
     keyboardKey_ = std::move(keyboardKey);
     title_ = title;
-    sliderMode_ = false;
+    sliderMode_ = false;nativeEditMode_=false;
     sliderLabel_.clear();
+    ShowWindow(nativeEdit_,SW_HIDE);
+    ShowWindow(nativeLabel_,SW_HIDE);
     ShowWindow(slider_, SW_HIDE);
     ShowWindow(edit_, SW_SHOW);
     reviewText_ = toWide(initialReviewLine);
@@ -140,6 +162,42 @@ void TitleProxy::syncValueControl(bool valueMode, const std::string& parameter, 
     }
 }
 
+void TitleProxy::syncTextControl(bool enabled, const std::string& label, const std::string& initialValue) {
+    if(!window_||!nativeEdit_||!IsWindowVisible(window_))return;
+    if(enabled){
+        if(!nativeEditMode_) {
+            SetWindowTextW(nativeLabel_,toWide(label).c_str());
+            SetWindowTextW(nativeEdit_,toWide(initialValue).c_str());
+            SendMessageW(nativeEdit_,EM_SETSEL,0,-1);
+            ShowWindow(edit_,SW_HIDE);
+            ShowWindow(slider_,SW_HIDE);
+            ShowWindow(nativeLabel_,SW_SHOW);
+            ShowWindow(nativeEdit_,SW_SHOW);
+            nativeEditMode_=true;
+            SetFocus(nativeEdit_);
+        }
+    } else if(nativeEditMode_){
+        ShowWindow(nativeEdit_,SW_HIDE);
+        ShowWindow(nativeLabel_,SW_HIDE);
+        nativeEditMode_=false;
+        if(sliderMode_){ShowWindow(slider_,SW_SHOW);SetFocus(slider_);}
+        else {ShowWindow(edit_,SW_SHOW);SetFocus(edit_);}
+    }
+}
+std::string TitleProxy::textValue() const {
+    if(!nativeEdit_||!nativeEditMode_)return {};
+    const int length=GetWindowTextLengthW(nativeEdit_);
+    if(length<0||length>16384)return {};
+    std::wstring wide(static_cast<size_t>(length+1),L'\0');
+    const int copied=GetWindowTextW(nativeEdit_,wide.data(),length+1);
+    wide.resize(static_cast<size_t>(std::max(0,copied)));
+    if(wide.empty())return {};
+    const int bytes=WideCharToMultiByte(CP_UTF8,0,wide.data(),static_cast<int>(wide.size()),nullptr,0,nullptr,nullptr);
+    if(bytes<=0)return {};
+    std::string value(static_cast<size_t>(bytes),'\0');
+    WideCharToMultiByte(CP_UTF8,0,wide.data(),static_cast<int>(wide.size()),value.data(),bytes,nullptr,nullptr);
+    return value;
+}
 void TitleProxy::updateTitle(const std::wstring& title) {
     if (!window_ || !IsWindowVisible(window_) || title == title_) return;
     title_ = title;
@@ -176,7 +234,7 @@ void TitleProxy::hideAndRestore() noexcept {
     const HWND oldFocus = originalFocus_;
     closeNavigator_ = {};
     keyboardKey_ = {};
-    sliderMode_ = false;
+    sliderMode_ = false; nativeEditMode_=false;
     originalForeground_ = originalFocus_ = nullptr;
     if (IsWindowVisible(window_)) ShowWindow(window_, SW_HIDE);
     if (ours) {
@@ -188,14 +246,16 @@ void TitleProxy::hideAndRestore() noexcept {
 }
 void TitleProxy::shutdown() noexcept {
     hideAndRestore();
+    if(nativeEdit_ && IsWindow(nativeEdit_) && originalNativeEditProc_)
+        SetWindowLongPtrW(nativeEdit_,GWLP_WNDPROC,reinterpret_cast<LONG_PTR>(originalNativeEditProc_));
     if (edit_ && IsWindow(edit_) && originalEditProc_)
         SetWindowLongPtrW(edit_, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(originalEditProc_));
     if (slider_ && IsWindow(slider_) && originalSliderProc_)
         SetWindowLongPtrW(slider_, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(originalSliderProc_));
     if (window_) { DestroyWindow(window_); window_ = nullptr; }
-    edit_ = slider_ = nullptr;
+    edit_ = slider_ = nativeEdit_ = nativeLabel_ = nullptr;
     sliderLabel_.clear();
-    originalEditProc_ = originalSliderProc_ = nullptr;
+    originalEditProc_ = originalSliderProc_ = originalNativeEditProc_ = nullptr;
     if (classRegistered_) { UnregisterClassW(kClass, instance_); classRegistered_ = false; }
 }
 void TitleProxy::onF12(LPARAM) noexcept {
@@ -225,6 +285,26 @@ LRESULT CALLBACK TitleProxy::sliderProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
     auto* self = reinterpret_cast<TitleProxy*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     if (!self || !self->originalSliderProc_) return DefWindowProcW(hwnd, msg, wp, lp);
     return self->dispatchKeyOwner(hwnd, msg, wp, lp, self->originalSliderProc_);
+}
+LRESULT CALLBACK TitleProxy::nativeEditProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) noexcept {
+    auto* self=reinterpret_cast<TitleProxy*>(GetWindowLongPtrW(hwnd,GWLP_USERDATA));
+    if(!self || !self->originalNativeEditProc_)return DefWindowProcW(hwnd,msg,wp,lp);
+    if(msg==WM_GETDLGCODE)return DLGC_WANTALLKEYS | DLGC_WANTARROWS | DLGC_WANTCHARS;
+    if((msg==WM_KEYDOWN||msg==WM_SYSKEYDOWN) && wp==VK_F12) {
+        if(!(lp & (1LL<<30)))self->onF12(lp);return 0;
+    }
+    if((msg==WM_KEYDOWN||msg==WM_SYSKEYDOWN) &&
+       (wp==VK_RETURN||wp==VK_ESCAPE||wp==VK_UP||wp==VK_DOWN||
+        (wp=='F' && (GetKeyState(VK_CONTROL)&0x8000)))) {
+        try {if(self->keyboardKey_)self->keyboardKey_(hwnd,static_cast<UINT>(wp),(lp & (1LL<<30))!=0);}
+        catch(...) {auto close=std::move(self->closeNavigator_);try{if(close)close();}catch(...){}}
+        return 0;
+    }
+    if((msg==WM_CHAR||msg==WM_SYSCHAR) &&
+       (wp==VK_RETURN||wp==VK_ESCAPE||wp==VK_F12||wp==6))return 0;
+    if(msg==WM_CLOSE){auto close=std::move(self->closeNavigator_);
+        try{if(close)close();}catch(...){}return 0;}
+    return CallWindowProcW(self->originalNativeEditProc_,hwnd,msg,wp,lp);
 }
 LRESULT TitleProxy::dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, WNDPROC original) noexcept {
     // WM_GETTEXT remains a passive review query: no changing captions while

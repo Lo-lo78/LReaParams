@@ -3,6 +3,10 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <iomanip>
+#include <sstream>
+#include <cmath>
+#include <locale>
 #include <windows.h>
 
 namespace lrp {
@@ -88,13 +92,15 @@ std::string patchProfile(const std::string& input,const std::string& view,
                          const std::vector<std::string>& orderLines,
                          const std::map<std::string,std::string>& extras,
                          const std::map<int,std::vector<int>>& groups,
-                         const std::map<int,int>& params, bool groupMode,
+                         const std::map<int,int>& params, const std::vector<std::string>& defaults, bool groupMode,
                          const std::function<std::string(int)>& name) {
     const auto rawLines=split(input,'\n');
     std::vector<std::string> out;
     std::string section;
     bool customEmitted=false, extraEmitted=false, groupsEmitted=false, paramsEmitted=false;
-    bool foundView=false,foundSlotMode=false;
+    bool foundView=false,foundSlotMode=false,defaultsEmitted=false;
+    auto emitDefaults=[&] { if(defaultsEmitted)return; defaultsEmitted=true;
+        out.push_back("[DefaultValues]"); for(const auto& line:defaults)out.push_back(line); };
     auto emitOrder=[&] { if(customEmitted) return; customEmitted=true; out.push_back("[CustomOrder]");
         for(const auto& s:orderLines) out.push_back(s); };
     auto emitExtra=[&] { if(extraEmitted)return;extraEmitted=true;out.push_back("[Extra]");
@@ -115,11 +121,12 @@ std::string patchProfile(const std::string& input,const std::string& view,
             else if(section=="Extra")emitExtra();
             else if(section=="GroupSlots")emitGroups();
             else if(section=="ParamSlots")emitParams();
+            else if(section=="DefaultValues")emitDefaults();
             section=line.substr(1,line.size()-2);
-            if(section!="CustomOrder"&&section!="Extra"&&section!="GroupSlots"&&section!="ParamSlots")out.push_back(line);
+            if(section!="CustomOrder"&&section!="Extra"&&section!="GroupSlots"&&section!="ParamSlots"&&section!="DefaultValues")out.push_back(line);
             continue;
         }
-        if(section=="CustomOrder"||section=="Extra"||section=="GroupSlots"||section=="ParamSlots")continue;
+        if(section=="CustomOrder"||section=="Extra"||section=="GroupSlots"||section=="ParamSlots"||section=="DefaultValues")continue;
         if(line.rfind("CustomOrderView=",0)==0) {out.push_back("CustomOrderView="+view);foundView=true;}
         else if(line.rfind("SlotAccessMode=",0)==0) {out.push_back(std::string("SlotAccessMode=")+(groupMode?"group":"param"));foundSlotMode=true;}
         else out.push_back(line);
@@ -128,10 +135,12 @@ std::string patchProfile(const std::string& input,const std::string& view,
     if(section=="Extra")emitExtra();
     if(section=="GroupSlots")emitGroups();
     if(section=="ParamSlots")emitParams();
+    if(section=="DefaultValues")emitDefaults();
     if(!customEmitted)emitOrder();
     if(!groupsEmitted)emitGroups();
     if(!paramsEmitted)emitParams();
     if(!extraEmitted)emitExtra();
+    if(!defaultsEmitted)emitDefaults();
     if(!foundView)out.insert(out.begin(),"CustomOrderView="+view);
     if(!foundSlotMode)out.insert(out.begin(),std::string("SlotAccessMode=")+(groupMode?"group":"param"));
     std::string result;
@@ -275,7 +284,7 @@ bool FxOrder::save() {
     if(hiddenLines.empty())extra.erase("hidden_params_v1");else extra["hidden_params_v1"]=hiddenLines;
     for(int slot=1;slot<=12;++slot)extra.erase("group_slot_name_v1::slot::"+std::to_string(slot));
     for(const auto& pair:groupNames)extra["group_slot_name_v1::slot::"+std::to_string(pair.first)]=pair.second;
-    std::string payload=patchProfile(profile_.payload,view,orderLines,extra,groups,paramSlots,groupSlotMode,paramName_);
+    std::string payload=patchProfile(profile_.payload,view,orderLines,extra,groups,paramSlots,profile_.sections["DefaultValues"],groupSlotMode,paramName_);
     Profile checked=parseLegacy(payload);
     const auto bytes=serializeNative(checked);
     std::filesystem::create_directories(file_.parent_path());
@@ -318,7 +327,53 @@ bool FxOrder::hasDefaultValues() const noexcept {
 int FxOrder::defaultValueCount() const noexcept {
     const auto it=profile_.sections.find("DefaultValues");
     if(it==profile_.sections.end())return 0;
-    return static_cast<int>(it->second.size());
+    int records=0, bands=-1, parameters=0;
+    for(const auto& line:it->second) {
+        const auto parts=split(line,'\t');
+        if(parts.size()>=3 && parts[0]=="META") {
+            try {
+                if(parts[1]=="REA_EQ_BAND_COUNT")bands=std::stoi(parts[2]);
+                else if(parts[1]=="REA_EQ_PARAM_COUNT")parameters=std::stoi(parts[2]);
+            } catch(...) {}
+        } else ++records;
+    }
+    if(records==0 && bands>=0)return std::max(1,bands*5+std::max(0,parameters-bands*3));
+    return records;
+}
+std::map<int,double> FxOrder::defaultValues() const {
+    std::map<int,double> values;
+    const auto it=profile_.sections.find("DefaultValues");
+    if(it==profile_.sections.end())return values;
+    for(const auto& row:it->second){
+        const auto parts=split(row,'\t');
+        if(parts.size()!=3)continue;
+        try {
+            size_t offset=0;const auto id=std::stoi(parts[0],&offset);
+            if(offset!=parts[0].size()||id<0||id>=count_)continue;
+            offset=0;const double norm=std::stod(parts[2],&offset);
+            if(offset!=parts[2].size()||!std::isfinite(norm)||norm<0||norm>1)continue;
+            values[id]=norm;
+        } catch(...) {}
+    }
+    return values;
+}
+bool FxOrder::hasStructuralDefault() const noexcept {
+    auto it=profile_.sections.find("DefaultValues");
+    if(it==profile_.sections.end())return false;
+    for(const auto& line:it->second)if(line.rfind("META\t",0)==0)return true;
+    return false;
+}
+bool FxOrder::saveDefaultValues(const std::map<int,double>& values) {
+    if(!loaded_)return false;
+    std::vector<std::string> rows;
+    for(const auto& [id,value]:values){
+        if(id<0||id>=count_||!std::isfinite(value)||value<0||value>1)continue;
+        std::ostringstream stream;stream.imbue(std::locale::classic());
+        stream<<std::setprecision(17)<<value;
+        rows.push_back(lineFor(id,paramName_(id))+"\t"+stream.str());
+    }
+    profile_.sections["DefaultValues"]=std::move(rows);
+    return save();
 }
 bool FxOrder::deleteCcLink(int param) {
     if(!ccLinks.erase(param))return false;

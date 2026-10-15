@@ -8,10 +8,10 @@ for marker in ('context = "Monitor FX"','fxWindowTitleBase()',
   'deltaParameter(', '"No Delta Solo"', '"Clear delta solo for all project FX"',
   'k.vk==VK_F3', 'k.vk==VK_F5', 'k.vk==VK_F6', 'k.vk==VK_F9',
   'runLuaFunctionAction(k.vk==VK_F5?40280:k.vk==VK_F6?40281:40282)',
-  '"Custom Order":"Plugin Order"', 'toggleSlotAccess()', '"Memory positions"',
+  '"Custom Order":"Plugin Order"', 'chooseSlotAccess(', '"Memory positions"',
   'k.vk==VK_F10', 'k.vk==VK_F11', 'k.vk==VK_F12'):
   assert marker in s, marker
 assert "((k.vk=='B' && !k.shift)||k.vk=='D')" in s
 assert '#define REAPERAPI_WANT_Main_OnCommand' in h
-assert 'VERSION 0.0.23' in (r/'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.24' in (r/'CMakeLists.txt').read_text()
 print('TEST21 source contract PASS — no native build')

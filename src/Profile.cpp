@@ -118,7 +118,15 @@ Profile parseLegacy(std::string bytes) {
         for (const char* name : {"CustomOrder", "DefaultValues", "ParamSlots", "GroupSlots"})
             require(out.sections.count(name) != 0, "Missing FX section");
         for (const auto& l : out.sections.at("CustomOrder")) paramRef(l, false);
-        for (const auto& l : out.sections.at("DefaultValues")) paramRef(l, true);
+        for (const auto& l : out.sections.at("DefaultValues")) {
+            // Lua's ReaEQ structural defaults are META<TAB>KEY<TAB>VALUE,
+            // not numbered parameters. Preserve their VST chunk unchanged.
+            if(l.rfind("META\tREA_EQ_",0)==0){
+                require(l.find('\t',5)!=std::string::npos,"Malformed ReaEQ default metadata");
+                continue;
+            }
+            paramRef(l,true);
+        }
         for (const char* name : {"ParamSlots", "GroupSlots"}) {
             std::set<long long> slots;
             for (const auto& l : out.sections.at(name)) {

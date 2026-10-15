@@ -119,3 +119,13 @@ subito dopo FX Params e prima di Monitor FX / Master / nome traccia, con
 la forma `FX Params. Bypassed - Delta Solo. Monitor FX - Nome FX`.
 La rilevazione di Delta Solo mantiene il limite documentato nella TEST21.
 **Nessuna build locale eseguita; richiede prova reale in REAPER.**
+
+## TEST23 — Accessibilità F7, filtri e Default Snapshot
+
+Scelta diretta Alt+G/Alt+M; Backspace/Ctrl+Backspace/Ctrl+Shift+Backspace; etichette gruppo
+nel caricamento e con Tab. Ctrl+F/Ctrl+Invio usano EDIT Win32 con selezione/caret nativi
+(e `STATIC` di Grid resta invariato). Filtro F7 con selezioni di occorrenza e storico
+Undo/Redo locale Ctrl+Z/Y. Snapshot automatico solo al primo accesso ai plugin normali,
+visualizzato nella colonna Default Values del navigatore F8; ripristino strutturale ReaEQ
+non disponibile e bloccato deliberatamente. Profilo Lua V3 preservato. Solo sorgente,
+nessuna compilazione locale né test effettivo NVDA.

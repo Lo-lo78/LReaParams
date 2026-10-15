@@ -140,7 +140,7 @@ public:
         }
         case 6:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.23 TEST22 FX STATUS AND HOME/END\n\n"
+            ShowMessageBox("LReaParams 0.0.24 TEST23 F7 EDIT AND FX DEFAULTS\n\n"
                 "FX: Ctrl+Up/Down changes FX. Ctrl+Shift+Up/Down switches to tracks with FX, restoring the last FX and parameter per track.\n"
                 "FX: Ctrl+L Plugin / Custom Order, F7 edits Custom Order; Shift+Space selects, Ctrl+X/C/V moves or copies, Ctrl+Delete hides.\n"
                 "FX: F1/F2 grid height. Ctrl+Home/End absolute. Alt+Left/Right steps -10 to +10.\n"
@@ -150,7 +150,7 @@ public:
                 "NVDA+T: FX Params - track - FX name; Track Params - track (and page for Sends/Receives). NVDA+Up queries parameter and value.\n"
                 "F12 is forwarded back to REAPER for OSARA shortcut help (verify in REAPER).\n"
                 "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"
-                "F8 opens the seven-column FX Memories navigator. Advanced MIDI CC and Default reset operations are protected until fully migrated.", "About LReaParams", 0);
+                "F8 opens seven-column FX Memories. Default reset uses verified normalized snapshots. Structural ReaEQ restoration and advanced MIDI CC remain protected.", "About LReaParams", 0);
             break;
         case 7: {
             // Dedicated REAPER action opens the same Lua F8 manager, not a
@@ -259,8 +259,11 @@ public:
                     [this](HWND window, UINT vk, bool repeat) {
                         return input_.enqueueOwnedKey(window, vk, repeat);
                     });
-                if (titleProxyActive_) titleProxy_.syncValueControl(desired->nativeValueSlider(),
-                    desired->sliderLabel(), desired->valueFraction());
+                if (titleProxyActive_) {
+                    titleProxy_.syncValueControl(desired->nativeValueSlider(), desired->sliderLabel(), desired->valueFraction());
+                    if (desired==&navigator_)titleProxy_.syncTextControl(navigator_.nativeTextField(),
+                        navigator_.nativeTextLabel(),navigator_.nativeTextValue());
+                }
                 const InputBackend selected = titleProxyActive_ ? InputBackend::ownedWindow : backend_;
                 if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
                     exitNavigation(false); speak("Keyboard capture unavailable"); }
@@ -291,6 +294,10 @@ public:
             // Avoid sending redundant title, text or focus updates to NVDA.
             const std::wstring oldTitle = titleProxyActive_ ? current_->windowTitle() : L"";
             const std::string oldReview = titleProxyActive_ ? current_->reviewLine() : "";
+            // Read a real Win32 EDIT just before Enter/Escape or search arrows;
+            // its own caret/selection/Unicode editor handles ordinary typing.
+            if(titleProxyActive_ && current_==&navigator_ && navigator_.nativeTextField())
+                navigator_.setNativeText(titleProxy_.textValue());
             current_->handle(key);
             if (!current_->active()) { exitNavigation(false); speak("LReaParams navigation off"); break; }
             if (titleProxyActive_) {
@@ -301,6 +308,8 @@ public:
                 const HWND oldKeyboard = titleProxy_.hwnd();
                 titleProxy_.syncValueControl(current_->nativeValueSlider(),
                                              current_->sliderLabel(), current_->valueFraction());
+                if(current_==&navigator_)titleProxy_.syncTextControl(navigator_.nativeTextField(),
+                    navigator_.nativeTextLabel(),navigator_.nativeTextValue());
                 if (titleProxy_.hwnd() != oldKeyboard) {
                     // FX plugins may asynchronously restore focus while their
                     // formatted parameter value is queried. Recover the native

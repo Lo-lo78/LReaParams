@@ -22,6 +22,7 @@ bool FxNavigator::openFxMemories(bool standalone) {
         return false;
     }
     memoryReturnF7_=editF7_;
+    memoryReturnF7Filter_=f7FilterQuery_;
     memoryReturnParam_=parameter_;
     memoryReturnPosition_=viewPos_;
     memoryReturnGroup_=groupSlot_;
@@ -110,12 +111,15 @@ void FxNavigator::memoryExit(bool announceReturn) {
     memoryManager_=false;memoryStandalone_=false;
     editF7_=memoryReturnF7_;
     groupSlot_=memoryReturnGroup_;
+    clearF7Filter();
     rebuildView(memoryReturnParam_,memoryReturnPosition_);
+    if(editF7_ && !memoryReturnF7Filter_.empty())applyF7Filter(memoryReturnF7Filter_,false);
     rememberPosition();
     if(standalone) {end();return;}
     if(!announceReturn)return;
     if(editF7_)
         speech_("Edit Custom order. "+std::to_string(f7Selected_.size())+" selected. "+currentParameterSpeech());
+    else if(groupSlot_)speech_(groupLabel(groupSlot_)+". "+currentParameterSpeech());
     else announce();
 }
 bool FxNavigator::memorySelectColumn(int direction) {
@@ -135,7 +139,8 @@ void FxNavigator::memoryLoad(bool toEdit) {
     // A selected memory must never mutate an unrelated FX: navigation is
     // built from the *current* plugin's verified ProfileRaw and FX GUID.
     if(memoryCol_==6) {
-        speech_("Default snapshot reset not yet migrated. No parameters changed");return;
+        resetAllToDefault();
+        return;
     }
     if(memoryCol_==3) {
         if(entry.param<0){speech_("No parameter");return;}
@@ -183,7 +188,7 @@ void FxNavigator::memoryLoad(bool toEdit) {
         rebuildView(parameter_,viewPos_);
         enterF7();
     } else if(standalone) {
-        speech_("FX Params. "+currentParameterSpeech());
+        speech_("FX Params. "+(groupSlot_?groupLabel(groupSlot_)+". ":"")+currentParameterSpeech());
     }
 }
 void FxNavigator::memoryDelete() {
