@@ -22,7 +22,9 @@ std::string keyName(const Key& k) {
     switch(k.vk) {
         case VK_UP:return "up";case VK_DOWN:return "down";
         case VK_LEFT:return "left";case VK_RIGHT:return "right";
-        default:return "page";
+        case VK_PRIOR:case VK_HOME:return "up";
+        case VK_NEXT:case VK_END:return "down";
+        default:return "";
     }
 }
 bool opposite(const std::string& a,const std::string& b) {
@@ -169,7 +171,7 @@ void FxNavigator::exitF7() {
     rememberPosition();
     speech_((groupSlot_?groupLabel(groupSlot_)+". ":fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech());
 }
-void FxNavigator::selectF7(bool shift,int target,const std::string& direction) {
+void FxNavigator::selectF7(bool shift,int target,const std::string& direction,bool sweep) {
     if(visible_.empty())return;
     target=std::clamp(target,0,static_cast<int>(visible_.size())-1);
     if(!shift) {
@@ -177,27 +179,63 @@ void FxNavigator::selectF7(bool shift,int target,const std::string& direction) {
         positionChanged(target);
         return;
     }
-    // Lua's serpent: first Shift chooses the current cell without moving.
-    // Reversing the previous direction removes the path tail.
+    // A blocked selection command (including Shift+Page and Shift+Home/End)
+    // is silent, as in the Lua editor. No phantom anchor is created at edges.
+    if(target==viewPos_)return;
+
+    // The first ordinary Shift+arrow paints the current cell, without
+    // moving, exactly like group_edit_shift_step_to_pos in the Lua.
+    // Page/Home/End are deliberately different: they paint *every* cell
+    // from the current position through the inclusive destination.
     if(f7SnakePath_.empty()) {
         f7BaseSelection_=f7Selected_;
+        f7SnakeUnselect_=f7Selected_.count(f7OriginalPosition(viewPos_))!=0;
         f7SnakePath_.push_back(viewPos_);
         f7SnakeDirections_.push_back(direction);
-    } else if(f7SnakePath_.size()>1 &&
-              target==f7SnakePath_[f7SnakePath_.size()-2]) {
-        f7SnakePath_.pop_back();f7SnakeDirections_.pop_back();
-        viewPos_=target;parameter_=visible_[static_cast<size_t>(viewPos_)];
-        parameterName_=parameterName();
-    } else if(target!=viewPos_) {
-        viewPos_=target;parameter_=visible_[static_cast<size_t>(viewPos_)];
-        parameterName_=parameterName();
-        f7SnakePath_.push_back(viewPos_);f7SnakeDirections_.push_back(direction);
+        if(!sweep) {
+            f7Selected_=f7BaseSelection_;
+            const int pos=f7OriginalPosition(viewPos_);
+            if(f7SnakeUnselect_)f7Selected_.erase(pos);
+            else f7Selected_.insert(pos);
+            rememberPosition();
+            speech_("Selected "+std::to_string(f7Selected_.size())+". "+editorParameterSpeech());
+            return;
+        }
     }
+
+    // Sweep through every intermediate row, rather than jumping straight
+    // to the landing position. This is essential for Shift+PageUp/Down and
+    // Shift+Home/End: a 15-item jump must paint all 16 touched cells.
+    // Ordinary horizontal arrows still move one column at a time.
+    const int start=viewPos_;
+    const int distance=sweep?std::abs(target-start):1;
+    const int stride=sweep?(target>start?1:-1):target-start;
+    for(int i=0;i<distance;++i) {
+        const int next=sweep?viewPos_+stride:target;
+        if(next<0||next>=static_cast<int>(visible_.size())||next==viewPos_)break;
+        if(f7SnakePath_.size()>1 &&
+           f7SnakePath_[f7SnakePath_.size()-2]==next &&
+           opposite(f7SnakeDirections_.back(),direction)) {
+            // Reverse over the snake's tail: retract the last painted cell.
+            f7SnakePath_.pop_back();f7SnakeDirections_.pop_back();
+        } else {
+            // Turn a corner or extend the snake: the new cell joins the path.
+            f7SnakePath_.push_back(next);f7SnakeDirections_.push_back(direction);
+        }
+        viewPos_=next;
+    }
+    parameter_=visible_[static_cast<size_t>(viewPos_)];
+    parameterName_=parameterName();
     f7Selected_=f7BaseSelection_;
-    for(int p:f7SnakePath_)f7Selected_.insert(f7OriginalPosition(p));
+    for(int pos:f7SnakePath_) {
+        const int original=f7OriginalPosition(pos); // preserve duplicate occurrences
+        if(f7SnakeUnselect_)f7Selected_.erase(original);
+        else f7Selected_.insert(original);
+    }
     rememberPosition();
     speech_("Selected "+std::to_string(f7Selected_.size())+". "+editorParameterSpeech());
 }
+
 void FxNavigator::doCopy(bool cut) {
     if(!editF7_)return;
     clip_.clear();
@@ -568,7 +606,7 @@ bool FxNavigator::handleF7(const Key& k) {
             }
         }
         if(best>=0)positionChanged(best);
-        else speech_("No selected parameter in that direction");
+        // A boundary with no next selected parameter is silent.
         return true;
     }
     if(k.ctrl&&k.shift&&!k.alt&&(k.vk==VK_HOME||k.vk==VK_END)) {
@@ -591,7 +629,9 @@ bool FxNavigator::handleF7(const Key& k) {
         else if(k.vk==VK_NEXT)target=std::min(end,viewPos_+5);
         else if(k.vk==VK_HOME)target=start;
         else if(k.vk==VK_END)target=end;
-        selectF7(true,target,keyName(k));return true;
+        const bool sweep=k.vk==VK_PRIOR||k.vk==VK_NEXT||k.vk==VK_HOME||k.vk==VK_END;
+        const std::string direction=sweep?(target<viewPos_?"up":"down"):keyName(k);
+        selectF7(true,target,direction,sweep);return true;
     }
     return false;
 }

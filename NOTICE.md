@@ -38,3 +38,5 @@ slot 12 without claiming OSARA's bare F12, filters the grid for Ctrl+F in both
 modes, and navigates selected F7 grid cells with Alt+arrows. No local build.
 
 TEST27 (0.0.28): Alt+Shift+arrows navigates selected F7 parameters; bare F12 is reserved and inert while LReaParams owns focus. Ctrl+F12 and Ctrl+Shift+F12 retain slot 12. No local build.
+
+TEST28 (0.0.29): F7 snake selection paints every traversed row for Shift+Page and Shift+Home/End; silence at grid edges. Source only, no local compilation.

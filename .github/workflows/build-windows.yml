@@ -30,6 +30,8 @@ jobs:
         run: python Testing/test26_static.py
       - name: Verify TEST27 F7 Alt+Shift+arrows and reserved F12 (source only)
         run: python Testing/test27_static.py
+      - name: Verify TEST28 F7 snake ranges and silent edges (source only)
+        run: python Testing/test28_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

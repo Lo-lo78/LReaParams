@@ -1,4 +1,4 @@
-# LReaParams — TEST27 (0.0.28)
+# LReaParams — TEST28 (0.0.29)
 
 **Progetto sorgente C++ per REAPER. Nessuna compilazione locale:** la DLL viene
 compilata esclusivamente tramite GitHub Actions (Windows x64 / Visual Studio).
@@ -247,3 +247,14 @@ Questa versione contiene verifiche **statiche**; nessun compilatore locale è st
 - **Ctrl+F12 / Ctrl+Maiusc+F12** continuano a usare lo slot 12. **Alt+F10/F11/F12** e le combinazioni Maiusc correlate restano destinate ai watcher OSARA.
 
 Verifiche statiche soltanto. La compilazione viene eseguita dall'utente tramite GitHub Actions.
+
+
+## TEST28 — Serpentone F7: intervalli continui e bordi silenziosi
+
+- **Maiusc+Pagina Su/Giù:** include tutte le celle attraversate nella colonna, non soltanto il punto di partenza e quello di arrivo. Un comando produce un solo annuncio.
+- **Maiusc+Home/End:** seleziona/deseleziona dalla posizione corrente fino all'inizio/fine della colonna, inclusi gli estremi; non seleziona la porzione precedente al punto di partenza.
+- **Maiusc+Frecce:** mantiene il comportamento del Lua: la prima pressione sul parametro inizia il tratto, le successive lo estendono e il percorso contrario ritira progressivamente la selezione. Se il parametro iniziale era già selezionato, il tratto lo deseleziona.
+- Ai confini della griglia, ulteriori pressioni di selezione non pronunciano messaggi. Anche Alt+Maiusc+Frecce non annuncia l'assenza di una cella selezionata nella direzione richiesta.
+- Le selezioni sono memorizzate per *occorrenza*, anche con parametri duplicati e ricerca filtrata; le selezioni di filtri precedenti rimangono conservate.
+
+La semantica di Home/End resta quella corretta in TEST22 (Home all'inizio, End alla fine). La revisione e i test automatici sono statici: **nessuna compilazione locale**. Verificare in REAPER la lettura NVDA e il passaggio da una direzione all'altra del serpente.

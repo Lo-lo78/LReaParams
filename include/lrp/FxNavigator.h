@@ -125,7 +125,7 @@ private:
     void positionChanged(int position, bool announcePosition = true);
     void enterF7();
     void exitF7();
-    void selectF7(bool shift, int target, const std::string& direction = "");
+    void selectF7(bool shift, int target, const std::string& direction = "", bool sweep = false);
     bool handleF7(const Key& key);
     void saveStructure();
     struct EditHistory { std::vector<int> order; std::map<int,std::string> aliases;
@@ -186,6 +186,7 @@ private:
     std::set<int> f7Selected_, f7BaseSelection_;
     std::vector<int> f7SnakePath_;
     std::vector<std::string> f7SnakeDirections_;
+    bool f7SnakeUnselect_ = false; // Lua paint/unpaint mode, captured at snake start
     std::vector<int> clip_; // cut/paste retains duplicate occurrences
     std::string clipPlugin_;
     GUID clipFxGuid_{};
