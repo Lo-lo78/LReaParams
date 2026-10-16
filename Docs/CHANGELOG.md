@@ -1,3 +1,10 @@
+## 0.0.44.4 — GitHub Actions compilation hotfix
+
+- Fixed MSVC C2065 in `src/InputRouter.cpp`: `VK_0` is not defined in Windows SDK; use `'0'` (virtual-key 0x30).
+- Added a regression assertion in the already-registered TEST44.4 static suite.
+- Kept source and package version 0.0.44.4; no runtime changes intended.
+- No local C++ compilation.
+
 ## 0.0.44.4 — Persistent FX positions
 
 - Per-plugin `.fx` LastParam read/write as in Lua; survives REAPER restart.

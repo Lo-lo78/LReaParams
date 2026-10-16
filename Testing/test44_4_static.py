@@ -24,6 +24,9 @@ assert 'persistentPositionWriter_' in h
 assert 'persistentPositionWriter_ = false' in a
 assert 'restorePersistedParameter();' in f and 'flushPersistentPosition();' in f
 assert 'Session memory is deliberately authoritative' in f
+router=(root/'src/InputRouter.cpp').read_text()
+assert 'VK_0' not in router, 'VK_0 is not a Windows virtual-key constant'
+assert "vk < '0'" in router, 'Use defined VK value for digit zero'
 assert 'LastParam update changed an unrelated profile byte' in t
 assert 'LastParam not restored after restart' in t
 assert 'Stale LastParam save overwrote an external change' in t

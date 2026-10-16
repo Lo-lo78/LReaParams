@@ -1,3 +1,11 @@
+# LReaParams 0.0.44.4 — Fix compilazione GitHub Actions
+
+Corretto il riferimento a `VK_0` (costante non esistente in Win32) in `src/InputRouter.cpp`, sostituendolo con il codice virtual-key ASCII del tasto `0` (`'0'`, equivalente a `0x30`). Errore segnalato da MSVC: C2065. Nessuna modifica alla gestione degli eventi, all’ordinamento dei parametri o alla memoria persistente. Aggiunto controllo preventivo in `Testing/test44_4_static.py`.
+
+**Nessuna compilazione locale.** La DLL va compilata esclusivamente con GitHub Actions.
+
+---
+
 # LReaParams 0.0.44.4 — FX positions survive REAPER restarts
 
 FX Params now saves the last visited parameter as Lua-compatible `LastParam`

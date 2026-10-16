@@ -10,7 +10,7 @@ namespace {
 // Flag 0x04 avoids altering the thread's dead-key state (Windows 10 1607+).
 // No WM_CHAR is synthesized: that would double-dispatch native EDIT fields.
 wchar_t printableKey(UINT vk) noexcept {
-    if (vk == VK_SPACE || vk < VK_0 || vk > VK_OEM_CLEAR) return 0;
+    if (vk == VK_SPACE || vk < '0' || vk > VK_OEM_CLEAR) return 0;
     BYTE state[256]{};
     if (!GetKeyboardState(state)) return 0;
     const HKL layout = GetKeyboardLayout(0);
