@@ -1,4 +1,21 @@
-# LReaParams 0.0.46.1 — FX Chain / Take FX / browser
+# LReaParams 0.0.46.3 — Browser Master / Monitor separati
+
+- Quando si apre FX Params dalla lista nativa di REAPER, l’FX realmente focalizzato ha precedenza su un’altra catena eventualmente visibile.
+- **Ctrl+P da Master FX:** il browser contiene soltanto la catena Master FX; nessun passaggio ai Monitor FX tramite frecce, ricerca o riordino.
+- **Ctrl+P da Monitor FX:** il browser contiene soltanto i Monitor FX.
+- **Ctrl+Su/Giù fuori dal browser:** naviga fra gli effetti della catena corrente senza attraversare Master/Monitor.
+- **Su/Giù o Ctrl+Su/Giù nel browser:** si spostano esclusivamente fra gli FX della catena di apertura.
+- **Pagina Su/Giù:** sposta di cinque FX nella stessa catena. **Ctrl+Maiusc+Su/Giù:** riordina fisicamente gli FX solo all'interno della catena.
+- **Sinistra/Destra nel browser Master/Monitor:** non cambia più colonna. Per aprire l'altra catena, selezionala esplicitamente in REAPER e riapri FX Params.
+- Bypass, Delta Solo, Offline e ricerca per iniziale sono limitati all'FX evidenziato nella catena corrente. Ctrl+Maiusc+D conserva il comportamento globale di disattivazione Delta Solo.
+
+Nessuna modifica a Track Params, ai formati dei profili, MIDI, automazioni, F7/F8 e Clipboard. L'elenco interno conserva entrambi i tipi di FX solo per mantenere GUID e memorie di sessione; **non** è una catena unica esposta all'utente.
+
+**Non compilare localmente.** Compilazione e collaudo esclusivamente tramite GitHub Actions e REAPER/NVDA.
+
+---
+
+# LReaParams 0.0.46.2 — FX Browser Delta Solo e Offline
 
 # LReaParams 0.0.45 — sorgente FX Clipboard / Default Snapshot
 

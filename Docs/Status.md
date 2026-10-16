@@ -1,3 +1,16 @@
+## 0.0.46.3 — Browser Master/Monitor FX separati
+
+Quando FX Params viene aperto sulla lista nativa degli effetti, l’FX focalizzato viene scelto prima di eventuali altre catene visibili. La lista interna mantiene gli FX di entrambe le catene Master/Monitor per GUID e memorie, ma **il browser visualizza e naviga solo nella catena di ingresso**. Sono stati rimossi i passaggi Sinistra/Destra fra colonne. Tutti gli spostamenti e i comandi FX rispettano il confine della catena, incluso Ctrl+Su/Giù dalla griglia e Ctrl+Maiusc+Su/Giù per il riordino nel browser. Il titolo indica la catena scelta. Il codice è da compilare e collaudare con GitHub Actions/REAPER.
+
+## 0.0.46.2 — Delta Solo e Offline nel browser FX
+
+- **Ctrl+D** nel browser alterna Delta Solo **soltanto sull’FX evidenziato**, senza cambiare il plugin della griglia o il profilo corrente. **Ctrl+Maiusc+D** ora richiama l’azzeramento Delta Solo globale, come nella griglia.
+- **Ctrl+Alt+B** nel browser e nella griglia alterna l’FX **Offline/Online** (stesso shortcut del Lua). L’operazione impiega `TrackFX_SetOffline` / `TakeFX_SetOffline` e verifica lo stato letto dopo il cambiamento.
+- Quando si mette offline l’FX dalla griglia, si passa al browser interno per poterlo riportare online: non si lascia un controllo Value con parametri ormai rimossi. La posizione del parametro era già stata salvata prima del cambiamento.
+- Anche una catena con tutti gli FX offline può aprire direttamente il browser, per poterli riattivare dopo il riavvio di REAPER.
+- Il browser annuncia Offline, Bypassed e Delta Solo soltanto quando attivi; supporta Track FX, Take FX e Monitor FX; resta agganciato al GUID dell’istanza durante la ricostruzione della lista.
+- Come nelle versioni precedenti, l’effetto reale sul progetto e la lettura NVDA richiedono collaudo in REAPER. Nessuna compilazione locale.
+
 ## 0.0.46.1 — FX Chain, Take FX, browser nativo e browser interno
 
 Aggiunta navigazione per contesto FX: Ctrl+P browser interno (lista separata

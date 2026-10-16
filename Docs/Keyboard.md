@@ -1,9 +1,13 @@
+## 0.0.46.3 — Browser Master / Monitor FX
+
+**Ctrl+P** apre soltanto gli FX della catena da cui stai navigando: Master FX oppure Monitor FX. Nel browser **Su/Giù e Ctrl+Su/Giù** navigano nella catena, **Pagina Su/Giù** salta cinque FX, **Ctrl+Maiusc+Su/Giù** sposta realmente un FX nella stessa catena. **Sinistra/Destra non cambia più tra Master e Monitor**. Nella griglia, Ctrl+Su/Giù percorre soltanto la catena attiva. Per cambiare catena, seleziona Master o Monitor in REAPER ed entra nuovamente nel navigatore. Ctrl+Maiusc+D continua ad agire globalmente sui Delta Solo.
+
 ## 0.0.46.1 — Browser FX e navigazione Take
 
 - Ctrl+P: passa dal browser FX interno alla griglia e viceversa.
 - Browser: Su/Giù, Pagina, Home/End, iniziali, Tab, Invio; sul Master
   Sinistra/Destra passa fra Master FX e Monitor FX.
-- Browser: Ctrl+B bypass, Ctrl+Maiusc+D Delta Solo, Ctrl+Maiusc+Su/Giù riordina.
+- Browser: Ctrl+B bypass; Ctrl+Alt+B Offline On/Off; Ctrl+D Delta Solo On/Off dell’FX evidenziato; Ctrl+Maiusc+D disattiva tutti i Delta Solo del progetto; Ctrl+Maiusc+Su/Giù riordina.
 - Ctrl+Sinistra/Destra: item con Take FX precedente/successivo.
 - Ctrl+W: da Take FX ai Track FX della stessa traccia.
 - Ctrl+Pagina Su/Giù: non intercettato da LReaParams, libero per uso futuro. Per cambiare traccia con FX usare Ctrl+Maiusc+Su/Giù.

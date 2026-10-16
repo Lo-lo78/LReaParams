@@ -67,3 +67,25 @@ See `Docs/TEST44_REACOMP_REAGATE.md` for the eight manual keyboard/NVDA test cas
 
 ## 0.0.44.3 — Test rapidi iniziali
 Vedere `Docs/TEST44_3_INITIAL_NAVIGATION.md` per il piano dettagliato di test di lettere, numeri, punteggiatura, AltGr, ripetizione, F7, filtri e gruppi. La verifica deve essere eseguita con la DLL compilata dall’utente.
+
+## 0.0.46.2 — Browser: Delta Solo e Offline
+
+- [ ] Da Ctrl+P, evidenziare un FX diverso da quello aperto prima. Ctrl+D deve cambiare Delta Solo **solo sull’FX evidenziato**, senza selezionare un altro profilo FX. Il browser deve annunciare `Delta Solo` quando acceso.
+- [ ] Ctrl+Maiusc+D dal browser disattiva i Delta Solo di tutti gli FX del progetto, come dalla griglia. Con nessun Delta attivo, controllare il messaggio breve.
+- [ ] Ctrl+Alt+B su Track FX e Take FX nel browser mette l’effetto Offline e riporta Online alla seconda pressione. L’annuncio segue lo stato reale di REAPER.
+- [ ] Ctrl+Alt+B nella griglia salva prima la posizione del parametro, mette offline ed entra nel browser. Ctrl+Alt+B riporta online; Invio torna alla griglia sul parametro ricordato.
+- [ ] Ripetere su Master/Monitor FX e su catena con più effetti. Non alterare l’FX limitrofo, i profili `.fx` né la memoria persistente.
+- [ ] Ripetere Ctrl+B (Bypass), Ctrl+Maiusc+Su/Giù (riordino), Ctrl+P, Spazio e Ctrl+Spazio per rilevare regressioni. Ctrl+Pagina Su/Giù resta libero.
+
+- [ ] Mettere offline **tutti** gli FX, uscire da FX Params e riaprirlo: deve aprire il browser e permettere Ctrl+Alt+B per riportarli online.
+
+## 0.0.46.3 — Master e Monitor FX isolati nel browser
+
+- [ ] Mettere 3 effetti Master e 2 Monitor, con nomi distinguibili. Aprire FX Params su Master, Ctrl+P. Tab/NVDA+Su deve leggere solo gli FX Master e il totale 3. Provare Su/Giù, Ctrl+Su/Giù, Pagina, Home/End, lettere ripetute e Maiusc+lettera: mai Monitor.
+- [ ] Dal browser Master, premere Sinistra/Destra: nessun cambio di catena. Ctrl+Maiusc+Su/Giù riordina soltanto FX Master; verificare la catena REAPER, Undo e il GUID dell'effetto evidenziato.
+- [ ] Ripetere da Monitor FX: totale 2; solo Monitor. Fuori dal browser, Ctrl+Su/Giù si ferma al bordo della catena corrente (silenzioso), senza attraversare Master/Monitor.
+- [ ] Verificare da ciascuna catena Ctrl+B, Ctrl+D, Ctrl+Alt+B offline/online, Invio, Ctrl+P e titoli NVDA+T. Gli stati e il profilo `.fx` devono rimanere collegati all'FX corretto.
+- [ ] Con tutte le istanze di una sola catena offline, riaprire FX Params su quella catena; il browser deve consentire Ctrl+Alt+B per riattivarle senza attraversare l'altra.
+- [ ] Ctrl+Maiusc+D rimane globale: cancella Delta Solo su tutto il progetto, inclusi FX dell'altra catena.
+
+Tutti questi test richiedono la DLL compilata dall'utente tramite GitHub Actions; nessuna compilazione locale.

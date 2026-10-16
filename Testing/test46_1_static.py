@@ -7,7 +7,7 @@ fx=(r/'src/FxNavigator.cpp').read_text(encoding='utf-8')
 browser=(r/'src/FxNavigatorContexts.cpp').read_text(encoding='utf-8')
 # Ctrl+PageUp/Down must not be accepted or handled in the grid or browser.
 assert "(k.vk=='W'||k.vk==VK_LEFT||k.vk==VK_RIGHT)) return true;" in fx
-assert "(k.vk=='P'||k.vk=='B'||k.vk=='W'||" in fx
+assert "(k.vk=='P'||k.vk=='B'||k.vk=='D'||k.vk=='W'||" in fx
 assert "k.vk==VK_PRIOR||k.vk==VK_NEXT||\n             k.vk==VK_LEFT" not in fx
 assert "if (k.ctrl && !k.shift && !k.alt && (k.vk==VK_PRIOR||k.vk==VK_NEXT))" not in fx
 assert 'if (k.vk==VK_PRIOR || k.vk==VK_NEXT) {switchTrack' not in browser

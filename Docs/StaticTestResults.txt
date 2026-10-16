@@ -1,20 +1,8 @@
-0.0.46: verifiche sorgente e test Python senza compilazione locale.
-Test native Windows/MSVC: solo GitHub Actions.
-
-LReaParams 0.0.45 — source-only verification, 2026-10-16
-
-PASS: Tools/audit.py (48 FX profiles, 4 Track profiles, SDK hashes,
-      unchanged Lua, source contracts; NO native build).
-PASS: Testing/test45_static.py (new clipboard/default static contracts).
-PASS: Testing/test44_5_static.py (Shift+initial navigation).
-PASS: Testing/test44_4_static.py (persistent LastParam profile memory).
-PASS: Testing/test43_5_static.py (Ctrl+Space interception).
-PASS: Testing/test43_2_static.py (ReaEQ setter readback).
-PASS: Testing/test44_2_static.py (sparse Detector Input).
-PASS: Testing/test42_cc_speech_static.py (CC then Auto announcements).
-PASS: Testing/test23_static.py (F7/accessibility).
-
-The full historical suite was attempted but exceeded the execution limit;
-this is NOT a statement that every historical check passed. The Windows
-C++ build, CTest, REAPER, NVDA and system-clipboard behavior have NOT been
-run here. Build and test the DLL exclusively with GitHub Actions.
+LReaParams 0.0.46.3 — verifiche statiche, senza compilare nulla localmente.
+PASS: Tools/audit.py (52 profili, SDK/Lua e vincoli sorgente)
+PASS: Testing/test46_3_static.py — Master/Monitor isolati e focus catena nativa
+PASS: Testing/test46_2_static.py — Offline/Delta Solo conservati
+PASS: Testing/test46_1_static.py — shortcuts non duplicati
+PASS: Testing/test46_static.py — navigazione FX/browser preesistente
+PASS: 35 verifiche statiche complete (audit + 34 test)
+GitHub Actions MSVC e REAPER/NVDA ancora da verificare.

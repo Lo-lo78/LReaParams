@@ -41,7 +41,7 @@ void FxNavigator::end() noexcept {
         try {rememberPosition();} catch (...) {}
         flushPersistentPosition();
     }
-    active_ = false; fxBrowserMode_ = false; browserCursor_ = 0;
+    active_ = false; fxBrowserMode_ = false; browserScopeMonitor_ = false; browserCursor_ = 0;
     recentMode_ = false; numericEdit_ = false; learnCc_ = false;
     floatingCc_ = false; floatingWaiting_ = false; pickup_.clear();
     valueMode_ = false; searchMode_ = false; editF7_ = false;
@@ -102,6 +102,10 @@ bool FxNavigator::begin() {
     project_ = EnumProjects(-1, nullptr, 0);
     if (!project_) { speech_("No REAPER project"); return false; }
     track_ = nullptr; take_ = nullptr;
+    // When invoked from a native FX Chain list, its focused FX determines
+    // whether we entered Master FX or Monitor FX. A simultaneously visible
+    // Monitor window must not override an explicitly focused Master FX.
+    int focusedFxInChain = -1;
     // Follow OSARA's GetTouchedOrFocusedFX logic when REAPER's FX list owns
     // focus. The visible chain might belong to a track not currently selected.
     // Never use the last-touched FX here: that might be from another track.
@@ -114,11 +118,11 @@ bool FxNavigator::begin() {
                     MediaItem* mediaItem = GetTrackMediaItem(owner, item);
                     MediaItem_Take* wantedTake = mediaItem ? GetTake(mediaItem, takeIdx) : nullptr;
                     if (wantedTake && TakeFX_GetCount(wantedTake) > 0) {
-                        track_ = owner; take_ = wantedTake;
+                        track_ = owner; take_ = wantedTake; focusedFxInChain = fx;
                     }
                 } else if (TrackFX_GetCount(owner) > 0 ||
                            (owner == GetMasterTrack(project_) && TrackFX_GetRecCount(owner) > 0)) {
-                    track_ = owner;
+                    track_ = owner; focusedFxInChain = fx;
                 }
             }
         }
@@ -202,7 +206,18 @@ bool FxNavigator::begin() {
     const StoredContext* remembered = contextMemory();
     int preferred = 0;
     bool havePreferred = false;
-    if (remembered && remembered->hasLastFx) {
+    // Exact native FX Chain focus wins over an unrelated visible FX window,
+    // especially when Master and Monitor FX chains are both visible.
+    if (focusedFxInChain >= 0) {
+        for (size_t i=0; i<entries_.size(); ++i) {
+            if (entries_[i].index == focusedFxInChain) {
+                preferred = static_cast<int>(i);
+                havePreferred = true;
+                break;
+            }
+        }
+    }
+    if (!havePreferred && remembered && remembered->hasLastFx) {
         const bool externalSelectionChanged =
             visible >= 0 && visible != remembered->observedVisibleFx;
         if (!externalSelectionChanged) {
@@ -231,6 +246,27 @@ bool FxNavigator::begin() {
         if (selectFx(i)) return true;
     for (int i = preferred - 1; i >= 0; --i)
         if (selectFx(i)) return true;
+    // An all-offline chain must still be accessible after REAPER restarts:
+    // leave the user in the FX browser so Ctrl+Alt+B can bring an FX online.
+    int offlineCursor = -1;
+    for (int i = 0; i < static_cast<int>(entries_.size()); ++i) {
+        const int id = entries_[static_cast<size_t>(i)].index;
+        if (take_ ? TakeFX_GetOffline(take_, id) : TrackFX_GetOffline(track_, id)) {
+            if (i == preferred) {offlineCursor = i;break;}
+            if (offlineCursor < 0) offlineCursor = i;
+        }
+    }
+    if (offlineCursor >= 0) {
+        browserIndex_ = browserCursor_ = offlineCursor;
+        fx_ = entries_[static_cast<size_t>(offlineCursor)].index;
+        fxGuid_ = entries_[static_cast<size_t>(offlineCursor)].guid;
+        count_ = 0;parameter_ = 0;parameterName_.clear();
+        fxBrowserMode_ = true;
+        browserScopeMonitor_ = !take_ && track_ == GetMasterTrack(project_) &&
+                               (entries_[static_cast<size_t>(offlineCursor)].index & 0x1000000);
+        speech_("FX Browser. " + browserSpeech());
+        return true;
+    }
     speech_("No navigable FX parameters");
     end(); return false;
 }
@@ -386,7 +422,13 @@ void FxNavigator::rememberPosition() {
 }
 void FxNavigator::switchFx(int direction) {
     if (direction == 0) return;
+    const bool master = !take_ && track_ == GetMasterTrack(project_);
+    const bool fromMonitor = (fx_ & 0x1000000) != 0;
     for (int i = browserIndex_ + direction; i >= 0 && i < static_cast<int>(entries_.size()); i += direction) {
+        // Master FX and Monitor FX are different native chains. Ctrl+Up/Down
+        // must never cross between them even though entries_ stores both.
+        if (master && ((entries_[static_cast<size_t>(i)].index & 0x1000000) != 0) != fromMonitor)
+            break;
         const int count = take_ ? TakeFX_GetNumParams(take_, entries_[i].index)
                                 : TrackFX_GetNumParams(track_, entries_[i].index);
         if (count <= 0) continue;
@@ -479,6 +521,7 @@ void FxNavigator::switchTrack(int direction) {
     SetOnlyTrackSelected(target);
     UpdateArrange();
     browserCursor_ = browserIndex_;
+    browserScopeMonitor_ = !take_ && track_ == GetMasterTrack(project_) && (fx_ & 0x1000000);
     if (fxBrowserMode_) speech_(browserSpeech());
     else speech_(fxContextAnnouncement());
 }
@@ -570,16 +613,24 @@ bool FxNavigator::deltaParameter(MediaTrack* tr,MediaItem_Take* tk,int fx,int& i
     index=n-1;return true;
 }
 void FxNavigator::toggleDeltaSolo() {
+    // In the browser operate on its highlighted FX, NOT the last FX whose
+    // parameter grid was opened. Do not call selectFx(): it changes profiles.
+    if (!valid() || (fxBrowserMode_ && entries_.empty())) return;
+    const int targetIndex = fxBrowserMode_ ? browserVisibleIndex() : browserIndex_;
+    if (targetIndex < 0 || targetIndex >= static_cast<int>(entries_.size()) ||
+        (fxBrowserMode_ && !browserEntryInScope(targetIndex))) return;
+    const int target = fxBrowserMode_ ? entries_[static_cast<size_t>(targetIndex)].index : fx_;
     int delta=-1;
-    if(!valid() || !deltaParameter(track_,take_,fx_,delta)) {
+    if(!deltaParameter(track_,take_,target,delta)) {
         speech_("Delta Solo unavailable for this FX");return;
     }
-    const double old=take_?TakeFX_GetParamNormalized(take_,fx_,delta):TrackFX_GetParamNormalized(track_,fx_,delta);
+    const double old=take_?TakeFX_GetParamNormalized(take_,target,delta):TrackFX_GetParamNormalized(track_,target,delta);
     const double next=old>0.5?0.0:1.0;
-    const bool ok=take_?TakeFX_SetParamNormalized(take_,fx_,delta,next):TrackFX_SetParamNormalized(track_,fx_,delta,next);
+    const bool ok=take_?TakeFX_SetParamNormalized(take_,target,delta,next):TrackFX_SetParamNormalized(track_,target,delta,next);
     if(!ok){speech_("Delta Solo not changed");return;}
-    if(take_)TakeFX_EndParamEdit(take_,fx_,delta);else TrackFX_EndParamEdit(track_,fx_,delta);
-    speech_(next>0.5?"Delta Solo on":"Delta Solo off");
+    if(take_)TakeFX_EndParamEdit(take_,target,delta);else TrackFX_EndParamEdit(track_,target,delta);
+    speech_(std::string(next>0.5?"Delta Solo on":"Delta Solo off") +
+            (fxBrowserMode_?". "+browserSpeech():""));
 }
 void FxNavigator::clearProjectDeltaSolo() {
     if(!project_)return;
@@ -825,6 +876,9 @@ bool FxNavigator::valid() const {
     if (take_ && (!ValidatePtr2(project_, take_, "MediaItem_Take*") || GetMediaItemTake_Track(take_) != track_)) return false;
     const auto* g = take_ ? TakeFX_GetFXGUID(take_, fx_) : TrackFX_GetFXGUID(track_, fx_);
     if (!same(g, fxGuid_)) return false;
+    // An offline FX can expose zero parameters. Keep its browser keyboard
+    // owner alive; GUID/context validation still prevents stale FX access.
+    if (fxBrowserMode_) return true;
     if (count() != count_ || (parameter_ < 0 && parameter_!=compareParamIndex && !eqVirtualValid(parameter_) && !dynamicsVirtualValid(parameter_)) || parameter_ >= count_) return false;
     // Action labels depend on Target Band. They may change without the FX
     // identity or the navigator's selected parameter changing.
@@ -848,6 +902,9 @@ HWND FxNavigator::floatingWindow() const {
 }
 bool FxNavigator::uiStillOpen() const {
     if (!valid()) return false;
+    // The native plugin window may close when the FX goes offline; the internal
+    // browser intentionally remains open so Ctrl+Alt+B can bring it online.
+    if (fxBrowserMode_) return true;
     return !hadUi_ || (take_ ? TakeFX_GetOpen(take_, fx_) : TrackFX_GetOpen(track_, fx_));
 }
 bool FxNavigator::accepts(const Key& k) const noexcept {
@@ -857,9 +914,11 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (fxBrowserMode_) {
         if (k.vk==VK_SPACE && !k.shift && !k.alt) return true; // transport
         if (k.altGr && k.character) return true;
+        if (k.ctrl && k.alt && !k.shift && !k.altGr && k.vk=='B') return true; // Lua offline
         if (k.ctrl && !k.alt && !k.shift &&
-            (k.vk=='P'||k.vk=='B'||k.vk=='W'||
-             k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_HOME||k.vk==VK_END)) return true;
+            (k.vk=='P'||k.vk=='B'||k.vk=='D'||k.vk=='W'||
+             k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_UP||k.vk==VK_DOWN||
+             k.vk==VK_HOME||k.vk==VK_END)) return true;
         if (k.ctrl && k.shift && !k.alt &&
             (k.vk=='D'||k.vk=='F'||k.vk==VK_UP||k.vk==VK_DOWN)) return true;
         if (k.alt && k.shift && !k.ctrl && k.vk=='F') return true;
@@ -895,6 +954,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     // Ctrl+Q parks MIDI while releasing the native window, input hook and
     // REAPER keyboard focus. Extension owns the transition, not the navigator.
     if (k.ctrl && !k.shift && !k.alt && k.vk == 'Q') return true;
+    if (k.ctrl && k.alt && !k.shift && !k.altGr && k.vk == 'B') return true; // offline
     // Windows clipboard: plain Ctrl+C/V outside F7, full FX Ctrl+Alt+Shift+C.
     if (k.ctrl && k.alt && k.shift && !k.altGr && k.vk=='C') return true;
     if (k.ctrl && !k.alt && !k.shift && (k.vk=='C'||k.vk=='V') && !editF7_) return true;
@@ -1014,8 +1074,7 @@ std::wstring FxNavigator::windowTitle() const {
     if (fxBrowserMode_) {
         std::string browserContext = contextName();
         if (track_ == GetMasterTrack(project_) && !entries_.empty())
-            browserContext = (entries_[static_cast<size_t>(browserVisibleIndex())].index & 0x1000000)
-                ? "Monitor FX" : "Master";
+            browserContext = browserScopeMonitor_ ? "Monitor FX" : "Master";
         return wideUtf8("FX Browser - " + browserContext);
     }
     if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));
@@ -1264,6 +1323,9 @@ void FxNavigator::handle(const Key& k) {
     if(k.vk==VK_F8 && !k.ctrl && !k.alt && !k.shift){if(!k.repeat)openFxMemories(false);return;}
     if (!k.ctrl && k.alt && !k.shift && (k.vk=='G'||k.vk=='M')) {
         chooseSlotAccess(k.vk=='G'?0:1);return;
+    }
+    if (k.ctrl && k.alt && !k.shift && !k.altGr && k.vk=='B') {
+        if(!k.repeat)toggleOffline();return;
     }
     if (k.ctrl && !k.alt && !k.shift && k.vk=='B') {if(!k.repeat)toggleBypass();return;}
     if (k.ctrl && !k.alt && k.vk=='D') {

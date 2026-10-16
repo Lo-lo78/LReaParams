@@ -10,14 +10,16 @@ Partenza: 0.0.45 già collaudata dall'utente. Lua di riferimento:
 | Gesto | Funzione | Note |
 |---|---|---|
 | Ctrl+P | Passa alla lista FX interna e viceversa | Il cursore browser è indipendente dalla selezione della griglia fino a Invio |
-| Browser Su/Giù | FX precedente/successivo | Limiti silenziosi |
+| Browser Su/Giù o Ctrl+Su/Giù | FX precedente/successivo | Solo nella catena di apertura, limiti silenziosi |
 | Browser PgSu/PgGiù | Avanza di cinque FX | Non attraversa Master ↔ Monitor |
 | Browser Home/End | Primo/ultimo FX della colonna | Ctrl+Home/End equivalenti |
-| Browser Sinistra/Destra | Colonna Master/Monitor | Soltanto sulla traccia Master |
+| Browser Sinistra/Destra | Nessun cambio Master/Monitor | Le catene sono due browser separati nella 0.0.46.3 |
 | Browser lettera/cifra | Cerca ciclicamente per iniziale del nome FX | Maiusc inverte la direzione |
 | Browser Invio | Apre la griglia dell'FX evidenziato | Resta nella stessa finestra LReaParams |
 | Browser Ctrl+B | Bypass FX evidenziato | Non altera altri FX |
-| Browser Ctrl+Maiusc+D | Delta Solo dell'FX evidenziato | Disponibile se host espone il wrapper Delta |
+| Browser Ctrl+D | Delta Solo dell'FX evidenziato | Disponibile se host espone il wrapper Delta |
+| Browser Ctrl+Maiusc+D | Disattiva tutti i Delta Solo del progetto | Azione globale |
+| Browser Ctrl+Alt+B | FX evidenziato Offline/Online | Resta nello stesso browser |
 | Browser Ctrl+Maiusc+Su/Giù | Sposta fisicamente l'FX nella stessa catena | Usa API REAPER e Undo; non supera il confine Master/Monitor |
 | Ctrl+Sinistra/Destra | Item precedente/successivo con FX | Nella traccia corrente; dagli FX traccia preferisce item selezionato con FX |
 | Ctrl+W | Da Take FX ritorna ai Track FX | Non passa a tracce di altre istanze |
@@ -31,8 +33,7 @@ Partenza: 0.0.45 già collaudata dall'utente. Lua di riferimento:
 Il browser interno non modifica il plugin visitato prima di Invio, salvo comandi
 espliciti di bypass/Delta e spostamento fisico. F7 viene chiuso entrando nel
 browser e le ricerche filtrate vengono cancellate senza cancellare le selezioni
-salvate nei profili. Master e Monitor FX rimangono catene distinte; non spostare
-un effetto tra le due colonne.
+salvate nei profili. Master FX e Monitor FX vengono presentati come **due browser separati**: Ctrl+P rimane nella catena di ingresso, senza possibilità di passare all’altra premendo Sinistra/Destra.
 
 ## Sicurezza e memoria
 
@@ -52,8 +53,10 @@ un effetto tra le due colonne.
 1. Aprire FX Params su una traccia con tre FX. Ctrl+P: spostarsi col browser,
    verificare che la griglia non cambi prima di Invio; Invio seleziona l'FX.
 2. Browser con plugin bypassato: ascoltare `Bypassed` e premere Ctrl+B.
-3. Master con FX normali e Monitor FX: passare tra le colonne; spostare un FX
-   con Ctrl+Maiusc+Su/Giù e verificare il GUID e l'Undo di REAPER.
+3. Master con FX normali e Monitor FX: aprire Ctrl+P da Master e verificare
+   che NON compaiano Monitor FX. Ripetere da Monitor e controllare il contrario.
+   Spostare un FX con Ctrl+Maiusc+Su/Giù nella catena corrente; verificare
+   GUID, assenza di passaggi all’altra catena e Undo di REAPER.
 4. Aprire un Take FX dalla traccia con Ctrl+Destra; passare all'item successivo,
    poi Ctrl+W e Ctrl+Maiusc+Freccia Giù. Verificare titoli e posizioni salvate.
 5. Da Take FX in Grid e dal browser, Ctrl+Maiusc+F apre la corretta catena.

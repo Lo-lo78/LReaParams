@@ -32,8 +32,8 @@ public:
     MediaTrack* currentTrackForNativeWindow() const noexcept { return track_; }
     MediaItem_Take* currentTakeForNativeWindow() const noexcept { return take_; }
     int currentFxForNativeWindow() const noexcept {
-        return fxBrowserMode_ && browserCursor_ >= 0 && browserCursor_ < static_cast<int>(entries_.size())
-            ? entries_[static_cast<size_t>(browserCursor_)].index : fx_;
+        const int cursor = fxBrowserMode_ ? browserVisibleIndex() : -1;
+        return cursor >= 0 ? entries_[static_cast<size_t>(cursor)].index : fx_;
     }
     bool isMemoryManager() const noexcept { return memoryManager_; } // seven-column Lua F8 navigator
     void end() noexcept override;
@@ -150,6 +150,7 @@ private:
     void browserMoveFx(int direction);
     std::string browserSpeech() const;
     int browserVisibleIndex() const;
+    bool browserEntryInScope(int entryIndex) const;
     void browserCycleByInitial(wchar_t character, bool backwards);
 
     bool rebuildEntries();
@@ -197,6 +198,7 @@ private:
     void toggleBypass();
     bool deltaParameter(MediaTrack* track, MediaItem_Take* take, int fx, int& index) const;
     void toggleDeltaSolo();
+    void toggleOffline();
     void clearProjectDeltaSolo();
     void runLuaFunctionAction(int command);
     void chooseSlotAccess(int mode);
@@ -271,6 +273,10 @@ private:
     int browserIndex_ = 0;
     NativeFxWindow nativeFxWindowRequest_ = NativeFxWindow::none;
     bool fxBrowserMode_ = false;
+    // The FX browser is locked to the chain it was opened from on the Master
+    // track.  The combined entries_ list is retained for per-GUID memory;
+    // it must not turn Master FX and Monitor FX into a single user-facing list.
+    bool browserScopeMonitor_ = false;
     int browserCursor_ = 0; // cursor in entries_, independent of the current grid FX
 
     int fx_{}, parameter_{}, count_{}, columns_ = 10;

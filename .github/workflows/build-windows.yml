@@ -74,6 +74,10 @@ jobs:
         run: python Testing/test46_static.py
       - name: Verify 0.0.46.1 non-duplicated track navigation keys (source only)
         run: python Testing/test46_1_static.py
+      - name: Verify 0.0.46.2 browser Delta Solo and Offline (source only)
+        run: python Testing/test46_2_static.py
+      - name: Verify 0.0.46.3 separate Master and Monitor FX browser chains (source only)
+        run: python Testing/test46_3_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

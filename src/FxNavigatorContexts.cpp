@@ -94,6 +94,7 @@ bool FxNavigator::switchToContext(MediaTrack* destination, MediaItem_Take* desti
     } else SetOnlyTrackSelected(destination);
     UpdateArrange();
     browserCursor_ = browserIndex_;
+    browserScopeMonitor_ = !take_ && track_ == GetMasterTrack(project_) && (fx_ & 0x1000000);
     if (fxBrowserMode_) speech_(what + ". " + browserSpeech());
     else speech_(what + ". " + fxContextAnnouncement());
     return true;
@@ -150,14 +151,26 @@ void FxNavigator::openNativeFxBrowser() {
     nativeFxWindowRequest_ = NativeFxWindow::addFx;
 }
 
+bool FxNavigator::browserEntryInScope(int entryIndex) const {
+    if (entryIndex < 0 || entryIndex >= static_cast<int>(entries_.size())) return false;
+    if (take_ || track_ != GetMasterTrack(project_)) return true;
+    return ((entries_[static_cast<size_t>(entryIndex)].index & 0x1000000) != 0) == browserScopeMonitor_;
+}
 int FxNavigator::browserVisibleIndex() const {
-    return std::clamp(browserCursor_, 0, std::max(0, static_cast<int>(entries_.size()) - 1));
+    const int candidate = std::clamp(browserCursor_, 0, std::max(0, static_cast<int>(entries_.size())-1));
+    if (browserEntryInScope(candidate)) return candidate;
+    // Guard against an external chain modification or stale browser cursor.
+    // Never jump to the other Master/Monitor chain as a fallback.
+    for (int i=0; i<static_cast<int>(entries_.size()); ++i)
+        if (browserEntryInScope(i)) return i;
+    return -1;
 }
 std::string FxNavigator::browserSpeech() const {
     if (entries_.empty()) return "No FX";
     const int index = browserVisibleIndex();
+    if (index < 0) return "No FX in this chain";
     const auto& entry = entries_[static_cast<size_t>(index)];
-    const bool monitor = (entry.index & 0x1000000) != 0;
+    const bool monitor = !take_ && track_ == GetMasterTrack(project_) && browserScopeMonitor_;
     const std::string label = browserDisplayName(entry.name);
     const bool offline = take_ ? TakeFX_GetOffline(take_, entry.index) :
                                  TrackFX_GetOffline(track_, entry.index);
@@ -166,10 +179,17 @@ std::string FxNavigator::browserSpeech() const {
     std::string text = (monitor ? "Monitor FX. " : track_==GetMasterTrack(project_) ? "Master FX. " : "");
     if (offline) text += "Offline. ";
     else if (bypassed) text += "Bypassed. ";
+    if (!offline) {
+        int delta = -1;
+        if (deltaParameter(track_, take_, entry.index, delta) &&
+            (take_ ? TakeFX_GetParamNormalized(take_, entry.index, delta) :
+                     TrackFX_GetParamNormalized(track_, entry.index, delta)) > 0.5)
+            text += "Delta Solo. ";
+    }
     text += label;
     int ordinal = 0, total = 0;
     for (int i = 0; i < static_cast<int>(entries_.size()); ++i) {
-        if (((entries_[static_cast<size_t>(i)].index & 0x1000000) != 0) == monitor) {
+        if (browserEntryInScope(i)) {
             ++total;
             if (i <= index) ++ordinal;
         }
@@ -181,6 +201,7 @@ void FxNavigator::enterFxBrowser() {
     rememberPosition(); flushPersistentPosition();
     clearF7Filter(); editF7_ = false;
     fxBrowserMode_ = true;
+    browserScopeMonitor_ = !take_ && track_ == GetMasterTrack(project_) && (fx_ & 0x1000000);
     browserCursor_ = browserIndex_;
     valueMode_ = false;
     speech_("FX Browser. " + browserSpeech());
@@ -188,14 +209,13 @@ void FxNavigator::enterFxBrowser() {
 void FxNavigator::browserMove(int amount) {
     if (!amount || entries_.empty()) return;
     const int old = browserVisibleIndex();
-    const int category = entries_[static_cast<size_t>(old)].index & 0x1000000;
+    if (old < 0) return;
     // One-column Track/Take browser; Master and Monitor are two distinct
     // columns that never wrap into each other vertically.
     int next = old;
     for (int i = std::abs(amount); i > 0; --i) {
         const int step = amount > 0 ? 1 : -1;
-        if (next + step < 0 || next + step >= static_cast<int>(entries_.size()) ||
-            (entries_[static_cast<size_t>(next + step)].index & 0x1000000) != category) break;
+        if (!browserEntryInScope(next + step)) break;
         next += step;
     }
     if (next != old) {browserCursor_ = next; speech_(browserSpeech());}
@@ -203,7 +223,10 @@ void FxNavigator::browserMove(int amount) {
 void FxNavigator::browserSelect() {
     if (entries_.empty() || !active_) return;
     const int index = browserVisibleIndex();
-    if (index != browserIndex_ && !selectFx(index)) {
+    if (index < 0) return;
+    // After an offline/online transition the plugin may have re-created its
+    // parameter list. Rebind even if this is the same FX as before.
+    if ((index != browserIndex_ || count_ == 0) && !selectFx(index)) {
         speech_("No navigable FX parameters"); return;
     }
     fxBrowserMode_ = false;
@@ -212,12 +235,11 @@ void FxNavigator::browserSelect() {
 void FxNavigator::browserCycleByInitial(wchar_t character, bool backwards) {
     if (entries_.empty()) return;
     const int origin = browserVisibleIndex();
-    const bool master = track_ == GetMasterTrack(project_);
-    const bool monitor = (entries_[static_cast<size_t>(origin)].index & 0x1000000) != 0;
+    if (origin < 0) return;
     const int direction = backwards ? -1 : 1;
     for (int i = 1; i <= static_cast<int>(entries_.size()); ++i) {
         const int j = (origin + direction*i + static_cast<int>(entries_.size()) * (i+1)) % static_cast<int>(entries_.size());
-        if (master && ((entries_[static_cast<size_t>(j)].index & 0x1000000) != 0) != monitor) continue;
+        if (!browserEntryInScope(j)) continue;
         const std::string label = browserDisplayName(entries_[static_cast<size_t>(j)].name);
         if (!label.empty() && std::towlower(static_cast<unsigned char>(label[0])) == std::towlower(character)) {
             browserCursor_ = j; speech_(browserSpeech()); return;
@@ -227,8 +249,9 @@ void FxNavigator::browserCycleByInitial(wchar_t character, bool backwards) {
 void FxNavigator::browserMoveFx(int direction) {
     if (!direction || entries_.empty()) return;
     const int srcIndex = browserVisibleIndex();
+    if (srcIndex < 0) return;
     const int targetIndex = srcIndex + direction;
-    if (targetIndex < 0 || targetIndex >= static_cast<int>(entries_.size())) return;
+    if (!browserEntryInScope(targetIndex)) return;
     const int src = entries_[static_cast<size_t>(srcIndex)].index;
     const int target = entries_[static_cast<size_t>(targetIndex)].index;
     if (((src ^ target) & 0x1000000) != 0) return; // no Master↔Monitor crossing
@@ -257,17 +280,79 @@ void FxNavigator::browserMoveFx(int direction) {
     // REAPER replaced the instance rather than moving it. Do not guess.
     end();
 }
+void FxNavigator::toggleOffline() {
+    if (!active_ || !track_ || (fxBrowserMode_ && entries_.empty())) return;
+    const int selected = fxBrowserMode_ ? browserVisibleIndex() : browserIndex_;
+    if (selected < 0 || selected >= static_cast<int>(entries_.size()) ||
+        (fxBrowserMode_ && !browserEntryInScope(selected))) return;
+    const FxEntry entry = entries_[static_cast<size_t>(selected)];
+    const GUID* actual = take_ ? TakeFX_GetFXGUID(take_, entry.index) :
+                                 TrackFX_GetFXGUID(track_, entry.index);
+    if (!guidEquals(actual, entry.guid)) {
+        speech_("FX list changed. Reopen FX Params");return;
+    }
+    const bool wasOffline = take_ ? TakeFX_GetOffline(take_, entry.index) :
+                                    TrackFX_GetOffline(track_, entry.index);
+    // Preserve the last parameter before REAPER unloads an FX's parameters.
+    if (!fxBrowserMode_ && !wasOffline) {
+        rememberPosition();flushPersistentPosition();
+    }
+    if (take_) TakeFX_SetOffline(take_, entry.index, !wasOffline);
+    else TrackFX_SetOffline(track_, entry.index, !wasOffline);
+    const bool nowOffline = take_ ? TakeFX_GetOffline(take_, entry.index) :
+                                    TrackFX_GetOffline(track_, entry.index);
+    if (nowOffline == wasOffline) {
+        speech_("Offline not changed");return;
+    }
+    // The original Lua recreates the FX list after changing Offline; some FX
+    // names change. Keep the cursor by GUID rather than by old numeric slot.
+    if (!rebuildEntries()) {speech_("FX list unavailable");end();return;}
+    int newCursor = -1;
+    for (int i=0;i<static_cast<int>(entries_.size());++i)
+        if (guidEquals(&entries_[static_cast<size_t>(i)].guid, entry.guid)) {
+            newCursor = i;break;
+        }
+    if (newCursor < 0) {speech_("FX list changed. Reopen FX Params");end();return;}
+    browserCursor_ = newCursor;
+    if (guidEquals(&entry.guid, fxGuid_)) {
+        // The same FX will need a fresh parameter binding on return online.
+        count_ = 0;
+    }
+    if (!fxBrowserMode_ && nowOffline) {
+        browserScopeMonitor_ = !take_ && track_ == GetMasterTrack(project_) && (entry.index & 0x1000000);
+        // A real offline plugin often has no parameters. Keep the internal FX
+        // browser focused so Ctrl+Alt+B can always make it online again.
+        clearF7Filter();editF7_=false;fxBrowserMode_=true;valueMode_=false;
+        speech_("Offline. " + browserSpeech());
+        return;
+    }
+    if (!fxBrowserMode_) {
+        // Normally unreachable (offline FX has no parameter grid), but retain
+        // a usable grid if REAPER still exposes the effect's parameters.
+        if (!selectFx(newCursor)) {fxBrowserMode_=true;speech_(browserSpeech());return;}
+        speech_(fxContextAnnouncement());return;
+    }
+    speech_(browserSpeech());
+}
 void FxNavigator::browserKey(const Key& k) {
     if (k.vk==VK_SPACE && !k.shift && !k.alt) {
         if(!k.repeat) Main_OnCommand(k.ctrl ? 40073 : 40044, 0);
         return;
     }
-    if (k.repeat && (k.vk==VK_RETURN || k.vk=='P' || k.vk=='B' || k.vk==VK_ESCAPE))return;
+    if (k.repeat && (k.vk==VK_RETURN || k.vk=='P' || k.vk=='B' || k.vk=='D' || k.vk==VK_ESCAPE))return;
+    if (k.ctrl && k.alt && !k.shift && !k.altGr && k.vk=='B') {
+        toggleOffline();return;
+    }
     if (k.ctrl && !k.shift && !k.alt) {
         if (k.vk=='P') {browserSelect();return;}
+        // Ctrl+Up/Down can also navigate inside the opened chain, just like
+        // the parameter grid. It must not jump between Master and Monitor FX.
+        if (k.vk==VK_UP||k.vk==VK_DOWN) {browserMove(k.vk==VK_UP?-1:1);return;}
         if (k.vk==VK_HOME||k.vk==VK_END) {browserMove(k.vk==VK_HOME?-100000:100000);return;}
+        if (k.vk=='D') {toggleDeltaSolo();return;}
         if (k.vk=='B') {
             const int selected = browserVisibleIndex();
+            if (selected < 0 || !browserEntryInScope(selected)) return;
             if (selected != browserIndex_ && !selectFx(selected))return;
             toggleBypass();speech_(browserSpeech());return;
         }
@@ -278,11 +363,7 @@ void FxNavigator::browserKey(const Key& k) {
     if (k.ctrl && k.shift && !k.alt) {
         if (k.vk=='F') {openCurrentFxChain();return;}
         if (k.vk==VK_UP||k.vk==VK_DOWN) {browserMoveFx(k.vk==VK_UP?-1:1);return;}
-        if (k.vk=='D') {
-            const int selected = browserVisibleIndex();
-            if (selected != browserIndex_ && !selectFx(selected))return;
-            toggleDeltaSolo();return;
-        }
+        if (k.vk=='D') {clearProjectDeltaSolo();return;}
     }
     if (k.vk==VK_ESCAPE) {end();return;}
     if (!k.ctrl && !k.alt) {
@@ -291,22 +372,9 @@ void FxNavigator::browserKey(const Key& k) {
         if (k.vk==VK_UP||k.vk==VK_DOWN) {browserMove(k.vk==VK_UP?-1:1);return;}
         if (k.vk==VK_PRIOR||k.vk==VK_NEXT) {browserMove(k.vk==VK_PRIOR?-5:5);return;}
         if (k.vk==VK_HOME||k.vk==VK_END) {browserMove(k.vk==VK_HOME?-100000:100000);return;}
-        if ((k.vk==VK_LEFT||k.vk==VK_RIGHT) && track_==GetMasterTrack(project_)) {
-            const bool wantMonitor = k.vk==VK_RIGHT;
-            const int selected = browserVisibleIndex();
-            if (((entries_[static_cast<size_t>(selected)].index & 0x1000000) != 0) == wantMonitor)return;
-            int oldOrdinal=0;
-            for (int i=0;i<=selected;++i)
-                if (((entries_[static_cast<size_t>(i)].index & 0x1000000) != 0) != wantMonitor) ++oldOrdinal;
-            std::vector<int> column;
-            for (int i=0;i<static_cast<int>(entries_.size());++i)
-                if (((entries_[static_cast<size_t>(i)].index & 0x1000000) != 0) == wantMonitor) column.push_back(i);
-            if (!column.empty()) {
-                browserCursor_ = column[static_cast<size_t>(std::clamp(oldOrdinal-1, 0, static_cast<int>(column.size())-1))];
-                speech_(browserSpeech());
-            }
-            return;
-        }
+        // Master FX and Monitor FX are separate browsers. Left/Right must
+        // not switch columns; open the other context explicitly in REAPER.
+        if ((k.vk==VK_LEFT||k.vk==VK_RIGHT) && track_==GetMasterTrack(project_)) return;
         if (k.character) browserCycleByInitial(k.character, k.shift);
     } else if (k.altGr && k.character) browserCycleByInitial(k.character, k.shift);
 }

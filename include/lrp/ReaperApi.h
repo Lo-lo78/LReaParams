@@ -71,6 +71,8 @@
 #define REAPERAPI_WANT_UpdateArrange
 #define REAPERAPI_WANT_TrackFX_GetOffline
 #define REAPERAPI_WANT_TakeFX_GetOffline
+#define REAPERAPI_WANT_TrackFX_SetOffline
+#define REAPERAPI_WANT_TakeFX_SetOffline
 #define REAPERAPI_WANT_TrackFX_Show
 #define REAPERAPI_WANT_TakeFX_Show
 #define REAPERAPI_WANT_TrackFX_CopyToTrack

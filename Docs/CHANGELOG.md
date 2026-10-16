@@ -1,3 +1,14 @@
+## 0.0.46.3 — Master e Monitor FX come catene distinte
+
+Il browser FX interno Ctrl+P è vincolato alla catena del contesto da cui è stato aperto: Master oppure Monitor. Nessuna navigazione orizzontale tra le due catene. Frecce verticali (anche Ctrl+Su/Giù), ricerca per iniziale, pagina, stato e riordino rimangono all'interno della catena. Anche Ctrl+Su/Giù fuori dal browser si ferma ai limiti Master/Monitor. Sono mantenuti Offline/Online, Bypass, Delta Solo, profili e GUID esistenti. Test statico `Testing/test46_3_static.py`, collaudo REAPER necessario; nessuna build locale.
+
+## 0.0.46.2 — Browser Delta Solo e FX Offline
+
+- Ctrl+D nel browser: Delta Solo dell’FX evidenziato. Ctrl+Maiusc+D: disattiva tutti i Delta Solo del progetto.
+- Ctrl+Alt+B (Lua): mette Offline/Online l’FX corrente della griglia o l’effetto evidenziato nel browser.
+- Annunci di stato aggiornati; riassociazione sicura del browser dopo il cambio Offline, mantenendo GUID e posizione. Lo stato offline passa al browser perché un FX offline può non esporre parametri.
+- Verifiche statiche aggiunte, senza compilazioni locali.
+
 ## 0.0.46.1 — Correzione scorciatoie FX Params
 
 - Rimossa Ctrl+Pagina Su/Giù dalla gestione FX Params e dal browser FX: non va più a un’altra traccia.
