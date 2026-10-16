@@ -1,3 +1,7 @@
+## 0.0.46.5 — Ctrl+Maiusc+D include Monitor FX
+
+L'azione nativa `Clear delta solo for all project FX` non garantisce l'azzeramento dei Monitor FX, che appartengono alla catena monitor separata dal progetto. La DLL ora esegue l'azione nativa e verifica separatamente ogni Monitor FX (`0x1000000 + indice`), disattivando eventuali Delta Solo residui e verificando il risultato. Ctrl+D rimane invariato. Nessuna modifica a Track Params e agli altri comportamenti già collaudati.
+
 ## 0.0.46.4 — Browser Master/Monitor a colonne
 
 - **Destra:** Master → Monitor FX. **Sinistra:** Monitor FX → Master.

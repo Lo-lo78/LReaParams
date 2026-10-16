@@ -668,9 +668,30 @@ void FxNavigator::clearProjectDeltaSolo() {
     scanTrack(GetMasterTrack(project_));
     for(int i=0;i<CountTracks(project_);++i)scanTrack(GetTrack(project_,i));
     if(clearAction) {
-        // Always run the native project-wide command: it also clears Delta
-        // Solo inside nested FX containers not covered by the wrapper scan.
+        // REAPER's native action clears *project* FX, including FX containers,
+        // but Monitoring FX are not saved in the project. They belong to the
+        // master's separate input/monitoring FX chain (0x1000000 + slot).
+        // Keep the native action for its full project scope; then explicitly
+        // clear any monitoring Delta wrappers still active after that action.
         Main_OnCommand(clearAction,0);
+        int remainingMonitorDelta = 0;
+        MediaTrack* master = GetMasterTrack(project_);
+        if(master) for(int i=0;i<TrackFX_GetRecCount(master);++i) {
+            const int monitorFx = 0x1000000 + i;
+            int delta=-1;
+            if(!deltaParameter(master,nullptr,monitorFx,delta)) continue;
+            if(TrackFX_GetParamNormalized(master,monitorFx,delta)<=0.5) continue;
+            // Do not rely only on the API's bool: some wrappers apply the
+            // write yet report false. Confirm the *actual* Delta state.
+            TrackFX_SetParamNormalized(master,monitorFx,delta,0.0);
+            if(TrackFX_GetParamNormalized(master,monitorFx,delta)<=0.5)
+                TrackFX_EndParamEdit(master,monitorFx,delta);
+            else ++remainingMonitorDelta;
+        }
+        if(remainingMonitorDelta>0) {
+            speech_("Delta Solo not cleared");
+            return;
+        }
         speech_(known>0 && active==0 ? "No Delta Solo" : "Delta Solo cleared");
         return;
     }

@@ -1,3 +1,13 @@
+# LReaParams 0.0.46.5 — Monitor FX Delta Solo globale
+
+**Ctrl+Maiusc+D** continua a usare l’azione nativa di REAPER per azzerare Delta Solo sugli FX del progetto. Poiché i **Monitor FX** sono una catena separata non salvata nel progetto, dopo l’azione nativa la DLL controlla esplicitamente i Delta Solo dei Monitor FX e li disattiva, verificando il valore effettivo. Se una modifica resta attiva, annuncia `Delta Solo not cleared` invece di confermare falsamente il successo.
+
+**Ctrl+D** rimane invariato: attiva/disattiva Delta Solo solo sull’FX corrente o evidenziato nel browser. Nessuna modifica a Master/Monitor come colonne, bypass, offline, riordino, F7/F8, Track Params, profili e MIDI.
+
+Nessuna compilazione locale: usare solo GitHub Actions e verificare in REAPER con NVDA.
+
+---
+
 # LReaParams 0.0.46.4 — Browser Master / Monitor: due colonne
 
 **Ctrl+P** apre il browser nella catena di partenza. **Freccia Destra** dalla colonna Master passa alla colonna Monitor FX; **Freccia Sinistra** dalla colonna Monitor ritorna a Master. Ogni colonna ricorda la propria posizione mentre il browser è aperto. La freccia opposta sul bordo esterno non fa nulla.

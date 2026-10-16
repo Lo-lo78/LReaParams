@@ -1,8 +1,7 @@
-LReaParams 0.0.46.4 — verifica statica, nessuna compilazione locale.
-PASS: Tools/audit.py (52 profili, SDK, Lua originali e vincoli sorgente)
-PASS: Testing/test46_4_static.py — frecce orizzontali Master/Monitor
-PASS: Testing/test46_3_static.py — isolamento delle navigazioni verticali
-PASS: Testing/test46_2_static.py — Delta Solo e Offline
-PASS: Testing/test46_1_static.py — scorciatoie del browser
-PASS: tutte le 36 verifiche sorgente in Tools/run_static.py (prima dell'ultima revisione limitata alla condizione Maiusc e alla descrizione About)
+LReaParams 0.0.46.5 — verifiche statiche, nessuna compilazione locale.
+PASS: Tools/audit.py (52 profili, SDK, Lua originali, contratti sorgente)
+PASS: 37 verifiche sorgente con Tools/run_static.py
+PASS: Testing/test46_5_static.py — Delta Solo globale anche in Monitor FX
+PASS: Testing/test46_4_static.py — colonne Master/Monitor
+PASS: Testing/test46_2_static.py — Delta Solo browser e Offline
 Build MSVC, test nativi e collaudo REAPER/NVDA: NON ESEGUITI.

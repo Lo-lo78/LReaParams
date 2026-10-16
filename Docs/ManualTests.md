@@ -1,3 +1,11 @@
+## 0.0.46.5 — Delta Solo globale e Monitor FX
+
+- [ ] Aggiungere un FX Monitor e attivare Delta Solo con Ctrl+D nel browser Monitor; premere Ctrl+Maiusc+D: deve disattivarsi e non essere più annunciato.
+- [ ] Attivare Delta Solo su due FX Monitor; Ctrl+Maiusc+D deve disattivarli entrambi.
+- [ ] Attivare Delta Solo contemporaneamente su un normale Track FX e su un Monitor FX: Ctrl+Maiusc+D deve disattivare entrambi.
+- [ ] Ripetere Ctrl+Maiusc+D senza Delta attivi: annuncio breve `No Delta Solo` quando il wrapper permette di verificarlo.
+- [ ] Verificare che Ctrl+D agisca ancora solo sull'FX evidenziato, senza cambiare colonna e che Master/Monitor restino separati per la navigazione verticale.
+
 ## 0.0.46.4 — Master e Monitor: passaggio orizzontale
 
 - [ ] Con 3 Master FX e 2 Monitor FX, aprire Ctrl+P da Master. Su/Giù deve leggere soltanto i 3 Master, totale 3.
