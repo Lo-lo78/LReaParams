@@ -1,4 +1,5 @@
 """0.0.42.1 source-only contract: CC precedes Auto, F8 unchanged."""
+from version_contract import version_at_least
 from pathlib import Path
 r = Path(__file__).resolve().parents[1]
 fx = (r/'src/FxNavigator.cpp').read_text(encoding='utf-8')
@@ -26,5 +27,5 @@ assert 'fxOrder_.ccLinks' in mem
 assert 'speech_(editF7_ ? editorParameterSpeech() : currentParameterSpeech());' in fx
 assert 'return valueMode_ ? "Value, " + currentParameterSpeech() : currentParameterSpeech();' in fx
 assert 'speech_(formattedValue());' in fx
-assert any('project(LReaParams VERSION 0.0.'+v in (r/'CMakeLists.txt').read_text() for v in ('42.1','43','44'))
+assert version_at_least(r, (0, 0, 42, 1))
 print('TEST42.1 CC-before-Auto accessible speech source contract PASS; runtime not tested')

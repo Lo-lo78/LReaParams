@@ -1,4 +1,5 @@
 """0.0.44 ReaComp/ReaGate source-only contracts. No native compilation."""
+from version_contract import version_at_least
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 h=(root/'include/lrp/DynamicsSpecial.h').read_text()
@@ -8,7 +9,7 @@ order=(root/'src/FxNavigatorOrder.cpp').read_text()
 profiles=(root/'src/FxOrder.cpp').read_text()
 mem=(root/'src/FxNavigatorMemories.cpp').read_text()
 cmake=(root/'CMakeLists.txt').read_text()
-assert 'VERSION 0.0.44' in cmake and 'src/FxNavigatorDynamics.cpp' in cmake
+assert version_at_least(root, (0, 0, 44)) and 'src/FxNavigatorDynamics.cpp' in cmake
 for piece in ('compRange=-200000','gateRange=-210000','"Main inputs"','"Auxiliary inputs"',
               '"Feedback pre-fader"','"Output feedback deprecated"','"Filter Preview"','"Hysteresis"','"Auto Make Up Gain"','"Invert gate"',
               '"0 ms, peak detector"','"Full range"','"Above "','"Below "'):

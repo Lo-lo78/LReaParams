@@ -1,6 +1,7 @@
 """0.0.43.5: transport shortcut gets consumed before REAPER Action List.
 Static source audit only: this is not a runtime keyboard/REAPER test.
 """
+from version_contract import version_at_least
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 router=(root/'src/InputRouter.cpp').read_text()
@@ -9,7 +10,7 @@ fx=(root/'src/FxNavigator.cpp').read_text()
 track=(root/'src/TrackNavigator.cpp').read_text()
 old=(root/'Legacy/Speak FX Params - TrackTake Navigator.lua').read_text()
 workflow=(root/'.github/workflows/build-windows.yml').read_text()
-assert 'VERSION 0.0.44' in (root/'CMakeLists.txt').read_text()
+assert version_at_least(root, (0, 0, 43, 5))
 assert 'JS_VKeys_Intercept' in old and 'transport_space_set_intercept' in old
 assert 'bool interceptTransport(MSG&) noexcept;' in header
 assert 'bool InputRouter::interceptTransport(MSG& message) noexcept' in router

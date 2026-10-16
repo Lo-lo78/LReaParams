@@ -1,4 +1,5 @@
 """ReaEQ 0.0.43.2 false-negative band-property report; source-only checks."""
+from version_contract import version_at_least
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 virtual=(root/'include/lrp/ReaEqVirtual.h').read_text()
@@ -6,7 +7,7 @@ update=(root/'src/FxNavigatorReaEq.cpp').read_text()
 test=(root/'Testing/ControlTests.cpp').read_text()
 cmake=(root/'CMakeLists.txt').read_text()
 workflow=(root/'.github/workflows/build-windows.yml').read_text()
-assert 'VERSION 0.0.44' in cmake
+assert version_at_least(root, (0, 0, 43, 2))
 assert 'bandWriteAcceptedOrVerified(' in virtual
 assert 'std::from_chars(first,last,actual)' in virtual
 assert 'const bool accepted=writeNamedConfig(key,std::to_string(raw));' in update

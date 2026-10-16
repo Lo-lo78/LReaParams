@@ -1,4 +1,5 @@
 """0.0.42 contracts: source-only, no C++ or Windows runtime invoked."""
+from version_contract import version_at_least
 from pathlib import Path
 r=Path(__file__).resolve().parents[1]
 ext=(r/'src/Extension.cpp').read_text()
@@ -8,7 +9,7 @@ mem=(r/'src/FxNavigatorMemories.cpp').read_text()
 hdr=(r/'include/lrp/FxNavigator.h').read_text()
 order=(r/'include/lrp/FxOrder.h').read_text()
 api=(r/'include/lrp/ReaperApi.h').read_text()
-assert any('project(LReaParams VERSION 0.0.'+v in (r/'CMakeLists.txt').read_text() for v in ('42','43'))
+assert version_at_least(r, (0, 0, 42))
 assert 'stopBackgroundMidi, actionCount' in ext
 assert 'LREAPARAMSSTOPMIDIBACKGROUND' in ext
 assert 'backgroundMidi_ = navigator_' in ext

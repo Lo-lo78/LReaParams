@@ -1,11 +1,12 @@
 """TEST24 source contracts only. Native compilation and GUI behaviour NOT verified."""
+from version_contract import version_at_least
 from pathlib import Path
 r=Path(__file__).resolve().parents[1]
 nav=(r/'src/FxNavigator.cpp').read_text()
 order=(r/'src/FxNavigatorOrder.cpp').read_text()
 profile=(r/'src/FxOrder.cpp').read_text()
 header=(r/'include/lrp/FxOrder.h').read_text()
-assert any('VERSION 0.0.'+str(v) in (r/'CMakeLists.txt').read_text() for v in (25,26,27,28,29,30,31,40,41,42,43,44))
+assert version_at_least(r, (0, 0, 24))
 assert 'createCustomOrder()' in order and 'if (!fxOrder_.storedCustomOrder())' in nav
 assert 'bool FxOrder::createCustomOrder()' in profile and 'customCreated_' in header
 assert 'if(stored)for(int id:order)' in profile

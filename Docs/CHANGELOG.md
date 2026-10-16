@@ -1,3 +1,8 @@
+## 0.0.44 GitHub Actions static-test correction
+- Fixed the TEST42 source check that rejected version 0.0.44 and prevented CMake from starting.
+- Historical regression tests now compare against their minimum supported version rather than pinning a future release number.
+- No C++ source, REAPER runtime behavior, or Track Params changes. GitHub Actions will compile and test natively.
+
 ## 0.0.44 — ReaComp e ReaGate accessibili
 
 - Adattatori Lua per Plugin Order, alias, Detector input discreto a otto
