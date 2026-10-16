@@ -178,6 +178,9 @@ private:
     void resetCurrentToDefault();
     bool resetAllToDefault(bool announceResult = true);
     void resetGridAndStep();
+    void copyParameterValue();
+    void copyFxSnapshot();
+    void pasteFxClipboard();
     void snapshotDefaultsIfMissing();
     int count() const;
     std::string parameterName() const;

@@ -1,1 +1,17 @@
-0.0.44.2: source-only audit + 26 Python source-contract tests PASS. Native C++ tests not run; GitHub Actions required. No local compilation performed.
+LReaParams 0.0.45 — source-only verification, 2026-10-16
+
+PASS: Tools/audit.py (48 FX profiles, 4 Track profiles, SDK hashes,
+      unchanged Lua, source contracts; NO native build).
+PASS: Testing/test45_static.py (new clipboard/default static contracts).
+PASS: Testing/test44_5_static.py (Shift+initial navigation).
+PASS: Testing/test44_4_static.py (persistent LastParam profile memory).
+PASS: Testing/test43_5_static.py (Ctrl+Space interception).
+PASS: Testing/test43_2_static.py (ReaEQ setter readback).
+PASS: Testing/test44_2_static.py (sparse Detector Input).
+PASS: Testing/test42_cc_speech_static.py (CC then Auto announcements).
+PASS: Testing/test23_static.py (F7/accessibility).
+
+The full historical suite was attempted but exceeded the execution limit;
+this is NOT a statement that every historical check passed. The Windows
+C++ build, CTest, REAPER, NVDA and system-clipboard behavior have NOT been
+run here. Build and test the DLL exclusively with GitHub Actions.

@@ -1,3 +1,7 @@
+## 0.0.45 — Clipboard FX e Default Snapshot sicuri
+
+Clipboard sistema: Ctrl+C copia il valore normalizzato del parametro (nuova funzione nativa), Ctrl+Alt+Maiusc+C copia l'intero FX in formato Lua `FXPARAM_SNAPSHOT_V1`, Ctrl+V applica il contenuto FX solo dopo la validazione. F7 mantiene Ctrl+C/X/V strutturali; EDIT Windows mantiene la Clipboard testuale. Default reset rinforzato con controlli preventivi e rollback su errore. Vedi `Docs/TEST45_CLIPBOARD_DEFAULTS.md`. Nessuna compilazione locale.
+
 ## 0.0.44.5 — Navigazione inversa per iniziale con Maiusc
 
 Le iniziali digitabili senza Maiusc continuano a ciclare in avanti; con Maiusc la ricerca procede all’indietro, con wrap, sul nome visibile del parametro. Conservate le selezioni F7 e la memoria FX persistente. Vedere TEST44_5_SHIFT_REVERSE_INITIAL.md. Solo sorgente; compilazione tramite GitHub Actions.

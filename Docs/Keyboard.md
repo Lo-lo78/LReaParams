@@ -1,3 +1,11 @@
+## 0.0.45 — Appunti dei valori FX
+
+- Ctrl+C: copia valore corrente (fuori F7).
+- Ctrl+V: incolla valore FX o snapshot completo valido (fuori F7).
+- Ctrl+Alt+Maiusc+C: copia snapshot completo dello stesso FX, formato Lua.
+- F7 Ctrl+C/X/V: modifica strutturale invariata.
+- EDIT: appunti di testo normali.
+
 ## 0.0.44.5 — Lettere, numeri e punteggiatura
 
 Carattere stampabile senza Maiusc: prossimo parametro con quella iniziale (wrap in avanti).

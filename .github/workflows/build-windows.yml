@@ -68,6 +68,8 @@ jobs:
         run: python Testing/test44_4_static.py
       - name: Verify 0.0.44.5 reverse Shift-initial navigation (source only)
         run: python Testing/test44_5_static.py
+      - name: Verify 0.0.45 clipboard and default snapshot safety (source only)
+        run: python Testing/test45_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

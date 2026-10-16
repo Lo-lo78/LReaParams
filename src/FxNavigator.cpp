@@ -726,17 +726,43 @@ bool FxNavigator::resetAllToDefault(bool announceResult) {
     }
     const auto values=fxOrder_.defaultValues();
     if(values.empty()){speech_("No default snapshot");return false;}
-    if(static_cast<int>(values.size())!=fxOrder_.defaultValueCount()) {speech_("Default parameter identities changed. No changes");return false;}
+    // A default is only safe when it exactly describes the current set of
+    // native parameters. Reject missing/changed IDs BEFORE any audio write.
+    if(static_cast<int>(values.size())!=count_ ||
+       static_cast<int>(values.size())!=fxOrder_.defaultValueCount() ||
+       (take_?TakeFX_GetNumParams(take_,fx_):TrackFX_GetNumParams(track_,fx_))!=count_) {
+        speech_("Default parameter identities changed. No changes");return false;
+    }
+    std::vector<double> previous(static_cast<size_t>(count_));
+    for(int i=0;i<count_;++i) {
+        const auto it=values.find(i);
+        if(it==values.end() || !std::isfinite(it->second) || it->second<0 || it->second>1) {
+            speech_("Default parameter identities changed. No changes");return false;
+        }
+        const double value=take_?TakeFX_GetParamNormalized(take_,fx_,i):TrackFX_GetParamNormalized(track_,fx_,i);
+        if(!std::isfinite(value)||value<0||value>1){speech_("Default read failed. No changes");return false;}
+        previous[static_cast<size_t>(i)]=value;
+    }
     Undo_BeginBlock2(project_);
     int restored=0;
-    for(const auto& [id,value]:values) {
-        if(id<0||id>=count_)continue;
-        bool ok=take_?TakeFX_SetParamNormalized(take_,fx_,id,value):TrackFX_SetParamNormalized(track_,fx_,id,value);
-        if(ok) {++restored;if(take_)TakeFX_EndParamEdit(take_,fx_,id);else TrackFX_EndParamEdit(track_,fx_,id);}
+    for(int i=0;i<count_;++i) {
+        const double value=values.at(i);
+        const bool ok=take_?TakeFX_SetParamNormalized(take_,fx_,i,value):TrackFX_SetParamNormalized(track_,fx_,i,value);
+        if(!ok)break;
+        ++restored;
+        if(take_)TakeFX_EndParamEdit(take_,fx_,i);else TrackFX_EndParamEdit(track_,fx_,i);
+    }
+    if(restored!=count_) {
+        // Best-effort rollback and an Undo step as second line of defense.
+        // Include the parameter whose setter may have written and still
+        // reported failure (as observed with some REAPER band properties).
+        for(int i=std::min(restored,count_-1);i>=0;--i) {
+            if(take_) {TakeFX_SetParamNormalized(take_,fx_,i,previous[static_cast<size_t>(i)]);TakeFX_EndParamEdit(take_,fx_,i);}
+            else {TrackFX_SetParamNormalized(track_,fx_,i,previous[static_cast<size_t>(i)]);TrackFX_EndParamEdit(track_,fx_,i);}
+        }
     }
     Undo_EndBlock2(project_,"LReaParams: restore FX defaults",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
-    if(restored==0) {speech_("No parameters restored");return false;}
-    if(restored!=static_cast<int>(values.size())){speech_("Default restore incomplete. Use REAPER Undo");return false;}
+    if(restored!=count_){speech_("Default restore incomplete. Use REAPER Undo");return false;}
     auto& compare=compareState();compare.armed=false;pickup_.clear();
     if(announceResult)speech_("Reset "+std::to_string(restored)+" parameters. "+currentParameterSpeech());
     return true;
@@ -842,6 +868,9 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     // Ctrl+Q parks MIDI while releasing the native window, input hook and
     // REAPER keyboard focus. Extension owns the transition, not the navigator.
     if (k.ctrl && !k.shift && !k.alt && k.vk == 'Q') return true;
+    // Windows clipboard: plain Ctrl+C/V outside F7, full FX Ctrl+Alt+Shift+C.
+    if (k.ctrl && k.alt && k.shift && !k.altGr && k.vk=='C') return true;
+    if (k.ctrl && !k.alt && !k.shift && (k.vk=='C'||k.vk=='V') && !editF7_) return true;
     if (acceptsAdvanced(k) && !searchMode_) return true;
     if (searchMode_ && k.ctrl && (k.vk==VK_UP || k.vk==VK_DOWN))return true;
     if (searchMode_) return k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_BACK||
@@ -1158,6 +1187,17 @@ void FxNavigator::handle(const Key& k) {
             }
         }
         return;
+    }
+    // EDIT, search, numeric fields and F7 own their respective clipboard
+    // semantics. Do not steal Ctrl+C/V from Windows or structural editing.
+    if (!memoryManager_ && !textEdit_ && !searchMode_ && !numericEdit_) {
+        if (k.ctrl && k.alt && k.shift && !k.altGr && k.vk=='C') {
+            if(!k.repeat)copyFxSnapshot();return;
+        }
+        if (!editF7_ && k.ctrl && !k.alt && !k.shift) {
+            if (k.vk=='C') {if(!k.repeat)copyParameterValue();return;}
+            if (k.vk=='V') {if(!k.repeat)pasteFxClipboard();return;}
+        }
     }
     if (memoryManager_) {memoryNavigate(k);return;}
     if(recentMode_){handleRecent(k);return;}
