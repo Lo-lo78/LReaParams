@@ -1,3 +1,10 @@
+# 0.0.43.2 — ReaEQ: evitare falsi messaggi di errore sulle bande
+
+- Corretto `ReaEQ band update failed` dopo modifiche riuscite di Band Enabled e Band Type: il valore restituito dall'API di scrittura da solo non prova il fallimento.
+- Dopo la scrittura, verifica la proprietà tramite lettura indipendente; se necessario controlla anche i campi Enabled/Type nel chunk effettivo di ReaEQ.
+- Non nasconde gli errori autentici: se la scrittura non viene accettata e nessuna lettura conferma il valore richiesto, mantiene il messaggio di errore.
+- Restano invariati aggiunta/rimozione delle bande, ordine dei parametri, FX/Track Params, MIDI, profili e accessibilità. Test statici e C++ preparati per GitHub Actions; nessuna compilazione locale.
+
 # 0.0.43.1 — ReaEQ: corretta posizione di Enabled e Type
 
 - Plugin Order ReaEQ resta esattamente nell’ordine del Lua: `Enabled`, `Type`, tre parametri reali per banda, poi gestione bande e controlli globali.

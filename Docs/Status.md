@@ -46,3 +46,5 @@ Ctrl+R ora apre lo storico Lua; la rilettura completa è su Ctrl+Shift+R. Track 
 Il pacchetto è un candidato sorgente da compilare e verificare: non va descritto come migrazione completa o DLL già funzionante.
 
 - 0.0.43.1: correzione posizione di Enabled/Type nelle Custom Order esistenti di ReaEQ; richiede test NVDA sul vecchio profilo.
+
+- 0.0.43.2: verifica scrittura ReaEQ Enabled/Type dopo il setter per evitare false segnalazioni `ReaEQ band update failed`; collaudo REAPER necessario.

@@ -36,3 +36,7 @@ essere collaudati con CC interno, CC nativo, envelope ACT e doppio suffisso.
 ## 0.0.43.1 — ordine ReaEQ Custom Order
 
 Aggiunti controlli statici e test C++ (eseguiti solo dal workflow GitHub Actions) per ordini Lua precedenti ai virtuali, suffix generato dalla 0.0.43, idempotenza, preservazione dell’ordine personalizzato e caricamento non distruttivo dei profili `.fx`. Non è stata eseguita alcuna compilazione locale.
+
+## 0.0.43.2 — Band property false-negative reports
+
+Aggiunto test statico `Testing/test43_2_static.py` e casi in `Testing/ControlTests.cpp`, eseguibili in C++ soltanto tramite GitHub Actions. Verifica del valore letto dopo `BANDENABLED#` / `BANDTYPE#`, fallback chunk e mantenimento di messaggi per veri errori. Nessuna compilazione locale, nessun test REAPER/NVDA effettuato.

@@ -57,7 +57,21 @@ bool FxNavigator::eqVirtualSet(int id,double normalized) {
     if(old.empty()){speech_("ReaEQ band property unavailable");return false;}
     if(old==std::to_string(raw))return false;
     Undo_BeginBlock2(project_);
-    const bool ok=writeNamedConfig(key,std::to_string(raw));
+    const bool accepted=writeNamedConfig(key,std::to_string(raw));
+    // Do not announce a failure based on the API bool alone: on some REAPER
+    // builds ReaEQ applies BANDENABLED/BANDTYPE even if that bool is false.
+    const std::string observed=namedConfig(key);
+    bool ok=reaeq::bandWriteAcceptedOrVerified(accepted,observed,raw);
+    if(!ok) {
+        // The named-property readback might also be stale. Check the actual
+        // state in ReaEQ's chunk before deciding that the change failed.
+        try {
+            const ReaEqChunk verified(namedConfig("vst_chunk"));
+            if(band<verified.bands())
+                ok=reaeq::enabledId(id)?verified.enabled(band)==raw:
+                    verified.rawType(band)==raw;
+        }catch(...) {} // Unsupported chunks are not treated as success.
+    }
     Undo_EndBlock2(project_,"LReaParams: ReaEQ band property",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
     if(ok){pickup_.erase(id);rememberPosition();}
     else speech_("ReaEQ band update failed");

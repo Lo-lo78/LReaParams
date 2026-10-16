@@ -41,6 +41,15 @@ int main() {
         require(reaeq::target==-99998 && reaeq::action==-99999);
         for(int i=0;i<11;++i)require(reaeq::userFromRaw(reaeq::rawFromUser(i))==i);
         require(reaeq::rawFromUser(2)==8 && reaeq::userFromRaw(2)==10);
+        // ReaEQ reports an unreliable setter boolean on some hosts. A
+        // successful readback must not be announced as an update failure.
+        require(reaeq::bandWriteAcceptedOrVerified(false,"1",1));
+        require(reaeq::bandWriteAcceptedOrVerified(false,"08",8));
+        require(reaeq::bandWriteAcceptedOrVerified(true,"",8));
+        require(!reaeq::bandWriteAcceptedOrVerified(true,"0",1)); // setter accepted, but readable state contradicts it
+        require(!reaeq::bandWriteAcceptedOrVerified(false,"0",1));
+        require(!reaeq::bandWriteAcceptedOrVerified(false,"",1));
+        require(!reaeq::bandWriteAcceptedOrVerified(false,"1junk",1));
         const auto initial=reaeq::pluginOrder(2,9,compareParamIndex);
         require(initial.size()==16 && initial[0]==-100000 && initial[1]==-100001 &&
             initial[5]==-100002 && initial[6]==-100003 &&

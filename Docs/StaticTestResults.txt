@@ -20,3 +20,5 @@ TEST42 source checks PASS; MSVC/REAPER/NVDA/MIDI hardware not executed
 0.0.43.1 ReaEQ legacy Custom Order insertion contracts PASS; C++/REAPER NOT RUN
 0.0.43 ReaEQ source contracts and virtual ID fixtures PASS; native/runtime NOT RUN
 20 source-only suites passed. C++/REAPER tests NOT RUN.
+0.0.43.2 ReaEQ band readback/false-negative source checks PASS; native/REAPER NOT RUN
+21 source-only checks verified (audit plus 20 test scripts, in two groups). C++/REAPER tests NOT RUN.

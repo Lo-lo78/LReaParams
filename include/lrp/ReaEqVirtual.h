@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <array>
 #include <string>
+#include <charconv>
+#include <system_error>
 #include <vector>
 namespace lrp::reaeq {
 // Lua FX Params IDs: preserve these verbatim in existing .fx profiles.
@@ -20,6 +22,19 @@ inline const std::array<const char*,11>& names(){static const std::array<const c
     "Parallel band pass","Band alt","Band alt 2"};return list;}
 inline int userFromRaw(int raw){auto const& list=rawTypes();for(int i=0;i<11;++i)if(list[i]==raw)return i;return 2;}
 inline int rawFromUser(int user){return rawTypes()[static_cast<size_t>(std::clamp(user,0,10))];}
+// Some host ReaEQ named-property setters can report false even after a
+// successful change. A matching numeric readback is equally authoritative.
+// Keep real failures observable: false + no matching readback means failure.
+inline bool bandWriteAcceptedOrVerified(bool hostAccepted,const std::string& observed,int requested) {
+    // A readable, contradictory value takes precedence over the setter bool;
+    // the caller can still verify the underlying chunk independently.
+    if(observed.empty())return hostAccepted;
+    int actual=0;
+    const auto* first=observed.data();
+    const auto* last=first+observed.size();
+    const auto result=std::from_chars(first,last,actual);
+    return result.ec==std::errc{} && result.ptr==last && actual==requested;
+}
 inline std::vector<int> pluginOrder(int bands,int physicalCount,int compareId){
     std::vector<int> out;
     bands=std::clamp(bands,0,64);

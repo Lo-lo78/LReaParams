@@ -48,6 +48,8 @@ jobs:
         run: python Testing/test43_static.py
       - name: Verify TEST43.1 ReaEQ per-band order and legacy Custom Order (source only)
         run: python Testing/test43_1_static.py
+      - name: Verify TEST43.2 ReaEQ band setter readback (source only)
+        run: python Testing/test43_2_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build
