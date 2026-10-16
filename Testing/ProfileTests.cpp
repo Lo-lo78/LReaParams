@@ -145,6 +145,52 @@ int main(int argc, char** argv) {
             reaeq::target,reaeq::action,compareParamIndex,6,7,8};
         check(migratedEq.visibleOrder()==intended,"ReaEQ virtuals still follow Global Gain");
         check(readFile(eqPath)==storedEq,"Passive ReaEQ order migration rewrote .fx profile");
+        // Lua-compatible LastParam survives REAPER restart without changing
+        // user CustomOrder, hidden params, groups, MIDI or arbitrary extras.
+        const auto posRoot = root / L"persistent-position";
+        const auto posNames = [](int id) {
+            return id == compareParamIndex ? std::string("Compare") :
+                std::string("Parameter ") + std::to_string(id);
+        };
+        FxOrder positionProfile;
+        positionProfile.load(posRoot, "Position test", 6, posNames);
+        positionProfile.ccLinks[2] = "1,74";
+        positionProfile.groupNames[1] = "Kick";
+        positionProfile.setExtraValue("unknown_future", "leave\nuntouched");
+        check(positionProfile.save(), "Cannot create position fixture");
+        const auto posDirectory = posRoot / L"LReaParams" / L"Plugins";
+        const auto posFile = fs::directory_iterator(posDirectory)->path();
+        const auto beforePosition = parseNative(readFile(posFile)).payload;
+        check(positionProfile.persistLastParameter(4,"Parameter 4"), "Cannot persist LastParam");
+        const auto afterPosition = parseNative(readFile(posFile)).payload;
+        std::string expected = beforePosition;
+        const auto oldField = expected.find("LastParam=");
+        check(oldField != std::string::npos,"Missing LastParam test field");
+        const auto afterField = expected.find('\n', oldField);
+        check(afterField != std::string::npos,"Missing field boundary");
+        expected.replace(oldField, afterField-oldField, "LastParam=4\tParameter 4");
+        check(afterPosition == expected,"LastParam update changed an unrelated profile byte");
+        FxOrder nextSession;
+        nextSession.load(posRoot, "Position test", 6, posNames);
+        check(nextSession.lastParameterRecord() == "4\tParameter 4", "LastParam not restored after restart");
+        check(nextSession.ccLinks.at(2) == "1,74" && nextSession.groupNames.at(1) == "Kick" &&
+              nextSession.extraValue("unknown_future") == "leave\nuntouched",
+              "Position update damaged CC, groups or future fields");
+        check(nextSession.persistLastParameter(1,"Parameter 1"), "Cannot update a saved position");
+        FxOrder laterSession;
+        laterSession.load(posRoot,"Position test",6,posNames);
+        check(laterSession.lastParameterRecord()=="1\tParameter 1", "Recent LastParam lost");
+        const auto diskBeforeConflict = readFile(posFile);
+        // An external writer wins: never silently overwrite a newer profile.
+        FxOrder stale;
+        stale.load(posRoot,"Position test",6,posNames);
+        laterSession.persistLastParameter(2,"Parameter 2");
+        const auto externalBytes=readFile(posFile);
+        rejected([&] {stale.persistLastParameter(3,"Parameter 3");});
+        check(readFile(posFile)==externalBytes && diskBeforeConflict!=externalBytes,
+              "Stale LastParam save overwrote an external change");
+        const auto backupRoot=posRoot/L"LReaParams"/L"Backups"/L"ProfileEdits";
+        check(fs::exists(backupRoot) && !fs::is_empty(backupRoot),"LastParam backups missing");
         const auto collision = root / L"collision.txt";
         check(writeNewVerified(collision, "first"), "Create failed");
         check(!writeNewVerified(collision, "second") && readFile(collision) == "first", "Collision replaced bytes");

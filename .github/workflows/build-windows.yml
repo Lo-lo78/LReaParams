@@ -62,6 +62,10 @@ jobs:
         run: python Testing/test44_1_static.py
       - name: Verify 0.0.44.2 normalized sparse detector readback (source only)
         run: python Testing/test44_2_static.py
+      - name: Verify 0.0.44.3 FX initial-character cyclic navigation (source only)
+        run: python Testing/test44_3_static.py
+      - name: Verify 0.0.44.4 persistent FX LastParam position (source only)
+        run: python Testing/test44_4_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

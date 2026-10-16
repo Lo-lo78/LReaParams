@@ -5,7 +5,10 @@
 #include <functional>
 
 namespace lrp {
-struct Key { UINT vk{}; bool ctrl{}, alt{}, shift{}, repeat{}; HWND window{}; };
+// character is the printable character produced by the active keyboard layout,
+// captured at key-down (not the virtual-key numeric code). It stays empty for
+// non-text gestures such as arrows, F keys, Ctrl+shortcuts and dead keys.
+struct Key { UINT vk{}; bool ctrl{}, alt{}, shift{}, repeat{}; HWND window{}; wchar_t character{}; bool altGr{}; };
 // All native navigators share one owned, offscreen keyboard window.
 class Navigator {
 public:

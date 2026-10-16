@@ -331,6 +331,69 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
     // Older Lua profiles may contain a custom order without an explicit view flag.
     if(hasRealModifications())customCreated_=true;
 }
+std::string FxOrder::lastParameterRecord() const {
+    const auto it = profile_.headers.find("LastParam");
+    return loaded_ && it != profile_.headers.end() ? it->second : std::string();
+}
+
+bool FxOrder::persistLastParameter(int parameter, const std::string& parameterName) {
+    if (!loaded_ || resource_.empty() || file_.empty() || parameterName.empty()) return false;
+    // This is a position-only write: never serialize the in-memory Custom Order,
+    // which may contain old aliases or virtual controls not yet edited by F7.
+    const std::string newRecord = std::to_string(parameter) + "\t" + oneLine(parameterName);
+    if (lastParameterRecord() == newRecord && existed_) return true;
+    std::string payload = profile_.payload;
+    const std::string prefix = "LastParam=";
+    std::size_t begin = 0;
+    bool found = false;
+    while (begin < payload.size()) {
+        const std::size_t newline = payload.find('\n', begin);
+        const std::size_t end = newline == std::string::npos ? payload.size() : newline;
+        if (payload.compare(begin, prefix.size(), prefix) == 0) {
+            const bool crlf = end > begin && payload[end - 1] == '\r';
+            payload.replace(begin, end - begin, prefix + newRecord + (crlf ? "\r" : ""));
+            found = true;
+            break;
+        }
+        if (newline == std::string::npos) break;
+        begin = newline + 1;
+    }
+    if (!found) throw ProfileError("FX profile has no LastParam field");
+    // Full parser and native envelope checks before touching the original.
+    auto checked = parseLegacy(payload);
+    if (checked.kind != ProfileKind::fx || checked.headers.at("PluginRaw") != rawName_)
+        throw ProfileError("FX profile identity changed");
+    const auto bytes = serializeNative(checked);
+    std::filesystem::create_directories(file_.parent_path());
+    if (existed_) {
+        if (!std::filesystem::exists(file_) || std::filesystem::is_symlink(file_))
+            throw ProfileError("FX profile replaced externally");
+        const auto original = readFile(file_);
+        if (sha256(original) != loadedDigest_)
+            throw ProfileError("FX profile changed externally; position not overwritten");
+        if (original == bytes) {profile_ = std::move(checked); return true;}
+        const auto backupRoot = resource_ / L"LReaParams" / L"Backups" / L"ProfileEdits";
+        std::filesystem::create_directories(backupRoot);
+        if (!writeNewVerified(backupRoot / std::filesystem::u8path(sha256(original) + ".fx"), original))
+            throw ProfileError("Cannot back up FX profile");
+    } else if (std::filesystem::exists(file_)) {
+        throw ProfileError("FX profile appeared externally");
+    }
+    auto temporary = file_;
+    temporary += L".tmp-" + std::to_wstring(GetCurrentProcessId());
+    if (std::filesystem::exists(temporary)) throw ProfileError("Stale FX profile temp file");
+    if (!writeNewVerified(temporary, bytes)) throw ProfileError("Cannot stage FX position");
+    if (parseNative(readFile(temporary)).payload != payload)
+        throw ProfileError("Position profile verification failed");
+    if (!MoveFileExW(temporary.c_str(), file_.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+        throw ProfileError("Cannot commit FX position; backup preserved");
+    if (readFile(file_) != bytes) throw ProfileError("FX position readback mismatch");
+    profile_ = std::move(checked);
+    existed_ = true;
+    loadedDigest_ = sha256(bytes);
+    return true;
+}
+
 bool FxOrder::save() {
     if(!loaded_ || resource_.empty())return false;
     normalize();

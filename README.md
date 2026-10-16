@@ -1,4 +1,17 @@
-# LReaParams 0.0.44.2 — ReaComp / ReaGate (sorgente GitHub Actions)
+# LReaParams 0.0.44.4 — FX positions survive REAPER restarts
+
+FX Params now saves the last visited parameter as Lua-compatible `LastParam`
+inside the plugin's `.fx` profile when leaving or switching FX/track. Re-entering
+after closing REAPER restores the saved parameter. Session memory remains more
+specific and takes priority while REAPER stays open. Other profile content is
+preserved and position-only writes are verified and backed up. See
+`Docs/TEST44_4_PERSISTENT_FX_POSITION.md`.
+
+**Do not compile locally.** Use GitHub Actions for MSVC and CTest.
+
+---
+
+# LReaParams 0.0.44.3 — ReaComp / ReaGate (sorgente GitHub Actions)
 
 Questa versione riparte dalla 0.0.43.5 già collaudata dall'utente per
 Ctrl+Spazio e aggiunge le funzioni accessibili del Lua FX Params per
@@ -77,3 +90,33 @@ Comando Windows CMD da lanciare nella cartella del repository:
 
 ## Correzioni 0.0.44.1
 Posizione FX memorizzata anche su parametri con alias del Lua e gestione prudente degli otto valori discreti di Detector Input ReaComp/ReaGate; vedere `Docs/TEST44_1_POSITION_DETECTOR.md`. Nessuna compilazione locale.
+
+
+## 0.0.44.3 — Navigazione rapida per iniziale (prima di 0.0.45)
+
+Nella griglia FX Params (Plugin Order, Custom Order, gruppi, risultati filtrati
+e editor F7), premere un carattere stampabile porta al **prossimo parametro
+visibile che inizia con quel carattere**, seguendo la lista circolarmente.
+Premendo `P` più volte si cicla per esempio tra `Pan`, `Portamento`, e
+qualsiasi altro parametro che inizi con P; analogamente `1`, `#`, `(`,
+`-` e altri caratteri di punteggiatura, dove presenti nelle etichette.
+Le lettere sono confrontate senza distinzione tra maiuscole/minuscole.
+Se non c'è corrispondenza, nessun annuncio e nessun cambiamento della posizione.
+Il caso di un'unica corrispondenza rilegge il parametro anche se è già corrente.
+
+La conversione usa `ToUnicodeEx` e la disposizione tastiera Windows corrente:
+non si confondono i codici VK_OEM della punteggiatura con i caratteri digitati.
+Le scorciatoie con Ctrl/Alt, il trasporto, gli editor di testo Windows,
+Value, F8 e la navigazione Track Params non sono modificati.
+La posizione raggiunta usa la stessa memoria di sessione della navigazione
+ordinaria; in F7 le selezioni esistenti vengono conservate.
+
+**Solo sorgenti:** compilazione esclusivamente con GitHub Actions.
+Per il collaudo, provare una P ripetuta, numeri e punteggiatura su un plugin
+con etichette corrispondenti; controllare anche F7 e un gruppo salvato.
+
+**Git commit 0.0.44.3 (Windows CMD):**
+
+```cmd
+git add . && git commit -m "0.0.44.3: add cyclic FX parameter navigation by initial" && git push
+```

@@ -1,3 +1,9 @@
+## 0.0.44.4 — Last FX parameter persists after REAPER restart
+
+FX Params now stores `LastParam` inside each plugin `.fx` file when the user closes the navigator or switches FX/track. When REAPER restarts, the parameter position is restored from that field if there is no more-specific current session position. Profile edits are backed up and guarded against concurrent changes; a background MIDI navigator cannot overwrite this position. See `Docs/TEST44_4_PERSISTENT_FX_POSITION.md`.
+
+Still source-only, pending MSVC and real REAPER/NVDA tests. The rest of the migration remains incomplete.
+
 # Stato 0.0.44.2 — adattatori ReaComp/ReaGate
 
 Aggiunti in C++ gli adattatori non audio dei parametri speciali di
@@ -60,3 +66,27 @@ Il pacchetto è un candidato sorgente da compilare e verificare: non va descritt
 
 ## 0.0.44.1 source fix
 Position recovery now accepts Lua aliases as well as original REAPER parameter names. The detector setter tries exact raw values first, then normalized writing only within a verified host range; debug readback captures unconfirmed high-value modes. Physical REAPER testing pending.
+
+
+## 0.0.44.3 — Navigazione rapida per iniziale (prima di 0.0.45)
+
+Nella griglia FX Params (Plugin Order, Custom Order, gruppi, risultati filtrati
+e editor F7), premere un carattere stampabile porta al **prossimo parametro
+visibile che inizia con quel carattere**, seguendo la lista circolarmente.
+Premendo `P` più volte si cicla per esempio tra `Pan`, `Portamento`, e
+qualsiasi altro parametro che inizi con P; analogamente `1`, `#`, `(`,
+`-` e altri caratteri di punteggiatura, dove presenti nelle etichette.
+Le lettere sono confrontate senza distinzione tra maiuscole/minuscole.
+Se non c'è corrispondenza, nessun annuncio e nessun cambiamento della posizione.
+Il caso di un'unica corrispondenza rilegge il parametro anche se è già corrente.
+
+La conversione usa `ToUnicodeEx` e la disposizione tastiera Windows corrente:
+non si confondono i codici VK_OEM della punteggiatura con i caratteri digitati.
+Le scorciatoie con Ctrl/Alt, il trasporto, gli editor di testo Windows,
+Value, F8 e la navigazione Track Params non sono modificati.
+La posizione raggiunta usa la stessa memoria di sessione della navigazione
+ordinaria; in F7 le selezioni esistenti vengono conservate.
+
+**Solo sorgenti:** compilazione esclusivamente con GitHub Actions.
+Per il collaudo, provare una P ripetuta, numeri e punteggiatura su un plugin
+con etichette corrispondenti; controllare anche F7 e un gruppo salvato.

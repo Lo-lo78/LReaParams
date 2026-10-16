@@ -17,6 +17,10 @@ public:
               int paramCount, std::function<std::string(int)> paramName,
               const std::vector<int>& nativeOrder = {});
     bool save(); // only called after an intentional structural change
+    // Lua LastParam: persists the last visited parameter in this plugin's .fx
+    // profile, without rewriting CustomOrder, groups, MIDI links or snapshots.
+    std::string lastParameterRecord() const;
+    bool persistLastParameter(int parameter, const std::string& name);
     // A parked MIDI navigator is a snapshot of a foreground navigator.
     // Rebind callbacks which originally captured that foreground object's this.
     void rebindParamName(std::function<std::string(int)> callback) { paramName_ = std::move(callback); }

@@ -56,3 +56,27 @@ I campi nativi permettono Ctrl+A/C/X/V, cursore e selezione Windows. L'editor nu
 F10 non ha funzione; F12 singolo riservato, Ctrl+F12 slot 12; Alt+F10/F11/F12 ai watcher OSARA. Track Params conserva la tastiera TEST30. Le funzionalità mancanti sono in Status.md.
 
 0.0.43.4: Ctrl+Spazio invoca direttamente l’azione REAPER 40073 (Transport: Play/pause) e riprende dal punto di pausa.
+
+
+## 0.0.44.3 — Navigazione rapida per iniziale (prima di 0.0.45)
+
+Nella griglia FX Params (Plugin Order, Custom Order, gruppi, risultati filtrati
+e editor F7), premere un carattere stampabile porta al **prossimo parametro
+visibile che inizia con quel carattere**, seguendo la lista circolarmente.
+Premendo `P` più volte si cicla per esempio tra `Pan`, `Portamento`, e
+qualsiasi altro parametro che inizi con P; analogamente `1`, `#`, `(`,
+`-` e altri caratteri di punteggiatura, dove presenti nelle etichette.
+Le lettere sono confrontate senza distinzione tra maiuscole/minuscole.
+Se non c'è corrispondenza, nessun annuncio e nessun cambiamento della posizione.
+Il caso di un'unica corrispondenza rilegge il parametro anche se è già corrente.
+
+La conversione usa `ToUnicodeEx` e la disposizione tastiera Windows corrente:
+non si confondono i codici VK_OEM della punteggiatura con i caratteri digitati.
+Le scorciatoie con Ctrl/Alt, il trasporto, gli editor di testo Windows,
+Value, F8 e la navigazione Track Params non sono modificati.
+La posizione raggiunta usa la stessa memoria di sessione della navigazione
+ordinaria; in F7 le selezioni esistenti vengono conservate.
+
+**Solo sorgenti:** compilazione esclusivamente con GitHub Actions.
+Per il collaudo, provare una P ripetuta, numeri e punteggiatura su un plugin
+con etichette corrispondenti; controllare anche F7 e un gruppo salvato.

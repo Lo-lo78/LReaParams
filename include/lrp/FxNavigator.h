@@ -24,7 +24,7 @@ public:
     bool sameMidiFx(const FxNavigator& other) const noexcept;
     bool openFxMemories(bool standalone = false);
     bool isMemoryManager() const noexcept { return memoryManager_; } // seven-column Lua F8 navigator
-    void end() noexcept override { active_ = false; recentMode_=false; numericEdit_ = false; learnCc_ = false; floatingCc_ = false; floatingWaiting_ = false; pickup_.clear(); valueMode_ = false; searchMode_ = false; editF7_ = false; textEdit_ = false; memoryManager_ = false; defaultConfirm_=false; defaultRegenerate_=false; memoryStandalone_ = false; groupSlot_ = 0; groupReturnActive_ = false; f7FilterActive_ = false; f7FullView_.clear(); f7FilterPositions_.clear(); f7FilterQuery_.clear(); search_.clear(); entries_.clear(); count_ = 0; }
+    void end() noexcept override;
     bool active() const noexcept override { return active_; }
     bool valid() const;
     bool contextUnchanged() const override;
@@ -157,6 +157,8 @@ private:
     int visibleFxIndex() const;
     int rememberedFxIndex(const StoredContext& state) const;
     void restoreParameterPosition();
+    void restorePersistedParameter();
+    void flushPersistentPosition() noexcept;
     void rememberPosition();
     std::string contextName() const;
     std::string fxDisplayName() const;
@@ -187,6 +189,7 @@ private:
     void nudge(int direction, bool big);
     void setValue(double value);
     void navigate(int delta);
+    void cycleByInitial(wchar_t character);
     void findMatching(bool forward);
     // Quoted queries match adjacent words: whole preceding words and a
     // possible final prefix. A quoted single word requires a whole word.
@@ -239,6 +242,8 @@ private:
     int fx_{}, parameter_{}, count_{}, columns_ = 10;
     int stepScale_ = 0;
     bool active_ = false, valueMode_ = false, hadUi_ = false, searchMode_ = false;
+    bool persistentPositionWriter_ = true; // disabled for background-MIDI snapshots
+
     std::string search_;
     FxOrder fxOrder_;
     std::filesystem::path resourceRoot_;

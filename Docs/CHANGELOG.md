@@ -1,3 +1,19 @@
+## 0.0.44.4 — Persistent FX positions
+
+- Per-plugin `.fx` LastParam read/write as in Lua; survives REAPER restart.
+- Restore from profile if no per-instance session memory; save only on exit/switch.
+- Atomic verified position-only profile update with SHA-256 conflict check and backups.
+- Background MIDI snapshot cannot overwrite a newer position.
+- Added static checks and native profile CTest cases (GitHub Actions only).
+
+## 0.0.44.3 — Navigazione rapida per iniziale (pre-0.0.45)
+
+- Riprodotto `list_cycle_by_initial` del Lua: pressione ripetuta di lettere, cifre e punteggiatura per ciclare tra i nomi dei parametri visibili; ritorno circolare, silenzio se assente.
+- Traduzione locale di key-down Windows con `ToUnicodeEx` (layout, Shift, AltGr) senza generare WM_CHAR o alterare lo stato dei tasti morti.
+- Compatibile con Plugin Order, Custom Order, gruppi, ricerche filtrate e F7; conservazione selezioni e memoria sessione.
+- Nessuna modifica a MIDI, Auto, ReaEQ, ReaComp, ReaGate, Track Params, profili o trasporto Space/Ctrl+Space.
+- Solo audit e verifiche statiche. Non compilato né eseguito in REAPER.
+
 ## 0.0.44.2 — Detector Input sparse host normalization
 - Decode SignIn as raw enum or as normalized [0,1] using the 1084-step host scale.
 - Remove the incorrect raw-range prerequisite for normalized fallback.

@@ -2,7 +2,28 @@
 #include <cwchar>
 #include <cwctype>
 
+
 namespace lrp {
+namespace {
+// Use the user's actual Windows keyboard layout, including shifted digits and
+// OEM punctuation. VK codes (especially VK_OEM_*) are not printable characters.
+// Flag 0x04 avoids altering the thread's dead-key state (Windows 10 1607+).
+// No WM_CHAR is synthesized: that would double-dispatch native EDIT fields.
+wchar_t printableKey(UINT vk) noexcept {
+    if (vk == VK_SPACE || vk < VK_0 || vk > VK_OEM_CLEAR) return 0;
+    BYTE state[256]{};
+    if (!GetKeyboardState(state)) return 0;
+    const HKL layout = GetKeyboardLayout(0);
+    const UINT scan = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, layout);
+    if (!scan) return 0;
+    wchar_t chars[4]{};
+    const int length = ToUnicodeEx(vk, scan, state, chars, 4, 0x04, layout);
+    // A single Unicode code unit, not a dead key or multi-character macro.
+    if (length != 1 || chars[0] < 0x21 || chars[0] == 0x7f ||
+        (chars[0] >= 0xd800 && chars[0] <= 0xdfff)) return 0;
+    return chars[0];
+}
+}
 InputRouter* InputRouter::current_ = nullptr;
 InputRouter::InputRouter(reaper_plugin_info_t* api, Navigator& navigator) : api_(api), navigator_(&navigator), main_(api->hwnd_main) {
     accelerator_.translateAccel = translate; accelerator_.isLocal = true; accelerator_.user = this;
@@ -138,6 +159,8 @@ bool InputRouter::route(MSG& message, bool removed) noexcept {
     if (!environmentSafe() || !safeTarget(message.hwnd)) { requestExit(); return false; }
     Key key{vk, (GetKeyState(VK_CONTROL) & 0x8000) != 0, (GetKeyState(VK_MENU) & 0x8000) != 0,
         (GetKeyState(VK_SHIFT) & 0x8000) != 0, (message.lParam & (1LL << 30)) != 0, message.hwnd};
+    key.altGr = key.ctrl && key.alt && (GetKeyState(VK_RMENU) & 0x8000);
+    if ((!key.ctrl && !key.alt) || key.altGr) key.character = printableKey(vk);
     if (!navigator_->accepts(key)) {
         // Phase 0 has a deliberately small map. Exit before handing any other command to REAPER.
         requestExit(); return false;
@@ -206,6 +229,8 @@ bool InputRouter::enqueueOwnedKey(HWND window, UINT vk, bool repeat) noexcept {
     Key key{vk, (GetKeyState(VK_CONTROL) & 0x8000) != 0,
         (GetKeyState(VK_MENU) & 0x8000) != 0,
         (GetKeyState(VK_SHIFT) & 0x8000) != 0, repeat, window};
+    key.altGr = key.ctrl && key.alt && (GetKeyState(VK_RMENU) & 0x8000);
+    if ((!key.ctrl && !key.alt) || key.altGr) key.character = printableKey(vk);
     // A gfx.getchar-style keyboard owner does not close on an unsupported key
     // and never leaks such a key to the TCP, FX or project.
     if (!navigator_->accepts(key)) return true;

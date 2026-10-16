@@ -45,6 +45,8 @@ bool chunkActive(const std::string& chunk) {
 }
 }
 void FxNavigator::prepareBackgroundMidi() {
+    // MIDI copies are not UI navigation: never overwrite LastParam on shutdown.
+    persistentPositionWriter_ = false;
     // FxOrder is copied with the navigator, but its label callback captured
     // the foreground navigator at load time. Repair that capture to prevent
     // speaking/saving CC links against the wrong FX after reopening the UI.

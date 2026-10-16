@@ -1,3 +1,7 @@
+## 0.0.44.4 — Persistent FX position (post-build manual test)
+
+Open ReaComp, select Detector Highpass, close FX Params, quit and restart REAPER. Reopen ReaComp: it should restore Detector Highpass. Repeat on ReaEQ with virtual parameters; verify an earlier FX remembers its own last position after visiting another plugin. Confirm that F7, CC links, defaults and Auto announcements remain unchanged.
+
 # Collaudo richiesto in REAPER, NVDA e OSARA
 
 Tutte le caselle sono da eseguire dall'utente DOPO la build GitHub Actions. Non sono risultati ottenuti dall'assistente. Usare un progetto di prova e una copia dei profili.
@@ -57,3 +61,6 @@ I controlli automatici **non eseguono** REAPER né simulano un evento Win32 real
 ## 0.0.44 ReaComp/ReaGate
 
 See `Docs/TEST44_REACOMP_REAGATE.md` for the eight manual keyboard/NVDA test cases. All require GitHub Actions and an installed REAPER DLL.
+
+## 0.0.44.3 — Test rapidi iniziali
+Vedere `Docs/TEST44_3_INITIAL_NAVIGATION.md` per il piano dettagliato di test di lettere, numeri, punteggiatura, AltGr, ripetizione, F7, filtri e gruppi. La verifica deve essere eseguita con la DLL compilata dall’utente.

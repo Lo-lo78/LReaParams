@@ -21,6 +21,79 @@ bool anyNormalTrackFx(ReaProject* project) {
     return false;
 }
 }
+void FxNavigator::flushPersistentPosition() noexcept {
+    if (!persistentPositionWriter_ || !active_ || !track_ || !count_ ||
+        browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size()) ||
+        parameterName_.empty()) return;
+    try {
+        if (!fxOrder_.persistLastParameter(parameter_, parameterName_))
+            OutputDebugStringW(L"LReaParams: FX position was not saved.\n");
+    } catch (const std::exception&) {
+        // Navigation/REAPER shutdown must never fail due to a read-only or
+        // externally modified profile. Preserve that external file untouched.
+        OutputDebugStringW(L"LReaParams: could not persist FX position.\n");
+    }
+}
+void FxNavigator::end() noexcept {
+    if (active_) {
+        // end() is noexcept: even allocation failure in the session snapshot
+        // must not crash REAPER while it closes.
+        try {rememberPosition();} catch (...) {}
+        flushPersistentPosition();
+    }
+    active_ = false;
+    recentMode_ = false; numericEdit_ = false; learnCc_ = false;
+    floatingCc_ = false; floatingWaiting_ = false; pickup_.clear();
+    valueMode_ = false; searchMode_ = false; editF7_ = false;
+    textEdit_ = false; memoryManager_ = false; defaultConfirm_ = false;
+    defaultRegenerate_ = false; memoryStandalone_ = false;
+    groupSlot_ = 0; groupReturnActive_ = false;
+    f7FilterActive_ = false; f7FullView_.clear(); f7FilterPositions_.clear();
+    f7FilterQuery_.clear(); search_.clear(); entries_.clear(); count_ = 0;
+}
+void FxNavigator::restorePersistedParameter() {
+    // Session memory is deliberately authoritative while REAPER remains open:
+    // per-FX GUID positions beat the shared, Lua-compatible plugin LastParam.
+    if (const auto* state = contextMemory())
+        for (const auto& position : state->positions)
+            if (same(&position.fxGuid, fxGuid_)) return;
+    const std::string saved = fxOrder_.lastParameterRecord();
+    const auto tab = saved.find('\t');
+    if (tab == std::string::npos || tab == 0) return;
+    int savedIndex = 0;
+    try {
+        const std::string numeric = saved.substr(0, tab);
+        std::size_t parsed = 0;
+        const long value = std::stol(numeric, &parsed, 10);
+        if (parsed != numeric.size() || value < -2147483647L || value > 2147483647L) return;
+        savedIndex = static_cast<int>(value);
+    } catch (...) {return;}
+    const std::string savedName = saved.substr(tab + 1);
+    auto validIndex = [&](int id) {
+        return id == compareParamIndex || eqVirtualValid(id) || dynamicsVirtualValid(id) || (id >= 0 && id < count_);
+    };
+    if (!validIndex(savedIndex)) return;
+    auto nameFor = [&](int id) {
+        const int previous = parameter_;
+        parameter_ = id;
+        const std::string result = parameterName();
+        parameter_ = previous;
+        return result;
+    };
+    // Match the Lua: restore by name first when an FX update changes indices,
+    // then by numeric index. Preserve the exact virtual ID if still valid.
+    int target = savedIndex;
+    if (!savedName.empty() && nameFor(target) != savedName) {
+        bool found = false;
+        for (int id : fxOrder_.visibleOrder()) {
+            if (validIndex(id) && nameFor(id) == savedName) {
+                target = id; found = true; break;
+            }
+        }
+        if (!found && !validIndex(target)) return;
+    }
+    rebuildView(target);
+}
 // Startup context follows the original Lua's track/item selection rather than
 // requiring GetTouchedOrFocusedFX, which is often empty when FX Params is invoked.
 bool FxNavigator::begin() {
@@ -357,6 +430,7 @@ void FxNavigator::switchTrack(int direction) {
     // Keep the previous navigator state intact until a usable target FX is found.
     // Session memory is global to this navigator and keyed by project/track GUID.
     rememberPosition();
+    flushPersistentPosition();
     auto* previousTrack = track_;
     auto* previousTake = take_;
     const GUID previousGuid = trackGuid_;
@@ -678,6 +752,11 @@ void FxNavigator::chooseSlotAccess(int mode) {
     speech_(slotMode_==0?"Groups":"Memory positions");
 }
 bool FxNavigator::selectFx(int index) {
+    // Commit the previous FX position before FxOrder::load rebinds the profile.
+    if (active_ && count_ > 0 && browserIndex_ != index) {
+        rememberPosition();
+        flushPersistentPosition();
+    }
     if (index < 0 || index >= static_cast<int>(entries_.size())) return false;
     const auto& candidate = entries_[index];
     const GUID* guid = take_ ? TakeFX_GetFXGUID(take_, candidate.index) : TrackFX_GetFXGUID(track_, candidate.index);
@@ -692,6 +771,8 @@ bool FxNavigator::selectFx(int index) {
     parameterName_ = parameterName();
     hadUi_ = take_ ? TakeFX_GetOpen(take_, fx_) : TrackFX_GetOpen(track_, fx_);
     loadFxOrder();
+    restorePersistedParameter();
+    parameterName_ = parameterName();
     resetMidiContext();
     valueMode_ = false; searchMode_ = false; search_.clear();
     rememberPosition();
@@ -777,14 +858,21 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F3 || k.vk==VK_F5 || k.vk==VK_F6 || k.vk==VK_F9)) return true;
     if ((k.vk == VK_F7 || k.vk == VK_F8) && !k.ctrl && !k.alt && !k.shift) return true;
     if (k.ctrl && !k.alt && k.vk >= VK_F1 && k.vk <= VK_F12) return true;
+    // Italian/European keyboard punctuation can require AltGr (Right Alt).
+    // Distinguish it from real Ctrl+Alt shortcuts using the physical Right Alt.
+    if (k.altGr && k.character) return true;
     if (editF7_) {
         if (k.ctrl && !k.alt && (k.vk=='A'||k.vk=='C'||k.vk=='X'||k.vk=='V'||k.vk=='Z'||k.vk=='Y'||k.vk==VK_DELETE||k.vk==VK_RETURN))return true;
         if (!k.ctrl && k.alt && k.shift) return k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT;
-        if (k.shift && !k.alt && !k.ctrl) return k.vk==VK_SPACE||k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT;
+        if (k.shift && !k.alt && !k.ctrl) return k.character || k.vk==VK_SPACE||k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT;
         if (k.ctrl && k.shift && !k.alt) return k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_DELETE;
         if (!k.alt && !k.ctrl && !k.shift && (k.vk==VK_DELETE||k.vk==VK_TAB))return true;
     }
     if (k.ctrl && k.shift && !k.alt) return k.vk == VK_UP || k.vk == VK_DOWN;
+    // Lua list_cycle_by_initial: printable letters, digits and punctuation
+    // are navigation keys in the parameter grid, also in the F7 editor.
+    // Do not treat them as search input inside Value, FX Memories or EDIT.
+    if (!k.ctrl && !k.alt && k.character) return true;
     if (k.shift) return false;
     if (k.ctrl) {
         if (k.alt) return false;
@@ -889,6 +977,35 @@ void FxNavigator::navigate(int delta) {
     const int next = std::clamp(viewPos_ + delta, 0, static_cast<int>(visible_.size()) - 1);
     if (next == viewPos_) return;
     positionChanged(next);
+}
+void FxNavigator::cycleByInitial(wchar_t character) {
+    if (!character || visible_.empty()) return;
+    // Lua starts at the NEXT item, wraps once, and compares the first
+    // character of the displayed (possibly aliased) parameter label.
+    // Use Windows Unicode case conversion for Italian accents too. No speech
+    // or position change if the current grid has no matching initial.
+    CharLowerBuffW(&character, 1);
+    const int total = static_cast<int>(visible_.size());
+    for (int offset = 1; offset <= total; ++offset) {
+        const int index = (viewPos_ + offset) % total;
+        const std::string label = fxOrder_.label(visible_[static_cast<size_t>(index)]);
+        if (label.empty()) continue;
+        const auto byte0 = static_cast<unsigned char>(label[0]);
+        const int utf8Len = byte0 < 0x80 ? 1 : byte0 < 0xc0 ? 0 :
+                            byte0 < 0xe0 ? 2 : byte0 < 0xf0 ? 3 : 4;
+        if (!utf8Len || label.size() < static_cast<size_t>(utf8Len)) continue;
+        wchar_t first[2]{};
+        if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, label.data(),
+                                utf8Len, first, 2) != 1) continue;
+        CharLowerBuffW(first, 1);
+        if (first[0] == character) {
+            // The Lua repeats the current parameter too if it is the only
+            // matching initial; announce it rather than leaving NVDA silent.
+            if (index == viewPos_) announce();
+            else positionChanged(index);
+            return;
+        }
+    }
 }
 void FxNavigator::setValue(double value) {
     if(parameter_==compareParamIndex){if(setCompare(value))speech_(compareFormatted());return;}
@@ -1042,6 +1159,12 @@ void FxNavigator::handle(const Key& k) {
     if(recentMode_){handleRecent(k);return;}
     if (numericEdit_) {handleAdvanced(k);return;}
     if (textEdit_) { handleTextEdit(k); return; }
+    // AltGr generates Ctrl+Alt at the Win32 level, but is a text character
+    // on many European keyboards, not an FX Ctrl+Alt command.
+    if (k.altGr && k.character) {
+        if (!valueMode_ && !searchMode_) cycleByInitial(k.character);
+        return;
+    }
     if (!searchMode_ && handleAdvanced(k))return;
     if(k.vk==VK_F8 && !k.ctrl && !k.alt && !k.shift){if(!k.repeat)openFxMemories(false);return;}
     if (!k.ctrl && k.alt && !k.shift && (k.vk=='G'||k.vk=='M')) {
@@ -1194,6 +1317,13 @@ void FxNavigator::handle(const Key& k) {
     if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F5||k.vk==VK_F6||k.vk==VK_F9)) {
         if(!k.repeat)runLuaFunctionAction(k.vk==VK_F5?40280:k.vk==VK_F6?40281:40282);
         return;
+    }
+    // In the grid (including F7 and filtered/group views), typing an initial
+    // cycles through the CURRENT visible entries, exactly like the Lua.
+    // It is not a multi-character filter: Ctrl+F owns that functionality.
+    if (!k.ctrl && !k.alt && k.character) {
+        if (!valueMode_) cycleByInitial(k.character);
+        return; // Value remains open; characters do not modify its slider.
     }
     if(k.vk==VK_F1||k.vk==VK_F2){
         const int next=std::clamp(columns_+(k.vk==VK_F1?-1:1),1,200);
