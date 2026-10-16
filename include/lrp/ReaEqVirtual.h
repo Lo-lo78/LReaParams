@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <cstddef>
 #include <array>
 #include <string>
 #include <vector>
@@ -28,5 +29,82 @@ inline std::vector<int> pluginOrder(int bands,int physicalCount,int compareId){
     for(int i=bands*3;i<physicalCount;++i)out.push_back(i);
     out.insert(out.end()-std::min<int>(3,static_cast<int>(out.size())),compareId);
     return out;
+}
+// ReaEQ virtual controls were introduced after many Lua/.fx Custom Orders
+// already existed. FxOrder::normalize() normally appends newly discovered
+// parameters, which would put ALL Band Enabled/Type controls after Global Gain.
+// Reconcile only newly introduced controls, leaving existing, deliberately
+// positioned virtual entries and the physical order (including copies) intact.
+inline std::vector<int> mergeLegacyCustomOrder(const std::vector<int>& stored,
+                                               int bands, int physicalCount, int compareId) {
+    bands=std::clamp(bands,0,64);
+    if(bands==0)return stored;
+
+    std::vector<int> generatedTail;
+    for(int b=0;b<bands;++b){generatedTail.push_back(enabled(b));generatedTail.push_back(type(b));}
+    generatedTail.push_back(target);generatedTail.push_back(action);
+
+    // Repair the specific suffix written by the 0.0.43 normalization path,
+    // even if an .fx profile was saved with that order. Other explicit Custom
+    // Order placements must not be silently rearranged.
+    const bool generatedSuffix=stored.size()>=generatedTail.size() &&
+        std::equal(generatedTail.begin(),generatedTail.end(),
+                   stored.end()-static_cast<std::ptrdiff_t>(generatedTail.size()));
+    std::vector<int> merged(stored.begin(),generatedSuffix?
+        stored.end()-static_cast<std::ptrdiff_t>(generatedTail.size()):stored.end());
+    auto contains=[&](int id){return std::find(merged.begin(),merged.end(),id)!=merged.end();};
+
+    for(int b=0;b<bands;++b) {
+        const int enabledId=enabled(b), typeId=type(b);
+        const bool hasEnabled=contains(enabledId), hasType=contains(typeId);
+        if(hasEnabled && hasType)continue;
+        if(hasEnabled) {
+            auto at=std::find(merged.begin(),merged.end(),enabledId);
+            merged.insert(at+1,typeId);
+        } else if(hasType) {
+            auto at=std::find(merged.begin(),merged.end(),typeId);
+            merged.insert(at,enabledId);
+        } else {
+            // Find the first physical control OF THIS BAND in the original
+            // custom sequence, not necessarily its frequency control. A user
+            // may have reordered frequency, gain and bandwidth deliberately.
+            auto at=std::find_if(merged.begin(),merged.end(),[b](int id){
+                return id>=b*3 && id<b*3+3;
+            });
+            if(at==merged.end()) {
+                // In unusual sparse old profiles place it before the first
+                // global control; FxOrder::normalize then fills missing reals.
+                at=std::find_if(merged.begin(),merged.end(),[&](int id){
+                    return id>=bands*3 && id<physicalCount;
+                });
+            }
+            at=merged.insert(at,enabledId);
+            merged.insert(at+1,typeId);
+        }
+    }
+
+    // Band management belongs between the last band and global ReaEQ controls.
+    // Preserve explicitly positioned Target/Action if they are already present.
+    if(!contains(target) || !contains(action)) {
+        auto globals=std::find_if(merged.begin(),merged.end(),[&](int id){
+            return id>=bands*3 && id<physicalCount;
+        });
+        // Lua inserts Compare just before the trailing wrapper controls.
+        // If that is the position directly preceding Global Gain, place band
+        // management BEFORE Compare, too, as in reaeq_build_default_param_indices.
+        const auto compare=std::find(merged.begin(),merged.end(),compareId);
+        if(globals!=merged.end() && compare!=merged.end() && compare+1==globals)
+            globals=compare;
+        if(globals==merged.end()) {
+            // If this profile lacks globals, use the position after the last
+            // physical band parameter (rather than placing actions at the end
+            // after wrapper parameters or Compare).
+            for(auto it=merged.begin();it!=merged.end();++it)
+                if(*it>=0 && *it<bands*3)globals=it+1;
+        }
+        if(!contains(target))globals=merged.insert(globals,target)+1;
+        if(!contains(action))merged.insert(globals,action);
+    }
+    return merged;
 }
 } // namespace lrp::reaeq

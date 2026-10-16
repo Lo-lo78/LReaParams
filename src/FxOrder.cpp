@@ -1,4 +1,5 @@
 #include "lrp/FxOrder.h"
+#include "lrp/ReaEqVirtual.h"
 #include "lrp/Storage.h"
 #include <algorithm>
 #include <cctype>
@@ -300,6 +301,17 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
             int id=0;std::string name,alias;
             if(parseIndex(line,id,name,alias)&&(permitted(id)))groups[slot].push_back(id);
         }
+    }
+    // Lua Plugin Order interleaves virtual Enabled/Type before the physical
+    // controls of each ReaEQ band. Existing pre-0.0.43 Custom Orders do not
+    // contain those virtual IDs; append-at-end would put them after Global
+    // Gain. Merge by band WITHOUT writing the profile until the user edits.
+    if(std::find(defaultOrder_.begin(),defaultOrder_.end(),reaeq::enabled(0))!=defaultOrder_.end()) {
+        int bands=0;
+        while(bands<64 &&
+              std::find(defaultOrder_.begin(),defaultOrder_.end(),reaeq::enabled(bands))!=defaultOrder_.end())
+            ++bands;
+        order=reaeq::mergeLegacyCustomOrder(order,bands,count_,compareParamIndex);
     }
     normalize();
     // Older Lua profiles may contain a custom order without an explicit view flag.

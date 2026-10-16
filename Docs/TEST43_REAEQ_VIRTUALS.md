@@ -26,3 +26,11 @@ Base: 0.0.42.1. Le due azioni FX Params/Track Params restano distinte; Parameter
 - Gli adattamenti non monotoni del Lua per Frequency/Q e altri tipi speciali e gli adattatori ReaComp/ReaGate rimangono fasi successive: la 0.0.43 **non è un porting integrale di ReaEQ**.
 - Un'operazione strutturale cambia gli indici fisici successivi: i profili che contengono vecchi ID fisici per gruppi/CC vanno verificati attentamente dopo modifiche alle bande, senza presumere una rimappatura semantica.
 - I 19 test statici non provano compilazione C++, compatibilità API REAPER né accessibilità NVDA: tutto ciò spetta alla compilazione GitHub Actions e al collaudo.
+
+## Correzione 0.0.43.1: ordine delle Custom Order storiche
+
+Nel Lua, `reaeq_build_default_param_indices()` colloca per ciascuna banda Enabled, Type e subito dopo i tre controlli reali (Frequency, Gain, Bandwidth). Nella prima DLL 0.0.43 tale ordine era già usato nella Plugin Order, ma i profili `.fx` con Custom Order storiche venivano normalizzati aggiungendo in fondo gli indici negativi ancora mancanti. Di conseguenza NVDA trovava tutti gli Enabled/Type **dopo Global Gain**.
+
+La nuova migrazione runtime inserisce ciascuna coppia Enabled/Type immediatamente prima del primo parametro reale presente della stessa banda. Non risistema la sequenza fisica che l'utente aveva intenzionalmente personalizzato. Gestisce inoltre il caso di una Custom Order salvata dalla 0.0.43 con tutti i controlli virtuali in un blocco finale, riposizionando anche Target Band e Band Action davanti ai globali. Se un utente ha deliberatamente spostato singoli virtuali, li conserva nelle posizioni personalizzate. Non sovrascrive il file `.fx` al semplice caricamento.
+
+**Prova NVDA:** alterna Plugin Order e Custom Order con Ctrl+L su ReaEQ e verifica che per Band 1 NVDA annunci Enabled, Type, Frequency, Gain, Bandwidth; ripeti per tutte le bande e verifica che Global Gain sia dopo i controlli di gestione bande. Carica anche un profilo Custom creato prima della 0.0.43 e uno salvato dalla 0.0.43. Dopo aver usato F7, chiudi e riapri il navigatore e verifica l'ordine persistente. Le operazioni su valori ed FX state non sono cambiate.

@@ -1,4 +1,6 @@
-# LReaParams 0.0.43 — ReaEQ Virtual Controls (candidato sorgente)
+# LReaParams 0.0.43.1 — ReaEQ: ordine delle bande (candidato sorgente)
+
+**Correzione 0.0.43.1:** l’ordine nativo ReaEQ conserva, per ogni banda, `Enabled → Type → Frequency → Gain → Bandwidth`. La 0.0.43 caricava le vecchie Custom Order e aggiungeva i virtuali mancanti in fondo, dopo `Global Gain`. Ora la migrazione in memoria li inserisce davanti ai tre parametri reali della banda corrispondente, senza perdere la disposizione personalizzata dei parametri fisici, copie, alias e gruppi; corregge anche la coda virtuale salvata accidentalmente dalla 0.0.43. Il profilo `.fx` non viene scritto solo per aver aperto il plugin. Verifica in REAPER la Plugin Order e la Custom Order con Ctrl+L, usando NVDA. Nessuna compilazione locale eseguita.
 
 La 0.0.43 migra le proprietà virtuali Enabled e Type delle bande ReaEQ, Target Band e Band Action con aggiunta/rimozione reali. Mantiene i MIDI CC e la parola Auto della 0.0.42.1. **Non compilata localmente.** Guida specifica: `Docs/TEST43_REAEQ_VIRTUALS.md`.
 
@@ -36,4 +38,4 @@ Il workflow esegue poi build MSVC e CTest sul runner. Non è stato eseguito dall
 
 Comando Windows CMD da lanciare nella cartella del repository:
 
-    git status && git add . && git commit -m "0.0.43: add ReaEQ virtual bands and structural band actions" && git push
+    git status && git add . && git commit -m "0.0.43.1: interleave ReaEQ band controls in legacy custom orders" && git push

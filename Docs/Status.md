@@ -44,3 +44,5 @@ Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la 
 Ctrl+R ora apre lo storico Lua; la rilettura completa è su Ctrl+Shift+R. Track Params conserva Ctrl+R e il suo codice non è stato modificato. Alt+G/Alt+M, Ctrl+Shift+Up/Down e Ctrl+D mantengono il comportamento TEST30 autorizzato dall'handoff anche dove il vecchio Lua differisce. F12 singolo resta riservato, Ctrl+F12 conserva slot 12, Alt+F10/F11/F12 resta a OSARA. F10 e Ctrl+Tab non aprono una libreria. Il tasto P rimane assegnabile dall'utente.
 
 Il pacchetto è un candidato sorgente da compilare e verificare: non va descritto come migrazione completa o DLL già funzionante.
+
+- 0.0.43.1: correzione posizione di Enabled/Type nelle Custom Order esistenti di ReaEQ; richiede test NVDA sul vecchio profilo.

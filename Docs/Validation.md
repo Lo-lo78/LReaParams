@@ -32,3 +32,7 @@ essere collaudati con CC interno, CC nativo, envelope ACT e doppio suffisso.
 ## 0.0.43 ReaEQ source check
 
 19 Python suites PASS (includes TEST43 virtual ID source contract). The bundled C++ ControlTests contain band add/remove and enum-mapping cases but have **not run locally**. GitHub Actions runs MSVC/CTest. ReaEQ FX host behavior and NVDA need physical REAPER tests; see TEST43_REAEQ_VIRTUALS.md.
+
+## 0.0.43.1 — ordine ReaEQ Custom Order
+
+Aggiunti controlli statici e test C++ (eseguiti solo dal workflow GitHub Actions) per ordini Lua precedenti ai virtuali, suffix generato dalla 0.0.43, idempotenza, preservazione dell’ordine personalizzato e caricamento non distruttivo dei profili `.fx`. Non è stata eseguita alcuna compilazione locale.

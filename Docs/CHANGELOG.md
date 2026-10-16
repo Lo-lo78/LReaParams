@@ -1,3 +1,11 @@
+# 0.0.43.1 — ReaEQ: corretta posizione di Enabled e Type
+
+- Plugin Order ReaEQ resta esattamente nell’ordine del Lua: `Enabled`, `Type`, tre parametri reali per banda, poi gestione bande e controlli globali.
+- Fix per vecchie Custom Order `.fx` nate prima dei virtuali: invece di accodare tutti Enabled/Type dopo Global Gain, inserisce i virtuali mancanti prima del primo parametro reale della rispettiva banda.
+- Ripara il caso delle Custom Order già salvate dalla 0.0.43 con il blocco dei virtuali interamente in coda. Lascia intatti eventuali spostamenti espliciti dei virtuali che non corrispondono a quel blocco automatico.
+- Non modifica automaticamente i file `.fx`; preserva alias, gruppi, selezione, MIDI CC e memoria. Aggiunti test C++ per ordine, migrazione e idempotenza, più verifica non compilante nel workflow.
+- Nessuna compilazione locale o verifica runtime in REAPER/NVDA.
+
 # 0.0.43 — ReaEQ: controlli virtuali, bande strutturali
 
 - Mappatura degli ID virtuali Lua, tipi filtro non lineari, proprietà Enabled/Type e Target/Band Action, chunk 33*N e controlli di verifica/Undo.

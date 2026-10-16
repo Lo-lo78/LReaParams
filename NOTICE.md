@@ -1,4 +1,4 @@
-LReaParams 0.0.43 — ReaEQ virtuals. Solo sorgenti, test statici e GitHub Actions. Nessuna compilazione locale. ReaEQ runtime/NVDA non verificato; consultare Docs/TEST43_REAEQ_VIRTUALS.md.
+LReaParams 0.0.43.1 — ReaEQ virtual order fix. Solo sorgenti, test statici e GitHub Actions. Nessuna compilazione locale. ReaEQ runtime/NVDA non verificato; consultare Docs/TEST43_REAEQ_VIRTUALS.md.
 
 # Avviso sorgenti
 

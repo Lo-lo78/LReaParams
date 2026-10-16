@@ -46,6 +46,33 @@ int main() {
             initial[5]==-100002 && initial[6]==-100003 &&
             initial[10]==reaeq::target && initial[11]==reaeq::action &&
             initial[12]==compareParamIndex && initial[13]==6 && initial[15]==8);
+        // A Lua-era Custom Order has only physical IDs and Compare. The new
+        // virtual controls must be adjacent to their respective bands instead
+        // of being appended after Global Gain; other physical edits survive.
+        const std::vector<int> legacy{0,1,2,4,3,5,compareParamIndex,6,7,8};
+        const std::vector<int> expected{reaeq::enabled(0),reaeq::type(0),0,1,2,
+            reaeq::enabled(1),reaeq::type(1),4,3,5,reaeq::target,reaeq::action,
+            compareParamIndex,6,7,8};
+        const auto upgraded=reaeq::mergeLegacyCustomOrder(legacy,2,9,compareParamIndex);
+        require(upgraded==expected);
+        require(reaeq::mergeLegacyCustomOrder(upgraded,2,9,compareParamIndex)==expected); // idempotent
+        // The 0.0.43 code may have written all missing virtuals at the end.
+        auto oldAppended=legacy;
+        oldAppended.insert(oldAppended.end(),{
+            reaeq::enabled(0),reaeq::type(0),reaeq::enabled(1),reaeq::type(1),
+            reaeq::target,reaeq::action});
+        require(reaeq::mergeLegacyCustomOrder(oldAppended,2,9,compareParamIndex)==expected);
+        // An intentionally repositioned virtual in Custom Order is retained.
+        auto deliberate=upgraded;
+        deliberate.erase(deliberate.begin());
+        deliberate.insert(deliberate.begin()+5,reaeq::enabled(0));
+        require(reaeq::mergeLegacyCustomOrder(deliberate,2,9,compareParamIndex)==deliberate);
+        // Each band can be reordered physically; the new virtuals remain
+        // before whichever real parameter of that band appears first.
+        const std::vector<int> customPhys{5,3,4,2,0,1,6};
+        auto merged=reaeq::mergeLegacyCustomOrder(customPhys,2,7,compareParamIndex);
+        require(merged[0]==reaeq::enabled(1) && merged[1]==reaeq::type(1) && merged[2]==5);
+        require(merged[5]==reaeq::enabled(0) && merged[6]==reaeq::type(0) && merged[7]==2);
         // Extend and remove a real band; footer, magic and the first band must survive.
         std::string chunk(40,'\0');chunk[0]=33;chunk[4]=0;chunk.back()='Z';
         ReaEqChunk noBands(ReaEqChunk::encode(chunk));

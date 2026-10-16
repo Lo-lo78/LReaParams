@@ -1,6 +1,7 @@
 #include "lrp/Profile.h"
 #include "lrp/Storage.h"
 #include "lrp/FxOrder.h"
+#include "lrp/ReaEqVirtual.h"
 #include <windows.h>
 #include <fstream>
 #include <iostream>
@@ -112,6 +113,38 @@ int main(int argc, char** argv) {
         FxOrder cleared;
         cleared.load(profileRoot,"Synthetic edit test",4,[](int id){return id==compareParamIndex?std::string("Compare"):"Parameter "+std::to_string(id);});
         check(!cleared.ccLinks.count(1),"Deleted hidden CC reappeared");
+        // Real FxOrder profile migration regression: a saved 0.0.43 profile
+        // may append every ReaEQ virtual after the Global Gain. Loading it
+        // MUST restore the Lua per-band layout WITHOUT rewriting user data.
+        const auto eqRoot = root / L"reaeq-order";
+        const auto eqName = std::string("ReaEQ migration synthetic");
+        const auto eqNames = [](int id) {
+            if (id == compareParamIndex) return std::string("Compare");
+            if (id == reaeq::target) return std::string("ReaEQ Target Band");
+            if (id == reaeq::action) return std::string("ReaEQ Band Action");
+            if (id < 0) return std::string("Band ") + std::to_string(reaeq::band(id)+1) +
+                (reaeq::enabledId(id)?" Enabled":" Type");
+            return std::string("Parameter ")+std::to_string(id);
+        };
+        const auto eqNative = reaeq::pluginOrder(2,9,compareParamIndex);
+        FxOrder oldEq;
+        oldEq.load(eqRoot,eqName,9,eqNames,eqNative);
+        oldEq.custom=true;
+        oldEq.order={0,1,2,4,3,5,compareParamIndex,6,7,8};
+        check(oldEq.save(),"Cannot prepare old ReaEQ Custom Order profile");
+        const auto eqFiles = eqRoot / L"LReaParams" / L"Plugins";
+        auto item=fs::directory_iterator(eqFiles);
+        check(item!=fs::directory_iterator(),"ReaEQ fixture was not saved");
+        const auto eqPath=item->path();
+        const auto storedEq=readFile(eqPath);
+        FxOrder migratedEq;
+        migratedEq.load(eqRoot,eqName,9,eqNames,eqNative);
+        const std::vector<int> intended{
+            reaeq::enabled(0),reaeq::type(0),0,1,2,
+            reaeq::enabled(1),reaeq::type(1),4,3,5,
+            reaeq::target,reaeq::action,compareParamIndex,6,7,8};
+        check(migratedEq.visibleOrder()==intended,"ReaEQ virtuals still follow Global Gain");
+        check(readFile(eqPath)==storedEq,"Passive ReaEQ order migration rewrote .fx profile");
         const auto collision = root / L"collision.txt";
         check(writeNewVerified(collision, "first"), "Create failed");
         check(!writeNewVerified(collision, "second") && readFile(collision) == "first", "Collision replaced bytes");
