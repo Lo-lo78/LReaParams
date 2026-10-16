@@ -1,3 +1,9 @@
+## 0.0.44.1 — ReaComp/ReaGate: memoria della posizione e Detector Input
+- Ripristino della posizione tramite GUID e indice del parametro, accettando sia il nome originale sia l’alias accessibile del Lua: evita il ritorno a Threshold causato da differenze come Hipass / Detector Highpass.
+- Detector input: mantiene gli otto valori raw discreti del Lua. Se REAPER non conferma il valore richiesto e lo include nell’intervallo dichiarato del parametro, tenta anche la corrispondente scrittura normalizzata; verifica poi il valore finale. Non annuncia modalità non applicate.
+- In caso di mancata applicazione pronuncia `Detector input unchanged`; dettagli tecnici (valore richiesto, risposta API, intervallo) soltanto in OutputDebugStringA, non a NVDA.
+- Nessuna modifica a Track Params, ReaEQ, MIDI CC globale, dati `.fx`, scorciatoie o trasporto. Verifiche statiche; nessuna compilazione locale. La compatibilità con le modalità alte di ReaComp/ReaGate richiede un test REAPER reale.
+
 ## 0.0.44 GitHub Actions static-test correction
 - Fixed the TEST42 source check that rejected version 0.0.44 and prevented CMake from starting.
 - Historical regression tests now compare against their minimum supported version rather than pinning a future release number.

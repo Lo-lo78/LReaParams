@@ -1,4 +1,4 @@
-# Stato 0.0.44 — adattatori ReaComp/ReaGate
+# Stato 0.0.44.1 — adattatori ReaComp/ReaGate
 
 Aggiunti in C++ gli adattatori non audio dei parametri speciali di
 ReaComp e ReaGate: detector, nomi, interruttori, filtro virtuale,
@@ -57,3 +57,6 @@ Il pacchetto è un candidato sorgente da compilare e verificare: non va descritt
 - 0.0.43.1: correzione posizione di Enabled/Type nelle Custom Order esistenti di ReaEQ; richiede test NVDA sul vecchio profilo.
 
 - 0.0.43.2: verifica scrittura ReaEQ Enabled/Type dopo il setter per evitare false segnalazioni `ReaEQ band update failed`; collaudo REAPER necessario.
+
+## 0.0.44.1 source fix
+Position recovery now accepts Lua aliases as well as original REAPER parameter names. The detector setter tries exact raw values first, then normalized writing only within a verified host range; debug readback captures unconfirmed high-value modes. Physical REAPER testing pending.

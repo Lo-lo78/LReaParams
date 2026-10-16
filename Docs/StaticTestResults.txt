@@ -1,19 +1,8 @@
-LReaParams 0.0.44 — controlli statici, nessuna compilazione locale
-
-PASS: Tools/audit.py (52 profili di prova; manifest SDK e Lua originali intatti)
-PASS: Testing/test44_static.py (adattatori ReaComp/ReaGate, sorgente)
-PASS: Testing/test42_cc_speech_static.py (CC seguito da Auto)
-PASS: Testing/test18_static.py, test20_static.py, test24_static.py,
-      test27_static.py, test30_static.py, test40_static.py
-PASS: Testing/test43_static.py e test43_1..test43_5_static.py
-PASS: confronto byte-per-byte con la 0.0.43.5 di TrackNavigator.cpp,
-      InputRouter.cpp, FxNavigatorReaEq.cpp, TitleProxy.cpp, Lua e SDK.
-
-I test nativi C++ in Testing/ControlTests.cpp sono inclusi per GitHub Actions
-ma NON eseguiti localmente. Alcune suite di regressione storiche lente
-non sono state concluse interamente in questa sessione. Il workflow
-eseguirà anche tutte le suite al push dell'utente.
-
-NON ESEGUITI: CMake, MSBuild, compilazione C++, CTest nativo, REAPER, NVDA,
-OSARA e controllo MIDI hardware. I risultati non provano il comportamento
-reale del codice compilato né la compatibilità con versioni future dei plugin.
+0.0.44.1 source checks (no C++ build):
+PASS: Tools/audit.py — manifest SDK and Lua, 52 legacy FX/TRACK profiles, source constraints.
+PASS: Testing/test44_static.py — original ReaComp/ReaGate adapter contract.
+PASS: Testing/test44_1_static.py — position alias validation, sparse detector raw writes and normalized fallback bounds.
+PASS: initial historical regression tests TEST18 through TEST24 and targeted TEST40/41, TEST42.1 and TEST43/43.1.
+Not completed: the full Tools/run_static.py historical suite exceeds execution time (slow source tests).
+Not executed: CMake, MSVC, C++ native tests, REAPER, NVDA, OSARA, hardware MIDI.
+The runtime behavior of detector choices 999..1027 must be checked after the GitHub Actions build.

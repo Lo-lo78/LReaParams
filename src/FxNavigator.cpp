@@ -243,12 +243,22 @@ void FxNavigator::restoreParameterPosition() {
             // name; otherwise find that name in the updated plugin parameter list.
             auto matches = [&](int index) {
                 if(index==compareParamIndex)return saved.parameterName=="Compare";
-                if(index<0 && (eqVirtualValid(index) || dynamicsVirtualValid(index)))return true; // stable Lua virtual ID
-                if (index < 0 || index >= count_) return false;
-                char name[4096]{};
-                const bool ok = take_ ? TakeFX_GetParamName(take_, fx_, index, name, sizeof(name))
-                                      : TrackFX_GetParamName(track_, fx_, index, name, sizeof(name));
-                return ok && saved.parameterName == name;
+                if(index<0) {
+                    if(eqVirtualValid(index))return saved.parameterName==eqVirtualName(index);
+                    if(dynamicsVirtualValid(index))return saved.parameterName==dynamicsVirtualName(index);
+                    return false;
+                }
+                if(index>=count_)return false;
+                char raw[4096]{};
+                const bool ok=take_?TakeFX_GetParamName(take_,fx_,index,raw,sizeof(raw)):
+                                    TrackFX_GetParamName(track_,fx_,index,raw,sizeof(raw));
+                if(!ok)return false;
+                // The position is stored with an accessible alias, not always
+                // the raw REAPER name (Hipass -> Detector Highpass, etc.).
+                // Accept both, avoiding a spurious jump to Threshold on reopen.
+                if(saved.parameterName==raw)return true;
+                const auto alias=dynamicsAlias(index);
+                return !alias.empty() && saved.parameterName==alias;
             };
             if (matches(saved.parameter)) { parameter_ = saved.parameter; return; }
             if (!saved.parameterName.empty()) {
@@ -890,6 +900,7 @@ void FxNavigator::setValue(double value) {
     if(dynamicsDetectorInput(parameter_)) {
         if(!std::isfinite(value))return;
         if(dynamicsSetDetector(value))speech_(dynamicsRealFormatted(parameter_,""));
+        else speech_("Detector input unchanged");
         return;
     }
     if(eqBandParam(parameter_,1)) {

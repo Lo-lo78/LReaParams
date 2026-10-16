@@ -1,4 +1,4 @@
-# LReaParams 0.0.44 — ReaComp / ReaGate (sorgente GitHub Actions)
+# LReaParams 0.0.44.1 — ReaComp / ReaGate (sorgente GitHub Actions)
 
 Questa versione riparte dalla 0.0.43.5 già collaudata dall'utente per
 Ctrl+Spazio e aggiunge le funzioni accessibili del Lua FX Params per
@@ -74,3 +74,6 @@ Il workflow esegue poi build MSVC e CTest sul runner. Non è stato eseguito dall
 Comando Windows CMD da lanciare nella cartella del repository:
 
     git status && git add . && git commit -m "0.0.43.4: use native REAPER action 40073 for Ctrl Space" && git push
+
+## Correzioni 0.0.44.1
+Posizione FX memorizzata anche su parametri con alias del Lua e gestione prudente degli otto valori discreti di Detector Input ReaComp/ReaGate; vedere `Docs/TEST44_1_POSITION_DETECTOR.md`. Nessuna compilazione locale.

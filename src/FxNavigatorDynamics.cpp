@@ -2,6 +2,8 @@
 #include "lrp/DynamicsSpecial.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <windows.h>
 #include <initializer_list>
 #include <string>
 #include <vector>
@@ -106,21 +108,46 @@ bool FxNavigator::dynamicsSetDetector(double normalized) {
 bool FxNavigator::dynamicsSetDetectorAt(int param,double normalized) {
     if(!dynamicsDetectorInput(param) || !contextUnchanged() || !std::isfinite(normalized))return false;
     const int wanted=dynamics::detectorRawFromFraction(normalized);
-    const double actual=take_?TakeFX_GetParam(take_,fx_,param,nullptr,nullptr):
-        TrackFX_GetParam(track_,fx_,param,nullptr,nullptr);
-    if(static_cast<int>(std::lround(actual))==wanted)return false;
+    double minimum=0,maximum=0;
+    const auto read=[&]() {return take_?TakeFX_GetParam(take_,fx_,param,nullptr,nullptr):
+                                     TrackFX_GetParam(track_,fx_,param,nullptr,nullptr);};
+    const double actual=take_?TakeFX_GetParam(take_,fx_,param,&minimum,&maximum):
+                              TrackFX_GetParam(track_,fx_,param,&minimum,&maximum);
+    if(std::abs(actual-wanted)<=0.5)return false;
+    // Match Lua: write SignIn's special raw values, not 0..1 normalized
+    // values. 1024..1027 and 999/1000 are meaningful ReaComp/ReaGate modes.
+    // Never substitute a continuous host parameter or clamp those values.
     Undo_BeginBlock2(project_);
     const bool accepted=take_?TakeFX_SetParam(take_,fx_,param,wanted):
-        TrackFX_SetParam(track_,fx_,param,wanted);
+                               TrackFX_SetParam(track_,fx_,param,wanted);
+    double readback=read();
+    // Some REAPER wrappers refuse or quantize sparse raw values through the
+    // raw setter. Only when the host-advertised range contains the value,
+    // retry via the corresponding normalized API. Never invent a range.
+    if(std::abs(readback-wanted)>0.5 &&
+       std::isfinite(minimum) && std::isfinite(maximum) &&
+       maximum>minimum && wanted>=minimum && wanted<=maximum) {
+        const double fraction=(wanted-minimum)/(maximum-minimum);
+        if(take_)TakeFX_SetParamNormalized(take_,fx_,param,fraction);
+        else TrackFX_SetParamNormalized(track_,fx_,param,fraction);
+        readback=read();
+    }
     if(take_)TakeFX_EndParamEdit(take_,fx_,param);
     else TrackFX_EndParamEdit(track_,fx_,param);
+    readback=read();
     Undo_EndBlock2(project_,"LReaParams: detector input",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
-    const double readback=take_?TakeFX_GetParam(take_,fx_,param,nullptr,nullptr):
-        TrackFX_GetParam(track_,fx_,param,nullptr,nullptr);
-    // REAPER plugins can report false even if the value is already applied.
-    if(!accepted && std::abs(readback-wanted)>0.5)return false;
-    return std::abs(readback-wanted)<=0.5;
+    if(std::abs(readback-wanted)<=0.5)return true;
+    // A setter's boolean may be unreliable, but a mismatched final value
+    // must never be announced as if the requested mode had been selected.
+    // Make debugging possible without flooding the screen reader.
+    char diagnostic[256]{};
+    std::snprintf(diagnostic,sizeof(diagnostic),
+        "LReaParams detector: raw %d not confirmed; accepted=%d, readback=%.8g, range=[%.8g,%.8g]\n",
+        wanted,accepted?1:0,readback,minimum,maximum);
+    OutputDebugStringA(diagnostic);
+    return false;
 }
+
 void FxNavigator::dynamicsNudgeDetector(int direction,bool big) {
     if(!direction || !dynamicsDetectorInput(parameter_))return;
     const double raw=take_?TakeFX_GetParam(take_,fx_,parameter_,nullptr,nullptr):
@@ -132,5 +159,6 @@ void FxNavigator::dynamicsNudgeDetector(int direction,bool big) {
     const int next=std::clamp(index+(direction>0?amount:-amount),0,7);
     if(next==index)return; // quiet at grid/value boundaries
     if(dynamicsSetDetector(next/7.0))speech_(dynamics::detectorChoices[static_cast<size_t>(next)].label);
+    else speech_("Detector input unchanged");
 }
 } // namespace lrp
