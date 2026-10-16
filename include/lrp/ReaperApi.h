@@ -69,6 +69,16 @@
 #define REAPERAPI_WANT_CountTracks
 #define REAPERAPI_WANT_SetOnlyTrackSelected
 #define REAPERAPI_WANT_UpdateArrange
+#define REAPERAPI_WANT_TrackFX_GetOffline
+#define REAPERAPI_WANT_TakeFX_GetOffline
+#define REAPERAPI_WANT_TrackFX_Show
+#define REAPERAPI_WANT_TakeFX_Show
+#define REAPERAPI_WANT_TrackFX_CopyToTrack
+#define REAPERAPI_WANT_TakeFX_CopyToTake
+#define REAPERAPI_WANT_SetMediaItemSelected
+#define REAPERAPI_WANT_GetMediaItemTake_Item
+#define REAPERAPI_WANT_GetMediaItemInfo_Value
+#define REAPERAPI_WANT_SetEditCurPos
 #define REAPERAPI_WANT_TrackFX_GetCount
 #define REAPERAPI_WANT_TrackFX_GetRecCount
 #define REAPERAPI_WANT_TakeFX_GetCount

@@ -23,6 +23,18 @@ public:
     bool midiRunning() const noexcept { return learnCc_ || fixedCc_ || floatingCc_ || floatingWaiting_; }
     bool sameMidiFx(const FxNavigator& other) const noexcept;
     bool openFxMemories(bool standalone = false);
+    enum class NativeFxWindow { none, chain, addFx };
+    NativeFxWindow consumeNativeFxWindowRequest() noexcept {
+        auto request = nativeFxWindowRequest_;
+        nativeFxWindowRequest_ = NativeFxWindow::none;
+        return request;
+    }
+    MediaTrack* currentTrackForNativeWindow() const noexcept { return track_; }
+    MediaItem_Take* currentTakeForNativeWindow() const noexcept { return take_; }
+    int currentFxForNativeWindow() const noexcept {
+        return fxBrowserMode_ && browserCursor_ >= 0 && browserCursor_ < static_cast<int>(entries_.size())
+            ? entries_[static_cast<size_t>(browserCursor_)].index : fx_;
+    }
     bool isMemoryManager() const noexcept { return memoryManager_; } // seven-column Lua F8 navigator
     void end() noexcept override;
     bool active() const noexcept override { return active_; }
@@ -34,9 +46,9 @@ public:
     void announceTitle() override;
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
-    bool nativeValueSlider() const override { return active_ && valueMode_ && !memoryManager_; }
+    bool nativeValueSlider() const override { return active_ && valueMode_ && !memoryManager_ && !fxBrowserMode_; }
     // Native Windows EDIT control for F7 rename and Ctrl+F search.
-    bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_) && !memoryManager_; }
+    bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_) && !memoryManager_ && !fxBrowserMode_; }
     std::string nativeTextValue() const { return numericEdit_ ? numericBuffer_ : textEdit_ ? textBuffer_ : search_; }
     std::string nativeTextLabel() const { return numericEdit_ ? "Parameter value" : textEdit_ ? (textEditParam_ == -1 ? "Group name" : "Parameter name") : "Find parameter"; }
     void setNativeText(const std::string& text);
@@ -126,6 +138,20 @@ private:
     bool selectFx(int index);
     void switchFx(int direction);
     void switchTrack(int direction);
+    bool switchToContext(MediaTrack* destination, MediaItem_Take* destinationTake, const std::string& what);
+    void switchItem(int direction);
+    void returnToTrackFx();
+    void openCurrentFxChain();
+    void openNativeFxBrowser();
+    void enterFxBrowser();
+    void browserKey(const Key& key);
+    void browserMove(int amount);
+    void browserSelect();
+    void browserMoveFx(int direction);
+    std::string browserSpeech() const;
+    int browserVisibleIndex() const;
+    void browserCycleByInitial(wchar_t character, bool backwards);
+
     bool rebuildEntries();
     // Session-only memory (no files, no REAPER ExtState and no RPP changes).
     // A context is identified by project, track GUID and optional take.
@@ -243,6 +269,10 @@ private:
     std::vector<FxEntry> entries_;
     std::vector<StoredContext> sessionMemory_;
     int browserIndex_ = 0;
+    NativeFxWindow nativeFxWindowRequest_ = NativeFxWindow::none;
+    bool fxBrowserMode_ = false;
+    int browserCursor_ = 0; // cursor in entries_, independent of the current grid FX
+
     int fx_{}, parameter_{}, count_{}, columns_ = 10;
     int stepScale_ = 0;
     bool active_ = false, valueMode_ = false, hadUi_ = false, searchMode_ = false;

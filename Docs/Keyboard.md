@@ -1,3 +1,16 @@
+## 0.0.46.1 — Browser FX e navigazione Take
+
+- Ctrl+P: passa dal browser FX interno alla griglia e viceversa.
+- Browser: Su/Giù, Pagina, Home/End, iniziali, Tab, Invio; sul Master
+  Sinistra/Destra passa fra Master FX e Monitor FX.
+- Browser: Ctrl+B bypass, Ctrl+Maiusc+D Delta Solo, Ctrl+Maiusc+Su/Giù riordina.
+- Ctrl+Sinistra/Destra: item con Take FX precedente/successivo.
+- Ctrl+W: da Take FX ai Track FX della stessa traccia.
+- Ctrl+Pagina Su/Giù: non intercettato da LReaParams, libero per uso futuro. Per cambiare traccia con FX usare Ctrl+Maiusc+Su/Giù.
+- Ctrl+Maiusc+F: mostra FX Chain nativa. Alt+Maiusc+F: browser nativo FX.
+- Le scorciatoie precedenti (Ctrl+Su/Giù, Ctrl+Maiusc+Su/Giù,
+  Ctrl+Spazio e F7/F8) rimangono invariate fuori dal browser.
+
 ## 0.0.45 — Appunti dei valori FX
 
 - Ctrl+C: copia valore corrente (fuori F7).

@@ -1,3 +1,19 @@
+## 0.0.46.1 — Correzione scorciatoie FX Params
+
+- Rimossa Ctrl+Pagina Su/Giù dalla gestione FX Params e dal browser FX: non va più a un’altra traccia.
+- Ctrl+Su/Giù resta cambio FX; Ctrl+Maiusc+Su/Giù resta cambio traccia.
+- Pagina Su/Giù senza modificatori continua a spostarsi di 5 FX nel browser; tutto il resto invariato.
+- Correzione soltanto sorgente; non è stata eseguita alcuna compilazione.
+
+## 0.0.46 — FX Chain, Take FX, browser
+
+- Ctrl+P navigazione nel browser FX con Master/Monitor, conteggio e tasti rapidi.
+- Ctrl+Sinistra/Destra per gli item con Take FX; Ctrl+W ritorna ai Track FX.
+- Ctrl+Maiusc+Su/Giù rimane il solo comando LReaParams per cambiare traccia con FX; rimossa la combinazione duplicata Ctrl+Pagina Su/Giù (ora non intercettata).
+- Ctrl+Maiusc+Su/Giù nel browser sposta gli FX nella stessa catena con Undo.
+- Ctrl+Maiusc+F e Alt+Maiusc+F aprono finestre native dopo rilascio focus.
+- Nuovo test statico TEST46, nessuna compilazione locale.
+
 ## 0.0.45 — Clipboard FX e Default Snapshot sicuri
 
 Clipboard sistema: Ctrl+C copia il valore normalizzato del parametro (nuova funzione nativa), Ctrl+Alt+Maiusc+C copia l'intero FX in formato Lua `FXPARAM_SNAPSHOT_V1`, Ctrl+V applica il contenuto FX solo dopo la validazione. F7 mantiene Ctrl+C/X/V strutturali; EDIT Windows mantiene la Clipboard testuale. Default reset rinforzato con controlli preventivi e rollback su errore. Vedi `Docs/TEST45_CLIPBOARD_DEFAULTS.md`. Nessuna compilazione locale.

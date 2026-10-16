@@ -1,3 +1,6 @@
+
+## 0.0.46
+Vedi `Docs/TEST46_FX_CONTEXT_BROWSER.md` per l'elenco delle prove manuali in REAPER e NVDA.
 ## 0.0.44.4 — Persistent FX position (post-build manual test)
 
 Open ReaComp, select Detector Highpass, close FX Params, quit and restart REAPER. Reopen ReaComp: it should restore Detector Highpass. Repeat on ReaEQ with virtual parameters; verify an earlier FX remembers its own last position after visiting another plugin. Confirm that F7, CC links, defaults and Auto announcements remain unchanged.

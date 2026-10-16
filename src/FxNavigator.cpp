@@ -41,7 +41,7 @@ void FxNavigator::end() noexcept {
         try {rememberPosition();} catch (...) {}
         flushPersistentPosition();
     }
-    active_ = false;
+    active_ = false; fxBrowserMode_ = false; browserCursor_ = 0;
     recentMode_ = false; numericEdit_ = false; learnCc_ = false;
     floatingCc_ = false; floatingWaiting_ = false; pickup_.clear();
     valueMode_ = false; searchMode_ = false; editF7_ = false;
@@ -98,6 +98,7 @@ void FxNavigator::restorePersistedParameter() {
 // requiring GetTouchedOrFocusedFX, which is often empty when FX Params is invoked.
 bool FxNavigator::begin() {
     end();
+    nativeFxWindowRequest_ = NativeFxWindow::none;
     project_ = EnumProjects(-1, nullptr, 0);
     if (!project_) { speech_("No REAPER project"); return false; }
     track_ = nullptr; take_ = nullptr;
@@ -447,6 +448,8 @@ void FxNavigator::switchTrack(int direction) {
     const bool previousValueMode = valueMode_, previousHadUi = hadUi_, previousSearchMode = searchMode_;
     const auto previousSearch = search_;
     track_ = target; take_ = nullptr; trackGuid_ = *guid;
+    // The old FX must not be saved with the new track identity.
+    count_ = 0; browserIndex_ = -1;
     bool changed = false;
     if (rebuildEntries()) {
         int preferred = 0;
@@ -475,7 +478,9 @@ void FxNavigator::switchTrack(int direction) {
     // Mirror the Lua: select the actual REAPER track only after successful switch.
     SetOnlyTrackSelected(target);
     UpdateArrange();
-    speech_(fxContextAnnouncement());
+    browserCursor_ = browserIndex_;
+    if (fxBrowserMode_) speech_(browserSpeech());
+    else speech_(fxContextAnnouncement());
 }
 std::string FxNavigator::contextName() const {
     if (!track_) return "";
@@ -849,6 +854,28 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (!active_) return false;
     // The Lua transport gestures belong to FX Params in Grid, Value, F7 and F8.
     // Native search/rename/numeric EDIT controls must retain their space key.
+    if (fxBrowserMode_) {
+        if (k.vk==VK_SPACE && !k.shift && !k.alt) return true; // transport
+        if (k.altGr && k.character) return true;
+        if (k.ctrl && !k.alt && !k.shift &&
+            (k.vk=='P'||k.vk=='B'||k.vk=='W'||
+             k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_HOME||k.vk==VK_END)) return true;
+        if (k.ctrl && k.shift && !k.alt &&
+            (k.vk=='D'||k.vk=='F'||k.vk==VK_UP||k.vk==VK_DOWN)) return true;
+        if (k.alt && k.shift && !k.ctrl && k.vk=='F') return true;
+        if (k.ctrl || k.alt) return false;
+        if (k.character) return true;
+        return k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_TAB||
+               k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||
+               k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT;
+    }
+    // Lua Ctrl+P opens a dedicated FX browser, leaving the parameter selection intact.
+    if (k.ctrl && !k.alt && !k.shift && k.vk=='P') return true;
+    // Lua context-navigation gestures also work from the parameter grid.
+    if (k.ctrl && !k.alt && !k.shift &&
+        (k.vk=='W'||k.vk==VK_LEFT||k.vk==VK_RIGHT)) return true;
+    if (k.ctrl && k.shift && !k.alt && k.vk=='F') return true; // native FX chain
+    if (k.alt && k.shift && !k.ctrl && k.vk=='F') return true; // native FX browser
     if (k.vk == VK_SPACE && !k.shift && !k.alt &&
         !textEdit_ && !searchMode_ && !numericEdit_) return true;
     if (memoryManager_) {
@@ -961,11 +988,13 @@ double FxNavigator::valueFraction() const {
 }
 std::string FxNavigator::sliderLabel() const { return displayName(); }
 void FxNavigator::announce() {
+    if(fxBrowserMode_) {speech_(browserSpeech());return;}
     if(memoryManager_) {speakMemory();return;}
     speech_(editF7_ ? editorParameterSpeech() : currentParameterSpeech());
 }
 void FxNavigator::announceTitle() {
     if (!active_) return;
+    if(fxBrowserMode_){speech_("FX Browser. "+browserSpeech());return;}
     if(memoryManager_){speakMemory("FX Memories");return;}
     speech_(fxWindowTitleBase() + ". " + currentParameterSpeech());
 }
@@ -982,6 +1011,13 @@ std::wstring wideUtf8(const std::string& str) {
 }
 std::wstring FxNavigator::windowTitle() const {
     if (!active_) return L"FX Params";
+    if (fxBrowserMode_) {
+        std::string browserContext = contextName();
+        if (track_ == GetMasterTrack(project_) && !entries_.empty())
+            browserContext = (entries_[static_cast<size_t>(browserVisibleIndex())].index & 0x1000000)
+                ? "Monitor FX" : "Master";
+        return wideUtf8("FX Browser - " + browserContext);
+    }
     if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));
     // Keep Grid out of the title; position Bypassed/Delta BEFORE context/FX.
     return wideUtf8(fxWindowTitleBase()) +
@@ -991,6 +1027,7 @@ std::wstring FxNavigator::windowTitle() const {
 std::string FxNavigator::reviewLine() const {
     // NVDA+Up: ONLY the current parameter and its formatted value.
     if (!active_) return "";
+    if (fxBrowserMode_) return browserSpeech();
     if (memoryManager_) return memoryReview();
     if(recentMode_ && historyIndex_>=0 && historyIndex_<static_cast<int>(searchHistory_.size()))return "Recent searches. "+searchHistory_[static_cast<size_t>(historyIndex_)];
     if(numericEdit_)return "Parameter value, "+numericBuffer_;
@@ -1199,6 +1236,7 @@ void FxNavigator::handle(const Key& k) {
             if (k.vk=='V') {if(!k.repeat)pasteFxClipboard();return;}
         }
     }
+    if (fxBrowserMode_) {browserKey(k);return;}
     if (memoryManager_) {memoryNavigate(k);return;}
     if(recentMode_){handleRecent(k);return;}
     if (numericEdit_) {handleAdvanced(k);return;}
@@ -1211,6 +1249,16 @@ void FxNavigator::handle(const Key& k) {
             else cycleByInitial(k.character);
         }
         return;
+    }
+    // Native REAPER FX Chain and Add FX browser must own keyboard focus.
+    if (!searchMode_ && !textEdit_ && !numericEdit_ && !memoryManager_) {
+        if (k.ctrl && k.shift && !k.alt && k.vk=='F') {if(!k.repeat)openCurrentFxChain();return;}
+        if (k.alt && k.shift && !k.ctrl && k.vk=='F') {if(!k.repeat)openNativeFxBrowser();return;}
+        if (k.ctrl && !k.shift && !k.alt && k.vk=='P') {if(!k.repeat)enterFxBrowser();return;}
+        if (k.ctrl && !k.shift && !k.alt && k.vk=='W') {if(!k.repeat)returnToTrackFx();return;}
+        if (k.ctrl && !k.shift && !k.alt && (k.vk==VK_LEFT||k.vk==VK_RIGHT)) {
+            if(!k.repeat)switchItem(k.vk==VK_LEFT?-1:1);return;
+        }
     }
     if (!searchMode_ && handleAdvanced(k))return;
     if(k.vk==VK_F8 && !k.ctrl && !k.alt && !k.shift){if(!k.repeat)openFxMemories(false);return;}

@@ -70,6 +70,10 @@ jobs:
         run: python Testing/test44_5_static.py
       - name: Verify 0.0.45 clipboard and default snapshot safety (source only)
         run: python Testing/test45_static.py
+      - name: Verify 0.0.46 FX Chain, Take FX and browser navigation (source only)
+        run: python Testing/test46_static.py
+      - name: Verify 0.0.46.1 non-duplicated track navigation keys (source only)
+        run: python Testing/test46_1_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

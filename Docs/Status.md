@@ -1,3 +1,19 @@
+## 0.0.46.1 — FX Chain, Take FX, browser nativo e browser interno
+
+Aggiunta navigazione per contesto FX: Ctrl+P browser interno (lista separata
+con colonne Master/Monitor), Ctrl+Sinistra/Destra fra item Take FX,
+Ctrl+W ritorno ai Track FX e Ctrl+Maiusc+Su/Giù fra tracce. Ctrl+Pagina Su/Giù è libero. Il browser
+supporta ordinamento degli effetti nella catena e apertura della catena FX
+o del browser nativo REAPER. GUID, profili, parametri e memoria persistente
+vengono preservati in caso di cambio riuscito; nessuna sostituzione silenziosa
+degli FX dopo un riordino. Comandi e collaudo dettagliati in
+`Docs/TEST46_FX_CONTEXT_BROWSER.md`.
+
+**Stato:** modifica del codice sorgente, NON ancora compilata e NON
+collaudata con REAPER/NVDA. I dettagli del focus e dei trasferimenti di FX
+richiedono prova GitHub Actions e runtime. Rimangono le fasi F7/F8 e audit
+finale del Lua (0.0.47–0.0.48). Parameter Library continua a essere esclusa.
+
 ## 0.0.45 — Clipboard FX e Default Snapshot sicuri
 
 Clipboard sistema: Ctrl+C copia il valore normalizzato del parametro (nuova funzione nativa), Ctrl+Alt+Maiusc+C copia l'intero FX in formato Lua `FXPARAM_SNAPSHOT_V1`, Ctrl+V applica il contenuto FX solo dopo la validazione. F7 mantiene Ctrl+C/X/V strutturali; EDIT Windows mantiene la Clipboard testuale. Default reset rinforzato con controlli preventivi e rollback su errore. Vedi `Docs/TEST45_CLIPBOARD_DEFAULTS.md`. Nessuna compilazione locale.
@@ -52,12 +68,12 @@ Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la 
 | 8: F7/F8/contesti | Conservati i controller TEST30, selezioni, duplicati, filtri, gruppi, undo struttura; Compare accetta memorie/alias/CC senza mandare indici negativi al motore fisico | Non concluso audit semantico di tutte le 1109 funzioni Lua FX; persistono differenze rare da verificare |
 | 9: consegna | Progetto completo, test statici, test C++ per Actions, matrice e guida | Compilazione Windows e collaudo REAPER/NVDA/OSARA NON eseguiti |
 
-## Funzioni che rimangono esplicitamente non migrate
+## Elenco storico delle lacune pre-0.0.46 (verificare con le sezioni successive)
 
 - Collaudare i nuovi virtuali ReaEQ e aggiunta/rimozione bande (0.0.43); completare i controlli speciali Frequency/Q e gli adattatori non monotoni del Lua.
 - Adattatori ReaComp/ReaGate implementati in 0.0.44, ma richiedono collaudo REAPER e verifica con plugin/versioni reali.
-- Clipboard snapshot completo Ctrl+Alt+Shift+C/Ctrl+V; copia/incolla valore fuori da F7.
-- Browser FX interno completo, riposizionamento fisico FX in catena, navigazione item/take Ctrl+Left/Right, ritorno Take→Track Ctrl+W, Ctrl+PageUp/Down, apertura FX Chain/browser.
+- Clipboard snapshot e copia/incolla completati nella 0.0.45; collaudo dichiarato riuscito dall’utente.
+- Browser FX interno, riordino nella catena, navigazione Take/Track e apertura delle finestre native aggiunti nella 0.0.46. Restano da verificare con REAPER e NVDA; non c’è un editor FX Container gerarchico.
 - Background MIDI Ctrl+Q implementato per un singolo contesto FX parcheggiato (richiede collaudo hardware); il trasporto Space/Ctrl+Space è presente nel navigatore FX; Ctrl+Space ora invoca 40073 in 0.0.43.4 (da collaudare), ma restano i marker globali e lo switch Ctrl+Tab verso Track Params.
 - Compatibilità semantica totale con virtuali negativi dei vecchi profili: le voci non supportate sono conservate come record opachi in ordine, slot, gruppi e associazioni, senza esporle come controlli. Non è possibile modificarle finché manca il relativo adattatore; i backup conservano il precedente .fx.
 - La persistenza dei profili preserva sezioni sconosciute, campi Extra e commenti; le sezioni gestite vengono riserializzate, quindi non conserva il posizionamento originale dei commenti ; le voci dinamiche non supportate sono conservate come record opachi.

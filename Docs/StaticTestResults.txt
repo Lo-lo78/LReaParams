@@ -1,3 +1,6 @@
+0.0.46: verifiche sorgente e test Python senza compilazione locale.
+Test native Windows/MSVC: solo GitHub Actions.
+
 LReaParams 0.0.45 — source-only verification, 2026-10-16
 
 PASS: Tools/audit.py (48 FX profiles, 4 Track profiles, SDK hashes,

@@ -156,7 +156,7 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.45 - ReaEQ, ReaComp, ReaGate and initial navigation\n\n"
+            ShowMessageBox("LReaParams 0.0.46.1 - ReaEQ, ReaComp, ReaGate and initial navigation\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
@@ -353,6 +353,25 @@ public:
                 return;
             }
             current_->handle(key);
+            if (current_ == &navigator_) {
+                const auto request = navigator_.consumeNativeFxWindowRequest();
+                if (request != FxNavigator::NativeFxWindow::none) {
+                    MediaTrack* targetTrack = navigator_.currentTrackForNativeWindow();
+                    MediaItem_Take* targetTake = navigator_.currentTakeForNativeWindow();
+                    const int targetFx = navigator_.currentFxForNativeWindow();
+                    // Remove native focus owner BEFORE handing control to REAPER.
+                    exitNavigation(false);
+                    if (request == FxNavigator::NativeFxWindow::addFx) {
+                        if (Main_OnCommand) Main_OnCommand(40271, 0);
+                    } else if (request == FxNavigator::NativeFxWindow::chain) {
+                        if (targetTake && ValidatePtr2(EnumProjects(-1,nullptr,0), targetTake, "MediaItem_Take*"))
+                            TakeFX_Show(targetTake, targetFx, 1);
+                        else if (targetTrack && ValidatePtr2(EnumProjects(-1,nullptr,0), targetTrack, "MediaTrack*"))
+                            TrackFX_Show(targetTrack, targetFx, 1);
+                    }
+                    return;
+                }
+            }
             if (!current_->active()) { exitNavigation(false); speak("LReaParams navigation off"); break; }
             if (titleProxyActive_) {
                 const std::wstring newTitle = current_->windowTitle();

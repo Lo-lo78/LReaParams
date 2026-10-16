@@ -1,3 +1,5 @@
+# LReaParams 0.0.46.1 — FX Chain / Take FX / browser
+
 # LReaParams 0.0.45 — sorgente FX Clipboard / Default Snapshot
 
 # LReaParams 0.0.44.4 — Fix compilazione GitHub Actions
