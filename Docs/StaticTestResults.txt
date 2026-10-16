@@ -17,4 +17,5 @@ TEST40 scope, API wiring and lexical guards PASS; native/runtime not executed
 TEST41 Auto suffix routing and read-only envelope contract PASS — native/runtime not run
 TEST42.1 CC-before-Auto accessible speech source contract PASS; runtime not tested
 TEST42 source checks PASS; MSVC/REAPER/NVDA/MIDI hardware not executed
-18 source-only suites passed. C++/REAPER tests NOT RUN.
+0.0.43 ReaEQ source contracts and virtual ID fixtures PASS; native/runtime NOT RUN
+19 source-only suites passed. C++/REAPER tests NOT RUN.

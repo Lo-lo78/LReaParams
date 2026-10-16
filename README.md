@@ -1,4 +1,8 @@
-# LReaParams 0.0.42.1 — annuncio MIDI CC e Auto (base 0.0.42)
+# LReaParams 0.0.43 — ReaEQ Virtual Controls (candidato sorgente)
+
+La 0.0.43 migra le proprietà virtuali Enabled e Type delle bande ReaEQ, Target Band e Band Action con aggiunta/rimozione reali. Mantiene i MIDI CC e la parola Auto della 0.0.42.1. **Non compilata localmente.** Guida specifica: `Docs/TEST43_REAEQ_VIRTUALS.md`.
+
+## Versione precedente: 0.0.42.1 — CC e Auto
 
 Estensione nativa C++ per Windows x64, derivata da TEST30 (0.0.31). Restano FX Params, Track Params e le azioni ausiliarie esistenti. L'archivio contiene solo sorgenti, riferimenti Lua, SDK incluso e test: nessuna DLL o build locale.
 
@@ -32,4 +36,4 @@ Il workflow esegue poi build MSVC e CTest sul runner. Non è stato eseguito dall
 
 Comando Windows CMD da lanciare nella cartella del repository:
 
-    git status && git add . && git commit -m "FX Params migration candidate: MIDI pickup, automation, presets, Compare and defaults; remove Parameter Library" && git push
+    git status && git add . && git commit -m "0.0.43: add ReaEQ virtual bands and structural band actions" && git push

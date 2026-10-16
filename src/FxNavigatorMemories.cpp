@@ -44,7 +44,7 @@ void FxNavigator::rebuildMemoryColumns() {
     // non-consecutive real Group and Memory slot numbers.
     for(const auto& pair:fxOrder_.paramSlots) {
         MemoryEntry e;e.slot=pair.first;e.param=pair.second;
-        e.label=(e.param==compareParamIndex || (e.param>=0&&e.param<count_))?fxOrder_.label(e.param):"Missing parameter";
+        e.label=(e.param==compareParamIndex || eqVirtualValid(e.param) || (e.param>=0&&e.param<count_))?fxOrder_.label(e.param):"Missing parameter";
         memoryColumns_[0].push_back(std::move(e));
     }
     for(const auto& pair:fxOrder_.groups) {
@@ -56,7 +56,7 @@ void FxNavigator::rebuildMemoryColumns() {
                 std::to_string(pair.second.size())+" parameters";
         memoryColumns_[1].push_back(std::move(e));
     }
-    for(int id=0;id<count_;++id)if(fxOrder_.hidden.count(id)){
+    for(int id:fxOrder_.hidden)if(id==compareParamIndex || eqVirtualValid(id) || (id>=0&&id<count_)){
         MemoryEntry e;e.param=id;e.label=fxOrder_.label(id);
         memoryColumns_[2].push_back(std::move(e));
     }
@@ -176,11 +176,11 @@ void FxNavigator::memoryLoad(bool toEdit) {
         return;
     }
     if(memoryCol_==3) {
-        if(entry.param<0 && entry.param!=compareParamIndex){speech_("No parameter");return;}
+        if(entry.param<0 && entry.param!=compareParamIndex && !eqVirtualValid(entry.param)){speech_("No parameter");return;}
         // Jump to the physical or Compare parameter without entering learn.
     }
     if(memoryCol_==0 || memoryCol_==2 || memoryCol_==3 || memoryCol_==5) {
-        if((entry.param<0 && entry.param!=compareParamIndex) || entry.param>=count_){speech_("Missing parameter");return;}
+        if((entry.param<0 && entry.param!=compareParamIndex && !eqVirtualValid(entry.param)) || entry.param>=count_){speech_("Missing parameter");return;}
         if(memoryCol_==2) {
             fxOrder_.hidden.erase(entry.param);
             saveStructure();

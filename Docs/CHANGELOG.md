@@ -1,3 +1,10 @@
+# 0.0.43 — ReaEQ: controlli virtuali, bande strutturali
+
+- Mappatura degli ID virtuali Lua, tipi filtro non lineari, proprietà Enabled/Type e Target/Band Action, chunk 33*N e controlli di verifica/Undo.
+- Custom Order/F7 e F8 leggono gli ID virtuali esistenti; il motore MIDI e il reset individuale li riconoscono.
+- Test C++ per codec, conversioni, add/remove, test statico e workflow aggiornato.
+- La compilazione Windows e i test REAPER/NVDA restano da effettuare.
+
 # 0.0.42.1 — FX Params: stato MIDI CC nei parametri (prima della 0.43)
 
 - Annuncio del CC associato **subito dopo nome e valore** e **prima di Auto**: `Cutoff, 1200 Hz. CC channel 1 CC 74. Auto`.

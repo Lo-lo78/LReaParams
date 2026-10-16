@@ -1,4 +1,5 @@
 #include "lrp/FxNavigator.h"
+#include "lrp/ReaEqVirtual.h"
 #include <algorithm>
 #include <cctype>
 #include <climits>
@@ -41,9 +42,14 @@ void FxNavigator::loadFxOrder() {
     // Raw REAPER name corresponds to Lua get_fx_raw_label(), not its stripped
     // display name or a per-instance GUID.
     const std::string name=entries_.at(static_cast<size_t>(browserIndex_)).name;
+    std::vector<int> nativeOrder;
+    if(isReaEq() && eqBandCount()>0)
+        nativeOrder=reaeq::pluginOrder(eqBandCount(),count_,compareParamIndex);
     fxOrder_.load(resourceRoot_,name,count_,[this](int id) {
-        return id==compareParamIndex?std::string("Compare"):(id>=0 && id<count_?originalName(track_,take_,fx_,id):std::string());
-    });
+        return id==compareParamIndex?std::string("Compare"):
+            eqVirtualValid(id)?eqVirtualName(id):
+            (id>=0 && id<count_?originalName(track_,take_,fx_,id):std::string());
+    },nativeOrder);
     groupSlot_=0;groupEditAll_=false;editF7_=false;searchMode_=false;
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
     slotMode_=fxOrder_.groupSlotMode?0:1;

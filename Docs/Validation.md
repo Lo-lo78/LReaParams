@@ -28,3 +28,7 @@ Correzione read-only di CC/Auto nella lettura parametri, senza build locale.
 L'audit e i contratti statici vengono rieseguiti in `Tools/run_static.py`;
 GitHub Actions eseguirà MSVC e CTest sul runner. NVDA e REAPER devono
 essere collaudati con CC interno, CC nativo, envelope ACT e doppio suffisso.
+
+## 0.0.43 ReaEQ source check
+
+19 Python suites PASS (includes TEST43 virtual ID source contract). The bundled C++ ControlTests contain band add/remove and enum-mapping cases but have **not run locally**. GitHub Actions runs MSVC/CTest. ReaEQ FX host behavior and NVDA need physical REAPER tests; see TEST43_REAEQ_VIRTUALS.md.

@@ -1,5 +1,7 @@
 #include "lrp/MidiControl.h"
 #include "lrp/ReaEqChunk.h"
+#include "lrp/ReaEqVirtual.h"
+#include "lrp/Profile.h"
 #include <iostream>
 #include <stdexcept>
 using namespace lrp;
@@ -33,6 +35,28 @@ int main() {
             }
         }
         bool rejected=false;try {ReaEqChunk invalid("AAAA");}catch(...) {rejected=true;}require(rejected);
+        // ReaEQ negative virtual IDs and non-linear Lua Type enum are stable.
+        require(reaeq::enabled(0)==-100000 && reaeq::type(0)==-100001);
+        require(reaeq::enabled(2)==-100004 && reaeq::type(2)==-100005);
+        require(reaeq::target==-99998 && reaeq::action==-99999);
+        for(int i=0;i<11;++i)require(reaeq::userFromRaw(reaeq::rawFromUser(i))==i);
+        require(reaeq::rawFromUser(2)==8 && reaeq::userFromRaw(2)==10);
+        const auto initial=reaeq::pluginOrder(2,9,compareParamIndex);
+        require(initial.size()==16 && initial[0]==-100000 && initial[1]==-100001 &&
+            initial[5]==-100002 && initial[6]==-100003 &&
+            initial[10]==reaeq::target && initial[11]==reaeq::action &&
+            initial[12]==compareParamIndex && initial[13]==6 && initial[15]==8);
+        // Extend and remove a real band; footer, magic and the first band must survive.
+        std::string chunk(40,'\0');chunk[0]=33;chunk[4]=0;chunk.back()='Z';
+        ReaEqChunk noBands(ReaEqChunk::encode(chunk));
+        noBands.addBand();require(noBands.bands()==1 && noBands.enabled(0)==1 && noBands.rawType(0)==8);
+        auto withOne=ReaEqChunk::decode(noBands.text());
+        require(withOne.size()==73 && withOne.substr(0,4)==chunk.substr(0,4) && static_cast<unsigned char>(withOne[4])==1 && withOne.back()=='Z');
+        noBands.addBand();require(noBands.bands()==2);
+        auto withTwo=ReaEqChunk::decode(noBands.text());
+        require(withTwo.substr(8,33)==withOne.substr(8,33));
+        noBands.removeBand(1);require(noBands.bands()==1 && ReaEqChunk::decode(noBands.text())==withOne);
+        rejected=false;try {noBands.removeBand(0);}catch(...) {rejected=true;}require(rejected);
         std::cout<<"MIDI decode, pickup crossing/jitter/rearm and ReaEQ chunk tests passed\n";return 0;
     }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}
 }

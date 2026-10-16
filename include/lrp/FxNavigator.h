@@ -78,6 +78,16 @@ private:
     std::vector<std::string> searchHistory_;
     int historyIndex_=-1;
     bool isReaEq() const;
+    int eqBandCount() const;
+    bool eqVirtualValid(int id) const;
+    std::string eqVirtualName(int id) const;
+    std::string eqVirtualFormatted(int id) const;
+    double eqVirtualFraction(int id) const;
+    bool eqVirtualSet(int id,double normalized);
+    void eqVirtualNudge(int direction,bool big);
+    void eqBandAction();
+    int eqTargetBand_ = 0;
+    bool eqActionMidiHigh_ = false;
     std::string namedConfig(const std::string& key) const;
     bool writeNamedConfig(const std::string& key,const std::string& value);
     bool captureReaEqDefault();

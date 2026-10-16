@@ -8,7 +8,7 @@ mem=(r/'src/FxNavigatorMemories.cpp').read_text()
 hdr=(r/'include/lrp/FxNavigator.h').read_text()
 order=(r/'include/lrp/FxOrder.h').read_text()
 api=(r/'include/lrp/ReaperApi.h').read_text()
-assert 'project(LReaParams VERSION 0.0.42' in (r/'CMakeLists.txt').read_text()
+assert any('project(LReaParams VERSION 0.0.'+v in (r/'CMakeLists.txt').read_text() for v in ('42','43'))
 assert 'stopBackgroundMidi, actionCount' in ext
 assert 'LREAPARAMSSTOPMIDIBACKGROUND' in ext
 assert 'backgroundMidi_ = navigator_' in ext

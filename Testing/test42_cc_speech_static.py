@@ -26,5 +26,5 @@ assert 'fxOrder_.ccLinks' in mem
 assert 'speech_(editF7_ ? editorParameterSpeech() : currentParameterSpeech());' in fx
 assert 'return valueMode_ ? "Value, " + currentParameterSpeech() : currentParameterSpeech();' in fx
 assert 'speech_(formattedValue());' in fx
-assert 'project(LReaParams VERSION 0.0.42.1' in (r/'CMakeLists.txt').read_text()
+assert any('project(LReaParams VERSION 0.0.'+v in (r/'CMakeLists.txt').read_text() for v in ('42.1','43'))
 print('TEST42.1 CC-before-Auto accessible speech source contract PASS; runtime not tested')

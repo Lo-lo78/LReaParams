@@ -44,6 +44,8 @@ jobs:
         run: python Testing/test42_static.py
       - name: Verify TEST42.1 CC then Auto speech contract (source only)
         run: python Testing/test42_cc_speech_static.py
+      - name: Verify TEST43 ReaEQ virtual IDs and chunk safety (source only)
+        run: python Testing/test43_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

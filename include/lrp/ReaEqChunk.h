@@ -52,11 +52,39 @@ public:
         if(!std::isfinite(value))throw std::runtime_error("Non-finite ReaEQ value");
         const size_t pos=offset(band,type);std::memcpy(bytes_.data()+pos,&value,8);
     }
+    // A real band is one opaque 33-byte record; unlike normalized host params,
+    // this keeps the untouched bands and footer bit-for-bit identical.
+    static std::string defaultBand() {
+        static constexpr unsigned char bytes[33]={
+            0x01,0x08,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0xE0,
+            0x85,0x40,0x00,0x00,0x00,0x00,0x00,0x00,0xF0,0x3F,
+            0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x40,0x01,0x00,0x01,0x00};
+        return {reinterpret_cast<const char*>(bytes),sizeof(bytes)};
+    }
+    int enabled(int band) const {
+        if(band<0||band>=count_)throw std::runtime_error("Invalid ReaEQ band");
+        return static_cast<unsigned char>(bytes_[8+33*static_cast<size_t>(band)])?1:0;
+    }
+    int rawType(int band) const {
+        if(band<0||band>=count_)throw std::runtime_error("Invalid ReaEQ band");
+        return static_cast<int>(read32(8+33*static_cast<size_t>(band)+1));
+    }
+    void addBand(){
+        if(count_>=64)throw std::runtime_error("Maximum ReaEQ band count");
+        bytes_.insert(8+static_cast<size_t>(count_)*33,defaultBand());
+        setBandCount(++count_);
+    }
+    void removeBand(int zeroBased){
+        if(count_<=1||zeroBased<0||zeroBased>=count_)throw std::runtime_error("Cannot remove ReaEQ band");
+        bytes_.erase(8+static_cast<size_t>(zeroBased)*33,33);
+        setBandCount(--count_);
+    }
     std::string text() const {return encode(bytes_);}
 private:
     uint32_t read32(size_t pos) const {
         uint32_t value=0;for(int i=0;i<4;++i)value|=static_cast<uint32_t>(static_cast<unsigned char>(bytes_[pos+i]))<<(8*i);return value;
     }
+    void setBandCount(int n){for(int i=0;i<4;++i)bytes_[4+static_cast<size_t>(i)]=static_cast<char>((static_cast<uint32_t>(n)>>(8*i))&255);}
     size_t offset(int band,int type) const {
         if(band<0||band>=count_||type<0||type>2)throw std::runtime_error("Invalid ReaEQ band");
         return 8+33*static_cast<size_t>(band)+8+8*static_cast<size_t>(type);

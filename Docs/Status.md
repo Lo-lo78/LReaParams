@@ -24,14 +24,14 @@ Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la 
 | 3: Floating/parlato | Implementati Ctrl+Shift+C, capture, parametro corrente, pickup, ritorno fixed, Ctrl+T persistente per parametro, accorpamento parlato | Parlato limitato a un annuncio ogni 180 ms; sessione Floating conservata con Ctrl+Q, non ricostruita dopo una chiusura ordinaria o un riavvio |
 | 4: automazione | Ctrl+Shift+A ACT/VIS, Ctrl+Shift+Alt+A solo FX corrente, Alt+F3/F4 nella griglia visibile, Undo | Griglia filtrata/gruppo limita la navigazione, mentre Lua può uscire verso la griglia completa; confermare Monitor FX nel runtime |
 | 5: preset/numeri/ricerche | Alt+F1/F2; Ctrl+E vero EDIT con inversione dei formatter monotoni o unità raw dichiarate; storico 20 voci, import storico Lua in lettura, salvataggio Settings | Adattatori specifici non monotoni e unità variabili non coperti; i recenti si applicano al recinto corrente; alcuni gesti extra mancanti |
-| 6: plugin speciali | ReaEQ: codec chunk verificato, default strutturale, coda wrapper, Gain CC/tastiera -150..+36.1 dB; numerico Hz/Gain/Bandwidth per Track FX | Mancano virtuali Enabled/Type/Target/Action, aggiunta/rimozione/navigazione bande, tutti gli adattamenti per tipi problematici/Q; ReaComp/ReaGate restano generici |
+| 6: plugin speciali | ReaEQ: codec chunk, default strutturale, coda wrapper, Gain esteso, virtuali Enabled/Type/Target/Action, aggiunta/rimozione bande in sorgente (NON collaudate in REAPER) | Restano gli adattamenti completi per frequenze/Q e la verifica runtime dell’aggiunta/rimozione bande; ReaComp/ReaGate restano generici |
 | 7: Compare/default F8 | Compare virtuale -300000 prima dei tre wrapper, stato per progetto/traccia/take/FX GUID; snapshot normali o chunk ReaEQ; reset, F8 conferma No/Yes e rigenerazione default | ReaEQ Compare non include virtuali non ancora esposti; singolo reset rifiuta numero bande diverso; salvataggi concorrenti mantengono il controllo digest preesistente, non una transazione interprocesso completa |
 | 8: F7/F8/contesti | Conservati i controller TEST30, selezioni, duplicati, filtri, gruppi, undo struttura; Compare accetta memorie/alias/CC senza mandare indici negativi al motore fisico | Non concluso audit semantico di tutte le 1109 funzioni Lua FX; persistono differenze rare da verificare |
 | 9: consegna | Progetto completo, test statici, test C++ per Actions, matrice e guida | Compilazione Windows e collaudo REAPER/NVDA/OSARA NON eseguiti |
 
 ## Funzioni che rimangono esplicitamente non migrate
 
-- Virtuali ReaEQ Enabled, Type, Target Band e Band Action; aggiunta/rimozione reale e navigazione tra bande.
+- Collaudare i nuovi virtuali ReaEQ e aggiunta/rimozione bande (0.0.43); completare i controlli speciali Frequency/Q e gli adattatori non monotoni del Lua.
 - Adattatori ReaComp: Detector input con valori sparsi, riepilogo filtri virtuale, alias e toggle specializzati. Adattatori ReaGate corrispondenti.
 - Clipboard snapshot completo Ctrl+Alt+Shift+C/Ctrl+V; copia/incolla valore fuori da F7.
 - Browser FX interno completo, riposizionamento fisico FX in catena, navigazione item/take Ctrl+Left/Right, ritorno Take→Track Ctrl+W, Ctrl+PageUp/Down, apertura FX Chain/browser.

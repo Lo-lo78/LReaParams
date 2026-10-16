@@ -180,23 +180,21 @@ std::string patchProfile(const std::string& input,const std::string& view,
 }
 void FxOrder::reset() noexcept {
     custom=false;groupSlotMode=false;order.clear();aliases.clear();hidden.clear();groups.clear();groupNames.clear();paramSlots.clear();ccLinks.clear();
-    file_.clear();resource_.clear();rawName_.clear();loadedDigest_.clear();paramName_={};count_=0;profile_={};loaded_=existed_=false;customCreated_=false;
+    file_.clear();resource_.clear();rawName_.clear();loadedDigest_.clear();paramName_={};count_=0;defaultOrder_.clear();validVirtual_.clear();profile_={};loaded_=existed_=false;customCreated_=false;
 }
 void FxOrder::normalize() {
     std::vector<int> kept;
     std::set<int> included;
-    for(int i:order) if(i==compareParamIndex || (i>=0&&i<count_)) {kept.push_back(i);included.insert(i);}
-    for(int i=0;i<count_;++i)if(!included.count(i))kept.push_back(i);
-    if(!included.count(compareParamIndex))kept.insert(kept.end()-std::min<int>(3,static_cast<int>(kept.size())),compareParamIndex);
+    for(int id:order)if(permitted(id)){kept.push_back(id);included.insert(id);}
+    for(int id:defaultOrder_)if(!included.count(id))kept.push_back(id);
     order.swap(kept);
-    for(auto it=hidden.begin();it!=hidden.end();)if((*it<0 && *it!=compareParamIndex)||*it>=count_)it=hidden.erase(it);else ++it;
-    for(auto it=aliases.begin();it!=aliases.end();)if((it->first<0 && it->first!=compareParamIndex)||it->first>=count_)it=aliases.erase(it);else ++it;
+    for(auto it=hidden.begin();it!=hidden.end();)if(!permitted(*it))it=hidden.erase(it);else ++it;
+    for(auto it=aliases.begin();it!=aliases.end();)if(!permitted(it->first))it=aliases.erase(it);else ++it;
 }
 std::vector<int> FxOrder::visibleOrder() const {
     std::vector<int> visible;
-    if(custom)for(int id:order) { if(!hidden.count(id))visible.push_back(id); }
-    else for(int i=0;i<count_;++i)visible.push_back(i);
-    if(!custom)visible.insert(visible.end()-std::min<int>(3,static_cast<int>(visible.size())),compareParamIndex);
+    const auto& source=custom?order:defaultOrder_;
+    for(int id:source)if(!custom||!hidden.count(id))visible.push_back(id);
     return visible;
 }
 std::string FxOrder::label(int id) const {
@@ -205,17 +203,26 @@ std::string FxOrder::label(int id) const {
 }
 bool FxOrder::hasRealModifications() const {
     if(!aliases.empty()||!hidden.empty())return true;
-    std::vector<int> expected;for(int i=0;i<count_;++i)expected.push_back(i);
-    expected.insert(expected.end()-std::min<int>(3,static_cast<int>(expected.size())),compareParamIndex);
+    const auto& expected=defaultOrder_;
     if(order!=expected)return true;
     return false;
 }
 void FxOrder::load(const std::filesystem::path& resource,const std::string& rawName,
-                   int paramCount,std::function<std::string(int)> paramName) {
+                   int paramCount,std::function<std::string(int)> paramName,
+                   const std::vector<int>& nativeOrder) {
     reset();resource_=resource;rawName_=rawName;paramName_=std::move(paramName);
     count_=std::max(0,paramCount);
-    for(int i=0;i<count_;++i)order.push_back(i);
-    order.insert(order.end()-std::min<int>(3,static_cast<int>(order.size())),compareParamIndex);
+    if(nativeOrder.empty()){
+        for(int i=0;i<count_;++i)defaultOrder_.push_back(i);
+        defaultOrder_.insert(defaultOrder_.end()-std::min<int>(3,static_cast<int>(defaultOrder_.size())),compareParamIndex);
+    }else {
+        std::set<int> unique;
+        for(int id:nativeOrder)if(unique.insert(id).second &&
+            (id==compareParamIndex || (id>=0 && id<count_) || (id<0 && id>=-100127)))
+            defaultOrder_.push_back(id);
+    }
+    for(int id:defaultOrder_)if(id<0 && id!=compareParamIndex)validVirtual_.insert(id);
+    order=defaultOrder_;
     if(resource_.empty()||rawName_.empty())return;
     const auto folder=resource_/L"LReaParams"/L"Plugins";
     file_=folder/std::filesystem::u8path(filename(rawName));
@@ -252,25 +259,25 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
     for(const auto& row:profile_.sections["CustomOrder"]) {
         int id=0;std::string name,alias;
         if(!parseIndex(row,id,name,alias))continue;
-        if(id==compareParamIndex || (id>=0&&id<count_)) {order.push_back(id);if(!alias.empty())aliases[id]=alias;}
+        if(permitted(id)) {order.push_back(id);if(!alias.empty())aliases[id]=alias;}
         else if(!name.empty()) {
             for(int i=0;i<count_;++i) if(paramName_(i)==name) {order.push_back(i);if(!alias.empty())aliases[i]=alias;break;}
         }
     }
     if(!profile_.sections["CustomOrder"].empty()) {
-        order.erase(order.begin(),order.begin()+count_+1);
+        order.erase(order.begin(),order.begin()+static_cast<std::ptrdiff_t>(defaultOrder_.size()));
     }
     for(const auto& row:profile_.sections["Extra"]) {
         const auto pos=row.find('=');if(pos==std::string::npos)continue;
         const auto key=row.substr(0,pos), value=unescape(row.substr(pos+1));
         if(key=="hidden_params_v1") for(const auto& line:split(value,'\n')) {
             int id=0;std::string name,alias;
-            if(parseIndex(line,id,name,alias)&&(id==compareParamIndex || (id>=0&&id<count_)))hidden.insert(id);
+            if(parseIndex(line,id,name,alias)&&(permitted(id)))hidden.insert(id);
         }
         const std::string ccPrefix="cc_link_v1::param::";
         if(key.rfind(ccPrefix,0)==0) {
             try {int param=std::stoi(key.substr(ccPrefix.size()));
-                if((param==compareParamIndex || (param>=0 && param<count_)) && !value.empty())ccLinks[param]=value;
+                if((permitted(param)) && !value.empty())ccLinks[param]=value;
             } catch(...) {}
         }
         const std::string prefix="group_slot_name_v1::slot::";
@@ -283,7 +290,7 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
         int slot=0;try{slot=std::stoi(row.substr(0,p));}catch(...){continue;}
         if(slot<1||slot>12)continue;
         int id=0;std::string name,alias;
-        if(parseIndex(unescape(row.substr(p+1)),id,name,alias)&&(id==compareParamIndex || (id>=0&&id<count_)))paramSlots[slot]=id;
+        if(parseIndex(unescape(row.substr(p+1)),id,name,alias)&&(permitted(id)))paramSlots[slot]=id;
     }
     for(const auto& row:profile_.sections["GroupSlots"]) {
         auto p=row.find('=');if(p==std::string::npos)continue;
@@ -291,7 +298,7 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
         if(slot<1||slot>12)continue;
         for(auto& line:split(unescape(row.substr(p+1)),'\n')) {
             int id=0;std::string name,alias;
-            if(parseIndex(line,id,name,alias)&&(id==compareParamIndex || (id>=0&&id<count_)))groups[slot].push_back(id);
+            if(parseIndex(line,id,name,alias)&&(permitted(id)))groups[slot].push_back(id);
         }
     }
     normalize();
@@ -307,7 +314,7 @@ bool FxOrder::save() {
     if(stored)for(int id:order)orderLines.push_back(lineFor(id,paramName_(id),aliases.count(id)?aliases[id]:""));
     for(const auto& row:profile_.sections["CustomOrder"]) {
         int id=0;std::string label,alias;
-        if(parseIndex(row,id,label,alias) && (id!=compareParamIndex && (id<0||id>=count_)))orderLines.push_back(row);
+        if(parseIndex(row,id,label,alias) && (!permitted(id)))orderLines.push_back(row);
     }
     std::map<std::string,std::string> extra;
     for(const auto& row:profile_.sections["Extra"]) {
@@ -316,7 +323,7 @@ bool FxOrder::save() {
     }
     for(auto it=extra.begin();it!=extra.end();) {
         if(it->first.rfind("cc_link_v1::param::",0)==0) {
-            bool managed=false;try {const int id=std::stoi(it->first.substr(std::string("cc_link_v1::param::").size()));managed=id==compareParamIndex||(id>=0&&id<count_);}catch(...) {}
+            bool managed=false;try {const int id=std::stoi(it->first.substr(std::string("cc_link_v1::param::").size()));managed=permitted(id);}catch(...) {}
             if(managed)it=extra.erase(it);else ++it;
         }else ++it;
     }
@@ -326,7 +333,7 @@ bool FxOrder::save() {
     const auto oldHidden=extra.find("hidden_params_v1");
     if(oldHidden!=extra.end())for(const auto& row:split(oldHidden->second,'\n')) {
         int id=0;std::string label,alias;
-        if(parseIndex(row,id,label,alias)&&id!=compareParamIndex&&(id<0||id>=count_)) {if(!hiddenLines.empty())hiddenLines+='\n';hiddenLines+=row;}
+        if(parseIndex(row,id,label,alias)&&!permitted(id)) {if(!hiddenLines.empty())hiddenLines+='\n';hiddenLines+=row;}
     }
     if(hiddenLines.empty())extra.erase("hidden_params_v1");else extra["hidden_params_v1"]=hiddenLines;
     for(int slot=1;slot<=12;++slot)extra.erase("group_slot_name_v1::slot::"+std::to_string(slot));

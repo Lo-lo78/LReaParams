@@ -1,5 +1,6 @@
 #include "lrp/FxNavigator.h"
 #include "lrp/ReaEqChunk.h"
+#include "lrp/ReaEqVirtual.h"
 #include "lrp/Storage.h"
 #include <algorithm>
 #include <cmath>
@@ -49,6 +50,7 @@ void FxNavigator::prepareBackgroundMidi() {
     // speaking/saving CC links against the wrong FX after reopening the UI.
     fxOrder_.rebindParamName([this](int id) -> std::string {
         if (id == compareParamIndex) return "Compare";
+        if(eqVirtualValid(id))return eqVirtualName(id);
         if (id < 0 || id >= count_) return {};
         char name[4096]{};
         const bool ok = take_ ? TakeFX_GetParamName(take_, fx_, id, name, sizeof(name)) :
@@ -121,6 +123,24 @@ void FxNavigator::clearNativeLearn(int param) {
     }
 }
 void FxNavigator::applyMidi(int param,int value) {
+    if(eqVirtualValid(param)){
+        if(param==reaeq::action){
+            const bool high=value>=64;
+            if(high && !eqActionMidiHigh_)eqBandAction();
+            eqActionMidiHigh_=high;
+            return;
+        }
+        auto& state=pickup_[param];
+        if(!state.allows(value,eqVirtualFraction(param)))return;
+        // Discrete virtuals use the same 0..127 learn mapping as Lua.
+        const double target=value/127.0;
+        if(eqVirtualSet(param,target)){
+            state.applied(eqVirtualFraction(param));
+            if(fxOrder_.extraValue("cc_param_speech_v1::"+std::to_string(param))=="1")
+                midiPendingSpeech_=fxOrder_.label(param)+", "+eqVirtualFormatted(param);
+        }
+        return;
+    }
     if(param==compareParamIndex) {
         auto& state=pickup_[param];const double current=compareFormatted()=="Original"?0:1;
         if(state.allows(value,current) && setCompare(value/127.0)) {
@@ -182,7 +202,7 @@ void FxNavigator::pollMidi() {
         if(!it->cc)continue;
         const auto cc=*it->cc;
         if(learnCc_) {
-            if((learnParam_<0 && learnParam_!=compareParamIndex)||learnParam_>=count_){learnCc_=false;return;}
+            if((learnParam_<0 && learnParam_!=compareParamIndex && !eqVirtualValid(learnParam_))||learnParam_>=count_){learnCc_=false;return;}
             // Lua reassigns a duplicated controller to the newly learned param.
             for(auto link=fxOrder_.ccLinks.begin();link!=fxOrder_.ccLinks.end();) {
                 int ch=0,num=0;
@@ -204,7 +224,10 @@ void FxNavigator::pollMidi() {
             speech_("Floating CC. Channel "+std::to_string(cc.channel)+" CC "+std::to_string(cc.number));continue;
         }
         if(fixedCc_) {
-            for(const auto& link:fxOrder_.ccLinks) {
+            // A virtual ReaEQ Band Action may rebuild FxOrder in applyMidi.
+            // Snapshot the links first; never iterate a map being replaced.
+            const auto links=fxOrder_.ccLinks;
+            for(const auto& link:links) {
                 int ch=0,num=0;if(parseLink(link.second,ch,num)&&ch==cc.channel&&num==cc.number)applyMidi(link.first,cc.value);
             }
         }else if(floatingCc_ && cc.channel==floatingChannel_ && cc.number==floatingNumber_) {
@@ -274,7 +297,12 @@ void FxNavigator::navigatePreset(int direction) {
     pickup_.clear();midiSpoken_.clear();midiSequence_=recentSequence();
     if(!ok){speech_("Preset navigation unavailable");return;}
     const int n=count();
-    if(n!=count_) {count_=n;if(n<=0){end();return;}parameter_=std::clamp(parameter_,0,n-1);loadFxOrder();}
+    if(n!=count_) {
+        count_=n;if(n<=0){end();return;}
+        if(!eqVirtualValid(parameter_) && parameter_!=compareParamIndex)
+            parameter_=std::clamp(parameter_,0,n-1);
+        loadFxOrder();
+    }
     parameterName_=parameterName();
     char text[4096]{};
     const bool named=take_?TakeFX_GetPreset(take_,fx_,text,sizeof(text)):TrackFX_GetPreset(track_,fx_,text,sizeof(text));
@@ -483,10 +511,16 @@ bool FxNavigator::isReaEq() const {
     return name.find("reaeq")!=std::string::npos;
 }
 std::string FxNavigator::namedConfig(const std::string& key) const {
-    std::vector<char> buffer(key=="vst_chunk"?4*1024*1024:4096);
-    const bool ok=take_?TakeFX_GetNamedConfigParm(take_,fx_,key.c_str(),buffer.data(),static_cast<int>(buffer.size())):
-                         TrackFX_GetNamedConfigParm(track_,fx_,key.c_str(),buffer.data(),static_cast<int>(buffer.size()));
-    return ok?std::string(buffer.data()):std::string();
+    // Virtual ReaEQ parameters are read during every Grid/Value movement.
+    // Reuse the 4 MiB SDK scratch space instead of allocating it on each read.
+    thread_local std::vector<char> chunkBuffer(4*1024*1024);
+    std::array<char,4096> smallBuffer{};
+    char* buffer=key=="vst_chunk"?chunkBuffer.data():smallBuffer.data();
+    const int capacity=key=="vst_chunk"?static_cast<int>(chunkBuffer.size()):static_cast<int>(smallBuffer.size());
+    buffer[0]='\0';
+    const bool ok=take_?TakeFX_GetNamedConfigParm(take_,fx_,key.c_str(),buffer,capacity):
+                         TrackFX_GetNamedConfigParm(track_,fx_,key.c_str(),buffer,capacity);
+    return ok?std::string(buffer):std::string();
 }
 bool FxNavigator::writeNamedConfig(const std::string& key,const std::string& value) {
     return take_?TakeFX_SetNamedConfigParm(take_,fx_,key.c_str(),value.c_str()):
@@ -511,7 +545,8 @@ bool FxNavigator::captureReaEqDefault() {
 }
 void FxNavigator::refreshAfterStructure(int preferred) {
     count_=count();if(count_<=0){end();return;}
-    parameter_=preferred==compareParamIndex?preferred:std::clamp(preferred,0,count_-1);
+    parameter_=(preferred==compareParamIndex || eqVirtualValid(preferred))?
+        preferred:std::clamp(preferred,0,count_-1);
     clearF7Filter();groupSlot_=0;editF7_=false;
     loadFxOrder();parameterName_=parameterName();pickup_.clear();rememberPosition();
 }

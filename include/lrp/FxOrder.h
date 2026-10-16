@@ -14,7 +14,8 @@ namespace lrp {
 class FxOrder {
 public:
     void load(const std::filesystem::path& resource, const std::string& rawName,
-              int paramCount, std::function<std::string(int)> paramName);
+              int paramCount, std::function<std::string(int)> paramName,
+              const std::vector<int>& nativeOrder = {});
     bool save(); // only called after an intentional structural change
     // A parked MIDI navigator is a snapshot of a foreground navigator.
     // Rebind callbacks which originally captured that foreground object's this.
@@ -54,6 +55,11 @@ private:
     std::string rawName_, loadedDigest_;
     std::function<std::string(int)> paramName_;
     int count_ = 0;
+    std::vector<int> defaultOrder_;
+    std::set<int> validVirtual_;
+    bool permitted(int id) const noexcept {
+        return id == compareParamIndex || (id>=0 && id<count_) || validVirtual_.count(id)!=0;
+    }
     Profile profile_{};
     bool loaded_ = false, existed_ = false, customCreated_ = false;
 };
