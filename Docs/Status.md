@@ -1,4 +1,6 @@
-# Stato sorgente 0.0.40 — candidato di migrazione
+# Stato sorgente 0.0.41 — correzione parlato Auto del candidato 0.0.40
+
+La correzione successiva alla 0.0.40 porta il suffisso `. Auto` nella lettura completa del parametro FX quando l’envelope ACT è attivo; non modifica il motore di automazione.
 
 Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la parità Lua. Non è stata eseguita alcuna compilazione locale, CMake configure, build o prova della DLL. I test C++ inclusi saranno eseguiti dal workflow GitHub Actions dell'utente. Le verifiche Python sono controlli di testo e formati, non provano la correttezza eseguibile del C++.
 

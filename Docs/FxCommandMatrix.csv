@@ -36,3 +36,4 @@ handle_ctrl_left_right_item_nav,Ctrl+Left/Right,Take/item,Navigate items/takes,N
 switch_take_context_to_current_track_fx,Ctrl+W,Take FX,Return to Track FX,None,Missing,25
 open_current_context_fx_chain,Ctrl+Shift+F,FX,Open FX chain and release keyboard,None,Missing,25
 switch_to_track_params_script,Ctrl+Tab outside F7,FX,Switch navigator,None,Missing; no library routing,25
+get_param_automation_spoken_label / get_param_label_for_param,"Grid arrows, Alt+F3/F4, NVDA+Up",FX Params physical parameter,Say Auto after formatted value iff REAPER envelope ACT=1,currentParameterSpeech/envelopeActive,Implemented in 0.0.41; runtime NVDA pending,15a

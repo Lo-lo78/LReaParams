@@ -770,7 +770,13 @@ std::string FxNavigator::formattedValue() const {
     return ok && text[0] ? std::string(text) : std::to_string(v);
 }
 std::string FxNavigator::currentParameterSpeech() const {
-    return displayName() + ", " + formattedValue();
+    // Lua parity: name, value, then "Auto" only when this parameter's
+    // *existing* REAPER envelope has ACT=1. Never create an envelope just
+    // to announce it; virtual parameters have no physical FX envelope.
+    std::string spoken = displayName() + ", " + formattedValue();
+    if (parameter_ >= 0 && parameter_ < count_ && envelopeActive(parameter_))
+        spoken += ". Auto";
+    return spoken;
 }
 std::string FxNavigator::editorParameterSpeech() const {
     // Selection is an OCCURRENCE index, not a parameter ID: duplicate entries

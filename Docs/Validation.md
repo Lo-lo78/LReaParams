@@ -2,7 +2,7 @@
 
 Eseguiti soltanto controlli non compilanti:
 
-- 15 suite Python: audit formati/sorgenti e regressioni TEST18–TEST30/TEST40. Tutte passate; output in StaticTestResults.txt.
+- 16 suite Python: audit formati/sorgenti e regressioni TEST18–TEST30/TEST40/TEST41. Tutte passate; output in StaticTestResults.txt.
 - Oracolo indipendente Python: roundtrip di 52 fixture sintetiche, 48 FX e 4 Track; BOM, CRLF, sezioni future e rifiuto input malformati. Non equivale all'esecuzione del parser C++.
 - SHA-256 SDK invariati; TrackNavigator.cpp identico alla base TEST30; entrambi i Lua di riferimento identici fra TEST30 e Scripts(3).
 - Delimitatori lessicali C++ e presenza API nel relativo SDK; questi controlli NON provano compilazione, linking, correttezza dei tipi o semantica.
@@ -17,3 +17,5 @@ Test C++ predisposti per il runner dell'utente:
 - control_tests: decode MIDI, pickup crossing/tolleranza/riarmo/anti-jitter, codec chunk ReaEQ e invarianza dei byte non modificati.
 
 I risultati runtime devono essere registrati dall'utente seguendo ManualTests.md. La lista delle funzioni ancora mancanti è in Status.md e FxCommandMatrix.csv. Nessuna prova statica consente di dichiarare conclusa la migrazione.
+
+TEST41: regressione statica `Auto` sugli annunci aggiunta; nessun test runtime o compilazione locale.

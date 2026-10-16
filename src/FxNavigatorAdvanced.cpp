@@ -305,7 +305,11 @@ TrackEnvelope* FxNavigator::envelope(int param,bool create) const {
 }
 bool FxNavigator::envelopeActive(int param) const {
     auto env=envelope(param,false);if(!env)return false;
-    std::vector<char> buffer(4*1024*1024);
+    // Announcements now query this on ordinary Grid navigation. Reuse the
+    // scratch buffer on REAPER's UI thread instead of allocating 4 MiB for
+    // every parameter movement or NVDA review. The read never creates or
+    // changes an envelope.
+    thread_local std::vector<char> buffer(4*1024*1024);
     return GetEnvelopeStateChunk(env,buffer.data(),static_cast<int>(buffer.size()),false) && chunkActive(buffer.data());
 }
 bool FxNavigator::setEnvelope(int param,bool active) {

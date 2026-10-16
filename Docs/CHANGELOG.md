@@ -1,3 +1,11 @@
+# 0.0.41 — FX Params: annuncio stato Auto
+
+- Corretto `currentParameterSpeech()` per annunciare `. Auto` dopo il valore solo se il parametro fisico dispone di un envelope REAPER attivo (ACT=1).
+- La lettura si riflette su Grid, F7, navigazione Alt+F3/F4, annunci del cambio FX e NVDA+Freccia Su.
+- Nessun suffisso per gli envelope non attivi o i parametri virtuali; le modifiche valore continuano ad annunciare soltanto il valore.
+- Lette le informazioni con l’API già usata dal navigatore; buffer riutilizzato per limitare le allocazioni.
+- Non cambia l’attivazione dell’automazione; codice non compilato, serve collaudo in REAPER.
+
 # Modifiche rispetto a TEST30
 
 - Rimozione completa del terzo navigatore dal codice attivo, azione e menu; rimozione Lua dedicato, parser/fixture .pp e ramo Params dall'importatore.
