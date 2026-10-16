@@ -1,1 +1,1 @@
-LReaParams 0.0.43.2 — ReaEQ band property write/readback verification. Solo sorgenti e workflow GitHub Actions, nessuna compilazione locale. Test NVDA/REAPER necessario.
+LReaParams 0.0.43.4 — Ctrl+Spazio chiama azione nativa REAPER 40073 Play/pause. Solo sorgenti, test statici e workflow GitHub Actions. Nessuna compilazione locale.

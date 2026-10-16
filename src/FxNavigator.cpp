@@ -998,15 +998,16 @@ void FxNavigator::handle(const Key& k) {
     if (k.vk == VK_SPACE && !k.shift && !k.alt &&
         !textEdit_ && !searchMode_ && !numericEdit_) {
         if (!k.repeat) {
-            const int playState = GetPlayState ? GetPlayState() : 0;
             if (k.ctrl) {
-                // Ctrl+Space: pause when playing/recording; resume or start
-                // when paused/stopped, without jumping back to the start.
-                if ((playState & (1 | 4)) && OnPauseButton) OnPauseButton();
-                else if (!(playState & (1 | 4)) && OnPlayButton) OnPlayButton();
-                else if (Main_OnCommand) Main_OnCommand(40073, 0);
+                // Ctrl+Space must invoke exactly the same native REAPER action
+                // as Transport: Play/pause (40073). Calling OnPlayButton on a
+                // paused transport may restart at the edit cursor, losing the
+                // playback pause position. The REAPER action owns both states.
+                if (Main_OnCommand) Main_OnCommand(40073, 0);
             } else {
-                // Plain Space: play/stop; from pause resume immediately.
+                // Plain Space: play/stop; from pause resume immediately, as
+                // requested by the legacy FX Params Lua transport contract.
+                const int playState = GetPlayState ? GetPlayState() : 0;
                 if ((playState & 2) && OnPlayButton) OnPlayButton();
                 else if (Main_OnCommand) Main_OnCommand(40044, 0);
             }

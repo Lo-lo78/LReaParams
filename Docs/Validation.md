@@ -1,3 +1,7 @@
+## 0.0.43.4 — Ctrl+Spazio REAPER 40073 (sorgente)
+
+La 0.0.43.4 richiama direttamente `Main_OnCommand(40073, 0)` e non usa la coppia OnPauseButton/OnPlayButton per Ctrl+Spazio. Controlli statici superati, nessuna compilazione locale o test runtime. Verificare la ripresa dalla pausa tramite GitHub Actions e REAPER.
+
 ## 0.0.43.3 — FX transport shortcuts
 
 Controlli Python su presenza API e comandi REAPER 40044/40073, semantica pausa/ripresa, no-repeat, protezione EDIT, Shift+Space F7, e workflow GitHub Actions. **Non costituiscono prova di compilazione o di gestione effettiva della tastiera in REAPER**; non sono state eseguite build locali.

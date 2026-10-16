@@ -34,3 +34,9 @@ Tutte le caselle sono da eseguire dall'utente DOPO la build GitHub Actions. Non 
 ## 0.0.43.3 — FX Play/Stop e Play/Pause
 
 Vedere `Docs/TEST43_3_FX_TRANSPORT.md` per i controlli di ripresa da pausa, autorepeat, F7 e campi EDIT. Sono prove manuali per REAPER/NVDA dopo GitHub Actions.
+
+## 0.0.43.4 — Ctrl+Spazio da pausa
+
+- [ ] Da FX Params Ctrl+Spazio avvia, la seconda pressione mette in pausa e la terza riprende **dallo stesso punto di pausa**.
+- [ ] Provare anche in Value/F7/F8, confrontando con l’azione 40073 eseguita dalla TCP.
+- [ ] Spazio rimane Play/stop; Maiusc+Spazio F7 seleziona e negli EDIT la barra spaziatrice inserisce testo.

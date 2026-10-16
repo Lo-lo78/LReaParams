@@ -20,3 +20,5 @@
 7. Verifica che Track Params, MIDI CC, ReaEQ e annunci NVDA non abbiano regressioni.
 
 Solo audit Python eseguiti localmente. Verifica funzionale REAPER, NVDA e MSVC demandata al proprietario tramite GitHub Actions.
+
+**Aggiornamento 0.0.43.4:** Ctrl+Spazio non usa più il ramo manuale OnPauseButton/OnPlayButton, ma richiama direttamente l’azione REAPER 40073. Vedi TEST43_4_NATIVE_PLAY_PAUSE.md.

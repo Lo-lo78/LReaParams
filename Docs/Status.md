@@ -35,7 +35,7 @@ Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la 
 - Adattatori ReaComp: Detector input con valori sparsi, riepilogo filtri virtuale, alias e toggle specializzati. Adattatori ReaGate corrispondenti.
 - Clipboard snapshot completo Ctrl+Alt+Shift+C/Ctrl+V; copia/incolla valore fuori da F7.
 - Browser FX interno completo, riposizionamento fisico FX in catena, navigazione item/take Ctrl+Left/Right, ritorno Take→Track Ctrl+W, Ctrl+PageUp/Down, apertura FX Chain/browser.
-- Background MIDI Ctrl+Q implementato per un singolo contesto FX parcheggiato (richiede collaudo hardware); il trasporto Space/Ctrl+Space è ora presente nel navigatore FX (0.0.43.3, da collaudare), ma restano i marker globali e lo switch Ctrl+Tab verso Track Params.
+- Background MIDI Ctrl+Q implementato per un singolo contesto FX parcheggiato (richiede collaudo hardware); il trasporto Space/Ctrl+Space è presente nel navigatore FX; Ctrl+Space ora invoca 40073 in 0.0.43.4 (da collaudare), ma restano i marker globali e lo switch Ctrl+Tab verso Track Params.
 - Compatibilità semantica totale con virtuali negativi dei vecchi profili: le voci non supportate sono conservate come record opachi in ordine, slot, gruppi e associazioni, senza esporle come controlli. Non è possibile modificarle finché manca il relativo adattatore; i backup conservano il precedente .fx.
 - La persistenza dei profili preserva sezioni sconosciute, campi Extra e commenti; le sezioni gestite vengono riserializzate, quindi non conserva il posizionamento originale dei commenti ; le voci dinamiche non supportate sono conservate come record opachi.
 

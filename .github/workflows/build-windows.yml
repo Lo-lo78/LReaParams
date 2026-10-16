@@ -52,6 +52,8 @@ jobs:
         run: python Testing/test43_2_static.py
       - name: Verify TEST43.3 FX transport keys and text-field isolation (source only)
         run: python Testing/test43_3_static.py
+      - name: Verify TEST43.4 Ctrl+Space native Play/Pause (source only)
+        run: python Testing/test43_4_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

@@ -1,3 +1,9 @@
+# 0.0.43.4 — Ctrl+Spazio: azione nativa REAPER 40073
+
+- Ctrl+Spazio da FX Params richiama direttamente `Main_OnCommand(40073, 0)`, per Play/pause reale con ripresa dal punto di pausa; rimosso il ramo manuale `OnPauseButton` / `OnPlayButton` da questo comando.
+- Invariati Spazio (Play/stop), Maiusc+Spazio in F7, campi EDIT, Track Params, ReaEQ, profili e MIDI CC.
+- Aggiunti test statici e guida `Docs/TEST43_4_NATIVE_PLAY_PAUSE.md`; nessuna compilazione locale.
+
 # 0.0.43.3 — Trasporto FX Params con Spazio / Ctrl+Spazio
 
 - Spazio: Play/Stop via azione REAPER 40044; dalla pausa ripresa immediata via `OnPlayButton`.

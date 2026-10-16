@@ -6,7 +6,7 @@ update=(root/'src/FxNavigatorReaEq.cpp').read_text()
 test=(root/'Testing/ControlTests.cpp').read_text()
 cmake=(root/'CMakeLists.txt').read_text()
 workflow=(root/'.github/workflows/build-windows.yml').read_text()
-assert 'VERSION 0.0.43.3' in cmake
+assert 'VERSION 0.0.43.4' in cmake
 assert 'bandWriteAcceptedOrVerified(' in virtual
 assert 'std::from_chars(first,last,actual)' in virtual
 assert 'const bool accepted=writeNamedConfig(key,std::to_string(raw));' in update

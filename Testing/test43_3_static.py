@@ -10,7 +10,7 @@ track=(root/'src/TrackNavigator.cpp').read_text()
 cmake=(root/'CMakeLists.txt').read_text()
 workflow=(root/'.github/workflows/build-windows.yml').read_text()
 lua=(root/'Legacy/Speak FX Params - TrackTake Navigator.lua').read_text()
-assert 'VERSION 0.0.43.3' in cmake
+assert 'VERSION 0.0.43.4' in cmake
 for name in ('GetPlayState','OnPlayButton','OnPauseButton'):
     assert '#define REAPERAPI_WANT_'+name in api
 assert 'CMD_PLAY_STOP  = 40044' in lua and 'CMD_PLAY_PAUSE = 40073' in lua
@@ -18,8 +18,7 @@ assert 'k.vk == VK_SPACE && !k.shift && !k.alt' in fx
 assert fx.count('k.vk == VK_SPACE && !k.shift && !k.alt') == 2  # accepts/handle
 assert 'if (!k.repeat) {' in fx[fx.index('void FxNavigator::handle('):fx.index('if (memoryManager_)',fx.index('void FxNavigator::handle('))]
 assert 'const int playState = GetPlayState ? GetPlayState() : 0;' in fx
-assert '(playState & (1 | 4)) && OnPauseButton' in fx
-assert '!(playState & (1 | 4)) && OnPlayButton' in fx
+assert 'if (k.ctrl) {' in fx  # keep the two transport gestures distinct
 assert '(playState & 2) && OnPlayButton' in fx
 assert 'Main_OnCommand(40044, 0)' in fx and 'Main_OnCommand(40073, 0)' in fx
 assert '!textEdit_ && !searchMode_ && !numericEdit_' in fx

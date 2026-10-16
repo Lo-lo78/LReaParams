@@ -24,3 +24,5 @@ TEST42 source checks PASS; MSVC/REAPER/NVDA/MIDI hardware not executed
 21 source-only checks verified (audit plus 20 test scripts, in two groups). C++/REAPER tests NOT RUN.
 0.0.43.3 FX transport shortcuts/field isolation source checks PASS; native/REAPER/NVDA NOT RUN.
 0.0.43.3 audit + 21 historic/current test scripts checked in two groups due to runner time limit; all individual checks PASS. No native build.
+
+0.0.43.4 audit e regressioni 18–43.4 verificate per gruppi: controlli di sorgente PASS; C++/REAPER/NVDA NON ESEGUITI.

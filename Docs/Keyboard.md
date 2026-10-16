@@ -54,3 +54,5 @@ F8: Left/Right cambia fra colonne non vuote; Up/Down sceglie voce; Enter carica 
 I campi nativi permettono Ctrl+A/C/X/V, cursore e selezione Windows. L'editor numerico dichiara unità raw quando non dispone di formatter numerici monotoni; non digitare dB/Hz se viene annunciato Host raw units. Le unità ReaEQ specifiche sono disponibili sui Track FX; Take FX conserva il percorso generico come Lua.
 
 F10 non ha funzione; F12 singolo riservato, Ctrl+F12 slot 12; Alt+F10/F11/F12 ai watcher OSARA. Track Params conserva la tastiera TEST30. Le funzionalità mancanti sono in Status.md.
+
+0.0.43.4: Ctrl+Spazio invoca direttamente l’azione REAPER 40073 (Transport: Play/pause) e riprende dal punto di pausa.
