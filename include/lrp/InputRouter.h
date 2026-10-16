@@ -24,6 +24,9 @@ private:
     static int translate(MSG*, accelerator_register_t*) noexcept;
     static LRESULT CALLBACK hook(int, WPARAM, LPARAM) noexcept;
     bool route(MSG&, bool removed) noexcept;
+    // Consume Ctrl+Space in WH_GETMESSAGE before REAPER handles the same
+    // physical gesture through its own Action List accelerator.
+    bool interceptTransport(MSG&) noexcept;
     bool safeTarget(HWND target) const noexcept;
     void requestExit() noexcept;
     reaper_plugin_info_t* api_;

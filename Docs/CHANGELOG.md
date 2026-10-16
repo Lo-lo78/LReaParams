@@ -1,3 +1,11 @@
+## 0.0.43.5 — Inoltro Ctrl+Spazio prima dell'Action List
+
+- Riparato il percorso dei tasti, non soltanto la chiamata 40073: il vecchio Ctrl+Spazio poteva raggiungere REAPER due volte tramite l'acceleratore nativo e la DLL, producendo uno Stop al posto di Pause e un riavvio dal cursore.
+- Aggiunto hook `WH_GETMESSAGE` **thread-local** anche per il controllo nativo Grid/Value e filtro Ctrl+Spazio nel backend SDK; il tasto down viene consumato prima della traduzione nativa, l'up corrispondente è consumato, ripetizioni non eseguono più azioni.
+- Lo stesso Ctrl+Spazio viene messo nella coda già esistente della navigazione e continua a usare Play/Pause REAPER `40073` una sola volta; nessuna modifica a Spazio semplice e Maiusc+Spazio.
+- Esclusi campi EDIT, tasti aggiuntivi, altri processi/finestra, Track Params. Rilascio automatico hook al termine della navigazione.
+- Solo controlli statici; non compilato né provato con REAPER/NVDA.
+
 # 0.0.43.4 — Ctrl+Spazio: azione nativa REAPER 40073
 
 - Ctrl+Spazio da FX Params richiama direttamente `Main_OnCommand(40073, 0)`, per Play/pause reale con ripresa dal punto di pausa; rimosso il ramo manuale `OnPauseButton` / `OnPlayButton` da questo comando.

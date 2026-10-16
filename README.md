@@ -1,3 +1,11 @@
+# LReaParams 0.0.43.5 — Ctrl+Spazio senza doppio inoltro a REAPER (solo sorgente)
+
+**Correzione del problema confermato in REAPER:** il comando Play/Pause 40073 da solo non basta se la **stessa pressione fisica** di Ctrl+Spazio raggiunge anche l'Action List nativa di REAPER. Il Lua usa infatti `JS_VKeys_Intercept` per impedire questa seconda interpretazione del tasto. Nella DLL ora `WH_GETMESSAGE`, limitato al thread dell'interfaccia di REAPER e attivo esclusivamente durante la navigazione, cattura Ctrl+Spazio **prima** delle scorciatoie Main: accoda una sola operazione a FX Params e neutralizza il messaggio originale. Copre sia la finestra nativa NVDA (Grid/Value/F7/F8) sia il backend senza finestra.
+
+REAPER esegue ancora `40073` in FX Params per Ctrl+Spazio; Spazio da solo usa `40044` (con ripresa immediata dalla pausa), e Maiusc+Spazio in F7 seleziona normalmente. La cattura evita campi Windows EDIT, Alt/Maiusc, NVDA/Insert e Track Params. Il relativo hook si disinstalla alla chiusura del navigatore. Nessuna scorciatoia globale rimane attiva in background.
+
+**Non è stato compilato o collaudato in REAPER:** i controlli Python sono soltanto statici. Verifica prima la sequenza Ctrl+Spazio x3 con la 0.0.43.5, confrontando con l'azione di REAPER quando FX Params è chiuso. Se ancora non funziona, raccogliere lo stato Play/Pause/Stop annunciato da OSARA dopo ciascuna pressione prima di modificare altro.
+
 # LReaParams 0.0.43.4 — Ctrl+Spazio: Play/Pause nativo 40073 in FX Params (sorgente)
 
 **Spazio** in FX Params comanda Play/Stop di REAPER; se la riproduzione è in pausa, Spazio la riprende immediatamente. **Ctrl+Spazio** richiama direttamente l’azione REAPER 40073 (Play/pause), per riprendere dalla posizione di pausa. Le combinazioni valgono nella griglia, in Value, in F7 e in F8; sono intercettate una sola volta per pressione. **Maiusc+Spazio in F7** continua a selezionare i parametri; nei campi EDIT nativi (ricerca, rinomina, modifica numerica) Spazio resta carattere di testo e non attiva il trasporto. Il navigatore non pronuncia messaggi aggiuntivi per il trasporto. Non è stato modificato Track Params.

@@ -19,7 +19,16 @@ bool InputRouter::start(InputBackend backend, HWND keyboardWindow) {
         originalRoot_ = keyboardWindow;
         floating_ = navigator_->floatingWindow();
         exitRequested_ = false;
-        capturing_ = true;
+        // REAPER can translate Ctrl+Space as its own Main shortcut before the
+        // focused Win32 child receives WM_KEYDOWN. The child WndProc alone is
+        // therefore insufficient: one physical press could execute the Lua-
+        // style command AND the Main-section command. Consume at queue removal.
+        // This is a thread-local WH_GETMESSAGE hook, not a global keyboard hook.
+        current_ = this;
+        escapeHookOnly_ = true;
+        hook_ = SetWindowsHookExW(WH_GETMESSAGE, hook, nullptr, threadId_);
+        capturing_ = hook_ != nullptr;
+        if (!capturing_) { stop(); return false; }
         return true;
     }
     if (GetWindowThreadProcessId(main_, nullptr) != threadId_) return false;
@@ -37,8 +46,9 @@ bool InputRouter::start(InputBackend backend, HWND keyboardWindow) {
     if (backend == InputBackend::sdkAccelerator) {
         registered_ = api_->Register("accelerator", &accelerator_) != 0;
         // Escape must be consumed before REAPER's native Escape command.
-        // A thread-local WH_GETMESSAGE hook intercepts Escape ONLY. All other
-        // navigation keys still use the REAPER accelerator backend.
+        // A thread-local WH_GETMESSAGE hook intercepts Escape and the
+        // Ctrl+Space transport gesture before native REAPER accelerators.
+        // All other navigation keys use the REAPER accelerator backend.
         escapeHookOnly_ = true;
         if (registered_) hook_ = SetWindowsHookExW(WH_GETMESSAGE, hook, nullptr, threadId_);
         capturing_ = registered_ && hook_ != nullptr;
@@ -136,6 +146,50 @@ bool InputRouter::route(MSG& message, bool removed) noexcept {
     if (next == head_) { requestExit(); return false; }
     queue_[tail_] = key; tail_ = next; swallowed_[vk] = message.hwnd; return true;
 }
+bool InputRouter::interceptTransport(MSG& message) noexcept {
+    if (!capturing_ || message.wParam != VK_SPACE) return false;
+    const bool down = message.message == WM_KEYDOWN || message.message == WM_SYSKEYDOWN;
+    const bool up = message.message == WM_KEYUP || message.message == WM_SYSKEYUP;
+    if (!down && !up) return false;
+
+    // Consume the release even when Ctrl has already been released, but only
+    // when this navigator consumed the corresponding physical key-down.
+    if (up) {
+        if (!swallowed_[VK_SPACE] || swallowed_[VK_SPACE] != message.hwnd) return false;
+        if (ownedWindow_) {
+            swallowed_[VK_SPACE] = nullptr;
+            return true;
+        }
+        return route(message, true);
+    }
+    if (!(GetKeyState(VK_CONTROL) & 0x8000) ||
+        (GetKeyState(VK_SHIFT) & 0x8000) ||
+        (GetKeyState(VK_MENU) & 0x8000) ||
+        (GetKeyState(VK_INSERT) & 0x8000) ||
+        (GetKeyState(VK_NUMPAD0) & 0x8000)) return false;
+
+    if (!ownedWindow_) {
+        // Normal SDK accelerator mode: use the same validated queue as all
+        // other navigation keys, but precede REAPER's native shortcut parser.
+        return route(message, true);
+    }
+
+    // Native FX keyboard owner: do not intercept Ctrl+Space inside an actual
+    // Windows EDIT field (search, rename, numeric input). Keep Track Params,
+    // which has no Ctrl+Space gesture, unchanged.
+    if (message.hwnd != ownedWindow_ || GetFocus() != ownedWindow_ ||
+        !environmentSafe()) return false;
+    wchar_t cls[64]{};
+    GetClassNameW(ownedWindow_, cls, 64);
+    if (_wcsicmp(cls, L"EDIT") == 0) return false;
+    const bool repeat = (message.lParam & (1LL << 30)) != 0;
+    Key key{VK_SPACE, true, false, false, repeat, message.hwnd};
+    if (!navigator_->accepts(key)) return false;
+    if (!enqueueOwnedKey(message.hwnd, VK_SPACE, repeat)) return false;
+    swallowed_[VK_SPACE] = message.hwnd;
+    return true;
+}
+
 bool InputRouter::enqueueOwnedKey(HWND window, UINT vk, bool repeat) noexcept {
     if (!capturing_ || !ownedWindow_ || window != ownedWindow_ ||
         GetCurrentThreadId() != threadId_ || !environmentSafe()) {
@@ -173,14 +227,31 @@ LRESULT CALLBACK InputRouter::hook(int code, WPARAM param, LPARAM data) noexcept
     auto* self = current_;
     if (code >= 0 && self && data && param == PM_REMOVE) {
         auto& message = *reinterpret_cast<MSG*>(data);
-        // With the SDK accelerator selected, hook only Escape and let REAPER
-        // handle all other keys through its registered accelerator.
-        if (!self->escapeHookOnly_ ||
-            ((message.message == WM_KEYDOWN || message.message == WM_SYSKEYDOWN ||
-              message.message == WM_KEYUP || message.message == WM_SYSKEYUP) && message.wParam == VK_ESCAPE)) {
-            if (self->route(message, true)) { message.message = WM_NULL; message.wParam = 0; message.lParam = 0; }
+        const bool isSpace = message.wParam == VK_SPACE;
+        const bool down = message.message == WM_KEYDOWN || message.message == WM_SYSKEYDOWN;
+        const bool up = message.message == WM_KEYUP || message.message == WM_SYSKEYUP;
+        const bool chordDown = isSpace && down &&
+            (GetKeyState(VK_CONTROL) & 0x8000) &&
+            !(GetKeyState(VK_SHIFT) & 0x8000) &&
+            !(GetKeyState(VK_MENU) & 0x8000);
+        const bool chordUp = isSpace && up &&
+            self->swallowed_[VK_SPACE] == message.hwnd;
+        bool consumed = false;
+        if (chordDown || chordUp) {
+            // Run first even in accelerator and native focus-window modes:
+            // REAPER must not also dispatch its Action List Ctrl+Space binding.
+            consumed = self->interceptTransport(message);
+        } else if (!self->ownedWindow_ &&
+                   (!self->escapeHookOnly_ ||
+                    ((down || up) && message.wParam == VK_ESCAPE))) {
+            consumed = self->route(message, true);
+        }
+        if (consumed) {
+            message.message = WM_NULL;
+            message.wParam = 0;
+            message.lParam = 0;
         }
     }
     return CallNextHookEx(nullptr, code, param, data);
 }
-}
+} // namespace lrp

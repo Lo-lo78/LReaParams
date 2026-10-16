@@ -40,3 +40,16 @@ Vedere `Docs/TEST43_3_FX_TRANSPORT.md` per i controlli di ripresa da pausa, auto
 - [ ] Da FX Params Ctrl+Spazio avvia, la seconda pressione mette in pausa e la terza riprende **dallo stesso punto di pausa**.
 - [ ] Provare anche in Value/F7/F8, confrontando con l’azione 40073 eseguita dalla TCP.
 - [ ] Spazio rimane Play/stop; Maiusc+Spazio F7 seleziona e negli EDIT la barra spaziatrice inserisce testo.
+
+## 0.0.43.5 — Diagnostica del doppio Ctrl+Spazio
+
+- [ ] Con FX Params **chiuso**, da TCP: Ctrl+Spazio tre volte avvia, mette in pausa, riprende dalla pausa. Serve a confermare la configurazione REAPER.
+- [ ] Con FX Params **aperto**, in Grid: ripetere e verificare gli stati effettivi di REAPER/OSARA (playing → paused → playing), senza ritorno al cursore iniziale.
+- [ ] Ripetere in Value, F7 e F8. Ogni singola pressione deve produrre **un solo** cambio di stato.
+- [ ] Tenere premuto Ctrl+Spazio: una sola azione, niente autorepeat.
+- [ ] Spazio singolo = Play/Stop; Maiusc+Spazio in F7 = selezione senza influire sul trasporto.
+- [ ] Ctrl+Spazio dentro un campo EDIT di ricerca/rinomina/numeri non deve essere convertito dalla DLL in Play/Pause.
+- [ ] Chiudere FX Params: Ctrl+Spazio torna interamente alla gestione dell'Action List REAPER. Track Params non deve perdere le proprie scorciatoie.
+- [ ] Provare con NVDA e OSARA attivi, e confrontare backend finestra nativa (predefinito) / SDK nelle impostazioni.
+
+I controlli automatici **non eseguono** REAPER né simulano un evento Win32 reale; il risultato non va dichiarato verificato fino alla build GitHub Actions e al test manuale.

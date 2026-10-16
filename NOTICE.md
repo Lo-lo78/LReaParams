@@ -1,1 +1,1 @@
-LReaParams 0.0.43.4 — Ctrl+Spazio chiama azione nativa REAPER 40073 Play/pause. Solo sorgenti, test statici e workflow GitHub Actions. Nessuna compilazione locale.
+LReaParams 0.0.43.5 — intercept Ctrl+Space before REAPER native shortcut dispatch. Complete C++ source, tests and GitHub Actions workflow. No local compilation.

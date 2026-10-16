@@ -1,28 +1,14 @@
-Python oracle roundtrip: {'FX': 48, 'TRACK': 4} PASS
-Source-only audit PASS. Native compilation/tests and REAPER runtime tests NOT RUN.
-TEST18 static contracts PASS. Runtime tests NOT RUN.
-Shared TEST19 accelerator source contracts PASS under TEST20 routing. Runtime not tested.
-TEST20 static contract PASS; native build and behavior not tested
-TEST21 source contract PASS — no native build
-TEST22 source contracts PASS — host behavior not tested
-TEST23 static contracts PASS; Windows/native runtime not verified
-TEST24 source-only contracts PASS; host speech/focus must be tested in REAPER
-TEST25 static/source and search-example checks PASS; REAPER/NVDA unverified
-TEST26 source and example semantics PASS; native build and NVDA testing pending
-TEST27 keyboard contracts PASS; native build and NVDA test pending
-TEST28 selection range and silent-edge source contracts PASS (native test pending)
-TEST29 range selection model (TEST30 corrected shortcut) PASS; native test pending
-TEST30 shortcut routing PASS (static checks only; native REAPER test pending)
-TEST40 scope, API wiring and lexical guards PASS; native/runtime not executed
-TEST41 Auto suffix routing and read-only envelope contract PASS — native/runtime not run
-TEST42.1 CC-before-Auto accessible speech source contract PASS; runtime not tested
-TEST42 source checks PASS; MSVC/REAPER/NVDA/MIDI hardware not executed
-0.0.43.1 ReaEQ legacy Custom Order insertion contracts PASS; C++/REAPER NOT RUN
-0.0.43 ReaEQ source contracts and virtual ID fixtures PASS; native/runtime NOT RUN
-20 source-only suites passed. C++/REAPER tests NOT RUN.
-0.0.43.2 ReaEQ band readback/false-negative source checks PASS; native/REAPER NOT RUN
-21 source-only checks verified (audit plus 20 test scripts, in two groups). C++/REAPER tests NOT RUN.
-0.0.43.3 FX transport shortcuts/field isolation source checks PASS; native/REAPER/NVDA NOT RUN.
-0.0.43.3 audit + 21 historic/current test scripts checked in two groups due to runner time limit; all individual checks PASS. No native build.
+LReaParams 0.0.43.5 — controlli statici, nessuna compilazione locale
 
-0.0.43.4 audit e regressioni 18–43.4 verificate per gruppi: controlli di sorgente PASS; C++/REAPER/NVDA NON ESEGUITI.
+PASS: Tools/audit.py (52 profili di prova e SDK byte-identico)
+PASS: Testing/test18_static.py fino a test30_static.py — 13 suite
+PASS: Testing/test40_static.py, test41_static.py, test42_static.py, test42_cc_speech_static.py,
+      test43_static.py, test43_1_static.py, test43_2_static.py, test43_3_static.py,
+      test43_4_static.py, test43_5_static.py — 10 suite
+Totale: audit + 23 controlli statici superati eseguiti in gruppi.
+Il comando Tools/run_static.py completo ha raggiunto un timeout della sessione;
+si sono poi eseguiti individualmente i restanti test, tutti con esito PASS.
+
+NON ESEGUITI: CMake, MSBuild, compilazione C++, CTest nativo, REAPER, NVDA,
+OSARA, prove reali del trasporto. La corretta interazione WH_GETMESSAGE con
+REAPER deve essere verificata dall'utente dopo GitHub Actions.
