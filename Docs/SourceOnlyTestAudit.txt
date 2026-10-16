@@ -1,3 +1,11 @@
+LReaParams 0.0.47 — Audit sorgente (esclusi build C++, CMake e REAPER)
+- Tools/audit.py: PASS, 52 profili fixture verificati
+- 37 test Python statici: PASS
+- F8 Default non cancella senza conferma; F7-da-F8 limitato a 4 colonne
+- Hidden include virtuali ReaComp/ReaGate
+- Fixture native aggiunte a ProfileTests.cpp ma NON eseguite localmente
+- Compilazione Windows: esclusivamente GitHub Actions
+
 LReaParams 0.0.46.3 — source-only verification
 Tools/audit.py: PASS (2.08s) 
 Testing/test18_static.py: PASS (1.26s) 

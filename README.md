@@ -1,3 +1,13 @@
+# LReaParams 0.0.47 — F7 e FX Memories F8
+
+Aggiornamento della 0.0.46.5; preserva Track Params, le funzionalità FX
+collaudate, la memoria persistente e le scorciatoie. Migrazione mirata dei
+comportamenti F7/F8 dal Lua, con conferma sicura del Default anche su Canc,
+limiti espliciti agli editor da F8 e supporto ai virtuali in Hidden. Dettagli,
+limiti e prove manuali in `Docs/TEST47_F7_F8_COMPLETION.md`.
+
+**NON compilare localmente: GitHub Actions è l'unico ambiente di build.**
+
 # LReaParams 0.0.46.5 — Monitor FX Delta Solo globale
 
 **Ctrl+Maiusc+D** continua a usare l’azione nativa di REAPER per azzerare Delta Solo sugli FX del progetto. Poiché i **Monitor FX** sono una catena separata non salvata nel progetto, dopo l’azione nativa la DLL controlla esplicitamente i Delta Solo dei Monitor FX e li disattiva, verificando il valore effettivo. Se una modifica resta attiva, annuncia `Delta Solo not cleared` invece di confermare falsamente il successo.

@@ -56,7 +56,7 @@ void FxNavigator::rebuildMemoryColumns() {
                 std::to_string(pair.second.size())+" parameters";
         memoryColumns_[1].push_back(std::move(e));
     }
-    for(int id:fxOrder_.hidden)if(id==compareParamIndex || eqVirtualValid(id) || (id>=0&&id<count_)){
+    for(int id:fxOrder_.hidden)if(id==compareParamIndex || eqVirtualValid(id) || dynamicsVirtualValid(id) || (id>=0&&id<count_)){
         MemoryEntry e;e.param=id;e.label=fxOrder_.label(id);
         memoryColumns_[2].push_back(std::move(e));
     }
@@ -116,6 +116,7 @@ void FxNavigator::memoryExit(bool announceReturn) {
     if(!memoryManager_)return;
     const bool standalone=memoryStandalone_;
     memoryManager_=false;memoryStandalone_=false;
+    defaultConfirm_=false;defaultYes_=false;defaultRegenerate_=false;
     editF7_=memoryReturnF7_;
     groupSlot_=memoryReturnGroup_;
     clearF7Filter();
@@ -143,6 +144,13 @@ void FxNavigator::memoryLoad(bool toEdit) {
     const auto& col=memoryColumns_[static_cast<size_t>(memoryCol_)];
     if(col.empty()){speakMemory();return;}
     const MemoryEntry entry=col[static_cast<size_t>(memoryRow_)];
+    // The Lua memory_manager_load_current_for_f7 accepts only positions,
+    // groups, MIDI links and Custom Order. Hidden, copied and Default entries
+    // are management entries, not valid entry points to the F7 editor.
+    if(toEdit && memoryCol_!=0 && memoryCol_!=1 && memoryCol_!=3 && memoryCol_!=4) {
+        speech_("No F7 editor for this memory");
+        return;
+    }
     // A selected memory must never mutate an unrelated FX: navigation is
     // built from the *current* plugin's verified ProfileRaw and FX GUID.
     if(memoryCol_==2 && !toEdit) {
@@ -255,9 +263,13 @@ void FxNavigator::memoryDelete() {
             saveStructure();break;
         }
         case 6:
-            if(!fxOrder_.saveDefaultRows({})){speech_("Cannot delete default");return;}
-            defaultRegenerate_=true;
-            rebuildMemoryColumns();speech_("Default deleted. Press Enter or F8 to save a new default");return;
+            // Lua's final F8 behavior uses the same Yes/No confirmation for
+            // Delete and Enter. Never delete a stored snapshot silently.
+            // "No" is the default and never changes any profile data.
+            defaultConfirm_=true;
+            defaultYes_=false;
+            speakMemory();
+            return;
         default:return;
     }
     rebuildMemoryColumns();
@@ -273,6 +285,8 @@ void FxNavigator::memoryDelete() {
 void FxNavigator::memoryNavigate(const Key& k) {
     if(defaultConfirm_) {
         if(k.repeat)return;
+        // A confirmation is modal: ignore modified Y/N and other commands.
+        if(k.ctrl || k.alt || k.shift)return;
         if(k.vk==VK_F8){defaultConfirm_=false;memoryExit();return;}
         if(k.vk==VK_ESCAPE || k.vk=='N'){defaultConfirm_=false;defaultYes_=false;speakMemory("No");return;}
         if(k.vk==VK_LEFT||k.vk==VK_UP){if(defaultYes_){defaultYes_=false;speakMemory();}return;}

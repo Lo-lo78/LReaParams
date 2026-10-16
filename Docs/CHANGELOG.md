@@ -1,3 +1,11 @@
+## 0.0.47
+- F8 Default: Canc e Invio richiedono conferma Yes/No; nessun reset o
+  cancellazione di snapshot prima della conferma.
+- F8: F7 disponibile solo da posizioni, gruppi, MIDI CC e Custom Order.
+- Hidden Parameters include virtuali ReaComp e ReaGate; Invio resta disabilitato.
+- Reset dello stato modale di F8 all'uscita; nuovi test statici GitHub.
+- Nessuna modifica al motore Track Params o agli adattatori audio.
+
 ## 0.0.46.5 — Ctrl+Maiusc+D include Monitor FX
 
 L'azione nativa `Clear delta solo for all project FX` non garantisce l'azzeramento dei Monitor FX, che appartengono alla catena monitor separata dal progetto. La DLL ora esegue l'azione nativa e verifica separatamente ogni Monitor FX (`0x1000000 + indice`), disattivando eventuali Delta Solo residui e verificando il risultato. Ctrl+D rimane invariato. Nessuna modifica a Track Params e agli altri comportamenti già collaudati.

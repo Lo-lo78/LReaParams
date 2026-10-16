@@ -191,6 +191,42 @@ int main(int argc, char** argv) {
               "Stale LastParam save overwrote an external change");
         const auto backupRoot=posRoot/L"LReaParams"/L"Backups"/L"ProfileEdits";
         check(fs::exists(backupRoot) && !fs::is_empty(backupRoot),"LastParam backups missing");
+        // 0.0.47: F7/F8 profile persistence with virtual dynamics, duplicate
+        // Custom Order occurrences, named groups, all twelve slot indices
+        // and CC metadata. The native test runs only in GitHub Actions.
+        const auto f7Root = root / L"f7-f8-profile";
+        const auto f7Names = [](int id) {
+            if (id == compareParamIndex) return std::string("Compare");
+            if (id == -200000) return std::string("Detector filter range");
+            return std::string("Parameter ")+std::to_string(id);
+        };
+        const std::vector<int> f7Native{0,1,-200000,2,compareParamIndex,3};
+        FxOrder f7;
+        f7.load(f7Root,"F7 F8 dynamics fixture",4,f7Names,f7Native);
+        check(f7.createCustomOrder(),"Cannot create F7 fixture order");
+        f7.custom=true;
+        f7.order={0,1,-200000,-200000,2,compareParamIndex,3};
+        f7.aliases[1]="Custom threshold";
+        f7.hidden.insert(-200000);
+        f7.groups[12]={-200000,1,-200000};
+        f7.groupNames[12]="Dynamics";
+        f7.paramSlots[12]=-200000;
+        f7.ccLinks[1]="2\t74";
+        f7.groupSlotMode=true;
+        check(f7.save(),"Cannot save F7 F8 fixture");
+        FxOrder f8;
+        f8.load(f7Root,"F7 F8 dynamics fixture",4,f7Names,f7Native);
+        check(f8.storedCustomOrder() && f8.custom,"Custom Order not restored");
+        check(f8.order==f7.order,"Duplicated virtual occurrence lost");
+        check(f8.hidden.count(-200000),"Hidden virtual control lost");
+        check(f8.aliases.at(1)=="Custom threshold","Custom alias lost");
+        check(f8.groups.at(12)==f7.groups.at(12) && f8.groupNames.at(12)=="Dynamics",
+              "Named Group 12 and its duplicates not restored");
+        check(f8.paramSlots.at(12)==-200000 && f8.groupSlotMode,
+              "Memory position 12 or Groups mode lost");
+        check(f8.ccLinks.at(1)=="2\t74","MIDI CC mapping lost");
+        check(f8.visibleOrder()==std::vector<int>({0,1,2,compareParamIndex,3}),
+              "Hidden virtuals leaked into visible Custom Order");
         const auto collision = root / L"collision.txt";
         check(writeNewVerified(collision, "first"), "Create failed");
         check(!writeNewVerified(collision, "second") && readFile(collision) == "first", "Collision replaced bytes");

@@ -1,3 +1,7 @@
+> Aggiornamento 0.0.47: F8 Default Delete richiede conferma Yes/No, non
+> cancella immediatamente lo snapshot. Per il comportamento corrente vedere
+> `Docs/TEST47_F7_F8_COMPLETION.md`.
+
 > Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
 
 # TEST18 — FX Memories (azione indipendente + F8 del Lua)

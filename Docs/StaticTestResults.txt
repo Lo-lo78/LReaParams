@@ -1,7 +1,6 @@
-LReaParams 0.0.46.5 — verifiche statiche, nessuna compilazione locale.
-PASS: Tools/audit.py (52 profili, SDK, Lua originali, contratti sorgente)
-PASS: 37 verifiche sorgente con Tools/run_static.py
-PASS: Testing/test46_5_static.py — Delta Solo globale anche in Monitor FX
-PASS: Testing/test46_4_static.py — colonne Master/Monitor
-PASS: Testing/test46_2_static.py — Delta Solo browser e Offline
-Build MSVC, test nativi e collaudo REAPER/NVDA: NON ESEGUITI.
+LReaParams 0.0.47 — controlli statici sorgente, nessuna compilazione locale.
+PASS: Tools/audit.py (52 profili: 48 FX, 4 Track; preservazione dati)
+PASS: tutte le 37 suite Testing/test*_static.py, inclusa TEST47
+NUOVO: Testing/ProfileTests.cpp contiene fixture di F7/F8 per GitHub Actions
+BUILD MSVC, CTest C++ e prove in REAPER/NVDA/OSARA: NON ESEGUITI.
+Nota: i controlli statici non garantiscono assenza di errori C++.

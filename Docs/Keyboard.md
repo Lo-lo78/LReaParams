@@ -88,7 +88,7 @@ Le azioni FX Params, Track Params e FX Memories si assegnano nella Action List. 
 
 Compare appare prima dei tre wrapper REAPER. Il primo movimento lo arma; movimento verso il basso passa a Original, verso l'alto a Edited. I bordi non ciclano. Le modifiche a Edited vengono catturate prima del ritorno a Original.
 
-F8: Left/Right cambia fra colonne non vuote; Up/Down sceglie voce; Enter carica fuori Edit; F7 carica in Edit dove consentito; Delete elimina. Hidden non ha Enter attivo. Default Enter apre una conferma con No iniziale: frecce selezionano, Y/N confermano, Esc annulla, F8 esce. Default Delete cancella la fotografia; Enter/F8 la rigenera dal suono corrente. Il reset Default F8 cancella anche le memorie di navigazione gestite, mantenendo lo snapshot.
+F8: Left/Right cambia fra colonne non vuote; Up/Down sceglie voce; Enter carica fuori Edit; F7 carica in Edit dove consentito; Delete elimina. Hidden non ha Enter attivo. Default Enter apre una conferma con No iniziale: frecce selezionano, Y/N confermano, Esc annulla, F8 esce. Default Delete apre la stessa conferma Yes/No di Enter: No non modifica niente; Yes ripristina il Default e azzera le memorie di navigazione, conservando lo snapshot. Il reset Default F8 cancella anche le memorie di navigazione gestite, mantenendo lo snapshot.
 
 I campi nativi permettono Ctrl+A/C/X/V, cursore e selezione Windows. L'editor numerico dichiara unità raw quando non dispone di formatter numerici monotoni; non digitare dB/Hz se viene annunciato Host raw units. Le unità ReaEQ specifiche sono disponibili sui Track FX; Take FX conserva il percorso generico come Lua.
 

@@ -1,3 +1,10 @@
+## 0.0.47 — F7/F8 e sicurezza Default
+
+F8 Default Delete usa conferma Yes/No senza cancellazione preventiva, F7 da F8
+è limitato alle colonne supportate dal Lua e Hidden include i virtuali Dynamics.
+Conservate memorie, filtri, gruppi e le operazioni F7 esistenti. Sorgente da
+compilare su GitHub Actions; consultare `Docs/TEST47_F7_F8_COMPLETION.md`.
+
 ## 0.0.46.5 — Ctrl+Maiusc+D include Monitor FX
 
 L'azione nativa `Clear delta solo for all project FX` non garantisce l'azzeramento dei Monitor FX, che appartengono alla catena monitor separata dal progetto. La DLL ora esegue l'azione nativa e verifica separatamente ogni Monitor FX (`0x1000000 + indice`), disattivando eventuali Delta Solo residui e verificando il risultato. Ctrl+D rimane invariato. Nessuna modifica a Track Params e agli altri comportamenti già collaudati.
