@@ -1,3 +1,12 @@
+# Stato 0.0.44 — adattatori ReaComp/ReaGate
+
+Aggiunti in C++ gli adattatori non audio dei parametri speciali di
+ReaComp e ReaGate: detector, nomi, interruttori, filtro virtuale,
+Custom Order e memorie. Non dichiarata equivalenza completa al Lua,
+né eseguita una compilazione locale. Consulta TEST44_REACOMP_REAGATE.md.
+Il trasporto Ctrl+Spazio della 0.0.43.5 è stato confermato funzionante
+dall'utente; l'adattatore di 0.0.44 resta da collaudare.
+
 # Correzione puntuale 0.0.42.1 — parlato CC e Auto
 
 Questa revisione della 0.0.42 annuncia le associazioni MIDI sui parametri FX
@@ -24,7 +33,7 @@ Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la 
 | 3: Floating/parlato | Implementati Ctrl+Shift+C, capture, parametro corrente, pickup, ritorno fixed, Ctrl+T persistente per parametro, accorpamento parlato | Parlato limitato a un annuncio ogni 180 ms; sessione Floating conservata con Ctrl+Q, non ricostruita dopo una chiusura ordinaria o un riavvio |
 | 4: automazione | Ctrl+Shift+A ACT/VIS, Ctrl+Shift+Alt+A solo FX corrente, Alt+F3/F4 nella griglia visibile, Undo | Griglia filtrata/gruppo limita la navigazione, mentre Lua può uscire verso la griglia completa; confermare Monitor FX nel runtime |
 | 5: preset/numeri/ricerche | Alt+F1/F2; Ctrl+E vero EDIT con inversione dei formatter monotoni o unità raw dichiarate; storico 20 voci, import storico Lua in lettura, salvataggio Settings | Adattatori specifici non monotoni e unità variabili non coperti; i recenti si applicano al recinto corrente; alcuni gesti extra mancanti |
-| 6: plugin speciali | ReaEQ: codec chunk, default strutturale, coda wrapper, Gain esteso, virtuali Enabled/Type/Target/Action, aggiunta/rimozione bande in sorgente (NON collaudate in REAPER) | Restano gli adattamenti completi per frequenze/Q e la verifica runtime dell’aggiunta/rimozione bande; ReaComp/ReaGate restano generici |
+| 6: plugin speciali | ReaEQ: codec chunk, default strutturale, coda wrapper, Gain esteso, virtuali Enabled/Type/Target/Action, aggiunta/rimozione bande in sorgente (NON collaudate in REAPER) | Restano gli adattamenti completi per frequenze/Q e la verifica runtime dell’aggiunta/rimozione bande; ReaComp/ReaGate: adattatori del Lua introdotti in 0.0.44; collaudo runtime necessario |
 | 7: Compare/default F8 | Compare virtuale -300000 prima dei tre wrapper, stato per progetto/traccia/take/FX GUID; snapshot normali o chunk ReaEQ; reset, F8 conferma No/Yes e rigenerazione default | ReaEQ Compare non include virtuali non ancora esposti; singolo reset rifiuta numero bande diverso; salvataggi concorrenti mantengono il controllo digest preesistente, non una transazione interprocesso completa |
 | 8: F7/F8/contesti | Conservati i controller TEST30, selezioni, duplicati, filtri, gruppi, undo struttura; Compare accetta memorie/alias/CC senza mandare indici negativi al motore fisico | Non concluso audit semantico di tutte le 1109 funzioni Lua FX; persistono differenze rare da verificare |
 | 9: consegna | Progetto completo, test statici, test C++ per Actions, matrice e guida | Compilazione Windows e collaudo REAPER/NVDA/OSARA NON eseguiti |
@@ -32,7 +41,7 @@ Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la 
 ## Funzioni che rimangono esplicitamente non migrate
 
 - Collaudare i nuovi virtuali ReaEQ e aggiunta/rimozione bande (0.0.43); completare i controlli speciali Frequency/Q e gli adattatori non monotoni del Lua.
-- Adattatori ReaComp: Detector input con valori sparsi, riepilogo filtri virtuale, alias e toggle specializzati. Adattatori ReaGate corrispondenti.
+- Adattatori ReaComp/ReaGate implementati in 0.0.44, ma richiedono collaudo REAPER e verifica con plugin/versioni reali.
 - Clipboard snapshot completo Ctrl+Alt+Shift+C/Ctrl+V; copia/incolla valore fuori da F7.
 - Browser FX interno completo, riposizionamento fisico FX in catena, navigazione item/take Ctrl+Left/Right, ritorno Take→Track Ctrl+W, Ctrl+PageUp/Down, apertura FX Chain/browser.
 - Background MIDI Ctrl+Q implementato per un singolo contesto FX parcheggiato (richiede collaudo hardware); il trasporto Space/Ctrl+Space è presente nel navigatore FX; Ctrl+Space ora invoca 40073 in 0.0.43.4 (da collaudare), ma restano i marker globali e lo switch Ctrl+Tab verso Track Params.

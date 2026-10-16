@@ -10,7 +10,7 @@ track=(root/'src/TrackNavigator.cpp').read_text()
 cmake=(root/'CMakeLists.txt').read_text()
 workflow=(root/'.github/workflows/build-windows.yml').read_text()
 lua=(root/'Legacy/Speak FX Params - TrackTake Navigator.lua').read_text()
-assert 'VERSION 0.0.43.5' in cmake
+assert 'VERSION 0.0.44' in cmake
 for name in ('GetPlayState','OnPlayButton','OnPauseButton'):
     assert '#define REAPERAPI_WANT_'+name in api
 assert 'CMD_PLAY_STOP  = 40044' in lua and 'CMD_PLAY_PAUSE = 40073' in lua

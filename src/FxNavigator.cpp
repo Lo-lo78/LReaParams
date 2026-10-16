@@ -243,7 +243,7 @@ void FxNavigator::restoreParameterPosition() {
             // name; otherwise find that name in the updated plugin parameter list.
             auto matches = [&](int index) {
                 if(index==compareParamIndex)return saved.parameterName=="Compare";
-                if(index<0 && eqVirtualValid(index))return true; // stable Lua virtual ID
+                if(index<0 && (eqVirtualValid(index) || dynamicsVirtualValid(index)))return true; // stable Lua virtual ID
                 if (index < 0 || index >= count_) return false;
                 char name[4096]{};
                 const bool ok = take_ ? TakeFX_GetParamName(take_, fx_, index, name, sizeof(name))
@@ -263,7 +263,7 @@ void FxNavigator::restoreParameterPosition() {
     }
 }
 void FxNavigator::rememberPosition() {
-    if (!active_ || !track_ || count_ <= 0 || (parameter_ < 0 && parameter_!=compareParamIndex && !eqVirtualValid(parameter_)) || parameter_ >= count_ ||
+    if (!active_ || !track_ || count_ <= 0 || (parameter_ < 0 && parameter_!=compareParamIndex && !eqVirtualValid(parameter_) && !dynamicsVirtualValid(parameter_)) || parameter_ >= count_ ||
         browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size())) return;
     auto& state = ensureContextMemory();
     state.hasLastFx = true;
@@ -691,9 +691,11 @@ int FxNavigator::count() const { return take_ ? TakeFX_GetNumParams(take_, fx_) 
 std::string FxNavigator::parameterName() const {
     if(parameter_==compareParamIndex)return "Compare";
     if(eqVirtualValid(parameter_))return eqVirtualName(parameter_);
+    if(dynamicsVirtualValid(parameter_))return dynamicsVirtualName(parameter_);
     char name[4096]{};
     bool ok = take_ ? TakeFX_GetParamName(take_, fx_, parameter_, name, sizeof(name)) : TrackFX_GetParamName(track_, fx_, parameter_, name, sizeof(name));
-    return ok ? name : "";
+    if(!ok)return {};
+    const auto alias=dynamicsAlias(parameter_);return alias.empty()?std::string(name):alias;
 }
 bool FxNavigator::valid() const {
     if (!active_ || EnumProjects(-1, nullptr, 0) != project_ || !ValidatePtr2(project_, track_, "MediaTrack*")) return false;
@@ -701,10 +703,10 @@ bool FxNavigator::valid() const {
     if (take_ && (!ValidatePtr2(project_, take_, "MediaItem_Take*") || GetMediaItemTake_Track(take_) != track_)) return false;
     const auto* g = take_ ? TakeFX_GetFXGUID(take_, fx_) : TrackFX_GetFXGUID(track_, fx_);
     if (!same(g, fxGuid_)) return false;
-    if (count() != count_ || (parameter_ < 0 && parameter_!=compareParamIndex && !eqVirtualValid(parameter_)) || parameter_ >= count_) return false;
+    if (count() != count_ || (parameter_ < 0 && parameter_!=compareParamIndex && !eqVirtualValid(parameter_) && !dynamicsVirtualValid(parameter_)) || parameter_ >= count_) return false;
     // Action labels depend on Target Band. They may change without the FX
     // identity or the navigator's selected parameter changing.
-    return eqVirtualValid(parameter_) || parameterName() == parameterName_;
+    return eqVirtualValid(parameter_) || dynamicsVirtualValid(parameter_) || parameterName() == parameterName_;
 }
 bool FxNavigator::contextUnchanged() const {
     if (!valid()) return false;
@@ -788,12 +790,13 @@ std::string FxNavigator::formattedValue() const {
     if (!valid()) throw std::runtime_error("FX context changed");
     if(parameter_==compareParamIndex)return compareFormatted();
     if(eqVirtualValid(parameter_))return eqVirtualFormatted(parameter_);
+    if(dynamicsVirtualValid(parameter_))return dynamicsVirtualFormatted(parameter_);
     char text[4096]{};
     const bool ok = take_ ? TakeFX_GetFormattedParamValue(take_, fx_, parameter_, text, sizeof(text))
                           : TrackFX_GetFormattedParamValue(track_, fx_, parameter_, text, sizeof(text));
     const double v = take_ ? TakeFX_GetParamNormalized(take_, fx_, parameter_)
                            : TrackFX_GetParamNormalized(track_, fx_, parameter_);
-    return ok && text[0] ? std::string(text) : std::to_string(v);
+    return dynamicsRealFormatted(parameter_,ok && text[0] ? std::string(text) : std::to_string(v));
 }
 std::string FxNavigator::currentParameterSpeech() const {
     // Read-only status suffixes used by the Grid, F7, Value and NVDA+Up.
@@ -822,6 +825,8 @@ std::string FxNavigator::viewPositionSpeech() const {
 double FxNavigator::valueFraction() const {
     if(parameter_==compareParamIndex){const auto* state=findCompareState();return state&&state->originalActive?0:1;}
     if(eqVirtualValid(parameter_))return eqVirtualFraction(parameter_);
+    if(dynamicsVirtualValid(parameter_))return 0;
+    if(dynamicsDetectorInput(parameter_))return dynamicsFraction(parameter_);
     if(eqBandParam(parameter_,1))return eqGainNorm(parameter_);
     if (!valid()) return 0;
     return std::clamp(take_ ? TakeFX_GetParamNormalized(take_, fx_, parameter_)
@@ -881,6 +886,12 @@ void FxNavigator::setValue(double value) {
         if(eqVirtualSet(parameter_,value) && active_)speech_(eqVirtualFormatted(parameter_));
         return;
     }
+    if(dynamicsVirtualValid(parameter_))return; // summary is read-only, not a host param
+    if(dynamicsDetectorInput(parameter_)) {
+        if(!std::isfinite(value))return;
+        if(dynamicsSetDetector(value))speech_(dynamicsRealFormatted(parameter_,""));
+        return;
+    }
     if(eqBandParam(parameter_,1)) {
         if(!std::isfinite(value))return;value=std::clamp(value,0.0,1.0);
         if(std::abs(value-eqGainNorm(parameter_))<1e-12)return;
@@ -905,6 +916,8 @@ void FxNavigator::setValue(double value) {
 }
 void FxNavigator::nudge(int direction, bool big) {
     if(eqVirtualValid(parameter_)){eqVirtualNudge(direction,big);return;}
+    if(dynamicsVirtualValid(parameter_))return; // no fake setter for filter summary
+    if(dynamicsDetectorInput(parameter_)){dynamicsNudgeDetector(direction,big);return;}
     if(parameter_==compareParamIndex) {
         const auto* state=findCompareState();
         if(!state||!state->armed || (direction>0 && state->originalActive) || (direction<0 && !state->originalActive))
@@ -1138,6 +1151,16 @@ void FxNavigator::handle(const Key& k) {
         }
         else if(editF7_)exitF7();
         else if(groupSlot_){openGroup(groupSlot_);}else end();return;}
+    if(k.vk==VK_RETURN && !k.repeat && !editF7_ && dynamicsVirtualValid(parameter_)) {
+        speech_(currentParameterSpeech());return; // read-only summary; no slider
+    }
+    if(k.vk==VK_RETURN && !k.repeat && !editF7_ && (dynamicsToggle(parameter_) || dynamicsDetectorInput(parameter_))) {
+        if(dynamicsToggle(parameter_)) {
+            setValue(valueFraction()>=0.5?0.0:1.0);
+            return;
+        }
+        // Discrete detector input can also be adjusted via Value slider.
+    }
     if(k.vk==VK_RETURN && !k.repeat && !editF7_ && eqVirtualValid(parameter_)) {
         if(parameter_==reaeq::action){eqBandAction();return;}
         if(reaeq::enabledId(parameter_)){

@@ -1,14 +1,19 @@
-LReaParams 0.0.43.5 — controlli statici, nessuna compilazione locale
+LReaParams 0.0.44 — controlli statici, nessuna compilazione locale
 
-PASS: Tools/audit.py (52 profili di prova e SDK byte-identico)
-PASS: Testing/test18_static.py fino a test30_static.py — 13 suite
-PASS: Testing/test40_static.py, test41_static.py, test42_static.py, test42_cc_speech_static.py,
-      test43_static.py, test43_1_static.py, test43_2_static.py, test43_3_static.py,
-      test43_4_static.py, test43_5_static.py — 10 suite
-Totale: audit + 23 controlli statici superati eseguiti in gruppi.
-Il comando Tools/run_static.py completo ha raggiunto un timeout della sessione;
-si sono poi eseguiti individualmente i restanti test, tutti con esito PASS.
+PASS: Tools/audit.py (52 profili di prova; manifest SDK e Lua originali intatti)
+PASS: Testing/test44_static.py (adattatori ReaComp/ReaGate, sorgente)
+PASS: Testing/test42_cc_speech_static.py (CC seguito da Auto)
+PASS: Testing/test18_static.py, test20_static.py, test24_static.py,
+      test27_static.py, test30_static.py, test40_static.py
+PASS: Testing/test43_static.py e test43_1..test43_5_static.py
+PASS: confronto byte-per-byte con la 0.0.43.5 di TrackNavigator.cpp,
+      InputRouter.cpp, FxNavigatorReaEq.cpp, TitleProxy.cpp, Lua e SDK.
+
+I test nativi C++ in Testing/ControlTests.cpp sono inclusi per GitHub Actions
+ma NON eseguiti localmente. Alcune suite di regressione storiche lente
+non sono state concluse interamente in questa sessione. Il workflow
+eseguirà anche tutte le suite al push dell'utente.
 
 NON ESEGUITI: CMake, MSBuild, compilazione C++, CTest nativo, REAPER, NVDA,
-OSARA, prove reali del trasporto. La corretta interazione WH_GETMESSAGE con
-REAPER deve essere verificata dall'utente dopo GitHub Actions.
+OSARA e controllo MIDI hardware. I risultati non provano il comportamento
+reale del codice compilato né la compatibilità con versioni future dei plugin.

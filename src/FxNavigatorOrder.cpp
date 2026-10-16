@@ -45,10 +45,12 @@ void FxNavigator::loadFxOrder() {
     std::vector<int> nativeOrder;
     if(isReaEq() && eqBandCount()>0)
         nativeOrder=reaeq::pluginOrder(eqBandCount(),count_,compareParamIndex);
+    else if(isReaComp() || isReaGate()) nativeOrder=dynamicsPluginOrder();
     fxOrder_.load(resourceRoot_,name,count_,[this](int id) {
         return id==compareParamIndex?std::string("Compare"):
             eqVirtualValid(id)?eqVirtualName(id):
-            (id>=0 && id<count_?originalName(track_,take_,fx_,id):std::string());
+            dynamicsVirtualValid(id)?dynamicsVirtualName(id):
+            (id>=0 && id<count_?([this,id]{auto alias=dynamicsAlias(id);return alias.empty()?originalName(track_,take_,fx_,id):alias;}()):std::string());
     },nativeOrder);
     groupSlot_=0;groupEditAll_=false;editF7_=false;searchMode_=false;
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();

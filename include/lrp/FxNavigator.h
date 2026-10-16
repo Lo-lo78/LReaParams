@@ -77,6 +77,22 @@ private:
     bool numericFormat(double norm,double& value,std::string& unit) const;
     std::vector<std::string> searchHistory_;
     int historyIndex_=-1;
+    // Lua ReaComp / ReaGate accessible controls (0.0.44).
+    bool isReaComp() const;
+    bool isReaGate() const;
+    bool dynamicsVirtualValid(int id) const;
+    std::string dynamicsVirtualName(int id) const;
+    std::string dynamicsVirtualFormatted(int id) const;
+    bool dynamicsDetectorInput(int id) const;
+    bool dynamicsToggle(int id) const;
+    bool dynamicsRms(int id) const;
+    std::string dynamicsRealFormatted(int id,const std::string& formatted) const;
+    std::string dynamicsAlias(int id) const;
+    std::vector<int> dynamicsPluginOrder() const;
+    double dynamicsFraction(int id) const;
+    bool dynamicsSetDetector(double normalized);
+    bool dynamicsSetDetectorAt(int param,double normalized);
+    void dynamicsNudgeDetector(int direction,bool big);
     bool isReaEq() const;
     int eqBandCount() const;
     bool eqVirtualValid(int id) const;

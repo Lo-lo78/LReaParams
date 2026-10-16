@@ -1,6 +1,7 @@
 #include "lrp/MidiControl.h"
 #include "lrp/ReaEqChunk.h"
 #include "lrp/ReaEqVirtual.h"
+#include "lrp/DynamicsSpecial.h"
 #include "lrp/Profile.h"
 #include <iostream>
 #include <stdexcept>
@@ -93,6 +94,50 @@ int main() {
         require(withTwo.substr(8,33)==withOne.substr(8,33));
         noBands.removeBand(1);require(noBands.bands()==1 && ReaEqChunk::decode(noBands.text())==withOne);
         rejected=false;try {noBands.removeBand(0);}catch(...) {rejected=true;}require(rejected);
+        // ReaComp/ReaGate pure adapter fixtures. Compiled only in GitHub Actions.
+        using namespace dynamics;
+        require(compRange==-200000 && gateRange==-210000 && compRange!=gateRange);
+        require(detectorChoices.size()==8);
+        for(int i=0;i<8;++i){
+            const auto raw=detectorChoices[static_cast<size_t>(i)].raw;
+            require(detectorIndex(raw)==i);
+            require(detectorRawFromFraction(i/7.0)==raw);
+            require(detectorLabel(raw)==detectorChoices[static_cast<size_t>(i)].label);
+        }
+        require(detectorLabel(123)=="Main inputs");
+        require(alias(Kind::comp,"signin")=="Detector input");
+        require(alias(Kind::gate,"pre-open")=="Lookahead");
+        require(alias(Kind::comp,"pre-comp")=="Lookahead");
+        require(toggle(Kind::gate,"invert gate") && toggle(Kind::comp,"auto release"));
+        require(!toggle(Kind::comp,"threshold") && !toggle(Kind::gate,"threshold"));
+        require(rms("0.0")=="0 ms, peak detector");
+        require(rms("15.000 ms")=="15 ms");
+        require(filterRange(0,20000)=="Full range");
+        require(filterRange(100,20000)=="Above 100 Hz");
+        require(filterRange(0,10000)=="Below 10000 Hz");
+        require(filterRange(100,10000)=="100 Hz to 10000 Hz");
+        const std::vector<std::string> compRaw{"Threshold","Ratio","Attack","Release","Pre-comp",
+          "RMS size","Knee","SignIn","Hipass","Lowpass","Filter Preview","Dry","Wet",
+          "Auto Make Up Gain","Auto Release","Advanced"};
+        const auto compOrder=pluginOrder(Kind::comp,compRaw,compareParamIndex);
+        require(compOrder.size()==compRaw.size()+2);
+        for(int i=0;i<10;++i)require(compOrder[static_cast<size_t>(i)]==i);
+        require(compOrder[10]==compRange && compOrder[11]==10);
+        require(compOrder[compOrder.size()-1]==15);
+        const std::vector<std::string> gateRaw{"Threshold","Attack","Hold","Release",
+          "Hysteresis","Pre-open","RMS size","SignIn","Hipass","Lowpass",
+          "Filter Preview","Dry","Wet","Invert Gate","Send MIDI on open/close",
+          "MIDI note","MIDI channel","MIDI velocity","AudIn"};
+        const auto gateOrder=pluginOrder(Kind::gate,gateRaw,compareParamIndex);
+        require(gateOrder[10]==gateRange && gateOrder[11]==10);
+        require(gateOrder.size()==gateRaw.size()+2);
+        // Retain every physical control exactly once and Compare exactly once.
+        for(const auto& row:{compOrder,gateOrder}) {
+            int compare=0,virtuals=0;
+            for(int id:row){if(id==compareParamIndex)++compare;
+                if(id==compRange||id==gateRange)++virtuals;}
+            require(compare==1&&virtuals==1);
+        }
         std::cout<<"MIDI decode, pickup crossing/jitter/rearm and ReaEQ chunk tests passed\n";return 0;
     }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}
 }

@@ -17,5 +17,5 @@ assert 'k.vk == VK_SPACE && !k.shift && !k.alt' in fx[:fx.index('void FxNavigato
 assert 'if(k.shift&&!k.ctrl&&!k.alt&&k.vk==VK_SPACE)' in (root/'src/FxNavigatorOrder.cpp').read_text()
 assert 'return 0;' in (root/'src/TitleProxy.cpp').read_text()
 assert 'Testing/test43_4_static.py' in (root/'.github/workflows/build-windows.yml').read_text()
-assert 'VERSION 0.0.43.5' in (root/'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.44' in (root/'CMakeLists.txt').read_text()
 print('0.0.43.4 native Play/Pause dispatch PASS; C++/REAPER/NVDA NOT RUN')

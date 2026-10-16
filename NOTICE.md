@@ -1,1 +1,1 @@
-LReaParams 0.0.43.5 — intercept Ctrl+Space before REAPER native shortcut dispatch. Complete C++ source, tests and GitHub Actions workflow. No local compilation.
+LReaParams 0.0.44 source candidate: ReaComp and ReaGate accessible Lua adapters. GitHub Actions compilation only. No local build.

@@ -10,7 +10,7 @@ profiles=(root/'src/FxOrder.cpp').read_text()
 midi=(root/'src/FxNavigatorAdvanced.cpp').read_text()
 mem=(root/'src/FxNavigatorMemories.cpp').read_text()
 cmake=(root/'CMakeLists.txt').read_text()
-assert 'VERSION 0.0.43.5' in cmake and 'src/FxNavigatorReaEq.cpp' in cmake
+assert 'VERSION 0.0.44' in cmake and 'src/FxNavigatorReaEq.cpp' in cmake
 assert 'target = -99998, action = -99999, base = -100000' in virtual
 user=[0,1,8,3,4,5,6,7,10,9,2]
 assert len(user)==len(set(user))==11 and user.index(8)==2 and user.index(2)==10

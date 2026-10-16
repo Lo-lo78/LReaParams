@@ -1,3 +1,18 @@
+# LReaParams 0.0.44 — ReaComp / ReaGate (sorgente GitHub Actions)
+
+Questa versione riparte dalla 0.0.43.5 già collaudata dall'utente per
+Ctrl+Spazio e aggiunge le funzioni accessibili del Lua FX Params per
+**ReaComp** e **ReaGate**: nomi e ordine dei parametri, scelta discreta
+Detector input, toggle On/Off, RMS/Peak, riepilogo virtuale dei filtri,
+F7/F8 e MIDI CC del detector. Dettagli e prove in
+`Docs/TEST44_REACOMP_REAGATE.md`.
+
+**Non compilare localmente**. Consegnato esclusivamente il sorgente C++,
+workflow GitHub Actions, SDK congelato, Lua originali e test. L'esito dei
+test C++ e il comportamento in REAPER/NVDA sono ancora da verificare.
+
+---
+
 # LReaParams 0.0.43.5 — Ctrl+Spazio senza doppio inoltro a REAPER (solo sorgente)
 
 **Correzione del problema confermato in REAPER:** il comando Play/Pause 40073 da solo non basta se la **stessa pressione fisica** di Ctrl+Spazio raggiunge anche l'Action List nativa di REAPER. Il Lua usa infatti `JS_VKeys_Intercept` per impedire questa seconda interpretazione del tasto. Nella DLL ora `WH_GETMESSAGE`, limitato al thread dell'interfaccia di REAPER e attivo esclusivamente durante la navigazione, cattura Ctrl+Spazio **prima** delle scorciatoie Main: accoda una sola operazione a FX Params e neutralizza il messaggio originale. Copre sia la finestra nativa NVDA (Grid/Value/F7/F8) sia il backend senza finestra.

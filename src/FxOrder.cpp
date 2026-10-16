@@ -1,5 +1,6 @@
 #include "lrp/FxOrder.h"
 #include "lrp/ReaEqVirtual.h"
+#include "lrp/DynamicsSpecial.h"
 #include "lrp/Storage.h"
 #include <algorithm>
 #include <cctype>
@@ -219,7 +220,7 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
     }else {
         std::set<int> unique;
         for(int id:nativeOrder)if(unique.insert(id).second &&
-            (id==compareParamIndex || (id>=0 && id<count_) || (id<0 && id>=-100127)))
+            (id==compareParamIndex || (id>=0 && id<count_) || (id==-200000 || id==-210000 || (id<0 && id>=-100127))))
             defaultOrder_.push_back(id);
     }
     for(int id:defaultOrder_)if(id<0 && id!=compareParamIndex)validVirtual_.insert(id);
@@ -312,6 +313,19 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
               std::find(defaultOrder_.begin(),defaultOrder_.end(),reaeq::enabled(bands))!=defaultOrder_.end())
             ++bands;
         order=reaeq::mergeLegacyCustomOrder(order,bands,count_,compareParamIndex);
+    }
+    // Older profiles predate the detector summary. Put just that missing virtual
+    // control after the last detector filter, ahead of Filter Preview, without
+    // rearranging user-authored physical order or saving until an actual edit.
+    for(const int id:{-200000,-210000})if(validVirtual_.count(id) &&
+         std::find(order.begin(),order.end(),id)==order.end()) {
+        auto at=std::find_if(order.begin(),order.end(),[&](int physical){
+            return physical>=0 && physical<count_ &&
+                (dynamics::normalize(paramName_(physical))=="filter preview");
+        });
+        // Namespace qualification is intentional: `normalize` is also a
+        // FxOrder member method.
+        if(at!=order.end())order.insert(at,id);
     }
     normalize();
     // Older Lua profiles may contain a custom order without an explicit view flag.

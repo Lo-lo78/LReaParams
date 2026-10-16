@@ -53,3 +53,7 @@ Vedere `Docs/TEST43_3_FX_TRANSPORT.md` per i controlli di ripresa da pausa, auto
 - [ ] Provare con NVDA e OSARA attivi, e confrontare backend finestra nativa (predefinito) / SDK nelle impostazioni.
 
 I controlli automatici **non eseguono** REAPER né simulano un evento Win32 reale; il risultato non va dichiarato verificato fino alla build GitHub Actions e al test manuale.
+
+## 0.0.44 ReaComp/ReaGate
+
+See `Docs/TEST44_REACOMP_REAGATE.md` for the eight manual keyboard/NVDA test cases. All require GitHub Actions and an installed REAPER DLL.

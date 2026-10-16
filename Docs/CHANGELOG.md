@@ -1,3 +1,14 @@
+## 0.0.44 — ReaComp e ReaGate accessibili
+
+- Adattatori Lua per Plugin Order, alias, Detector input discreto a otto
+  sorgenti, toggle On/Off e formato RMS size di ReaComp.
+- Riepilogo read-only Detector filter range con ID Lua -200000/-210000;
+  riconosciuto in F7, F8 e nei vecchi profili .fx, senza alterare l'audio.
+- ReaGate: Invert gate, pre-open/Lookahead, blocco MIDI e ordine Lua.
+- MIDI CC del detector usa solo raw validi e pickup; mantenuti Ctrl+Spazio
+  della 0.0.43.5, ReaEQ e Track Params.
+- Test Python statico e fixture C++ per GitHub Actions; nessuna build locale.
+
 ## 0.0.43.5 — Inoltro Ctrl+Spazio prima dell'Action List
 
 - Riparato il percorso dei tasti, non soltanto la chiamata 40073: il vecchio Ctrl+Spazio poteva raggiungere REAPER due volte tramite l'acceleratore nativo e la DLL, producendo uno Stop al posto di Pause e un riavvio dal cursore.

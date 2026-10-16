@@ -51,11 +51,13 @@ void FxNavigator::prepareBackgroundMidi() {
     fxOrder_.rebindParamName([this](int id) -> std::string {
         if (id == compareParamIndex) return "Compare";
         if(eqVirtualValid(id))return eqVirtualName(id);
+        if(dynamicsVirtualValid(id))return dynamicsVirtualName(id);
         if (id < 0 || id >= count_) return {};
         char name[4096]{};
         const bool ok = take_ ? TakeFX_GetParamName(take_, fx_, id, name, sizeof(name)) :
                                 TrackFX_GetParamName(track_, fx_, id, name, sizeof(name));
-        return ok ? std::string(name) : std::string();
+        if(!ok)return {};
+        const auto alias=dynamicsAlias(id);return alias.empty()?std::string(name):alias;
     });
     // A MIDI-only context must never operate a text editor, memory manager,
     // numeric editor or keyboard navigator after Ctrl+Q releases the focus.
@@ -150,6 +152,16 @@ void FxNavigator::applyMidi(int param,int value) {
         return;
     }
     if(param<0||param>=count_||!valid())return;
+    if(dynamicsDetectorInput(param)) {
+        auto& pickup=pickup_[param];
+        if(!pickup.allows(value,dynamicsFraction(param)))return;
+        if(dynamicsSetDetectorAt(param,value/127.0)) {
+            pickup.applied(dynamicsFraction(param));
+            if(fxOrder_.extraValue("cc_param_speech_v1::"+std::to_string(param))=="1")
+                midiPendingSpeech_=fxOrder_.label(param)+", "+dynamicsRealFormatted(param,"");
+        }
+        return;
+    }
     if(eqBandParam(param,1)) {
         auto& state=pickup_[param];if(!state.allows(value,eqGainNorm(param)))return;
         if(writeEqGain(param,value/127.0)) {
@@ -299,7 +311,7 @@ void FxNavigator::navigatePreset(int direction) {
     const int n=count();
     if(n!=count_) {
         count_=n;if(n<=0){end();return;}
-        if(!eqVirtualValid(parameter_) && parameter_!=compareParamIndex)
+        if(!eqVirtualValid(parameter_) && !dynamicsVirtualValid(parameter_) && parameter_!=compareParamIndex)
             parameter_=std::clamp(parameter_,0,n-1);
         loadFxOrder();
     }
@@ -332,6 +344,7 @@ bool FxNavigator::numericFormat(double norm,double& value,std::string& unit) con
     std::getline(text,unit);return true;
 }
 void FxNavigator::numericBegin() {
+    if(dynamicsDetectorInput(parameter_)){speech_("Use Value for detector input");return;}
     if(parameter_<0||parameter_>=count_){speech_("Numeric edit unavailable");return;}
     numericFormatted_=false;numericUnit_.clear();
     double current=rawValue(parameter_);
