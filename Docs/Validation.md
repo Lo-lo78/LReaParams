@@ -1,3 +1,7 @@
+## 0.0.43.3 — FX transport shortcuts
+
+Controlli Python su presenza API e comandi REAPER 40044/40073, semantica pausa/ripresa, no-repeat, protezione EDIT, Shift+Space F7, e workflow GitHub Actions. **Non costituiscono prova di compilazione o di gestione effettiva della tastiera in REAPER**; non sono state eseguite build locali.
+
 # Verifiche di questa consegna
 
 Eseguiti soltanto controlli non compilanti:

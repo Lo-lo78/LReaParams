@@ -156,11 +156,12 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.43.1 - ReaEQ parameter order\n\n"
+            ShowMessageBox("LReaParams 0.0.43.3 - ReaEQ and FX transport\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
                 "Alt+F1/F2 presets; Alt+F3/F4 automated parameters. Ctrl+E numeric edit.\n"
+                "Space Play/Stop; Ctrl+Space Play/Pause in FX Params. Shift+Space selects in F7.\n"
                 "Ctrl+R recent searches; Ctrl+Shift+R full context review.\n"
                 "F12 alone is reserved; Ctrl+F12 keeps slot 12; Alt+F10/F11/F12 remain with OSARA.\n"
                 "See Docs/Status.md for remaining Lua differences and required runtime tests.\n"

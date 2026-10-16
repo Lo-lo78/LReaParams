@@ -2,6 +2,9 @@
 #include <cstring>
 #define REAPERAPI_MINIMAL
 #define REAPERAPI_WANT_Main_OnCommand
+#define REAPERAPI_WANT_GetPlayState
+#define REAPERAPI_WANT_OnPlayButton
+#define REAPERAPI_WANT_OnPauseButton
 #define REAPERAPI_WANT_kbd_enumerateActions
 #define REAPERAPI_WANT_GetToggleCommandStateEx
 #define REAPERAPI_WANT_TrackFX_GetEnabled

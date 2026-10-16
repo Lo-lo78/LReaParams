@@ -1,3 +1,11 @@
+# 0.0.43.3 — Trasporto FX Params con Spazio / Ctrl+Spazio
+
+- Spazio: Play/Stop via azione REAPER 40044; dalla pausa ripresa immediata via `OnPlayButton`.
+- Ctrl+Spazio: Play/Pause; `OnPauseButton` mentre suona/registra, `OnPlayButton` da fermo/in pausa; fallback all'azione 40073.
+- Routing nella griglia, Value, F7 ed FX Memories F8; nessuna retrigger per auto-repeat.
+- Maiusc+Spazio conserva la selezione in F7. Ricerca, rinomina e campo numerico nativo non intercettano lo Spazio.
+- Nessuna modifica a ReaEQ, Track Params, CC/Auto, profili o DLL/Action IDs. Solo sorgenti e test statici; nessuna compilazione locale.
+
 # 0.0.43.2 — ReaEQ: evitare falsi messaggi di errore sulle bande
 
 - Corretto `ReaEQ band update failed` dopo modifiche riuscite di Band Enabled e Band Type: il valore restituito dall'API di scrittura da solo non prova il fallimento.

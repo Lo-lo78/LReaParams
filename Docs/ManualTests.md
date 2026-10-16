@@ -30,3 +30,7 @@ Tutte le caselle sono da eseguire dall'utente DOPO la build GitHub Actions. Non 
 25. [ ] Leggere le lacune in Status.md: nessun collaudo può concludere parità Lua finché quelle funzioni non sono migrate.
 
 26. [ ] TEST42: seguire l'intera sequenza in `TEST42_BACKGROUND_MIDI.md` (Fixed/Pickup/Floating/Learn dopo Ctrl+Q, TCP libera, Track Params, cambio progetto, stop tramite nuova Action List).
+
+## 0.0.43.3 — FX Play/Stop e Play/Pause
+
+Vedere `Docs/TEST43_3_FX_TRANSPORT.md` per i controlli di ripresa da pausa, autorepeat, F7 e campi EDIT. Sono prove manuali per REAPER/NVDA dopo GitHub Actions.

@@ -1,3 +1,9 @@
+# LReaParams 0.0.43.3 — Play/Stop e Play/Pause dalla finestra FX Params (sorgente)
+
+**Spazio** in FX Params comanda Play/Stop di REAPER; se la riproduzione è in pausa, Spazio la riprende immediatamente. **Ctrl+Spazio** alterna Play/Pause: da fermo o in pausa avvia/riprende. Le combinazioni valgono nella griglia, in Value, in F7 e in F8; sono intercettate una sola volta per pressione. **Maiusc+Spazio in F7** continua a selezionare i parametri; nei campi EDIT nativi (ricerca, rinomina, modifica numerica) Spazio resta carattere di testo e non attiva il trasporto. Il navigatore non pronuncia messaggi aggiuntivi per il trasporto. Non è stato modificato Track Params.
+
+Nessun CMake, MSBuild, Visual Studio o build locale: la DLL e i test nativi verranno compilati esclusivamente dal tuo workflow GitHub Actions. Prove consigliate: alternanza Play/Stop, Ctrl+Spazio in riproduzione/in pausa, ripresa con Spazio da pausa, F7 Maiusc+Spazio e inserimento spazi nei campi EDIT.
+
 # LReaParams 0.0.43.2 — ReaEQ: verifica degli aggiornamenti delle bande (solo sorgente)
 
 **Correzione mirata:** `ReaEQ band update failed` poteva essere pronunciato quando `Band Enabled` o `Band Type` cambiavano correttamente, perché il C++ considerava attendibile solo il valore booleano restituito dall'API REAPER. La 0.0.43.2 verifica anche la nuova proprietà e, se serve, il chunk ReaEQ. Non elimina il messaggio per gli errori reali. **Le funzioni di aggiunta/rimozione bande non sono state modificate.** Non è stata eseguita alcuna compilazione locale.
@@ -44,4 +50,4 @@ Il workflow esegue poi build MSVC e CTest sul runner. Non è stato eseguito dall
 
 Comando Windows CMD da lanciare nella cartella del repository:
 
-    git status && git add . && git commit -m "0.0.43.2: verify ReaEQ band changes before reporting errors" && git push
+    git status && git add . && git commit -m "0.0.43.3: add FX transport Space and Ctrl Space shortcuts" && git push

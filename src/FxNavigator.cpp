@@ -728,6 +728,10 @@ bool FxNavigator::uiStillOpen() const {
 }
 bool FxNavigator::accepts(const Key& k) const noexcept {
     if (!active_) return false;
+    // The Lua transport gestures belong to FX Params in Grid, Value, F7 and F8.
+    // Native search/rename/numeric EDIT controls must retain their space key.
+    if (k.vk == VK_SPACE && !k.shift && !k.alt &&
+        !textEdit_ && !searchMode_ && !numericEdit_) return true;
     if (memoryManager_) {
         if(defaultConfirm_)return !k.ctrl&&!k.alt&&!k.shift&&(k.vk=='Y'||k.vk=='N'||k.vk==VK_ESCAPE||k.vk==VK_F8||k.vk==VK_RETURN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_UP||k.vk==VK_DOWN);
         if(k.vk==VK_F12)return false;
@@ -987,6 +991,28 @@ void FxNavigator::searchPreview() {
 }
 void FxNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
+    // Mirror the original Lua transport semantics. Consume key repeats so a
+    // held Space cannot alternately start/stop transport multiple times.
+    // Shift+Space is intentionally left to the F7 selection controller.
+    // No spoken message: REAPER/OSARA own transport announcements.
+    if (k.vk == VK_SPACE && !k.shift && !k.alt &&
+        !textEdit_ && !searchMode_ && !numericEdit_) {
+        if (!k.repeat) {
+            const int playState = GetPlayState ? GetPlayState() : 0;
+            if (k.ctrl) {
+                // Ctrl+Space: pause when playing/recording; resume or start
+                // when paused/stopped, without jumping back to the start.
+                if ((playState & (1 | 4)) && OnPauseButton) OnPauseButton();
+                else if (!(playState & (1 | 4)) && OnPlayButton) OnPlayButton();
+                else if (Main_OnCommand) Main_OnCommand(40073, 0);
+            } else {
+                // Plain Space: play/stop; from pause resume immediately.
+                if ((playState & 2) && OnPlayButton) OnPlayButton();
+                else if (Main_OnCommand) Main_OnCommand(40044, 0);
+            }
+        }
+        return;
+    }
     if (memoryManager_) {memoryNavigate(k);return;}
     if(recentMode_){handleRecent(k);return;}
     if (numericEdit_) {handleAdvanced(k);return;}

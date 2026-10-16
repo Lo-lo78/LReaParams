@@ -6,6 +6,9 @@ Le azioni FX Params, Track Params e FX Memories si assegnano nella Action List. 
 |---|---|
 | Frecce, Home/End, Page Up/Down | Griglia TEST30, bordi silenziosi |
 | Enter, Esc | Grid/Value e ritorni contestuali |
+| Space | REAPER Play/Stop; da pausa riprende subito (FX Params, F7, F8) |
+| Ctrl+Space | REAPER Play/Pause (FX Params, F7, F8) |
+| Shift+Space in F7 | Seleziona/deseleziona; non comanda il transport |
 | Ctrl+Home/End | Primo/ultimo parametro, senza selezione |
 | F1/F2, F3 | Altezza griglia, lettura Grid/Step |
 | Alt+Left/Right | Step -10..10 |
