@@ -168,7 +168,8 @@ int FxNavigator::browserVisibleIndex() const {
 std::string FxNavigator::browserSpeech() const {
     if (entries_.empty()) return "No FX";
     const int index = browserVisibleIndex();
-    if (index < 0) return "No FX in this chain";
+    if (index < 0) return track_ == GetMasterTrack(project_) && !take_ ?
+        (browserScopeMonitor_ ? "Monitor FX. No FX" : "Master FX. No FX") : "No FX in this chain";
     const auto& entry = entries_[static_cast<size_t>(index)];
     const bool monitor = !take_ && track_ == GetMasterTrack(project_) && browserScopeMonitor_;
     const std::string label = browserDisplayName(entry.name);
@@ -203,6 +204,11 @@ void FxNavigator::enterFxBrowser() {
     fxBrowserMode_ = true;
     browserScopeMonitor_ = !take_ && track_ == GetMasterTrack(project_) && (fx_ & 0x1000000);
     browserCursor_ = browserIndex_;
+    browserMasterCursor_ = browserMonitorCursor_ = -1;
+    if (track_ == GetMasterTrack(project_) && !take_) {
+        if (browserScopeMonitor_) browserMonitorCursor_ = browserCursor_;
+        else browserMasterCursor_ = browserCursor_;
+    }
     valueMode_ = false;
     speech_("FX Browser. " + browserSpeech());
 }
@@ -219,6 +225,28 @@ void FxNavigator::browserMove(int amount) {
         next += step;
     }
     if (next != old) {browserCursor_ = next; speech_(browserSpeech());}
+}
+void FxNavigator::browserSwitchColumn(int direction) {
+    // Master and Monitor are separate vertical lists, linked only by the
+    // horizontal arrows (right: Master -> Monitor; left: Monitor -> Master).
+    if (take_ || track_ != GetMasterTrack(project_) || direction == 0) return;
+    const bool targetMonitor = direction > 0;
+    if (browserScopeMonitor_ == targetMonitor) return; // quiet at outer edge
+    const int current = browserVisibleIndex();
+    int& fromCursor = browserScopeMonitor_ ? browserMonitorCursor_ : browserMasterCursor_;
+    if (current >= 0) fromCursor = current;
+    browserScopeMonitor_ = targetMonitor;
+    const int remembered = targetMonitor ? browserMonitorCursor_ : browserMasterCursor_;
+    if (browserEntryInScope(remembered)) {
+        browserCursor_ = remembered;
+    } else {
+        // A missing/empty column is still reachable and announces its scope.
+        // No effect from the other chain may be selected as a fallback.
+        for (int i = 0; i < static_cast<int>(entries_.size()); ++i) {
+            if (browserEntryInScope(i)) { browserCursor_ = i; break; }
+        }
+    }
+    speech_(browserSpeech());
 }
 void FxNavigator::browserSelect() {
     if (entries_.empty() || !active_) return;
@@ -372,9 +400,11 @@ void FxNavigator::browserKey(const Key& k) {
         if (k.vk==VK_UP||k.vk==VK_DOWN) {browserMove(k.vk==VK_UP?-1:1);return;}
         if (k.vk==VK_PRIOR||k.vk==VK_NEXT) {browserMove(k.vk==VK_PRIOR?-5:5);return;}
         if (k.vk==VK_HOME||k.vk==VK_END) {browserMove(k.vk==VK_HOME?-100000:100000);return;}
-        // Master FX and Monitor FX are separate browsers. Left/Right must
-        // not switch columns; open the other context explicitly in REAPER.
-        if ((k.vk==VK_LEFT||k.vk==VK_RIGHT) && track_==GetMasterTrack(project_)) return;
+        // Horizontal arrows change Master/Monitor columns, never the FX
+        // selection in the parameter grid. Vertical navigation stays scoped.
+        if (!k.shift && (k.vk==VK_LEFT||k.vk==VK_RIGHT)) {
+            browserSwitchColumn(k.vk==VK_LEFT?-1:1);return;
+        }
         if (k.character) browserCycleByInitial(k.character, k.shift);
     } else if (k.altGr && k.character) browserCycleByInitial(k.character, k.shift);
 }

@@ -146,6 +146,7 @@ private:
     void enterFxBrowser();
     void browserKey(const Key& key);
     void browserMove(int amount);
+    void browserSwitchColumn(int direction);
     void browserSelect();
     void browserMoveFx(int direction);
     std::string browserSpeech() const;
@@ -273,11 +274,11 @@ private:
     int browserIndex_ = 0;
     NativeFxWindow nativeFxWindowRequest_ = NativeFxWindow::none;
     bool fxBrowserMode_ = false;
-    // The FX browser is locked to the chain it was opened from on the Master
-    // track.  The combined entries_ list is retained for per-GUID memory;
-    // it must not turn Master FX and Monitor FX into a single user-facing list.
+    // Master and Monitor are separate browser columns. Left/Right may switch
+    // columns; vertical movement and FX operations never cross their borders.
     bool browserScopeMonitor_ = false;
     int browserCursor_ = 0; // cursor in entries_, independent of the current grid FX
+    int browserMasterCursor_ = -1, browserMonitorCursor_ = -1; // per-column cursor
 
     int fx_{}, parameter_{}, count_{}, columns_ = 10;
     int stepScale_ = 0;

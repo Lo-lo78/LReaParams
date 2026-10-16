@@ -156,7 +156,7 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.46.1 - ReaEQ, ReaComp, ReaGate and initial navigation\n\n"
+            ShowMessageBox("LReaParams 0.0.46.4 - ReaEQ, ReaComp, ReaGate and initial navigation\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"

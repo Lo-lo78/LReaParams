@@ -1,6 +1,14 @@
+## 0.0.46.4 — Browser Master/Monitor a colonne
+
+- **Destra:** Master → Monitor FX. **Sinistra:** Monitor FX → Master.
+- Ogni colonna mantiene il proprio cursore; non si attraversano catene con i comandi verticali, la ricerca per iniziale o il riordino.
+- Browser e griglia rimangono separati; Invio/Ctrl+P dalla colonna corrente apre l'FX effettivamente evidenziato.
+- La colonna vuota resta riconoscibile e il ritorno all'altra colonna è possibile.
+- Verifica reale rimandata a GitHub Actions e REAPER/NVDA. Nessuna compilazione locale.
+
 ## 0.0.46.3 — Browser Master / Monitor FX
 
-**Ctrl+P** apre soltanto gli FX della catena da cui stai navigando: Master FX oppure Monitor FX. Nel browser **Su/Giù e Ctrl+Su/Giù** navigano nella catena, **Pagina Su/Giù** salta cinque FX, **Ctrl+Maiusc+Su/Giù** sposta realmente un FX nella stessa catena. **Sinistra/Destra non cambia più tra Master e Monitor**. Nella griglia, Ctrl+Su/Giù percorre soltanto la catena attiva. Per cambiare catena, seleziona Master o Monitor in REAPER ed entra nuovamente nel navigatore. Ctrl+Maiusc+D continua ad agire globalmente sui Delta Solo.
+**Ctrl+P** apre soltanto gli FX della catena da cui stai navigando: Master FX oppure Monitor FX. Nel browser **Su/Giù e Ctrl+Su/Giù** navigano nella catena, **Pagina Su/Giù** salta cinque FX, **Ctrl+Maiusc+Su/Giù** sposta realmente un FX nella stessa catena. **Sinistra/Destra nella 0.0.46.3 non cambiava tra Master e Monitor; dalla 0.0.46.4 cambia colonna**. Nella griglia, Ctrl+Su/Giù percorre soltanto la catena attiva. Per cambiare colonna nel browser, usa Destra da Master o Sinistra da Monitor. Ctrl+Maiusc+D continua ad agire globalmente sui Delta Solo.
 
 ## 0.0.46.1 — Browser FX e navigazione Take
 

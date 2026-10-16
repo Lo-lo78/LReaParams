@@ -1,3 +1,11 @@
+## 0.0.46.4 — Browser Master/Monitor a colonne
+
+- **Destra:** Master → Monitor FX. **Sinistra:** Monitor FX → Master.
+- Ogni colonna mantiene il proprio cursore; non si attraversano catene con i comandi verticali, la ricerca per iniziale o il riordino.
+- Browser e griglia rimangono separati; Invio/Ctrl+P dalla colonna corrente apre l'FX effettivamente evidenziato.
+- La colonna vuota resta riconoscibile e il ritorno all'altra colonna è possibile.
+- Verifica reale rimandata a GitHub Actions e REAPER/NVDA. Nessuna compilazione locale.
+
 ## 0.0.46.3 — Master e Monitor FX come catene distinte
 
 Il browser FX interno Ctrl+P è vincolato alla catena del contesto da cui è stato aperto: Master oppure Monitor. Nessuna navigazione orizzontale tra le due catene. Frecce verticali (anche Ctrl+Su/Giù), ricerca per iniziale, pagina, stato e riordino rimangono all'interno della catena. Anche Ctrl+Su/Giù fuori dal browser si ferma ai limiti Master/Monitor. Sono mantenuti Offline/Online, Bypass, Delta Solo, profili e GUID esistenti. Test statico `Testing/test46_3_static.py`, collaudo REAPER necessario; nessuna build locale.

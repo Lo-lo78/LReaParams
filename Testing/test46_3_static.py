@@ -1,4 +1,4 @@
-"""0.0.46.3: Master/Monitor FX browsing remains in its opening chain.
+"""0.0.46.3: vertical Master/Monitor FX browsing stays inside a single chain.
 
 Source-only tests, no REAPER runtime, CMake, compiler, or native build.
 """
@@ -42,7 +42,7 @@ for name in ('browserSelect', 'toggleOffline'):
     assert ('browserVisibleIndex()' in body or 'browserEntryInScope(' in body), name
 
 browser_key = method(contexts, 'void FxNavigator::browserKey(')
-assert 'if ((k.vk==VK_LEFT||k.vk==VK_RIGHT) && track_==GetMasterTrack(project_)) return;' in browser_key
+assert 'browserSwitchColumn(k.vk==VK_LEFT?-1:1)' in browser_key
 assert 'std::vector<int> column' not in browser_key
 assert "browserMove(k.vk==VK_UP?-1:1)" in browser_key
 assert 'browserMoveFx(k.vk==VK_UP?-1:1)' in browser_key

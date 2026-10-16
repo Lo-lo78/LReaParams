@@ -1,8 +1,8 @@
-LReaParams 0.0.46.3 — verifiche statiche, senza compilare nulla localmente.
-PASS: Tools/audit.py (52 profili, SDK/Lua e vincoli sorgente)
-PASS: Testing/test46_3_static.py — Master/Monitor isolati e focus catena nativa
-PASS: Testing/test46_2_static.py — Offline/Delta Solo conservati
-PASS: Testing/test46_1_static.py — shortcuts non duplicati
-PASS: Testing/test46_static.py — navigazione FX/browser preesistente
-PASS: 35 verifiche statiche complete (audit + 34 test)
-GitHub Actions MSVC e REAPER/NVDA ancora da verificare.
+LReaParams 0.0.46.4 — verifica statica, nessuna compilazione locale.
+PASS: Tools/audit.py (52 profili, SDK, Lua originali e vincoli sorgente)
+PASS: Testing/test46_4_static.py — frecce orizzontali Master/Monitor
+PASS: Testing/test46_3_static.py — isolamento delle navigazioni verticali
+PASS: Testing/test46_2_static.py — Delta Solo e Offline
+PASS: Testing/test46_1_static.py — scorciatoie del browser
+PASS: tutte le 36 verifiche sorgente in Tools/run_static.py (prima dell'ultima revisione limitata alla condizione Maiusc e alla descrizione About)
+Build MSVC, test nativi e collaudo REAPER/NVDA: NON ESEGUITI.

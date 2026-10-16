@@ -41,7 +41,7 @@ void FxNavigator::end() noexcept {
         try {rememberPosition();} catch (...) {}
         flushPersistentPosition();
     }
-    active_ = false; fxBrowserMode_ = false; browserScopeMonitor_ = false; browserCursor_ = 0;
+    active_ = false; fxBrowserMode_ = false; browserScopeMonitor_ = false; browserCursor_ = 0; browserMasterCursor_ = browserMonitorCursor_ = -1;
     recentMode_ = false; numericEdit_ = false; learnCc_ = false;
     floatingCc_ = false; floatingWaiting_ = false; pickup_.clear();
     valueMode_ = false; searchMode_ = false; editF7_ = false;

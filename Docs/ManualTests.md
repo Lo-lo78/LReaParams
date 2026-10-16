@@ -1,3 +1,13 @@
+## 0.0.46.4 — Master e Monitor: passaggio orizzontale
+
+- [ ] Con 3 Master FX e 2 Monitor FX, aprire Ctrl+P da Master. Su/Giù deve leggere soltanto i 3 Master, totale 3.
+- [ ] Premere Destra: deve annunciare Monitor FX e uno dei 2 effetti Monitor (totale 2). Su/Giù deve rimanere nei Monitor.
+- [ ] Premere Sinistra: deve tornare al Master FX precedentemente evidenziato. Ripetere il passaggio e verificare la posizione ricordata nella colonna Monitor.
+- [ ] Sinistra già su Master e Destra già su Monitor restano silenziose.
+- [ ] Riordinare Ctrl+Maiusc+Su/Giù da entrambe le colonne: l'altra catena resta invariata. Provare anche ricerca ciclica, bypass, offline e Delta Solo.
+- [ ] Con una colonna vuota, verificare l'annuncio `Master FX. No FX` o `Monitor FX. No FX` e la possibilità di tornare alla colonna piena.
+- [ ] Invio/Ctrl+P dopo il cambio di colonna apre la griglia del plugin evidenziato nella colonna corrente; Ctrl+Su/Giù nella griglia non attraversa le catene.
+
 
 ## 0.0.46
 Vedi `Docs/TEST46_FX_CONTEXT_BROWSER.md` per l'elenco delle prove manuali in REAPER e NVDA.
@@ -82,7 +92,7 @@ Vedere `Docs/TEST44_3_INITIAL_NAVIGATION.md` per il piano dettagliato di test di
 ## 0.0.46.3 — Master e Monitor FX isolati nel browser
 
 - [ ] Mettere 3 effetti Master e 2 Monitor, con nomi distinguibili. Aprire FX Params su Master, Ctrl+P. Tab/NVDA+Su deve leggere solo gli FX Master e il totale 3. Provare Su/Giù, Ctrl+Su/Giù, Pagina, Home/End, lettere ripetute e Maiusc+lettera: mai Monitor.
-- [ ] Dal browser Master, premere Sinistra/Destra: nessun cambio di catena. Ctrl+Maiusc+Su/Giù riordina soltanto FX Master; verificare la catena REAPER, Undo e il GUID dell'effetto evidenziato.
+- [ ] Dal browser Master, premere Destra: passa alla colonna Monitor; Sinistra torna al Master. Ctrl+Maiusc+Su/Giù riordina soltanto FX Master; verificare la catena REAPER, Undo e il GUID dell'effetto evidenziato.
 - [ ] Ripetere da Monitor FX: totale 2; solo Monitor. Fuori dal browser, Ctrl+Su/Giù si ferma al bordo della catena corrente (silenzioso), senza attraversare Master/Monitor.
 - [ ] Verificare da ciascuna catena Ctrl+B, Ctrl+D, Ctrl+Alt+B offline/online, Invio, Ctrl+P e titoli NVDA+T. Gli stati e il profilo `.fx` devono rimanere collegati all'FX corretto.
 - [ ] Con tutte le istanze di una sola catena offline, riaprire FX Params su quella catena; il browser deve consentire Ctrl+Alt+B per riattivarle senza attraversare l'altra.

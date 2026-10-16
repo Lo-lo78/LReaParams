@@ -1,3 +1,11 @@
+## 0.0.46.4 — Browser Master/Monitor a colonne
+
+- **Destra:** Master → Monitor FX. **Sinistra:** Monitor FX → Master.
+- Ogni colonna mantiene il proprio cursore; non si attraversano catene con i comandi verticali, la ricerca per iniziale o il riordino.
+- Browser e griglia rimangono separati; Invio/Ctrl+P dalla colonna corrente apre l'FX effettivamente evidenziato.
+- La colonna vuota resta riconoscibile e il ritorno all'altra colonna è possibile.
+- Verifica reale rimandata a GitHub Actions e REAPER/NVDA. Nessuna compilazione locale.
+
 ## 0.0.46.3 — Browser Master/Monitor FX separati
 
 Quando FX Params viene aperto sulla lista nativa degli effetti, l’FX focalizzato viene scelto prima di eventuali altre catene visibili. La lista interna mantiene gli FX di entrambe le catene Master/Monitor per GUID e memorie, ma **il browser visualizza e naviga solo nella catena di ingresso**. Sono stati rimossi i passaggi Sinistra/Destra fra colonne. Tutti gli spostamenti e i comandi FX rispettano il confine della catena, incluso Ctrl+Su/Giù dalla griglia e Ctrl+Maiusc+Su/Giù per il riordino nel browser. Il titolo indica la catena scelta. Il codice è da compilare e collaudare con GitHub Actions/REAPER.

@@ -1,4 +1,14 @@
-# LReaParams 0.0.46.3 — Browser Master / Monitor separati
+# LReaParams 0.0.46.4 — Browser Master / Monitor: due colonne
+
+**Ctrl+P** apre il browser nella catena di partenza. **Freccia Destra** dalla colonna Master passa alla colonna Monitor FX; **Freccia Sinistra** dalla colonna Monitor ritorna a Master. Ogni colonna ricorda la propria posizione mentre il browser è aperto. La freccia opposta sul bordo esterno non fa nulla.
+
+Le due catene NON vengono unite: Su/Giù, Ctrl+Su/Giù, Pagina Su/Giù, ricerca per iniziale, riordino Ctrl+Maiusc+Su/Giù e azioni sul singolo FX rimangono confinati alla colonna corrente. Invio e Ctrl+P aprono la griglia dell'FX evidenziato, anche dopo un cambio di colonna. Se una colonna è vuota, viene annunciato il relativo contesto con `No FX` e puoi tornare indietro.
+
+**Solo sorgente. Nessuna compilazione locale.** Il comportamento effettivo sarà verificato con GitHub Actions, REAPER e NVDA.
+
+---
+
+# Cronologia: 0.0.46.3 — Browser Master / Monitor separati
 
 - Quando si apre FX Params dalla lista nativa di REAPER, l’FX realmente focalizzato ha precedenza su un’altra catena eventualmente visibile.
 - **Ctrl+P da Master FX:** il browser contiene soltanto la catena Master FX; nessun passaggio ai Monitor FX tramite frecce, ricerca o riordino.
@@ -6,7 +16,7 @@
 - **Ctrl+Su/Giù fuori dal browser:** naviga fra gli effetti della catena corrente senza attraversare Master/Monitor.
 - **Su/Giù o Ctrl+Su/Giù nel browser:** si spostano esclusivamente fra gli FX della catena di apertura.
 - **Pagina Su/Giù:** sposta di cinque FX nella stessa catena. **Ctrl+Maiusc+Su/Giù:** riordina fisicamente gli FX solo all'interno della catena.
-- **Sinistra/Destra nel browser Master/Monitor:** non cambia più colonna. Per aprire l'altra catena, selezionala esplicitamente in REAPER e riapri FX Params.
+- **Nella precedente 0.0.46.3** Sinistra/Destra non cambiava colonna; **la 0.0.46.4 ripristina il passaggio orizzontale**. Per aprire l'altra catena, selezionala esplicitamente in REAPER e riapri FX Params.
 - Bypass, Delta Solo, Offline e ricerca per iniziale sono limitati all'FX evidenziato nella catena corrente. Ctrl+Maiusc+D conserva il comportamento globale di disattivazione Delta Solo.
 
 Nessuna modifica a Track Params, ai formati dei profili, MIDI, automazioni, F7/F8 e Clipboard. L'elenco interno conserva entrambi i tipi di FX solo per mantenere GUID e memorie di sessione; **non** è una catena unica esposta all'utente.

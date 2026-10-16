@@ -13,7 +13,7 @@ Partenza: 0.0.45 già collaudata dall'utente. Lua di riferimento:
 | Browser Su/Giù o Ctrl+Su/Giù | FX precedente/successivo | Solo nella catena di apertura, limiti silenziosi |
 | Browser PgSu/PgGiù | Avanza di cinque FX | Non attraversa Master ↔ Monitor |
 | Browser Home/End | Primo/ultimo FX della colonna | Ctrl+Home/End equivalenti |
-| Browser Sinistra/Destra | Nessun cambio Master/Monitor | Le catene sono due browser separati nella 0.0.46.3 |
+| Browser Sinistra/Destra | Passaggio tra colonne Master/Monitor | La 0.0.46.4 mantiene distinte le due liste verticali |
 | Browser lettera/cifra | Cerca ciclicamente per iniziale del nome FX | Maiusc inverte la direzione |
 | Browser Invio | Apre la griglia dell'FX evidenziato | Resta nella stessa finestra LReaParams |
 | Browser Ctrl+B | Bypass FX evidenziato | Non altera altri FX |
