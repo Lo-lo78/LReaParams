@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST22 — Home/End e stati FX: test manuali
 
 1. Aprire FX Params con un FX che abbia più di 10 parametri: Ctrl+Home = primo parametro; Ctrl+End = ultimo parametro.

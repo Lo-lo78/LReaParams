@@ -36,6 +36,8 @@ jobs:
         run: python Testing/test29_static.py
       - name: Verify TEST30 F7 Ctrl+Home versus Ctrl+Shift+Home routing (source only)
         run: python Testing/test30_static.py
+      - name: Verify migration scope and controls (source only)
+        run: python Testing/test40_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

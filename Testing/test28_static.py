@@ -7,7 +7,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 fx = (root / 'src/FxNavigatorOrder.cpp').read_text(encoding='utf-8')
 h = (root / 'include/lrp/FxNavigator.h').read_text(encoding='utf-8')
-assert 'VERSION 0.0.31' in (root / 'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.' in (root / 'CMakeLists.txt').read_text()
 assert 'bool sweep = false' in h
 assert 'bool f7SnakeUnselect_ = false;' in h
 assert 'if(target==viewPos_)return;' in fx  # border produces NO message

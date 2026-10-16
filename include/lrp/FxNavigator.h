@@ -2,6 +2,7 @@
 #include "ReaperApi.h"
 #include "Navigator.h"
 #include "FxOrder.h"
+#include "MidiControl.h"
 #include <filesystem>
 #include <array>
 #include <set>
@@ -15,9 +16,10 @@ public:
     explicit FxNavigator(std::function<void(const std::string&)> speech) : speech_(std::move(speech)) {}
     void setResourceRoot(std::filesystem::path root) { resourceRoot_ = std::move(root); }
     bool begin() override;
+    void pollMidi();
     bool openFxMemories(bool standalone = false);
     bool isMemoryManager() const noexcept { return memoryManager_; } // seven-column Lua F8 navigator
-    void end() noexcept override { active_ = false; valueMode_ = false; searchMode_ = false; editF7_ = false; textEdit_ = false; memoryManager_ = false; memoryStandalone_ = false; groupSlot_ = 0; groupReturnActive_ = false; f7FilterActive_ = false; f7FullView_.clear(); f7FilterPositions_.clear(); f7FilterQuery_.clear(); search_.clear(); entries_.clear(); count_ = 0; }
+    void end() noexcept override { active_ = false; recentMode_=false; numericEdit_ = false; learnCc_ = false; floatingCc_ = false; floatingWaiting_ = false; pickup_.clear(); valueMode_ = false; searchMode_ = false; editF7_ = false; textEdit_ = false; memoryManager_ = false; defaultConfirm_=false; defaultRegenerate_=false; memoryStandalone_ = false; groupSlot_ = 0; groupReturnActive_ = false; f7FilterActive_ = false; f7FullView_.clear(); f7FilterPositions_.clear(); f7FilterQuery_.clear(); search_.clear(); entries_.clear(); count_ = 0; }
     bool active() const noexcept override { return active_; }
     bool valid() const;
     bool contextUnchanged() const override;
@@ -29,15 +31,66 @@ public:
     std::string reviewLine() const override;
     bool nativeValueSlider() const override { return active_ && valueMode_ && !memoryManager_; }
     // Native Windows EDIT control for F7 rename and Ctrl+F search.
-    bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_) && !memoryManager_; }
-    std::string nativeTextValue() const { return textEdit_ ? textBuffer_ : search_; }
-    std::string nativeTextLabel() const { return textEdit_ ? (textEditParam_ < 0 ? "Group name" : "Parameter name") : "Find parameter"; }
+    bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_) && !memoryManager_; }
+    std::string nativeTextValue() const { return numericEdit_ ? numericBuffer_ : textEdit_ ? textBuffer_ : search_; }
+    std::string nativeTextLabel() const { return numericEdit_ ? "Parameter value" : textEdit_ ? (textEditParam_ == -1 ? "Group name" : "Parameter name") : "Find parameter"; }
     void setNativeText(const std::string& text);
     double valueFraction() const override;
     std::string sliderLabel() const override;
     HWND floatingWindow() const override;
     bool uiStillOpen() const override;
 private:
+    void loadSearchHistory();
+    void saveSearchHistory();
+    void handleRecent(const Key&);
+    bool recentMode_=false;
+    bool handleAdvanced(const Key&);
+    bool acceptsAdvanced(const Key&) const noexcept;
+    void resetMidiContext();
+    void applyMidi(int param, int value);
+    void clearNativeLearn(int param);
+    bool setRawValue(int param,double value);
+    double rawValue(int param) const;
+    void navigatePreset(int direction);
+    void numericBegin();
+    void numericCommit();
+    TrackEnvelope* envelope(int param,bool create) const;
+    bool envelopeActive(int param) const;
+    bool setEnvelope(int param,bool active);
+    void toggleEnvelope(bool all);
+    void navigateEnvelope(int direction);
+    bool learnCc_=false, fixedCc_=false, floatingCc_=false, floatingWaiting_=false;
+    int learnParam_=-1, floatingChannel_=0, floatingNumber_=0, floatingParam_=-1;
+    int midiSequence_=0;
+    std::map<int,Pickup> pickup_;
+    std::map<int,std::string> midiSpoken_;
+    ULONGLONG midiSpeechTime_=0;
+    std::string midiPendingSpeech_;
+    bool numericEdit_=false;
+    std::string numericBuffer_,numericUnit_;
+    bool numericFormatted_=false;
+    bool numericFormat(double norm,double& value,std::string& unit) const;
+    std::vector<std::string> searchHistory_;
+    int historyIndex_=-1;
+    bool isReaEq() const;
+    std::string namedConfig(const std::string& key) const;
+    bool writeNamedConfig(const std::string& key,const std::string& value);
+    bool captureReaEqDefault();
+    bool restoreReaEqDefault();
+    double eqGainNorm(int param) const;
+    bool writeEqGain(int param,double norm);
+    bool eqBandParam(int param,int type) const;
+    void refreshAfterStructure(int preferred);
+    struct CompareSnapshot { std::string eqChunk; std::vector<double> values; std::vector<std::string> names; };
+    struct CompareState { GUID guid{};ReaProject* project{};MediaItem_Take* take{};GUID track{};
+        CompareSnapshot original,edited;bool armed=false,originalActive=false; };
+    std::vector<CompareState> compareStates_;
+    CompareState& compareState();
+    const CompareState* findCompareState() const;
+    CompareSnapshot captureCompare() const;
+    bool applyCompare(const CompareSnapshot& snapshot);
+    bool setCompare(double value);
+    std::string compareFormatted() const;
     struct FxEntry { int index{}; GUID guid{}; std::string name; };
     bool selectFx(int index);
     void switchFx(int direction);
@@ -176,6 +229,7 @@ private:
     void clearF7Filter();
     void applyF7Filter(const std::string& query, bool speak = true);
     int f7FullPosition_ = 0;
+    bool defaultConfirm_=false, defaultYes_=false, defaultRegenerate_=false;
     bool memoryManager_ = false, memoryStandalone_ = false;
     bool memoryReturnF7_ = false;
     std::string memoryReturnF7Filter_;

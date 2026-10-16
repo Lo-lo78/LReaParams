@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST23 — piano di prova NVDA (sorgente, non compilato)
 
 1. In un progetto di prova caricare un VST senza profilo e verificarne l'istantanea Default Values in FX Memories. La cattura usa i valori presenti al primo accesso.

@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST9 — Memoria FX per la sessione di REAPER
 
 Non compilare localmente. Compilazione esclusiva su GitHub Actions.

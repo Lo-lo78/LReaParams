@@ -77,7 +77,7 @@ bool parseIndex(const std::string& line,int& id,std::string& name,std::string& a
     if(fields.size()<2) return false;
     try {
         size_t end=0; long val=std::stol(trim(fields[0]),&end,10);
-        if(end!=trim(fields[0]).size()||val<0||val>2147483647) return false;
+        if(end!=trim(fields[0]).size()||val<-2147483648LL||val>2147483647) return false;
         id=static_cast<int>(val);
     } catch (...) { return false; }
     name=fields[1]; alias=fields.size()>2?fields[2]:"";
@@ -94,6 +94,11 @@ std::string patchProfile(const std::string& input,const std::string& view,
                          const std::map<int,std::vector<int>>& groups,
                          const std::map<int,int>& params, const std::vector<std::string>& defaults, bool groupMode,
                          const std::function<std::string(int)>& name) {
+    const auto original=parseLegacy(input);
+    const auto unsupported=[&](const std::string& row) {
+        int id=0;std::string label,alias;
+        return parseIndex(row,id,label,alias) && name(id).empty();
+    };
     const auto rawLines=split(input,'\n');
     std::vector<std::string> out;
     std::string section;
@@ -109,11 +114,32 @@ std::string patchProfile(const std::string& input,const std::string& view,
         for(const auto& pair:groups) {
             std::string joined;
             for(int i:pair.second) { if(!joined.empty()) joined+='\n'; joined+=lineFor(i,name(i)); }
+            const auto old=original.sections.find("GroupSlots");
+            if(old!=original.sections.end())for(const auto& row:old->second) {
+                const auto eq=row.find('=');if(eq==std::string::npos||row.substr(0,eq)!=std::to_string(pair.first))continue;
+                for(const auto& ref:split(unescape(row.substr(eq+1)),'\n'))if(unsupported(ref)) {if(!joined.empty())joined+='\n';joined+=ref;}
+            }
             out.push_back(std::to_string(pair.first)+"="+escape(joined));
+        }
+        const auto old=original.sections.find("GroupSlots");
+        if(old!=original.sections.end())for(const auto& row:old->second) {
+            const auto eq=row.find('=');if(eq==std::string::npos)continue;
+            int slot=0;try {slot=std::stoi(row.substr(0,eq));}catch(...) {continue;}
+            if(groups.count(slot))continue;
+            bool allOpaque=true;const auto refs=split(unescape(row.substr(eq+1)),'\n');
+            for(const auto& ref:refs)if(!ref.empty()&&!unsupported(ref))allOpaque=false;
+            if(allOpaque)out.push_back(row);
         }
     };
     auto emitParams=[&] { if(paramsEmitted)return;paramsEmitted=true;out.push_back("[ParamSlots]");
-        for(const auto& pair:params)out.push_back(std::to_string(pair.first)+"="+lineFor(pair.second,name(pair.second))); };
+        for(const auto& pair:params)out.push_back(std::to_string(pair.first)+"="+lineFor(pair.second,name(pair.second)));
+        const auto old=original.sections.find("ParamSlots");
+        if(old!=original.sections.end())for(const auto& row:old->second) {
+            const auto eq=row.find('=');if(eq==std::string::npos)continue;
+            int slot=0;try {slot=std::stoi(row.substr(0,eq));}catch(...) {continue;}
+            if(!params.count(slot)&&unsupported(unescape(row.substr(eq+1))))out.push_back(row);
+        }
+    };
     for(auto line:rawLines) {
         if(!line.empty()&&line.back()=='\r')line.pop_back();
         if(!line.empty()&&line.front()=='['&&line.back()==']') {
@@ -126,7 +152,11 @@ std::string patchProfile(const std::string& input,const std::string& view,
             if(section!="CustomOrder"&&section!="Extra"&&section!="GroupSlots"&&section!="ParamSlots"&&section!="DefaultValues")out.push_back(line);
             continue;
         }
-        if(section=="CustomOrder"||section=="Extra"||section=="GroupSlots"||section=="ParamSlots"||section=="DefaultValues")continue;
+        if(section=="CustomOrder"||section=="Extra"||section=="GroupSlots"||section=="ParamSlots"||section=="DefaultValues") {
+            const auto start=line.find_first_not_of(" \t");
+            if(start!=std::string::npos && (line[start]=='#'||line[start]==';'))out.push_back(line);
+            continue;
+        }
         if(line.rfind("CustomOrderView=",0)==0) {out.push_back("CustomOrderView="+view);foundView=true;}
         else if(line.rfind("SlotAccessMode=",0)==0) {out.push_back(std::string("SlotAccessMode=")+(groupMode?"group":"param"));foundSlotMode=true;}
         else out.push_back(line);
@@ -154,17 +184,19 @@ void FxOrder::reset() noexcept {
 }
 void FxOrder::normalize() {
     std::vector<int> kept;
-    std::vector<bool> included(static_cast<size_t>(std::max(count_,0)),false);
-    for(int i:order) if(i>=0&&i<count_) {kept.push_back(i);included[static_cast<size_t>(i)]=true;}
-    for(int i=0;i<count_;++i)if(!included[static_cast<size_t>(i)])kept.push_back(i);
+    std::set<int> included;
+    for(int i:order) if(i==compareParamIndex || (i>=0&&i<count_)) {kept.push_back(i);included.insert(i);}
+    for(int i=0;i<count_;++i)if(!included.count(i))kept.push_back(i);
+    if(!included.count(compareParamIndex))kept.insert(kept.end()-std::min<int>(3,static_cast<int>(kept.size())),compareParamIndex);
     order.swap(kept);
-    for(auto it=hidden.begin();it!=hidden.end();)if(*it<0||*it>=count_)it=hidden.erase(it);else ++it;
-    for(auto it=aliases.begin();it!=aliases.end();)if(it->first<0||it->first>=count_)it=aliases.erase(it);else ++it;
+    for(auto it=hidden.begin();it!=hidden.end();)if((*it<0 && *it!=compareParamIndex)||*it>=count_)it=hidden.erase(it);else ++it;
+    for(auto it=aliases.begin();it!=aliases.end();)if((it->first<0 && it->first!=compareParamIndex)||it->first>=count_)it=aliases.erase(it);else ++it;
 }
 std::vector<int> FxOrder::visibleOrder() const {
     std::vector<int> visible;
     if(custom)for(int id:order) { if(!hidden.count(id))visible.push_back(id); }
     else for(int i=0;i<count_;++i)visible.push_back(i);
+    if(!custom)visible.insert(visible.end()-std::min<int>(3,static_cast<int>(visible.size())),compareParamIndex);
     return visible;
 }
 std::string FxOrder::label(int id) const {
@@ -173,8 +205,9 @@ std::string FxOrder::label(int id) const {
 }
 bool FxOrder::hasRealModifications() const {
     if(!aliases.empty()||!hidden.empty())return true;
-    if(order.size()!=static_cast<size_t>(count_))return true;
-    for(int i=0;i<count_;++i)if(order[static_cast<size_t>(i)]!=i)return true;
+    std::vector<int> expected;for(int i=0;i<count_;++i)expected.push_back(i);
+    expected.insert(expected.end()-std::min<int>(3,static_cast<int>(expected.size())),compareParamIndex);
+    if(order!=expected)return true;
     return false;
 }
 void FxOrder::load(const std::filesystem::path& resource,const std::string& rawName,
@@ -182,6 +215,7 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
     reset();resource_=resource;rawName_=rawName;paramName_=std::move(paramName);
     count_=std::max(0,paramCount);
     for(int i=0;i<count_;++i)order.push_back(i);
+    order.insert(order.end()-std::min<int>(3,static_cast<int>(order.size())),compareParamIndex);
     if(resource_.empty()||rawName_.empty())return;
     const auto folder=resource_/L"LReaParams"/L"Plugins";
     file_=folder/std::filesystem::u8path(filename(rawName));
@@ -218,25 +252,25 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
     for(const auto& row:profile_.sections["CustomOrder"]) {
         int id=0;std::string name,alias;
         if(!parseIndex(row,id,name,alias))continue;
-        if(id>=0&&id<count_) {order.push_back(id);if(!alias.empty())aliases[id]=alias;}
+        if(id==compareParamIndex || (id>=0&&id<count_)) {order.push_back(id);if(!alias.empty())aliases[id]=alias;}
         else if(!name.empty()) {
             for(int i=0;i<count_;++i) if(paramName_(i)==name) {order.push_back(i);if(!alias.empty())aliases[i]=alias;break;}
         }
     }
     if(!profile_.sections["CustomOrder"].empty()) {
-        order.erase(order.begin(),order.begin()+count_);
+        order.erase(order.begin(),order.begin()+count_+1);
     }
     for(const auto& row:profile_.sections["Extra"]) {
         const auto pos=row.find('=');if(pos==std::string::npos)continue;
         const auto key=row.substr(0,pos), value=unescape(row.substr(pos+1));
         if(key=="hidden_params_v1") for(const auto& line:split(value,'\n')) {
             int id=0;std::string name,alias;
-            if(parseIndex(line,id,name,alias)&&id>=0&&id<count_)hidden.insert(id);
+            if(parseIndex(line,id,name,alias)&&(id==compareParamIndex || (id>=0&&id<count_)))hidden.insert(id);
         }
         const std::string ccPrefix="cc_link_v1::param::";
         if(key.rfind(ccPrefix,0)==0) {
             try {int param=std::stoi(key.substr(ccPrefix.size()));
-                if(param>=0 && param<count_ && !value.empty())ccLinks[param]=value;
+                if((param==compareParamIndex || (param>=0 && param<count_)) && !value.empty())ccLinks[param]=value;
             } catch(...) {}
         }
         const std::string prefix="group_slot_name_v1::slot::";
@@ -249,7 +283,7 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
         int slot=0;try{slot=std::stoi(row.substr(0,p));}catch(...){continue;}
         if(slot<1||slot>12)continue;
         int id=0;std::string name,alias;
-        if(parseIndex(unescape(row.substr(p+1)),id,name,alias)&&id>=0&&id<count_)paramSlots[slot]=id;
+        if(parseIndex(unescape(row.substr(p+1)),id,name,alias)&&(id==compareParamIndex || (id>=0&&id<count_)))paramSlots[slot]=id;
     }
     for(const auto& row:profile_.sections["GroupSlots"]) {
         auto p=row.find('=');if(p==std::string::npos)continue;
@@ -257,7 +291,7 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
         if(slot<1||slot>12)continue;
         for(auto& line:split(unescape(row.substr(p+1)),'\n')) {
             int id=0;std::string name,alias;
-            if(parseIndex(line,id,name,alias)&&id>=0&&id<count_)groups[slot].push_back(id);
+            if(parseIndex(line,id,name,alias)&&(id==compareParamIndex || (id>=0&&id<count_)))groups[slot].push_back(id);
         }
     }
     normalize();
@@ -271,19 +305,29 @@ bool FxOrder::save() {
     const std::string view=(custom && stored)?"custom":"plugin";
     std::vector<std::string> orderLines;
     if(stored)for(int id:order)orderLines.push_back(lineFor(id,paramName_(id),aliases.count(id)?aliases[id]:""));
+    for(const auto& row:profile_.sections["CustomOrder"]) {
+        int id=0;std::string label,alias;
+        if(parseIndex(row,id,label,alias) && (id!=compareParamIndex && (id<0||id>=count_)))orderLines.push_back(row);
+    }
     std::map<std::string,std::string> extra;
     for(const auto& row:profile_.sections["Extra"]) {
         const auto p=row.find('=');if(p==std::string::npos)continue;
         extra[row.substr(0,p)]=unescape(row.substr(p+1));
     }
-    for(int param=0;param<count_;++param) {
-        const auto key="cc_link_v1::param::"+std::to_string(param);
-        auto it=ccLinks.find(param);
-        if(it==ccLinks.end())extra.erase(key);
-        else extra[key]=it->second;
+    for(auto it=extra.begin();it!=extra.end();) {
+        if(it->first.rfind("cc_link_v1::param::",0)==0) {
+            bool managed=false;try {const int id=std::stoi(it->first.substr(std::string("cc_link_v1::param::").size()));managed=id==compareParamIndex||(id>=0&&id<count_);}catch(...) {}
+            if(managed)it=extra.erase(it);else ++it;
+        }else ++it;
     }
+    for(const auto& link:ccLinks)extra["cc_link_v1::param::"+std::to_string(link.first)]=link.second;
     std::string hiddenLines;
     for(int id:hidden) {if(!hiddenLines.empty())hiddenLines+='\n';hiddenLines+=lineFor(id,paramName_(id));}
+    const auto oldHidden=extra.find("hidden_params_v1");
+    if(oldHidden!=extra.end())for(const auto& row:split(oldHidden->second,'\n')) {
+        int id=0;std::string label,alias;
+        if(parseIndex(row,id,label,alias)&&id!=compareParamIndex&&(id<0||id>=count_)) {if(!hiddenLines.empty())hiddenLines+='\n';hiddenLines+=row;}
+    }
     if(hiddenLines.empty())extra.erase("hidden_params_v1");else extra["hidden_params_v1"]=hiddenLines;
     for(int slot=1;slot<=12;++slot)extra.erase("group_slot_name_v1::slot::"+std::to_string(slot));
     for(const auto& pair:groupNames)extra["group_slot_name_v1::slot::"+std::to_string(pair.first)]=pair.second;
@@ -362,6 +406,7 @@ std::map<int,double> FxOrder::defaultValues() const {
             if(offset!=parts[0].size()||id<0||id>=count_)continue;
             offset=0;const double norm=std::stod(parts[2],&offset);
             if(offset!=parts[2].size()||!std::isfinite(norm)||norm<0||norm>1)continue;
+            if(paramName_(id)!=parts[1])continue;
             values[id]=norm;
         } catch(...) {}
     }
@@ -393,5 +438,33 @@ void FxOrder::deleteCustomOrder() {
     order.clear();for(int id=0;id<count_;++id)order.push_back(id);
     aliases.clear();hidden.clear();custom=false;customCreated_=false;
     if(!save())throw ProfileError("Cannot save deleted Custom Order");
+}
+}
+
+namespace lrp {
+std::string FxOrder::extraValue(const std::string& key) const {
+    const auto it=profile_.sections.find("Extra");if(it==profile_.sections.end())return {};
+    for(const auto& row:it->second)if(row.rfind(key+"=",0)==0)return unescape(row.substr(key.size()+1));
+    return {};
+}
+void FxOrder::setExtraValue(const std::string& key,const std::string& value) {
+    auto& rows=profile_.sections["Extra"];
+    rows.erase(std::remove_if(rows.begin(),rows.end(),[&](const std::string& row){return row.rfind(key+"=",0)==0;}),rows.end());
+    if(!value.empty())rows.push_back(key+"="+escape(value));
+}
+bool FxOrder::regenerateDefaults(const std::map<int,double>& values) {
+    if(hasStructuralDefault())return false;
+    return saveDefaultValues(values);
+}
+}
+
+namespace lrp {
+std::vector<std::string> FxOrder::defaultRows() const {
+    const auto it=profile_.sections.find("DefaultValues");return it==profile_.sections.end()?std::vector<std::string>{}:it->second;
+}
+bool FxOrder::saveDefaultRows(const std::vector<std::string>& rows) {profile_.sections["DefaultValues"]=rows;return save();}
+std::string FxOrder::defaultMeta(const std::string& key) const {
+    const std::string prefix="META\t"+key+"\t";
+    for(const auto& row:defaultRows())if(row.rfind(prefix,0)==0)return row.substr(prefix.size());return {};
 }
 }

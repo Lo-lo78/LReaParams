@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST14 — Unified window titles (0.0.15)
 
 Senza cambiare navigazione, gestione dei parametri, memoria, focus o Value.

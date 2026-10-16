@@ -7,7 +7,8 @@
 #include <stdexcept>
 
 namespace lrp {
-enum class ProfileKind { fx, track, library };
+constexpr int compareParamIndex = -300000;
+enum class ProfileKind { fx, track };
 struct ProfileError : std::runtime_error { using std::runtime_error::runtime_error; };
 struct Field { std::string key, value; };
 struct Profile {

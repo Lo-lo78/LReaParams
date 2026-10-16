@@ -12,6 +12,7 @@ namespace lrp {
 namespace {
 bool guidSame(const GUID* a,const GUID& b) { return a && std::memcmp(a,&b,sizeof(GUID))==0; }
 std::string originalName(MediaTrack* track,MediaItem_Take* take,int fx,int id) {
+    if(id==compareParamIndex)return "Compare";
     if(id<0)return {};
     char buffer[4096]{};
     const bool ok=take?TakeFX_GetParamName(take,fx,id,buffer,sizeof(buffer))
@@ -41,7 +42,7 @@ void FxNavigator::loadFxOrder() {
     // display name or a per-instance GUID.
     const std::string name=entries_.at(static_cast<size_t>(browserIndex_)).name;
     fxOrder_.load(resourceRoot_,name,count_,[this](int id) {
-        return originalName(track_,take_,fx_,id);
+        return id==compareParamIndex?std::string("Compare"):(id>=0 && id<count_?originalName(track_,take_,fx_,id):std::string());
     });
     groupSlot_=0;groupEditAll_=false;editF7_=false;searchMode_=false;
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
@@ -52,6 +53,7 @@ void FxNavigator::loadFxOrder() {
         if(guidSame(&pos.fxGuid,fxGuid_)) {preference=pos.viewPosition;f7Selected_=pos.f7Selected;fxOrder_.custom=pos.customView && fxOrder_.storedCustomOrder();break;}
     rebuildView(parameter_,preference);
     snapshotDefaultsIfMissing();
+    resetMidiContext();
 }
 void FxNavigator::rebuildView(int preferParam,int preferPosition) {
     if(groupSlot_ && !groupEditAll_) {
@@ -505,12 +507,12 @@ void FxNavigator::handleTextEdit(const Key& k) {
         // Native EDIT has already provided textBuffer_ through the owner.
         while(!textBuffer_.empty()&&(textBuffer_.back()==' '||textBuffer_.back()=='\t'))textBuffer_.pop_back();
         saveUndo();
-        if(textEditParam_>=0) {
+        if(textEditParam_!=-1) {
             const auto original=parameterName_;
             if(textBuffer_.empty()||textBuffer_==original)fxOrder_.aliases.erase(textEditParam_);
             else fxOrder_.aliases[textEditParam_]=textBuffer_;
         } else if(groupSlot_) fxOrder_.groupNames[groupSlot_]=textBuffer_;
-        textEdit_=false;saveStructure();speech_("Name saved. "+(textEditParam_<0?groupLabel(groupSlot_):displayName()));return;
+        textEdit_=false;saveStructure();speech_("Name saved. "+(textEditParam_==-1?groupLabel(groupSlot_):displayName()));return;
     }
     if(k.ctrl&&!k.alt&&k.vk=='A') {textFresh_=true;speech_("All selected");return;}
     if(k.ctrl&&!k.alt&&k.vk=='C') {copyWide(textWide_);speech_("Name copied");return;}
@@ -593,12 +595,12 @@ bool FxNavigator::handleF7(const Key& k) {
     if(k.ctrl&&!k.shift&&!k.alt&&k.vk==VK_RETURN){
         if(slotMode_==0 && !groupSlot_) {speech_("Open a group to rename");return true;}
         textEdit_=true;textEditParam_=(slotMode_==0)?-1:parameter_;
-        textBuffer_=(textEditParam_<0)?fxOrder_.groupNames[groupSlot_]:displayName();
+        textBuffer_=(textEditParam_==-1)?fxOrder_.groupNames[groupSlot_]:displayName();
         const int needed=MultiByteToWideChar(CP_UTF8,0,textBuffer_.c_str(),-1,nullptr,0);
         textWide_.assign(static_cast<size_t>(std::max(0,needed)),L'\0');
         if(needed>0) {MultiByteToWideChar(CP_UTF8,0,textBuffer_.c_str(),-1,textWide_.data(),needed);textWide_.pop_back();}
         textCursor_=textWide_.size();textFresh_=true;
-        speech_(std::string(textEditParam_<0?"Edit group name. ":"Edit param name. ")+textBuffer_);
+        speech_(std::string(textEditParam_==-1?"Edit group name. ":"Edit param name. ")+textBuffer_);
         return true;
     }
     if(k.alt&&k.shift&&!k.ctrl&&

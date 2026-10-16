@@ -91,11 +91,11 @@ std::string ImportReport::summary() const {
 ImportReport importProfiles(const fs::path& resource, const std::atomic_bool& cancel) {
     ImportReport result;
     const auto root = resource / L"LReaParams";
-    try { for (const auto* name : {L"Plugins", L"Params", L"Tracks", L"Settings", L"Backups"}) makeDirectory(root / name); }
+    try { for (const auto* name : {L"Plugins", L"Tracks", L"Settings", L"Backups"}) makeDirectory(root / name); }
     catch (...) { ++result.errors; return result; }
     const auto legacy = resource / L"Scripts" / L"Lo-lo - Scripts" / L"Utility" / L"Scripts";
     struct Branch { const wchar_t* name; ProfileKind kind; };
-    for (const auto& branch : {Branch{L"Plugins", ProfileKind::fx}, Branch{L"Params", ProfileKind::library}, Branch{L"Tracks", ProfileKind::track}}) {
+    for (const auto& branch : {Branch{L"Plugins", ProfileKind::fx}, Branch{L"Tracks", ProfileKind::track}}) {
         for (bool active : {false, true}) {
             const auto from = (active ? root : legacy) / branch.name;
             try {
@@ -105,8 +105,6 @@ ImportReport importProfiles(const fs::path& resource, const std::atomic_bool& ca
                     if (cancel) { result.cancelled = true; return result; }
                     if (reparse(it->path())) { if (it->is_directory()) it.disable_recursion_pending(); continue; }
                     if (!it->is_regular_file() || lower(it->path().extension().wstring()) != L".txt") continue;
-                    const auto name = lower(it->path().filename().wstring());
-                    if (name == L"_parameter library handoff.txt" || name == L"_parameter library return.txt") { ++result.rejected; continue; }
                     try {
                         const auto source = it->path();
                         ensurePlainTree(source);

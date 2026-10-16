@@ -87,13 +87,12 @@ public:
         OutputDebugStringW(L"LReaParams: navigation stopped after a callback failure.\n");
     }
     void refreshToggles() const {
-        for (int i : {0, 1}) if (actions_[i].command) RefreshToolbar2(0, actions_[i].command);
+        for (int i : {fxParams, trackParams}) if (actions_[i].command) RefreshToolbar2(0, actions_[i].command);
     }
     int toggle(int command) const noexcept {
-        if (command == actions_[0].command) return current_ == &navigator_ && navigator_.active() && !navigator_.isMemoryManager() ? 1 : 0;
-        if (command == actions_[1].command) return current_ == &trackNavigator_ && trackNavigator_.active() ? 1 : 0;
-        if (command == actions_[2].command) return 0;
-        if (command == actions_[9].command) return titleModeEnabled_ ? 1 : 0;
+        if (command == actions_[fxParams].command) return current_ == &navigator_ && navigator_.active() && !navigator_.isMemoryManager() ? 1 : 0;
+        if (command == actions_[trackParams].command) return current_ == &trackNavigator_ && trackNavigator_.active() ? 1 : 0;
+        if (command == actions_[nvdaTitle].command) return titleModeEnabled_ ? 1 : 0;
         return -1;
     }
     bool action(int command) {
@@ -103,8 +102,8 @@ public:
         // Let OSARA announce shortcut help; do not execute any of our actions in help mode.
         if (shortcutHelp() && info_.GetFunc("osara_isShortcutHelpEnabled")) return false;
         switch (index) {
-        case 0: case 1: {
-            Navigator* desired = index == 0 ? static_cast<Navigator*>(&navigator_) : static_cast<Navigator*>(&trackNavigator_);
+        case fxParams: case trackParams: {
+            Navigator* desired = index == fxParams ? static_cast<Navigator*>(&navigator_) : static_cast<Navigator*>(&trackNavigator_);
             if (current_ == desired && current_->active()) { exitNavigation(true); break; }
             exitNavigation(false);
             if (!speechAvailable() || !info_.GetFunc("osara_isShortcutHelpEnabled")) {
@@ -113,23 +112,19 @@ public:
             if (desired->begin()) launchNavigator(desired);
             break;
         }
-        case 2:
-            exitNavigation(false);
-            speak("Parameter Library has not yet been migrated. Imported library files are preserved in LReaParams Params.");
-            break;
-        case 3:
+        case importLegacy:
             exitNavigation(false);
             announceImport_ = true;
             speak(importer_.start(resource_) ? "Import started" : "Import already running");
             break;
-        case 4: {
+        case openData: {
             exitNavigation(false);
             const auto root = resource_ / L"LReaParams";
             const auto result = reinterpret_cast<INT_PTR>(ShellExecuteW(info_.hwnd_main, L"open", root.c_str(), nullptr, nullptr, SW_SHOWNORMAL));
             if (result <= 32) speak("Cannot open data folder. Initial import may still be running.");
             break;
         }
-        case 5: {
+        case settings: {
             exitNavigation(false);
             const int answer = MessageBoxW(info_.hwnd_main,
                 L"Native test keyboard backend, current REAPER session only.\n\nYes: main REAPER thread hook (WH_GETMESSAGE).\nNo: REAPER SDK accelerator plus Escape-only hook (default).\nCancel: keep current setting.\n\nCapture is confined to REAPER's main thread and active navigator.",
@@ -138,21 +133,19 @@ public:
             else if (answer == IDNO) backend_ = InputBackend::sdkAccelerator;
             break;
         }
-        case 6:
+        case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.24 TEST23 F7 EDIT AND FX DEFAULTS\n\n"
-                "FX: Ctrl+Up/Down changes FX. Ctrl+Shift+Up/Down switches to tracks with FX, restoring the last FX and parameter per track.\n"
-                "FX: Ctrl+L Plugin / Custom Order, F7 edits Custom Order; Shift+Space selects, Ctrl+X/C/V moves or copies, Ctrl+Delete hides.\n"
-                "FX: F1/F2 grid height. Ctrl+Home/End absolute. Alt+Left/Right steps -10 to +10.\n"
-                "Track: Left/Right and NVDA+Up review parameter and value only; Up/Down changes track and speaks its name. Ctrl+R reviews full context.\n"
-                "Track: F1 rows; F2/F3 only when sends/receives exist. Alt+Left/Right adjusts continuous steps.\n"
-                "A native Windows trackbar owns keyboard focus in Value; Grid retains the quiet STATIC review label.\n"
-                "NVDA+T: FX Params - track - FX name; Track Params - track (and page for Sends/Receives). NVDA+Up queries parameter and value.\n"
-                "F12 alone is reserved for future LReaParams commands; Ctrl+F12 recalls group/memory slot 12.\n"
-                "Use 'Lua-style keyboard window (1px)' to disable this focus mode if necessary.\n\n"
-                "F8 opens seven-column FX Memories. Default reset uses verified normalized snapshots. Structural ReaEQ restoration and advanced MIDI CC remain protected.", "About LReaParams", 0);
+            ShowMessageBox("LReaParams 0.0.40 - source migration candidate\n\n"
+                "FX Params and Track Params, native NVDA/OSARA focus.\n"
+                "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
+                "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
+                "Alt+F1/F2 presets; Alt+F3/F4 automated parameters. Ctrl+E numeric edit.\n"
+                "Ctrl+R recent searches; Ctrl+Shift+R full context review.\n"
+                "F12 alone is reserved; Ctrl+F12 keeps slot 12; Alt+F10/F11/F12 remain with OSARA.\n"
+                "See Docs/Status.md for remaining Lua differences and required runtime tests.\n"
+                "No local compilation was performed.", "About LReaParams", 0);
             break;
-        case 7: {
+        case fxMemories: {
             // Dedicated REAPER action opens the same Lua F8 manager, not a
             // second profile editor. Use the shared FX navigator and focus owner.
             exitNavigation(false);
@@ -163,11 +156,11 @@ public:
                 launchNavigator(&navigator_);
             break;
         }
-        case 8:
+        case trackMemories:
             exitNavigation(false);
             speak("LReaParams - Track Memories. Memory management is reserved for a later test; no memory was changed.");
             break;
-        case 9:
+        case nvdaTitle:
             exitNavigation(false);
             titleModeEnabled_ = !titleModeEnabled_;
             speak(titleModeEnabled_ ? "Lua-style keyboard window enabled" : "Lua-style keyboard window disabled");
@@ -231,7 +224,7 @@ public:
         if (currentDesc.empty()) return false;
         KbdSectionInfo* section = SectionFromUniqueID(0);
         if (!section) return false;
-        const int command = actions_[0].command; // FX Params ONLY
+        const int command = actions_[fxParams].command; // FX Params ONLY
         const int count = CountActionShortcuts(section, command);
         for (int i = 0; i < count; ++i) {
             char desc[256]{};
@@ -245,7 +238,7 @@ public:
             !(fixedFxChainShortcutMatches(msg) || actionShortcutMatches(msg))) return 0;
         // Use the same normal launch path, shared session memory and access API.
         // Return 1 so REAPER won't also process the original key for search.
-        return action(actions_[0].command) ? 1 : 0;
+        return action(actions_[fxParams].command) ? 1 : 0;
     }
     void launchNavigator(Navigator* desired) {
                 current_ = desired;
@@ -284,6 +277,15 @@ public:
         if (titleProxyActive_ && !titleProxy_.active()) { exitNavigation(false); return; }
         if (shortcutHelp() || input_.exitRequested() || !current_->contextUnchanged() || !current_->uiStillOpen() || !input_.environmentSafe()) {
             exitNavigation(false); return;
+        }
+        if(current_==&navigator_) {
+            const auto previous=current_->reviewLine();
+            navigator_.pollMidi();
+            const auto next=current_->reviewLine();
+            if(titleProxyActive_ && next!=previous) {
+                titleProxy_.updateReviewLine(next);
+                titleProxy_.syncValueControl(current_->nativeValueSlider(),current_->sliderLabel(),current_->valueFraction());
+            }
         }
         input_.refreshAllowedWindows(current_->floatingWindow());
         Key key; unsigned budget = 16;
@@ -336,22 +338,20 @@ public:
             HMENU sub = CreatePopupMenu(); if (!sub) return;
             // Memory actions have independent REAPER command IDs and launch
             // their own navigator mode; the FX command preserves the Lua F8 grid.
-            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[0].command), actions_[0].menu);
-            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[1].command), actions_[1].menu);
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[fxParams].command), actions_[fxParams].menu);
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[trackParams].command), actions_[trackParams].menu);
             HMENU memories = CreatePopupMenu();
             if (memories) {
-                AppendMenuW(memories, MF_STRING, static_cast<UINT_PTR>(actions_[7].command), actions_[7].menu);
-                AppendMenuW(memories, MF_STRING, static_cast<UINT_PTR>(actions_[8].command), actions_[8].menu);
-                AppendMenuW(memories, MF_SEPARATOR, 0, nullptr);
-                AppendMenuW(memories, MF_STRING, static_cast<UINT_PTR>(actions_[2].command), actions_[2].menu);
+                AppendMenuW(memories, MF_STRING, static_cast<UINT_PTR>(actions_[fxMemories].command), actions_[fxMemories].menu);
+                AppendMenuW(memories, MF_STRING, static_cast<UINT_PTR>(actions_[trackMemories].command), actions_[trackMemories].menu);
                 if (!AppendMenuW(sub, MF_POPUP, reinterpret_cast<UINT_PTR>(memories), L"Memories"))
                     DestroyMenu(memories);
             }
             AppendMenuW(sub, MF_SEPARATOR, 0, nullptr);
-            for (int i = 3; i <= 5; ++i)
+            for (int i : {importLegacy, openData, settings})
                 AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[i].command), actions_[i].menu);
-            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[9].command), actions_[9].menu);
-            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[6].command), actions_[6].menu);
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[nvdaTitle].command), actions_[nvdaTitle].menu);
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[about].command), actions_[about].menu);
             if (!AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(sub), L"LReaParams")) DestroyMenu(sub);
         } else if (flag == 1) updateMenu(menu);
     }
@@ -375,11 +375,11 @@ private:
         for (int i = 0; i < GetMenuItemCount(menu); ++i) {
             if (HMENU sub = GetSubMenu(menu, i)) updateMenu(sub);
             const auto command = GetMenuItemID(menu, i);
-            if (command == static_cast<UINT>(actions_[9].command))
+            if (command == static_cast<UINT>(actions_[nvdaTitle].command))
                 CheckMenuItem(menu, command, MF_BYCOMMAND | (titleModeEnabled_ ? MF_CHECKED : MF_UNCHECKED));
-            for (int a : {0, 1}) {
+            for (int a : {fxParams, trackParams}) {
                 if (command != static_cast<UINT>(actions_[a].command)) continue;
-                const Navigator* target = a == 0 ? static_cast<const Navigator*>(&navigator_) : static_cast<const Navigator*>(&trackNavigator_);
+                const Navigator* target = a == fxParams ? static_cast<const Navigator*>(&navigator_) : static_cast<const Navigator*>(&trackNavigator_);
                 const bool selected = current_ == target && target->active();
                 CheckMenuItem(menu, command, MF_BYCOMMAND | (selected ? MF_CHECKED : MF_UNCHECKED));
             }
@@ -399,10 +399,10 @@ private:
     bool titleModeEnabled_ = true, titleProxyActive_ = false;
     accelerator_register_t fxChainAccel_{};
     bool fxChainAccelRegistered_ = false;
-    std::array<Action, 10> actions_{{
+    enum ActionIndex { fxParams, trackParams, importLegacy, openData, settings, about, fxMemories, trackMemories, nvdaTitle, actionCount };
+    std::array<Action, actionCount> actions_{{
         {"LREAPARAMSFXPARAMS", "LReaParams: FX Params (native test)", L"FX Params"},
         {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params (basic native controls)", L"Track Params (basic controls)"},
-        {"LREAPARAMSPARAMETERLIBRARY", "LReaParams: Parameter Library (pending migration)", L"Parameter Library (pending migration)"},
         {"LREAPARAMSIMPORTLEGACY", "LReaParams: Import legacy profiles", L"Import legacy profiles"},
         {"LREAPARAMSOPENDATAFOLDER", "LReaParams: Open Data Folder", L"Open Data Folder"},
         {"LREAPARAMSSETTINGS", "LReaParams: Settings", L"Settings"},

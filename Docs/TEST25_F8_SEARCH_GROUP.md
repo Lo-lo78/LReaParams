@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST25 — Gruppi, FX Memories e ricerca letterale (sorgente)
 
 **Nota:** per il comportamento dei gruppi e dei filtri vale la successiva TEST26; la prova di ritorno obbligatorio a Plugin Order qui sotto è storica e superata.

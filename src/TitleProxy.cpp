@@ -175,6 +175,9 @@ void TitleProxy::syncTextControl(bool enabled, const std::string& label, const s
             ShowWindow(nativeEdit_,SW_SHOW);
             nativeEditMode_=true;
             SetFocus(nativeEdit_);
+        } else if(textValue()!=initialValue) {
+            SetWindowTextW(nativeEdit_,toWide(initialValue).c_str());
+            SendMessageW(nativeEdit_,EM_SETSEL,0,-1);
         }
     } else if(nativeEditMode_){
         ShowWindow(nativeEdit_,SW_HIDE);
@@ -302,13 +305,13 @@ LRESULT CALLBACK TitleProxy::nativeEditProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM 
     }
     if((msg==WM_KEYDOWN||msg==WM_SYSKEYDOWN) &&
        (wp==VK_RETURN||wp==VK_ESCAPE||wp==VK_UP||wp==VK_DOWN||
-        (wp=='F' && (GetKeyState(VK_CONTROL)&0x8000)))) {
+        ((wp=='F'||wp=='E') && (GetKeyState(VK_CONTROL)&0x8000)))) {
         try {if(self->keyboardKey_)self->keyboardKey_(hwnd,static_cast<UINT>(wp),(lp & (1LL<<30))!=0);}
         catch(...) {auto close=std::move(self->closeNavigator_);try{if(close)close();}catch(...){}}
         return 0;
     }
     if((msg==WM_CHAR||msg==WM_SYSCHAR) &&
-       (wp==VK_RETURN||wp==VK_ESCAPE||wp==VK_F12||wp==6))return 0;
+       (wp==VK_RETURN||wp==VK_ESCAPE||wp==VK_F12||wp==6||wp==5))return 0;
     if(msg==WM_CLOSE){auto close=std::move(self->closeNavigator_);
         try{if(close)close();}catch(...){}return 0;}
     return CallWindowProcW(self->originalNativeEditProc_,hwnd,msg,wp,lp);

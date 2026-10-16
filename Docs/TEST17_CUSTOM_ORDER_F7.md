@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST17 — Custom Order e F7 (verifica richiesta in REAPER)
 
 Il codice è migrato parzialmente dal Lua FX Params originale; nessuna

@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST29 — Serpentone, aggiornato dalla TEST30
 
 Nuova selezione nel solo editor F7 (non cambia la navigazione fuori F7).

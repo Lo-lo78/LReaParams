@@ -1,5 +1,6 @@
 #include "lrp/Profile.h"
 #include "lrp/Storage.h"
+#include "lrp/FxOrder.h"
 #include <windows.h>
 #include <fstream>
 #include <iostream>
@@ -31,8 +32,8 @@ void corpus(const fs::path& root) {
         rejected([&] { parseNative(native + "X"); });
         ++count; ++counts[p.kind];
     }
-    check(count == 55 && counts[ProfileKind::fx] == 48 && counts[ProfileKind::track] == 4 && counts[ProfileKind::library] == 3, "Expected all 55 fixtures");
-    std::cout << "55 profiles, exact byte + semantic roundtrip passed\n";
+    check(count == 52 && counts[ProfileKind::fx] == 48 && counts[ProfileKind::track] == 4, "Expected all 52 fixtures");
+    std::cout << "52 profiles, exact byte + semantic roundtrip passed\n";
 }
 }
 int main(int argc, char** argv) {
@@ -41,17 +42,10 @@ int main(int argc, char** argv) {
         if (argc == 3) corpus(fs::u8path(argv[2])); // Optional private corpus supplied only by the owner.
         check(sha256("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA256 known-answer failed");
         const auto fx = readFile(fixtures / L"Plugins" / L"fixture_001.txt");
-        const auto pp = readFile(fixtures / L"Params" / L"fixture_001.txt");
         rejected([] { parseLegacy("Version=3\n"); });
         rejected([] { parseLegacy("Version=2\nOther=not a track file\n"); });
         rejected([] { parseLegacy(std::string("Version=3\0payload", 17)); });
-        rejected([&] { auto s = pp; s.replace(s.find("Mode=cell"), 9, "Mode=return"); parseLegacy(s); });
-        rejected([&] { auto s = pp; const auto at = s.find("Count="); const auto end = s.find('\n', at); s.replace(at, end-at, "Count=999999"); parseLegacy(s); });
         rejected([&] { auto s = fx; s.replace(s.find("Version=3"), 9, "Version=99"); parseLegacy(s); });
-        rejected([&] { auto s = pp; const auto at = s.find("\nP\t"); check(at != std::string::npos, "PP fixture missing record");
-            const auto end = s.find('\n', at+1); auto fields = split(s.substr(at+1, end-at-1), '\t');
-            fields[4] = "NaN"; std::string line; for (const auto& f : fields) { if (!line.empty()) line += '\t'; line += f; }
-            s.replace(at+1, end-at-1, line); parseLegacy(s); });
         rejected([] { parseLegacy("Version=2\nF4CCScope=Plugin\n[Track]\nPan=17,128\n[Sends]\n[Receives]\n[FXParams.Plugin]\n"); });
         rejected([&] { parseLegacy(fx + "\n[CustomOrder]\n"); });
         const auto future = parseLegacy(fx + "\n[Future]\nopaque-content\n");
@@ -71,18 +65,18 @@ int main(int argc, char** argv) {
             auto to = legacy / e.path().lexically_relative(fixtures); fs::create_directories(to.parent_path()); fs::copy_file(e.path(), to);
         }
         report = importProfiles(root, cancel);
-        check(report.imported == 55 && report.errors == 0 && report.rejected == 0, "Full import failed");
+        check(report.imported == 52 && report.errors == 0 && report.rejected == 0, "Full import failed");
         int originals = 0; for (const auto& e : fs::recursive_directory_iterator(legacy)) if (e.is_regular_file()) ++originals;
-        check(originals == 55, "Legacy original removed");
+        check(originals == 52, "Legacy original removed");
         const auto before = times(root / L"LReaParams");
         report = importProfiles(root, cancel);
-        check(report.unchanged == 55 && report.imported == 0 && report.errors == 0, "Repeat import failed");
+        check(report.unchanged == 52 && report.imported == 0 && report.errors == 0, "Repeat import failed");
         check(times(root / L"LReaParams") == before, "Idempotent import rewrote a file");
         const auto target = root / L"LReaParams" / L"Plugins" / L"fixture_001.fx";
         const auto userEdit = serializeNative(parseLegacy(fx + "\n# Native user edit\n"));
         overwrite(target, userEdit);
         report = importProfiles(root, cancel);
-        check(report.unchanged == 55 && readFile(target) == userEdit, "Repeat import overwrote a user edit");
+        check(report.unchanged == 52 && readFile(target) == userEdit, "Repeat import overwrote a user edit");
         const auto originalTarget = readFile(target);
         overwrite(legacy / L"Plugins" / L"fixture_001.txt", fx + "\n# Source changed\n");
         report = importProfiles(root, cancel);
@@ -96,9 +90,28 @@ int main(int argc, char** argv) {
         const auto invalid = root / L"LReaParams" / L"Plugins" / L"unknown.txt";
         overwrite(invalid, "Version=3\nNot a profile\n"); report = importProfiles(root, cancel);
         check(fs::exists(invalid) && report.rejected >= 1, "Malformed TXT was removed");
-        const auto handoff = root / L"LReaParams" / L"Params" / L"_Parameter Library Handoff.txt";
-        overwrite(handoff, pp); report = importProfiles(root, cancel);
-        check(fs::exists(handoff), "Handoff file was removed");
+        check(!fs::exists(root / L"LReaParams" / L"Params"), "Importer created retired directory");
+        const auto ignored = root / L"LReaParams" / L"Params" / L"old.pp";
+        overwrite(ignored, "untouched"); report = importProfiles(root, cancel);
+        check(readFile(ignored) == "untouched", "Retired data modified");
+        // Roundtrip intentional profile edits, including hidden CC links and virtual Compare.
+        const auto profileRoot = root / L"profile-edits";
+        FxOrder order;
+        order.load(profileRoot,"Synthetic edit test",4,[](int id){return id==compareParamIndex?std::string("Compare"):"Parameter "+std::to_string(id);});
+        check(!order.hasRealModifications(),"Compare must not create a Custom Order");
+        order.ccLinks[1]="2\t74";order.hidden.insert(1);
+        order.paramSlots[12]=compareParamIndex;
+        order.setExtraValue("future_key","opaque value");
+        check(order.save(),"FX save failed");
+        FxOrder reopened;
+        reopened.load(profileRoot,"Synthetic edit test",4,[](int id){return id==compareParamIndex?std::string("Compare"):"Parameter "+std::to_string(id);});
+        check(reopened.ccLinks.at(1)=="2\t74" && reopened.hidden.count(1),"Hidden MIDI association lost");
+        check(reopened.paramSlots.at(12)==compareParamIndex,"Virtual memory index lost");
+        check(reopened.extraValue("future_key")=="opaque value","Unknown extra lost");
+        check(reopened.deleteCcLink(1),"Hidden CC deletion failed");
+        FxOrder cleared;
+        cleared.load(profileRoot,"Synthetic edit test",4,[](int id){return id==compareParamIndex?std::string("Compare"):"Parameter "+std::to_string(id);});
+        check(!cleared.ccLinks.count(1),"Deleted hidden CC reappeared");
         const auto collision = root / L"collision.txt";
         check(writeNewVerified(collision, "first"), "Create failed");
         check(!writeNewVerified(collision, "second") && readFile(collision) == "first", "Collision replaced bytes");

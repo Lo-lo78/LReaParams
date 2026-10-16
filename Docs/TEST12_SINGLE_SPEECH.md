@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST12 — One announcement per parameter movement
 
 Cause addressed: TEST11's focused Win32 STATIC was rewritten via

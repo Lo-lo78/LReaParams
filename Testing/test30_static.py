@@ -3,7 +3,7 @@ from pathlib import Path
 r=Path(__file__).resolve().parents[1]
 f7=(r/'src/FxNavigatorOrder.cpp').read_text(encoding='utf-8')
 nav=(r/'src/FxNavigator.cpp').read_text(encoding='utf-8')
-assert 'VERSION 0.0.31' in (r/'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.' in (r/'CMakeLists.txt').read_text()
 assert 'if(k.ctrl&&k.shift&&!k.alt&&(k.vk==VK_HOME||k.vk==VK_END))' in f7
 assert 'selectF7ToGlobalEdge(k.vk==VK_END);return true;' in f7
 assert 'if(k.ctrl&&!k.alt&&(k.vk==VK_HOME||k.vk==VK_END))' not in f7

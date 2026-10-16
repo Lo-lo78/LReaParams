@@ -1,0 +1,38 @@
+lua_function,gesture,context,expected_behavior,cpp_function,source_status,manual_test_steps
+start_cc_learn_mode,Ctrl+Alt+C,Grid/Value/F7,Arm first new CC; do not jump value,handleAdvanced/pollMidi,Implemented for real params and Compare,"9,11"
+cc_learn_poll_recent_input,MIDI,Learn,Capture chronological first new valid CC,pollMidi,"Implemented, bounded batch",9
+cc_learn_apply_to_param,MIDI,Learn,Persist link; remove duplicate and native learn,pollMidi/clearNativeLearn,Implemented excluding unported virtuals,11
+handle_cc_learn_key,Esc/Delete/Tab/Enter,Learn,Cancel/read/remove; Enter no-op,handleAdvanced,Implemented,11
+cc_runtime_toggle_fixed_map,Shift+C,FX,Persistent fixed mapping state,handleAdvanced/resetMidiContext,Implemented while navigator active,"10,12"
+cc_runtime_pickup_allows_value,MIDI,Fixed/Floating,Crossing/tolerance/external-edit rearm,Pickup::allows,Implemented; runtime pending,12
+cc_runtime_poll_recent_input,MIDI,Fixed,Apply to current FX only,pollMidi/applyMidi,Partial: no background,"9,10,13"
+toggle_cc_focus_mode,Ctrl+Shift+C,Grid/Value,Capture volatile controller; follow current param,handleAdvanced/pollMidi,Partial: no session background restore,13
+toggle_cc_combo_speech,Ctrl+T,Parameter,Persist per-param speech flag,handleAdvanced/applyMidi,Partial: speech coalescing intentional,14
+show_hide_current_param_envelope,Ctrl+Shift+A,Physical parameter,Toggle ACT/VIS with undo,toggleEnvelope/setEnvelope,Implemented; runtime pending,15
+clear_all_current_fx_param_envelopes,Ctrl+Shift+Alt+A,Current FX,Clear ACT/VIS only this FX,toggleEnvelope(true),Implemented; runtime pending,15
+fx_param_jump_to_auto_param,Alt+F3/F4,Grid,Cycle automated params,navigateEnvelope,Partial: current visible grid only,15
+navigate_current_fx_preset,Alt+F1/F2,Current FX,Native preset navigation,navigatePreset,Implemented; runtime pending,16
+handle_numeric_edit,Ctrl+E/Enter/Esc,Grid/Value,Real numeric editor and unit conversion,numericBegin/numericCommit,Partial: monotonic formatter or declared raw; EQ types need QA,"17,20"
+start_recent_searches,Ctrl+R,Stable context,Recent history; second gesture restores,handleRecent/loadSearchHistory,Partial: applies within current enclosure,18
+handle_recent_key,Recent arrows/Enter/Delete,Recent,Navigate and apply/delete query,handleRecent,Implemented for documented gestures,18
+load_recent_searches,Entry,Search,"Read legacy history, persistent 20 queries",loadSearchHistory/saveSearchHistory,Implemented with new Settings file,18
+reaeq_set_gain_db_by_chunk,CC/Alt+arrows/Ctrl+E,ReaEQ Track band Gain,Extended raw gain up to +36.1 dB,writeEqGain/numericCommit,Implemented direct chunk; exact audio QA pending,20
+plugin_default_snapshot_restore_reaeq_chunk,Reset,ReaEQ,Restore structure and independent wrapper tail,restoreReaEqDefault,Implemented; real runtime verification pending,21
+plugin_default_snapshot_serialize_current,Initial capture,Default,Save physical values or ReaEQ chunk,snapshotDefaultsIfMissing/captureReaEqDefault,Implemented excluding unported virtuals,"21,22"
+fx_compare_set_norm,Compare arrows/CC,Virtual -300000,Arm then Original/Edited per instance,setCompare/applyCompare,Implemented; no global ExtState,"19,21"
+fx_compare_nudge,Compare arrows,Value/Grid,"Silent boundaries, first move arms",nudge/setCompare,Implemented,19
+default_snapshot_confirm_commit_yes,F8 Default Enter/Y,F8,Restore then clear navigation memories,memoryLoad/resetAllToDefault,Partial: unsupported opaque memories preserved,22
+plugin_default_snapshot_delete_and_arm_regenerate,F8 Default Delete,F8,Delete snapshot; Enter/F8 recaptures,memoryDelete/memoryNavigate,Implemented,22
+toggle_f7_or_previous_grid,F7,Grid/F7,Structural editor and return,enterF7/exitF7,"TEST30 preserved, Compare added","6,7"
+toggle_memory_manager_or_grid,F8,F7/Action List,Seven memory columns,openFxMemories/memoryNavigate,TEST30 preserved and expanded; not full rare-case audit,"8,22"
+toggle_custom_order_or_plugin_order,Ctrl+L,Grid,"Switch order, preserve current context",FxNavigator::handle,"TEST30 behavior preserved, group exit differs from Lua",6
+reaeq_set_virtual_raw,Band Enabled/Type,ReaEQ,Named config controls,None,Missing,25
+reaeq_perform_band_action,Target/Action,ReaEQ,Real band add/remove,None,Missing,25
+reacomp_set_detector_user_index,Detector input,ReaComp,Sparse raw combo values,Generic host controls only,Missing specialized adapter,25
+reacomp_get_detector_filter_range_formatted,Virtual summary,ReaComp,Detector filter summary,None,Missing,25
+fx_snapshot_copy_all_to_system_clipboard,Ctrl+Alt+Shift+C,FX,Full snapshot clipboard,None,Missing,25
+leave_script_focus_to_tcp_background,Ctrl+Q,FX,Continue MIDI without focus,None,Missing,"13,25"
+handle_ctrl_left_right_item_nav,Ctrl+Left/Right,Take/item,Navigate items/takes,None,Missing,25
+switch_take_context_to_current_track_fx,Ctrl+W,Take FX,Return to Track FX,None,Missing,25
+open_current_context_fx_chain,Ctrl+Shift+F,FX,Open FX chain and release keyboard,None,Missing,25
+switch_to_track_params_script,Ctrl+Tab outside F7,FX,Switch navigator,None,Missing; no library routing,25

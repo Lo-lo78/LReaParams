@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST16 — Track Params: NVDA+Freccia Su conciso (0.0.17)
 
 **Solo sorgenti:** nessuna build locale. Compilazione via GitHub Actions.
@@ -22,4 +24,3 @@
 
 ## Raccomandazione per la prossima migrazione FX
 
-Attivare **lettura e applicazione dei profili `.fx`** in FX Params, iniziando con due viste: Plugin Order (ordine REAPER, non modificabile) e Custom Order (ordine/alias/parametri nascosti secondo profilo). Il parser attuale conserva soltanto il payload dei profili e non li collega alla griglia. Implementare identità plugin e mapping stabile degli indici prima degli editor F7/Groups, F8/Memories e F10/Parameter Library. Nessuna di queste nuove funzionalità è implementata in TEST16.

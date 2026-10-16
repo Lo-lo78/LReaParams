@@ -65,8 +65,8 @@ def main():
                    'trigger_tokens': '; '.join(keys), 'active_condition_evidence': ' | '.join(guards),
                    'behavior_reference': f"Legacy/{path.name}:{f['line']} (full body authoritative)",
                    'persistence_calls': '; '.join(persist), 'reaper_apis': '; '.join(api),
-                   'native_status': 'NOT MIGRATED; phase-0 subset mapped in FunctionalMatrix.md',
-                   'equivalence_test': 'PENDING: compare Lua and native after keyboard feasibility gate',
+                   'native_status': 'Reference helper; not individually audited; see FxCommandMatrix.csv for command status',
+                   'equivalence_test': 'Runtime pending; compare command matrix and manual tests',
                    'duplicate_name_count': counts.get(f['name'], 0)}
             matrix.append(row)
         lines = text.splitlines()
@@ -89,7 +89,7 @@ def main():
                 i+=1
             call=text[m.start():i]
             ext_rows.append({'module':path.name,'line':text.count('\n',0,m.start())+1,'api':m.group(1),'exact_call':call,
-                             'native_import':'PENDING PHASE 5; no legacy ExtState writes in phase 0'})
+                             'native_import':'Reference evidence; current C++ does not write legacy ExtState'})
         for api, occurrences in sorted(Counter(re.findall(r'\breaper\.([A-Za-z_0-9]+)\s*\(',text)).items()):
             api_rows.append({'module':path.name,'api':api,'lexical_calls':occurrences,'replacement':'Win32/SDK required' if api.startswith('JS_') else 'review at porting gate'})
     for name,rows in [('LuaFunctionInventory.csv',matrix),('LuaShortcutEvidence.csv',key_rows),('LuaExtStateCalls.csv',ext_rows),('LuaApiInventory.csv',api_rows),('LuaManifest.csv',manifests)]:

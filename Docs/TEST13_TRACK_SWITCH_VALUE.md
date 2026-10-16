@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST13 — Keyboard, track memory, native Value control
 
 Source only. Build ONLY via GitHub Actions. No local CMake / compiler runs.

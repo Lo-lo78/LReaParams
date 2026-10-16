@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST21 — Outside F7 commands and Master/Monitor FX title
 
 ## Keyboard tests in REAPER + NVDA

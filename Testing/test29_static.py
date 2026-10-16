@@ -4,7 +4,7 @@ root=Path(__file__).resolve().parents[1]
 fx=(root/'src/FxNavigatorOrder.cpp').read_text(encoding='utf-8')
 outer=(root/'src/FxNavigator.cpp').read_text(encoding='utf-8')
 h=(root/'include/lrp/FxNavigator.h').read_text(encoding='utf-8')
-assert 'VERSION 0.0.31' in (root/'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.' in (root/'CMakeLists.txt').read_text()
 assert 'void selectF7ToGlobalEdge(bool toEnd);' in h
 assert 'void FxNavigator::selectF7ToGlobalEdge(bool toEnd)' in fx
 assert 'const int target=toEnd?static_cast<int>(visible_.size())-1:0;' in fx

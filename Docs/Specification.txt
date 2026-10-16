@@ -1,432 +1,505 @@
-# Aggiornamento TEST27 (0.0.28): il F12 SENZA modificatori ora resta libero e riservato a LReaParams, senza inoltro a OSARA e senza chiusura della finestra di navigazione. Ctrl+F12 e Ctrl+Maiusc+F12 mantengono la memoria 12; Alt+Maiusc+Frecce naviga i selezionati in F7. Le istruzioni storiche su F12/Alt+Frecce riportate sotto descrivono versioni precedenti e sono superate. Per il collaudo attuale: Docs/TEST27_KEYS_F12.md.
+﻿LREAPARAMS — HANDOFF PER ASTRA
+Completamento FX Params dalla TEST30 e rimozione definitiva di Parameter Library
+Specifiche operative e tabella di marcia
+Data di riferimento: 16 ottobre 2026
 
-TEST3 IMPLEMENTATION OVERRIDE (2026-10-15): The previously proposed Exit current navigation action is REMOVED from the registered actions and Extensions submenu. Escape is now handled internally by InputRouter using a thread-scoped Escape-only WH_GETMESSAGE hook when the SDK accelerator backend is selected. This is experimental until tested in REAPER. Track Params F1 uses 9 horizontal columns per track, with Up/Down rows and Left/Right columns, following the legacy Lua. FX Params Ctrl+Home and Ctrl+End jump to the first and last FX parameter.
+======================================================================
+1. MANDATO PRINCIPALE — LEGGERE PRIMA DI INTERVENIRE
+======================================================================
 
-LREAPARAMS - HANDOFF TECNICO PER ASTRA 6.0 WORK
-============================================================
-Data specifica: 14 ottobre 2026
-Stato: piano di migrazione e consegna ZIP GitHub-ready PRIMA della creazione del repository Lo-lo78/LReaParams
-Lingua di sviluppo: C++ nativo. Prima piattaforma: Windows x64.
+Devi continuare lo sviluppo del progetto nativo C++ LReaParams per REAPER, partendo
+ESCLUSIVAMENTE dal sorgente più recente allegato:
 
-0. INCARICO E MATERIALE DI PARTENZA
-----------------------------------
-LReaParams e' una vera estensione nativa di REAPER, non uno script Lua o un VST.
-La DLL si chiamera': reaper_lreaparams.dll.
+  LReaParams_TEST30_F7_CTRL_SHIFT_HOME_END_GITHUB_READY_SOURCE.zip
 
-L'utente fornira' questi archivi oltre a questo handoff:
-- Scripts.zip: tre file Lua di riferimento, di cui occorre studiare ogni funzione:
-  * Speak FX Params - TrackTake Navigator.lua, versione 0.346, 37.058 righe.
-  * Speak Track Params - TrackTake Navigator.lua, versione 0.184, 29.890 righe.
-  * Parameter Library.lua, versione 0.102, 1.564 righe.
-- dati.zip: esempi reali di tutte e tre le categorie di dati storici:
-  * 48 profili nella cartella Plugins.
-  * 3 celle/librerie nella cartella Params.
-  * 4 file nella cartella Tracks, inclusi dati di progetto.
-Totale: 68.512 righe Lua, 55 file TXT di esempio.
+Usa come riferimento comportamentale primario i Lua originali, presenti nella
+cartella Legacy della TEST30 e/o nell'archivio Scripts(2).zip:
 
-Le tre versioni sopra sono quelle effettivamente presenti negli archivi allegati.
-Non basarsi su vecchi riepiloghi o su comportamenti presunti: il codice Lua fornito e' la specifica funzionale principale.
+  Speak FX Params - TrackTake Navigator.lua
+  Speak Track Params - TrackTake Navigator.lua
+  Parameter Library.lua  [SOLO per riconoscere cosa rimuovere]
 
-Scopo: fare una MIGRAZIONE FEDELE e poi migliorare robustezza, performance,
-accessibilita', compatibilita' dati e architettura. Non semplificare ne' eliminare
-funzioni esistenti per rendere piu' facile il porting.
+I due navigatori da mantenere e completare sono SOLTANTO:
 
-Regola richiesta dall'utente: NON COMPILARE LOCALMENTE, NON creare binari,
-NON creare il repository GitHub e NON effettuare push o commit remoti.
-Preparare e restituire uno ZIP GitHub-ready con sorgente C++ completo,
-file di progetto e workflow GitHub Actions Windows x64 gia' incluso.
-Solo DOPO aver ricevuto lo ZIP l'utente creera' il repository, carichera'
-i file e avviera' la compilazione tramite GitHub Actions.
+  A. FX Params
+  B. Track Params
 
-1. VINCOLI NON NEGOZIABILI
---------------------------
-1. La DLL e' l'unico eseguibile di LReaParams da mettere in UserPlugins.
-2. NIENTE finestra di un pixel, finestra off-screen, finestra trasparente o
-   altra finestra ausiliaria creata da LReaParams per tenere vivo il codice
-   o catturare la tastiera. L'utente desidera ZERO finestre di navigazione.
-3. Nessuna sovrapposizione sulla GUI di REAPER, VST3, JSFX o altri FX.
-4. Il collaboratore vedente deve vedere le GUI reali dei plugin e poter
-   utilizzare normalmente il mouse anche quando l'utente nonvedente naviga
-   e modifica i parametri con la tastiera. Il controllo della tastiera di
-   REAPER e' assunto in capo all'utente; non serve una seconda tastiera.
-5. Integrazione con OSARA per messaggi accessibili a NVDA: non sostituire OSARA.
-6. Quando le modalita' LReaParams sono spente, i tasti funzionano normalmente.
-7. Modalita' OSARA Shortcut Help (F12), dialoghi e campi editazione non devono
-   essere danneggiati dall'intercettazione di LReaParams.
-8. Nessun blocco del thread audio, nessuna scansione continua dei file,
-   nessuna lettura/scrittura su disco nei callback audio.
-9. Gestire l'uscita e lo scaricamento della DLL senza lasciare hook,
-   scorciatoie intercettate, stati appesi, callback o timer non registrati.
-10. Non scrivere nello stato RPP se il vecchio Lua non lo faceva: rispettare
-    la persistenzia gia' esistente e usare Undo REAPER per cambi di parametri
-    dove appropriato.
+FX Memories e Track Memories possono restare azioni ausiliarie indipendenti
+associate ai due navigatori; non sono un terzo navigatore.
 
-2. LAYOUT DELLA CARTELLA RISORSE DI REAPER
-----------------------------------------
-La root delle risorse va scoperta tramite la funzione ufficiale GetResourcePath
-(e' diversa dalla directory di installazione e varia in REAPER portatile).
+NOVITÀ DI SCOPE, NON NEGOZIABILE:
+  ELIMINARE COMPLETAMENTE PARAMETER LIBRARY (il terzo Lua).
+  Non implementare più la vecchia roadmap TEST38–39 sulla libreria parametri.
+  Non creare una nuova libreria di parametri con un altro nome.
 
-<REAPER_RESOURCE_PATH>/
-  UserPlugins/
-    reaper_lreaparams.dll
-  LReaParams/
-    Plugins/              profili FX, estensione .fx
-    Params/               librerie/parti di parametri, estensione .pp
-    Tracks/               mappe track/CC, estensione .tp
-      Projects/           mantenere i rami con nomi progetto e F4
-    Settings/             configurazioni nuove, registro importazioni
-    Backups/              backup verificati dei dati convertiti
-  Scripts/
-    Lo-lo - Scripts/
-      Utility/
-        Scripts/
-          Plugins/        profili legacy .txt
-          Params/         Parameter Library legacy .txt
-          Tracks/         Track Params legacy .txt e sottocartelle
+DIVIETO ASSOLUTO DI COMPILAZIONE LOCALE:
+  - NON eseguire compilatori C/C++, cl.exe, CMake configure/build,
+    Visual Studio/MSBuild, Ninja, Make o equivalenti.
+  - NON eseguire build o packaging di una DLL locale.
+  - NON produrre o includere file DLL, EXE, PDB o VST compilati.
+  - La compilazione sarà effettuata ESCLUSIVAMENTE dall'utente tramite
+    il workflow GitHub Actions sui runner Windows di GitHub.
+  - Sono consentiti esame dei sorgenti, modifiche ai file, controlli statici
+    non compilanti, ispezione ZIP, verifiche di sintassi basate su testo,
+    test Python non compilanti e confronti con il Lua.
 
-- Al primo avvio creare le cartelle dati LReaParams (inizialmente vuote).
-- Non mettere Plugins/Params/Tracks dentro UserPlugins.
-- Non spostare o cancellare i file Lua storici.
-- Aggiungere al menu un'azione 'Open Data Folder' che apre la cartella
-  <REAPER_RESOURCE_PATH>/LReaParams in Esplora file.
-- Salvare nomi di cartelle e file in Unicode correttamente, anche con
-  apostrofi, accenti, spazi, trattini e nomi di progetti.
+CONSEGNA FINALE OBBLIGATORIA:
+  Un solo ZIP con il PROGETTO SORGENTE C++ COMPLETO, non una patch isolata.
+  Includi CMakeLists.txt, include/, src/, third_party/ necessari,
+  .github/workflows/, strumenti di verifica, documentazione e test.
+  Il progetto deve essere pronto per essere caricato nel repository GitHub.
+  Aggiungi un CHANGELOG del lavoro, la mappa Lua -> C++ delle funzionalità
+  implementate e le istruzioni di prova manuale con REAPER, NVDA e OSARA.
+  Fornisci una riga git add/commit/push pronta per Windows CMD.
+  NON dichiarare che la DLL compila o funziona se non c'è una verifica
+  effettuata dall'utente tramite GitHub Actions e in REAPER.
 
-3. MIGRAZIONE STORICA AUTOMATICA DEI FILE
----------------------------------------
-Sorgente di importazione AUTOMATICA:
-<REAPER_RESOURCE_PATH>/Scripts/Lo-lo - Scripts/Utility/Scripts/
+Il lavoro può essere organizzato in milestone TEST31, TEST32, ecc., ma l'obiettivo
+è completare TUTTA la migrazione di FX Params descritta qui, non interrompersi
+arbitrariamente dopo il primo sottosistema. Se emergono limiti reali, implementa
+il massimo in sicurezza, documenta esattamente cosa resta e NON simulare
+funzioni funzionanti con annunci che nascondono funzionalità mancanti.
 
-Scansionare ricorsivamente SOLO i rami di dati previsti:
-  Plugins -> destinazione LReaParams/Plugins, .txt => .fx
-  Params  -> destinazione LReaParams/Params,  .txt => .pp
-  Tracks  -> destinazione LReaParams/Tracks,  .txt => .tp
-Conservare fedelmente la struttura di sottocartelle (es. Projects/<nome>/F4).
+======================================================================
+2. PRIMA ATTIVITÀ: RIMUOVERE COMPLETAMENTE PARAMETER LIBRARY
+======================================================================
 
-Riconoscere dal CONTENUTO, oltre che dal percorso:
-- FX: profili Speak FX Params (esempio: Version=3, PluginRaw,
-  LastParam e sezioni CustomOrder, DefaultValues, ParamSlots, GroupSlots...)
-- Track: Version=2 e struttura pertinente (Track CC Map o ProjectTrack,
-  Project, TrackGUID, FXParams, F4Order, CCSpeech, ecc.).
-- PP: magic 'PARAMLIB_V1', campi Mode=cell, Plugin, Cell, Grid, Active,
-  Count e record P con valori e nominativi.
+Il proprietario del progetto ha deciso che Parameter Library non serve più:
+i due Lua FX Params e Track Params, una volta migrati in C++, sono sufficienti.
+Questa decisione ANNULLA l'intera fase precedentemente chiamata
+"TEST38–39 — Parameter Library F10, Ctrl+Tab, file .pp".
 
-NON migrare file temporanei di handoff o Return di Parameter Library,
-TXT sconosciuti, TXT malformati o TXT di altra provenienza.
-Il riconoscimento deve effettuare parsing e validazione, non solo cercare
-la parola Version=2 o Version=3.
+Pulizia richiesta del codice:
 
-Comportamento:
-A. Da cartelle legacy sotto Scripts: COPIARE + convertire nel nuovo ramo,
-   ma NON eliminare gli originali, perche' i Lua possono ancora usarli.
-B. Se un utente mette un vecchio TXT direttamente nel nuovo ramo LReaParams:
-   validare -> backup -> scrittura sicura -> verifica -> rimuovere solo
-   quel TXT della nuova cartella. In caso di errore non cancellare niente.
-C. Se un profilo nuovo gia' esiste e l'originale legacy cambia, NON
-   sovrascrivere automaticamente modifiche dell'utente nella DLL.
-   Registrare fingerprint/versione importata e gestire i conflitti in modo
-   conservativo (eventuale candidato da importare separatamente).
-D. Se il file sorgente e' invariato, la reimportazione e' idempotente:
-   non duplicare e non riscrivere continuamente.
-E. Usare file temporanei + rename atomico quando possibile; su errori di
-   IO, permessi, collisioni e corruzione mantenere integri gli originali.
-F. Non modificare numeri normalizzati, precisione decimale, identita' del
-   plugin, ordine/gruppi, nomi, slot, track GUID, assoc. CC e valori.
-G. Preservare il formato testuale editabile con un header di versione nuova
-   esplicito, documentato e possibilmente reversibile.
-H. La conversione deve funzionare anche se la cartella storica non esiste;
-   in quel caso LReaParams parte comunque con cartelle nuove vuote.
-I. Controllare all'avvio e su comando esplicito 'Import legacy profiles'.
-   Non avviare una scansione completa a ogni tasto o movimento del parametro.
-J. Creare test automatici usando TUTTI i 55 TXT reali di dati.zip, con
-   confronti semanticamente equivalenti round-trip parse/serialize.
+  1) Rimuovere l'azione REAPER obsoleta
+       _LREAPARAMSPARAMETERLIBRARY
+     (registrata nel sorgente come "LREAPARAMSPARAMETERLIBRARY").
+     Non deve più comparire nell'Action List, nei menu o nei messaggi.
 
-Oltre ai file, i Lua usano GetExtState/SetExtState. Cercare ogni sezione e
-chiave usata nei tre script, distinguere valori persistenti da memoria solo
-runtime e importare i valori pertinenti in maniera documentata, senza
-sovrascrivere preferenze gia' cambiate nella DLL.
-Tra le sezioni individuate nel codice: OSARA_FX_Params_Param_Browse,
-LoLo_SpeakTrackParams_VolumeRange, LoLo_SpeakTrackParams_Runtime.
+  2) Rimuovere il comando/scheletro "Parameter Library (pending migration)"
+     e qualunque messaggio "has not yet been migrated".
 
-4. MOTORE TASTIERA SENZA FINESTRE: RISCHIO PRINCIPALE
---------------------------------------------------
-I Lua sfruttano gfx.init/gfx.getchar e JS_ReaScriptAPI JS_VKeys_*;
-questa architettura NON deve sopravvivere nel porting. NON conservare un
-pixel fuori schermo come soluzione di comodo.
+  3) Eliminare ogni collegamento funzionale a Parameter Library:
+     tasti, menu, dispatch, navigazione, classi e futuri TODO dedicati.
+     F10 e Ctrl+Tab NON devono aprire Parameter Library.
+     F10 rimane libero per un'eventuale diversa funzione FUTURA,
+     senza implementarla oggi. Ctrl+Tab non deve effettuare scambi `.pp`.
 
-Prima di migrare 68 mila righe, eseguire una FASE DI FATTIBILITA' in C++:
-- REAPER carica una DLL minimale.
-- Registrare azioni e callback usando il REAPER SDK.
-- Attivare una modalita' tastiera che riceve tasti e combinazioni mentre
-  REAPER e' attivo, anche con GUI FX floating, docked e plugin con GUI propria.
-- Non rubare mouse o bloccare input di utenti vedenti.
-- Assicurare che a navigazione disattivata ogni tasto torni a REAPER.
-- Progettare priorita' F12 Shortcut Help OSARA; Esc; modalita' editazione,
-  dialoghi modali, perdita del focus e chiusura REAPER.
-- Testare key up/down, auto-repeat, modificatori Ctrl/Alt/Shift, lettere,
-  numeri, punteggiatura, tasti funzione, tastierino, tasti di navigazione.
-- Non duplicare effetti di tasti (es. Ctrl+Space non deve comandare due
-  volte il transport di REAPER).
+  4) Eliminare dal progetto consegnato il terzo Lua
+       Legacy/Parameter Library.lua
+     e qualunque eventuale sua copia dedicata al runtime/distribuzione.
+     NON eliminare i due Lua di riferimento FX Params e Track Params.
 
-Valutare prima 'accelerator', 'gaccel', action hooks e hookcustommenu del
-SDK REAPER. Se insufficienti su finestre FX native/custom, studiare una
-soluzione Win32 C++ LIMITATA AL PROCESSO di REAPER. Non installare un
-low-level keyboard hook globale e permanente. Non usare polling invasivo.
-Non supporre che accelerator intercetti automaticamente ogni finestra FX.
-I tasti destinati a REAPER/OSARA vanno inoltrati o lasciati passare.
+  5) Eliminare il supporto attivo al formato `.pp` (Parameter Library):
+     gestione ProfileKind::library, conversione/importazione .pp,
+     ricerca o creazione automatica della directory dati Params,
+     fixture/test/documentazione rimasti SOLO per questa libreria.
+     Mantenere il parsing .fx e .tp e tutti i campi comuni utili ad essi.
 
-Ogni intercettazione deve avere un lifecycle sicuro e disattivarsi su:
-- uscita volontaria dalla modalita'; cambio contesto che lo richiede;
-- scaricamento estensione / chiusura REAPER; errori e fallimento init;
-- eccezioni native o modalita' dialogo non gestita.
+  6) Nell'importatore analizzare in particolare src/Storage.cpp:
+     attualmente crea Plugins, Params, Tracks, Settings e Backups e
+     importa tre rami (Plugins, Params, Tracks). Portarlo a due soli rami
+     attivi, Plugins (.fx) e Tracks (.tp), conservando Settings e Backups.
+     NON toccare l'importazione storica legittima dei due Lua mantenuti.
 
-Se NON e' tecnicamente possibile una cattura sufficientemente affidabile
-senza finestre, dichiararlo e proporre opzioni che rispettino il vincolo;
-NON simulare falsamente un risultato funzionante.
+  7) In src/Extension.cpp la tabella delle azioni è un array indicizzato:
+     la rimozione di un elemento cambia gli indici successivi.
+     Correggere TUTTI i case, gli accessi actions_[n], toggle, menu,
+     shortcut/action routing e gli eventuali controlli basati sugli indici.
+     Preferire ID/enum stabili anziché numeri posizionali fragili.
+     Conservare immutati gli ID REAPER delle azioni che RESTANO,
+     in particolare _LREAPARAMSFXPARAMS, _LREAPARAMSTRACKPARAMS e
+     _LREAPARAMSFXMEMORIES, nonché le altre azioni ausiliarie utili.
 
-5. ARCHITETTURA FUNZIONALE
-------------------------
-Un'unica DLL, tre moduli applicativi:
-- FX Navigator: migrazione completa Speak FX Params.
-- Track Navigator: migrazione completa Speak Track Params.
-- Parameter Library: migrazione completa Parameter Library, compresa la
-  chiamata da FX Params (F10/Ctrl+Tab secondo il contesto).
+  8) Eliminare dai documenti e dai test i riferimenti che promettono
+     di realizzare Parameter Library in futuro. Aggiornare README,
+     Docs/Status.md, Docs/Architecture.md, Docs/Formats.md, About,
+     manifesto dei sorgenti, workflow e test di regressione.
 
-Moduli C++ suggeriti:
-- ReaperExtension: lifecycle DLL, registrazioni, menu, action IDs.
-- InputRouter: stato tastiera, keymaps, focus e sicurezza.
-- ContextResolver: progetto/traccia/take/FX correnti e ID validi.
-- SpeechService: chiamate accessibili a OSARA, senza duplicazioni.
-- FxNavigator / TrackNavigator / ParameterLibraryController.
-- ProfileStore + LegacyImporter + VersionedParsers + BackupManager.
-- SettingsStore: preferenze native e import ExtState.
-- MainThreadDispatcher: operazioni REAPER sempre sul thread richiesto.
-- Diagnostics: log discreti e opzionali.
+SICUREZZA DEI DATI UTENTE:
+  - Non cancellare, rinominare né sovrascrivere .pp o vecchi TXT già
+    presenti sul disco dell'utente, né cartelle Params preesistenti.
+  - La nuova DLL semplicemente non deve più crearli, importarli,
+    interpretarli, modificarli né esporli come funzione attiva.
+  - Non fare una pulizia distruttiva durante l'avvio del plugin.
+  - Mantieni i backup e il comportamento di importazione sicura di .fx/.tp.
 
-Usare SDK ufficiale REAPER, non implementazioni ipotetiche delle API.
-Stare sul thread principale REAPER per le API che lo richiedono. Non
-conservare puntatori track/take/FX non piu' validi dopo modifiche al progetto;
-riconvalidare contesto e GUID dove appropriato.
-Evitare I/O in qualsiasi percorso di processamento audio.
+IMPORTANTE: NON CONFONDERE Parameter Library con i parametri Take FX.
+Il supporto a FX su tracce, take, Master, Monitor FX e altri contesti già
+riconosciuti da FX Params deve rimanere attivo. "Terzo script" significa
+solo Parameter Library.lua, NON un terzo insieme di effetti da cancellare.
 
-6. INTERFACCIA REAPER, AZIONI E MENU
------------------------------------
-Creare sottomenu nativo:
-Extensions > LReaParams
-  - FX Params
-  - Track Params
-  - Parameter Library
-  - Exit current navigation
-  - Import legacy profiles
-  - Open Data Folder
-  - Settings
-  - About LReaParams
+======================================================================
+3. BASE ESISTENTE NELLA TEST30 — NON REGREDIRE
+======================================================================
 
-Registrare azioni con identificatori STABILI e nomi leggibili nel REAPER
-Action List. Permettere all'utente di associare scorciatoie proprie, senza
-forzare binding in conflitto con OSARA o REAPER.
-Rispettare l'eventuale accesso via Alt+X al menu Extensions, senza assumere
-che Alt+X sia assegnato in ogni installazione.
-Gli stati on/off delle modalita' devono essere coerenti nelle azioni e menu.
+La TEST30 (versione sorgente 0.0.31) contiene, in misura già implementata
+ma NON necessariamente collaudata sul runtime:
 
-7. ANNUNCI OSARA E COMPATIBILITA' ACCESSIBILE
--------------------------------------------
-Il codice Lua usa reaper.osara_outputMessage(). Nel C++ NON assumere che
-questa funzione Lua sia disponibile automaticamente con la stessa firma:
-verificare come OSARA esporta la funzione alle altre estensioni (eventuale
-GetFunc o API pubblica), con versione e gestione assenza/fallimento.
+- FX Params: Grid/Value con focus Win32 per NVDA, annunci OSARA e titolo NVDA+T.
+- Track Params separato: navigazione di traccia, Volume/Pan/Width,
+  Sends/Receives e controlli speciali che NON vanno alterati incidentalmente.
+- Switch fra plugin e tracce dotate di FX; memoria di sessione per FX,
+  parametro, griglia e Step; contesti Master e Monitor FX.
+- Bypassed e Delta Solo, inclusi stati nelle letture e nei titoli.
+- Ctrl+L Plugin Order/Custom Order, F7 modifica strutturale,
+  profili .fx e backup, gruppi, duplicati e alias.
+- F8: FX Memories come azione autonoma _LREAPARAMSFXMEMORIES,
+  gestore a sette colonne, ma alcune funzioni restano parziali.
+- Selezione a serpente, filtri Ctrl+F, ricerca tra virgolette,
+  editazione e rename tramite veri controlli EDIT Windows.
+- 12 posizioni/gruppi con Ctrl+F1–F12 e salvataggio con
+  Ctrl+Maiusc+F1–F12, sulla base del Lua.
+- Workflow GitHub Actions e test statici di regressione TEST18–TEST30.
 
-- Mantenere annunci concisi e identici quando possibile a quelli dei Lua.
-- Evitare ripetizioni e annunci doppi dopo comando o cambio contesto.
-- Non leggere elementi appartenenti a finestre di altri plugin se non
-  richiesto; non interrompere dialoghi NVDA o altre letture critiche.
-- Se OSARA non disponibile, nessun crash: log/fallback appropriato; dichiarare
-  che la navigazione accessibile richiede OSARA, se necessario.
-- Proteggere l'OSARA Shortcut Help F12 dalla cattura LReaParams.
-- Stabilire come gestire focus senza finestra di navigazione e ritorno al
-  contesto REAPER, inclusi plugin, menu e campi di testo.
+REGRESSIONS ZERO su questi comportamenti:
 
-8. REQUISITI DI FEDELTA' FUNZIONALE
-----------------------------------
-NON LIMITARSI a un navigatore generico di 3 tasti.
+* Ctrl+Home / Ctrl+End: SOLO navigazione al primo/ultimo parametro.
+* Ctrl+Maiusc+Home / Ctrl+Maiusc+End in F7: selezione continua dal
+  parametro corrente al primo/ultimo parametro dell'intera griglia.
+* Maiusc+Home/End: tratto selezionato fino al bordo della colonna.
+* Selezione a serpente su movimenti estesi: includere TUTTI i parametri
+  attraversati, non soltanto partenza e destinazione; ritorno coerente.
+* Alt+Maiusc+Frecce in F7: navigazione tra i soli selezionati,
+  rispettando righe e colonne della griglia.
+* Bordi di navigazione/selezione: silenziosi quando nulla cambia.
+* Tab: distingue edit/non edit, Plugin/Custom Order, gruppo attuale,
+  numero selezionati e posizione di totale.
+* Selected annunciato sui singoli parametri selezionati in F7.
+* Alt+G = Groups; Alt+M = Memory Positions, due selezioni DIRETTE.
+* Ctrl+Invio in F7: rinomina gruppo se modalità Groups,
+  parametro se modalità Memory Positions; fuori F7 avviso breve.
+* Ctrl+F: griglia realmente FILTRATA sia fuori sia dentro F7;
+  il filtro non annulla le selezioni.
+* Ricerca fra virgolette: rispettare parola/segmento richiesto,
+  evitando che "slot 1 lfo1" corrisponda a "slot 10 lfo1".
+* F12 SENZA modificatori è libero/riservato all'estensione.
+  Ctrl+F12 resta lo slot 12. Alt+F10/F11/F12 resta ai watcher OSARA.
+* P per FX Params NON è fissato nel sorgente: lo assegna l'utente
+  nell'Action List. Ctrl+Maiusc+P nella lista FX Chain è gestito
+  contestualmente come già progettato: non disattivare tale instradamento.
+* F8 e l'azione FX Memories condividono il profilo, il contesto e la
+  memoria, senza aprire Parameter Library.
 
-Censire TUTTE le seguenti famiglie di comportamenti presenti nei Lua:
-- FX di traccia e di take; identificazione FX e cambio FX; plugin editor;
-- parametri ordinati, gruppi, griglie, posizioni salvate, modalita' Value;
-- scelta e modifica valori, step normali/fini/grossi, default e reset;
-- ricerca, filtri, jump, nomi visualizzati e nome reale del parametro;
-- custom order, slot, gruppi, nascondi/mostra, scorciatoie di navigazione;
-- F1..F12, modificatori, pulsanti e ogni comportamento documentato nel Lua;
-- F7 e sue selezioni di parametri; F10/Parameter Library e ritorno;
-- editazioni/copia/taglia/incolla/Undo dove presenti;
-- track params, sends, receives, FX TCP e intestazioni (F1..F4);
-- mappe MIDI CC, valori e annunci per parameter, configurazioni per progetto;
-- transport e scorciatoie preservate solo dove presenti e compatibili;
-- stati salvati e ripristino focus/posizione tra modalita', track e plugin.
+Non riscrivere da zero questi componenti. Correggi soltanto dove è
+necessario per completare la parità reale col Lua e mantieni compatibilità.
 
-Per ogni modulo produrre PRIMA una matrice di confronto Lua -> C++ con:
-funzione, sorgente Lua, tasto o trigger, condizione attiva, comportamento,
-stato persistito, API coinvolte, test di equivalenza, stato implementazione.
-Non dichiarare la migrazione completa se una funzione Lua manca.
+======================================================================
+4. METODO: INVENTARIO COMPLETO E VERIFICA CON IL LUA
+======================================================================
 
-Qualsiasi funzionalita' dipendente da JS_ReaScriptAPI o gfx va sostituita
-con C++ equivalente o documentata come non ancora migrata.
-Non introdurre per default dipendenze da SWS o JS_ReaScriptAPI se il C++
-puo' gia' svolgere la funzione tramite REAPER/Win32. OSARA resta previsto.
+PRIMA di implementare nuovi tasti:
 
-9. PARAMETRI, GUI, AUTOMAZIONE, UNDO E DATI REAPER
-------------------------------------------------
-Scrivere i valori reali attraverso API REAPER, cosi' il vedente vede
-la GUI vera del plugin aggiornarsi. Supportare i parametri di JSFX e VST3,
-inclusi valori normalizzati, formattazioni e numeri elevati di parametri.
-Gestire update delle GUI, feedback host e automazione secondo contratti SDK.
-Non applicare preset o valori salvati senza esplicita azione utente.
+A) Leggere per intero le sezioni del Lua FX Params relative a:
+   key dispatch; F7; F8; fixed MIDI CC learn; pickup; Floating CC;
+   spoken MIDI changes; FX automation/envelopes; preset browser;
+   storico ricerca; modifica diretta dei valori; ReaEQ/ReaComp/ReaGate;
+   Compare e parametri virtuali; default snapshot; Take FX/Monitor FX.
 
-- Cambi reali dei parametri: Undo/redo coerente, evitando voci di Undo per
-  semplice lettura o cambio selezione.
-- Cambi di contesto: validare track/take/FX prima di agire.
-- Identita' plugin: non associare valori a parametri diversi solo perche'
-  un indice esiste; verificare nome/identita' e casi di plugin aggiornati.
-- Progetti multipli, tracce con stesso nome, GUID e differenze di template.
-- Nessun cambiamento involontario a routing, trasporto o plugin audio.
+B) Creare una matrice, verificabile per ogni comando:
+   Nome funzione Lua | gesto | contesto | comportamento atteso |
+   funzione C++ | stato (completo/parziale/mancante) | test di accettazione.
 
-10. COMPATIBILITA' FORMATI SPECIFICA
------------------------------------
-FX, format legacy 'Version=3': conservare PluginRaw, LastParam, LastEntry,
-LastArea, SlotAccessMode, CustomOrderView, QuickGroup, CustomOrder,
-DefaultValues, ParamSlots, GroupSlots e tutte le altre sezioni, anche
-sconosciute se possibile, per compatibilita' futura.
+C) Usare gli ID reali di parametri e di FX. Non interpretare un elemento
+   della Custom Order come indice REAPER se contiene alias/copie;
+   distinguere posizione visualizzata, occorrenza e indice fisico.
 
-Track, format legacy 'Version=2': conservare F4CCScope, Track CC Map,
-CCSpeech, FXParams, F4Order, metadati Project, TrackName, TrackGUID,
-struttura delle cartelle e tutti i valori CC in formato canale,controller.
+D) Non inventare scorciatoie diverse dal Lua. Le combinazioni riportate
+   in questo documento sono punti di riferimento: se il dispatch effettivo
+   del Lua mostra particolarità, documentarle e seguire il Lua, tranne le
+   modifiche intenzionali specificate dal proprietario nelle sezioni 2-3.
 
-Library, 'PARAMLIB_V1': conservare Mode, Plugin, Cell, Grid, Active, Count,
-record P e numeri a precisione originale, inclusi nomi e valori display.
+E) Conservare compatibilità dei vecchi profili `.fx` e `.tp`; testare
+   sia gli importati sia quelli salvati dal C++ più recente. Non perdere
+   sezioni sconosciute, commenti o campi dati non ancora interpretati
+   in una scrittura di profilo.
 
-Nella DLL, eliminare il trasferimento via due file temporanei
-'_Parameter Library Handoff.txt' e '_Parameter Library Return.txt': i tre
-moduli condividono dati e controllo direttamente in memoria. I file
-legacy di handoff NON diventano .pp e non vanno cancellati dal ramo Scripts.
+======================================================================
+5. TABELLA DI MARCIA COMPLETA — NESSUNA PARAMETER LIBRARY
+======================================================================
 
-11. STABILITA' E TEST DI ACCETTAZIONE
------------------------------------
-Test prioritari manuali da eseguire con REAPER + OSARA + NVDA:
-1. Aprire REAPER con DLL: nessuna finestra, nessun pixel, menu e Action List OK.
-2. LReaParams spento: tastiera, mouse, trasporto, OSARA invariati.
-3. FX Params aperto su REAPER FX window docked, floating e GUI custom VST3:
-   navigazione e modifica valore funzionano; controllo grafico visibilmente
-   aggiornato; mouse del vedente continua a funzionare.
-4. NVDA legge correttamente i cambi parametri, senza messaggi doppi.
-5. F12 Shortcut Help OSARA funziona come prima e non lascia tasti bloccati.
-6. Esc e uscita da navigator; cambiare FX, traccia, progetto; chiudere plugin
-   durante navigazione; nessun crash, tasto perso o focus intrappolato.
-7. Edit text REAPER e altre finestre editazione: caratteri e backspace
-   funzionano normalmente e non fanno scattare funzioni di LReaParams.
-8. F7 e Parameter Library F10, ritorno e operazioni salva/carica celle.
-9. Track Params: F1 Tracks / F2 Sends / F3 Receives / F4 FX params,
-   CC map, track per progetto e GUID.
-10. Conversione dei 55 file allegati e di cartelle vuote, TXT estranei,
-    file guasti, caratteri Unicode, nomi lunghi e conflitti.
-11. TXT importato da Scripts NON viene eliminato; TXT posto nel nuovo ramo
-    viene rimosso SOLO dopo backup, verifica e conferma successo.
-12. Seconda scansione senza modifiche: zero duplicati, nessuna riscrittura.
-13. Dopo REAPER exit/restart: restore preferenze/posizioni secondo i Lua.
-14. I/O non blocca REAPER, e plugin audio continua a suonare senza glitch.
-15. REAPER portable: resource path corretto.
-16. Shutdown normale/forzato e riapertura: nessun hook residuo.
+Numerazione di lavoro orientativa: se una fase richiede più test intermedi,
+aggiungili, ma non eliminare obiettivi. Tutte le fasi riguardano FX Params,
+FX Memories e la pulizia dello scope, NON il completamento di Track Params.
 
-Fornire test unitari di parsing e serializzazione e note sulle prove manuali
-non eseguibili nel contesto remoto. NON dichiarare test hardware fatti se
-non sono stati realmente eseguiti dall'utente su REAPER/OSARA/NVDA.
+---------------------------------------------------------------------
+FASE 0 / TEST31 — PULIZIA DEL TERZO SCRIPT E BASE SICURA
+---------------------------------------------------------------------
 
-12. PIANO DI REALIZZAZIONE A GATE
---------------------------------
-FASE 0, obbligatoria prima del porting massiccio:
-  Struttura progetto C++/CI, entrypoint REAPER, menu azioni, OSARA speech,
-  keyboard proof-of-concept SENZA finestre, e modifica di un FX test.
-  Evidenziare limiti dell'input sulle finestre FX che richiedono test reali.
-  Consegnare un primo ZIP GitHub-ready con tutto il necessario per compilare
-  e collaudare questa fase, senza bisogno che il repository esista gia'.
-  Solo in seguito sviluppare il resto, mantenendo pacchetti completi ready-to-push.
+- Rimuovere Parameter Library e il supporto attivo .pp come da sezione 2.
+- Proteggere la stabilità delle Action List ID e degli array di azioni.
+- Aggiornare test statici, readme, manifest, importatore a soli .fx/.tp.
+- Stabilire la matrice delle funzioni Lua ancora mancanti.
+- Nessuna perdita di dati preesistenti, nessuna regressione FX/Track.
 
-FASE 1: Inventario completo dei tre Lua e matrice funzionale.
-  Trascrivere esattamente shortcut e differenze fra FX/Track/Library.
+Criterio d'uscita: nella nuova Action List non è più registrata l'azione
+Parameter Library; FX Params, Track Params e FX Memories mantengono i loro
+ID e comportamenti; l'importatore non gestisce più .pp.
 
-FASE 2: Migrazione FX Params, senza perdita di funzioni.
-FASE 3: Migrazione Track Params, senza perdita di funzioni.
-FASE 4: Integrazione Parameter Library direttamente in memoria.
-FASE 5: Importatore storico, formati .fx/.tp/.pp, ExtState, backup.
-FASE 6: Stabilita', focus, OSARA, test di regressione, documentazione.
+---------------------------------------------------------------------
+FASE 1 / TEST32 — MIDI CC LEARN E ASSOCIAZIONI REALMENTE OPERATIVE
+---------------------------------------------------------------------
 
-E' lecito implementare i parser prima di Fase 2 se serve. La FASE 0 e' il
-blocco tecnico piu' importante e non va saltata.
+- Portare Ctrl+Alt+C dal Lua: armare il parametro corrente, catturare il
+  primo CC MIDI valido con canale e numero CC, associarlo e confermarlo.
+- Implementare il motore REALE degli eventi MIDI CC, non soltanto salvarne
+  i nomi in F8 o nei profili. I CC devono modificare i valori dell'FX.
+- Gestire correttamente scala normale/invertita se prevista dal Lua,
+  limiti, formatters di REAPER, nome/valore e controlli a passi discreti.
+- Salvataggio/riapertura persistente nel profilo .fx, evitando collisioni
+  tra plugin differenti e tra FX istanziati più volte.
+- Cancellazione/disassociazione usando i gesti esatti del Lua, con
+  feedback breve e senza cancellare altri CC accidentalmente.
+- F8 colonna MIDI CC: elencare/individuare/cancellare/caricare le
+  associazioni secondo il comportamento del Lua.
+- Evitare busy loop, blocchi audio, accessi alle API REAPER fuori thread
+  quando non consentiti e scansioni globali inutili in idle.
 
-13. ORDINE DI CONSEGNA, REPOSITORY E OUTPUT ATTESO
---------------------------------------------------
-ORDINE VINCOLANTE:
-  1. ASTRA produce in questa chat uno ZIP completo GitHub-ready.
-  2. L'utente crea SUCCESSIVAMENTE il repository Lo-lo78/LReaParams.
-  3. L'utente carica i file dello ZIP nel repository e fa push su main.
-  4. GitHub Actions compila la DLL Windows x64 e pubblica un artifact ZIP.
-  5. L'utente scarica la DLL, la mette in REAPER/UserPlugins e la testa.
-  6. I bug rilevati sono corretti con nuovi ZIP sorgente GitHub-ready.
+Criterio d'uscita: un CC ricevuto modifica il parametro giusto su FX
+corrente; riavviando REAPER l'associazione viene recuperata e funziona;
+le altre istanze non sono alterate involontariamente.
 
-Non chiedere di creare il repository prima di aver consegnato il primo ZIP.
-Non chiedere token GitHub, credenziali o permessi di accesso.
-Non inventare hash di commit e non assumere che Actions siano gia' eseguite.
-Fornire sorgenti completi, non frammenti isolati e non binari. Includere:
-- Source/ o src/, include/ con motori e adapter;
-- CMakeLists.txt o toolchain MSVC analoga;
-- .github/workflows/build-windows.yml (MSVC, Windows x64);
-- Tools/ per test parser, se appropriato;
-- Docs/ con mappa delle funzioni, compatibilita', test e formato file;
-- README di installazione: reaper_lreaparams.dll in UserPlugins,
-  cartella LReaParams creata automaticamente accanto a UserPlugins;
-- Legacy/ con Lua originali di riferimento, solo se e' opportuno includerli
-  e rispettando copyright e provenienza; dati test in Testing/ non di default
-  nella distribuzione pubblica per evitare di pubblicare profili personali.
+---------------------------------------------------------------------
+FASE 2 / TEST33 — FIXED CC, PICKUP E SICUREZZA DEL CONTROLLO MIDI
+---------------------------------------------------------------------
 
-Lo ZIP da consegnare deve contenere TUTTI i file sorgenti e la struttura
-.github/ corretta alla radice; non inserire una cartella aggiuntiva che
-costringa a spostare a mano CMakeLists.txt o il workflow. Evitare file vuoti
-placeholder usati come sostituti di codice funzionante. Se una funzione
-richiede ancora test o porting, indicarlo esplicitamente nel README e nel
-resoconto di consegna, senza presentarla come implementata.
+- Portare Shift+C e la modalità fixed CC così come definiti dal Lua.
+- Implementare pickup/soft takeover: il parametro non deve saltare
+  quando il potenziometro fisico è lontano dal valore software.
+- Tolleranze, hysteresis, inversione/polarità, debounce e condizioni
+  di riaggancio solo se presenti/necessarie nel comportamento Lua.
+- Associazioni di un CC a più parametri, eventuali conflitti e regole
+  esplicite di precedenza; non modificare parametri sbagliati.
+- Session memory e ripristino dei pickup alla riapertura del navigatore,
+  al cambio traccia/FX, al cambio preset e dopo reset.
+- Gestione dei valori speciali ReaEQ estesi, senza troncare il Gain al
+  limite di un parametro normalizzato ordinario (vedere Lua).
 
-Il workflow deve essere progettato per costruire un artifact facilmente
-identificabile (es. LReaParams-Windows-x64) che includa la sola DLL e,
-se necessari, i materiali realmente indispensabili all'installazione.
-LReaParams/Plugins, Params e Tracks sono creati a runtime: NON includere
-profili personali nel pacchetto di distribuzione.
+Criterio d'uscita: una manopola fisica con posizione discordante non fa
+scattare il valore e riprende il controllo quando raggiunge il punto
+appropriato, anche cambiando plugin.
 
-Non copiare automaticamente dati.zip reale nel repository pubblico: i
-profili sono dati degli utenti e possono contenere nomi di progetto. Usarli
-come fixture PRIVATE durante lo sviluppo; eventualmente creare fixture
-sintetiche equivalenti da pubblicare.
+---------------------------------------------------------------------
+FASE 3 / TEST34 — FLOATING CC E ANNUNCI MIDI
+---------------------------------------------------------------------
 
-14. FONTI DA VERIFICARE NELLA REALIZZAZIONE
------------------------------------------
-- REAPER SDK ufficiale: https://github.com/justinfrankel/reaper-sdk
-- OSARA: https://github.com/jcsteh/osara
-- SWS (esempio estensione nativa, menu/azioni):
-  https://github.com/reaper-oss/sws
-- js_ReaScriptAPI (riferimento a intercettazioni native, ma non un obbligo
-  di dipendenza): https://github.com/juliansader/js_ReaScriptAPI
+- Portare Ctrl+Maiusc+C / Floating CC in modo identico al Lua.
+- Associare il controller mobile al parametro attualmente focalizzato,
+  distinguendolo in modo netto dalle mappature permanenti.
+- Migrare Ctrl+T o l'eventuale comando Lua relativo al parlato dei
+  cambiamenti MIDI per parametro, con stato consultabile e messaggi brevi.
+- Gestire navigazione Grid/Value, cambio FX, Master/Monitor/Take FX,
+  perdita di focus e ritorno senza lasciare CC agganciati al parametro
+  sbagliato.
+- Completare i segnali/messaggi MIDI nel gestore F8, dove appropriato.
 
-15. CRITERIO FINALE
-------------------
-LReaParams deve essere una estensione autentica di REAPER. Quando attiva,
-l'utente nonvedente controlla i parametri reali con la tastiera e riceve
-annunci accessibili; quando disattiva, la tastiera e' restituita
-integralmente a REAPER; le GUI rimangono visibili al collaboratore e il
-mouse resta libero. I dati storici sono importati senza distruggerli.
-Nessuna funzione dei tre Lua viene considerata sacrificabile senza una
-valutazione e l'esplicita approvazione dell'utente.
+Criterio d'uscita: Floating CC segue il parametro senza corrompere le
+mappature fisse; NVDA/OSARA annuncia soltanto ciò che il Lua prevede,
+senza valanghe di parlato per ogni piccolo evento MIDI.
 
-NOTA PER ASTRA: la prima consegna richiesta e' lo ZIP sorgente GitHub-ready,
-non un repository gia' creato, non una DLL compilata e non un link ad Actions.
-Prima di dichiarare una fase completa, comunicare con
-precisione cosa e' stato implementato, cosa resta da fare e cosa necessita
-delle verifiche in REAPER dell'utente; non attribuire ai test sorgente la
-validazione del comportamento di una DLL non ancora compilata.
+---------------------------------------------------------------------
+FASE 4 / TEST35 — ENVELOPE E AUTOMAZIONE FX
+---------------------------------------------------------------------
+
+- Migrare i gesti Lua per mostrare/nascondere, attivare/disattivare e
+  modificare gli envelope dell'attuale parametro/FX.
+- Riprodurre Alt+F3/Alt+F4 se nel Lua navigano i soli parametri con
+  automazione attiva, mantenendo l'ordine spaziale della griglia.
+- Portare i comandi globali sul solo FX corrente, non su tutto il
+  progetto per errore.
+- Usare Undo REAPER, aggiornare le letture e gestire la differenza fra
+  parametri normalizzati, virtuali e duplicati nella Custom Order.
+- Preservare l'accessibilità e non perdere posizione/focus dopo il comando.
+
+Criterio d'uscita: il parametro corretto mostra l'envelope richiesto;
+il comando è reversibile e non altera envelope di altri effetti.
+
+---------------------------------------------------------------------
+FASE 5 / TEST36 — PRESET E COMANDI CHE MANCANO FUORI DA F7
+---------------------------------------------------------------------
+
+- Completare dal Lua Alt+F1/Alt+F2 e navigazione preset FX.
+- Portare modifica diretta numerica Ctrl+E con un vero campo EDIT Win32
+  accessibile (non una tastiera simulata): focus sul testo, Esc annulla,
+  Invio conferma, formattazione/limiti con API reali REAPER.
+- Completare storico ricerche, richiamo e annullamento dei filtri,
+  distinguendo ricerca normale e fra virgolette.
+- Risolvere il conflitto fra Ctrl+R oggi usato per rilettura e l'eventuale
+  comportamento storico del Lua: definire e documentare un comando che
+  mantenga ENTRAMBE le funzioni senza regressione NVDA.
+- Coprire tutte le scorciatoie extra-F7 presenti nella matrice Lua,
+  senza duplicare o annullare F5/F6/F9, bypass, delta o altre già attive.
+- Mantenere F12 singolo riservato; niente Parameter Library su F10.
+
+Criterio d'uscita: preset, valore numerico e storico sono usabili da
+solo tastiera con NVDA; valori e nomi corrispondono a REAPER.
+
+---------------------------------------------------------------------
+FASE 6 / TEST37 — REAEQ, REACOMP, REAGATE, PARAMETRI SPECIALI
+---------------------------------------------------------------------
+
+- Portare dal Lua le peculiarità di ReaEQ: tipi di banda,
+  aggiunta/rimozione, navigazione fra bande, Gain in dB estesi,
+  frequenza, Q, nomi e indici che possono cambiare.
+- Portare i comportamenti speciali di ReaComp e ReaGate dove previsti.
+- Tenere separati parametri virtuali e parametri fisici di REAPER:
+  un virtuale non deve spostare erroneamente l'indice dell'effetto.
+- Sicurezza dei reset: se la struttura delle bande cambia, ripristinare
+  struttura e valori corretti, non assegnare una fotografia per indice
+  a parametri che nel frattempo hanno cambiato identità.
+
+Criterio d'uscita: test dei parametri e del default su ReaEQ con numero
+di bande diverso; nessuna corruzione, nessun reset su indice errato.
+
+---------------------------------------------------------------------
+FASE 7 / TEST38 — COMPARE, PARAMETRI VIRTUALI, DEFAULT F8 COMPLETO
+---------------------------------------------------------------------
+
+- Migrare il parametro virtuale Compare e ogni altro virtuale FX
+  presente nel Lua, con corretta interazione Grid/Value e accessibilità.
+- Completare F8 Default Values: acquisizione, aggiornamento sicuro,
+  richiamo e cancellazione, secondo i casi previsti dal Lua.
+- Ctrl+Maiusc+Backspace deve fare lo stesso reset corretto di Default
+  in F8; Backspace rimette il solo parametro allo stato di default;
+  Ctrl+Backspace riporta Grid 10 / Step 0.
+- Mantenere il ritorno in Plugin Order dal Default come già deciso.
+- Supportare ReaEQ con reset strutturale reale; niente successo fittizio.
+- Completare le altre operazioni parziali del gestore F8 senza cambiare
+  la sua natura di azione separata _LREAPARAMSFXMEMORIES.
+
+Criterio d'uscita: l'intero F8 opera con snapshot reali e il reset non
+modifica un plugin/FX diverso da quello previsto.
+
+---------------------------------------------------------------------
+FASE 8 / TEST39 — PARITÀ F7/F8, PERSISTENZA, CONTESTI FX
+---------------------------------------------------------------------
+
+- Confronto comando per comando delle sezioni F7 e F8 con il Lua,
+  incluse operazioni rare su gruppi, duplicati, rename e selezioni.
+- Mantenere selezioni a serpente continue per Maiusc+frecce, Home/End,
+  Page Up/Down e Ctrl+Maiusc+Home/End; includere gli elementi intermedi.
+- Selezioni filtrate persistenti, ricerca "parola" corretta,
+  Undo/Redo strutturale, invio da F8 fuori Edit (tranne Hidden Parameters).
+- Gruppi Ctrl+F1–F12: se richiamo il gruppo già aperto torno al contesto
+  precedente (anche Edit), non sempre a Plugin Order; cambio fra gruppi.
+- Verificare profili .fx in progetti con molte tracce, istanze FX duplicate,
+  preset, take FX, Master, Monitor FX, FX Chain e contesti speciali.
+- No regressioni degli annunci e del focus durante apertura/chiusura.
+- Completare eventuali lacune emerse nella matrice Lua che non ricadono
+  nelle fasi 1–7, evitando di rimandarle indefinitamente.
+
+Criterio d'uscita: matrice Lua -> C++ senza funzioni FX Params omesse
+per errore; differenze deliberate elencate e motivate.
+
+---------------------------------------------------------------------
+FASE 9 / TEST40 O SUCCESSIVE — VALIDAZIONE E CONSEGNA FINALE
+---------------------------------------------------------------------
+
+- Audit finale di tutti i tasti di FX Params, F7 e F8.
+- Test statici non compilanti per i casi limite e i formati .fx/.tp.
+- GitHub Actions Windows: workflow funzionante e documentato per la
+  compilazione CHE ESEGUIRÀ L'UTENTE, non Astra in locale.
+- Aggiornare il README e fornire una guida tastiera accessibile.
+- Confronto fra comportamenti attesi nel Lua e comportamenti implementati.
+- Preparare matrice di collaudo manuale con passi numerati per NVDA/REAPER.
+- Annotare i test runtime non eseguibili senza la DLL compilata.
+
+Criterio d'uscita: sorgente completo consegnato in ZIP, documentazione,
+workflow GitHub Actions, nessuna dipendenza dalla Parameter Library,
+nessuna compilazione locale, e lista trasparente delle prove ancora
+necessarie in REAPER.
+
+======================================================================
+6. REGOLE ARCHITETTURALI E ACCESSIBILITÀ NON NEGOZIABILI
+======================================================================
+
+- Usare solo C++ nativo per l'estensione REAPER. Nessuna nuova dipendenza
+  runtime dai Lua originali: sono riferimento, non motore da invocare.
+- La DLL si chiama reaper_lreaparams.dll, destinata alla directory
+  UserPlugins della resource path REAPER.
+- Cartella dati REAPER/LReaParams con Plugins (.fx), Tracks (.tp),
+  Settings e Backups. Niente cartella Params creata attivamente.
+- Preservare import automatico dai due rami storici Plugins e Tracks
+  sotto REAPER/Scripts/Lo-lo - Scripts/Utility/Scripts.
+- Mai cancellare i vecchi TXT prima di conversione, verifica e backup;
+  nessuna cancellazione di .pp storici, neppure se inutilizzati.
+- Preservare identificatori stabili di FX/traccia/take e la memoria
+  della sessione; la navigazione non deve saltare al primo FX ad ogni
+  cambio di traccia.
+- Non applicare C++ MIDI/envelope/REAPER API dal thread audio se non
+  previsto dall'SDK; non bloccare la GUI su I/O o polling continuo.
+- Proteggere parametri e progetti con Undo appropriato, transazioni,
+  controlli di esistenza e prevenzione dei salvataggi concorrenti.
+- Non sacrificare gli annunci in OSARA o il focus NVDA per semplificare
+  il codice. Titoli, nomi del parametro, valore e stati seguono il
+  comportamento approvato fino alla TEST30.
+- In Grid, un cambiamento di valore legge SOLO il valore; navigando
+  si annunciano parametro e valore. Nessun annuncio ai limiti senza
+  movimento. NVDA+T legge il titolo; NVDA+Su legge la riga/parametro.
+- Value deve restare uno slider Win32 nativo accessibile; i campi
+  di testo devono essere veri EDIT Win32 con selezione/cursore reali.
+- Rinomine, ricerca e inserimento numerico devono poter usare
+  regolarmente Ctrl+A, Ctrl+C, Ctrl+V, frecce, Home/End ed Esc.
+- Non intercettare tasti all'interno dei campi di scrittura o del plugin
+  in modo da ostacolare la digitazione.
+- Mantenere il controllo di Shortcut Help OSARA; compatibilità con
+  FX Chain e le azioni da Action List; non fissare P nella DLL.
+
+======================================================================
+7. MATRICE MINIMA DI PROVE MANUALI DA CONSEGNARE
+======================================================================
+
+Non eseguirle fingendo un runtime: documentarle per l'utente che compila.
+
+[ ] Le azioni FX Params e Track Params sono visibili con gli ID invariati.
+[ ] L'azione FX Memories apre F8 con lo stesso profilo dell'FX corrente.
+[ ] Parameter Library non compare in Action List/menu; F10 non la apre.
+[ ] Vecchi file .pp/Params preesistenti NON sono cancellati dal disco.
+[ ] Importer .fx/.tp funziona; non importa/crea file .pp.
+[ ] Ctrl+L e F7 non perdono Custom Order, gruppi o copie.
+[ ] Selezione serpente, ricerche filtrate, selected e bordi silenziosi OK.
+[ ] Ctrl+Home/End naviga; Ctrl+Maiusc+Home/End seleziona tratto corretto.
+[ ] F8 Enter su gruppo/Custom esce da Edit; Hidden non ha Enter attivo.
+[ ] Default F8 ripristina valori e struttura corretta, soprattutto ReaEQ.
+[ ] Learn CC su FX: riceve, modifica e salva davvero il parametro giusto.
+[ ] CC fisso con pickup non provoca salti; prova valore remoto discordante.
+[ ] Floating CC segue il parametro corrente senza perdere fixed CC.
+[ ] MIDI CC con istanze FX multiple e cambio traccia non si incrocia.
+[ ] Parlato MIDI attivo/disattivo senza doppie notifiche NVDA/OSARA.
+[ ] Envelope del solo parametro richiesto, Undo e focus OK.
+[ ] Preset avanti/indietro, Ctrl+E, storico di ricerca OK.
+[ ] ReaEQ Gain esteso, numero bande variabile e reset strutturale OK.
+[ ] Compare e altri parametri virtuali funzionano in Grid/Value.
+[ ] Master, Monitor FX, Take FX e FX Chain raggiungono il plugin giusto.
+[ ] P assegnato via Action List e Ctrl+Maiusc+P contestuale FX Chain OK.
+[ ] Ctrl+F12 conserva il dodicesimo slot; F12 singolo resta libero.
+[ ] Alt+F10/F11/F12 non interferiscono con i watcher OSARA.
+[ ] Track Params continua a funzionare come in TEST30 (nessuna regressione).
+[ ] Compilazione e collaudo effettuati dall'utente tramite GitHub Actions.
+
+======================================================================
+8. DISCIPLINA DI LAVORO E RISPOSTA FINALE DI ASTRA
+======================================================================
+
+1. Prendere TEST30 come baseline immutabile e sviluppare su una sua copia.
+2. Migrare i due soli Lua FX Params/Track Params; togliere Parameter Library.
+3. Aggiornare workflow e test insieme al codice; nessuna build locale.
+4. Dopo ogni milestone non presentare come "completa" una funzione che
+   esiste soltanto come placeholder o la cui azione annuncia un messaggio.
+5. Se il codice Lua e la vecchia roadmap divergono, seguire il Lua,
+   salvo le decisioni esplicite più recenti riportate qui.
+6. Conservare tutti gli ID REAPER ancora validi, backup e formati .fx/.tp.
+7. Produrre lo ZIP FINALE DEL SORGENTE COMPLETO e verificarne l'integrità.
+8. Allegare un breve riepilogo ordinato per fasi: implementato, parziale,
+   non implementato, come si prova su REAPER e rischi residui.
+9. Fornire il comando Git commit in una sola riga copiabile.
+10. NON COMPILARE, NON ESEGUIRE CMAKE, NON ESEGUIRE VISUAL STUDIO.
+
+RIEPILOGO IN UNA RIGA:
+Porta FX Params C++ alla massima parità possibile con il Lua originale,
+completando MIDI, automazioni, preset, ReaEQ, Compare, F7/F8 e accessibilità;
+lascia invariato Track Params; cancella dal PROGETTO il supporto attivo a
+Parameter Library e ai profili .pp, senza cancellare file dell'utente;
+consegna SOLO sorgente completo e workflow GitHub Actions, senza build locale.
+
+FINE HANDOFF.

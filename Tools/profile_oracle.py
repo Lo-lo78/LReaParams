@@ -41,19 +41,13 @@ def parse_legacy(data):
     need(0 < len(data) <= MAX and b'\0' not in data, 'text bytes')
     text = data.decode('utf-8-sig')
     headers, sections, records = {}, {}, []
-    section, packet, first = '', False, True
+    section = ''
     for line in text.split('\n'):
         line = line.removesuffix('\r')
         if not line.strip() or line[0] in '#;':
             continue
-        if first and line == 'PARAMLIB_V1':
-            packet, first = True, False
-            continue
-        first = False
-        if packet and line.startswith('P\t'):
-            records.append(line.split('\t')); continue
         if line.startswith('['):
-            need(not packet and len(line) > 2 and line.endswith(']'), 'section')
+            need(len(line) > 2 and line.endswith(']'), 'section')
             section = line[1:-1]; need(section not in sections, 'duplicate section')
             sections[section] = []; continue
         if section:
@@ -61,15 +55,7 @@ def parse_legacy(data):
         else:
             k, v = field(line); need(k not in headers, 'duplicate header'); headers[k] = v
     h = headers.__getitem__
-    if packet:
-        kind = 'PP'
-        need(h('Mode') == 'cell' and h('Plugin') and h('Cell'), 'cell identity')
-        integer(h('Grid'), 1); integer(h('Active'))
-        need(integer(h('Count'), 0, 1000000) == len(records), 'count')
-        for r in records:
-            need(len(r) == 6 and r[0] == 'P', 'P record')
-            integer(r[1]); need(bool(r[2] and r[3]), 'names'); normalized(r[4])
-    elif h('Version') == '3':
+    if h('Version') == '3':
         kind = 'FX'; need(bool(h('PluginRaw')), 'plugin')
         if h('LastParam'): ref(h('LastParam'))
         h('LastEntry'); h('LastArea'); h('QuickGroup')
@@ -78,7 +64,9 @@ def parse_legacy(data):
         for name in ('CustomOrder', 'DefaultValues', 'ParamSlots', 'GroupSlots'):
             need(name in sections, 'required FX section')
         for line in sections['CustomOrder']: ref(line)
-        for line in sections['DefaultValues']: ref(line, True)
+        for line in sections['DefaultValues']:
+            if line.startswith('META\tREA_EQ_'): continue
+            ref(line, True)
         for name in ('ParamSlots', 'GroupSlots'):
             seen = set()
             for line in sections[name]:

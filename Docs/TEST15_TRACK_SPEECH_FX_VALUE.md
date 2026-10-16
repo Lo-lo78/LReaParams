@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST15 — Track navigation speech and unified FX Value (0.0.16)
 
 Source only: build by GitHub Actions. No local CMake, MSVC, nor binaries.

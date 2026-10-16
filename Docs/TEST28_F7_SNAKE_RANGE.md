@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST28 — Intervalli del serpentone F7
 
 Prima della compilazione si verificano staticamente le modifiche nel sorgente. Per collaudare in REAPER/NVDA:

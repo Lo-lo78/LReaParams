@@ -5,7 +5,7 @@ order=(root/'src/FxNavigatorOrder.cpp').read_text()
 fx=(root/'src/FxNavigator.cpp').read_text()
 router=(root/'src/InputRouter.cpp').read_text()
 proxy=(root/'src/TitleProxy.cpp').read_text()
-assert 'VERSION 0.0.31' in (root/'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.' in (root/'CMakeLists.txt').read_text()
 assert 'if(k.alt&&k.shift&&!k.ctrl&&' in order
 assert 'if(k.alt&&!k.ctrl&&!k.shift&&' not in order
 assert 'if (!k.ctrl && k.alt && k.shift) return k.vk==VK_UP' in fx

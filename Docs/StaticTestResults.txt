@@ -1,0 +1,17 @@
+Python oracle roundtrip: {'TRACK': 4, 'FX': 48} PASS
+Source-only audit PASS. Native compilation/tests and REAPER runtime tests NOT RUN.
+TEST18 static contracts PASS. Runtime tests NOT RUN.
+Shared TEST19 accelerator source contracts PASS under TEST20 routing. Runtime not tested.
+TEST20 static contract PASS; native build and behavior not tested
+TEST21 source contract PASS — no native build
+TEST22 source contracts PASS — host behavior not tested
+TEST23 static contracts PASS; Windows/native runtime not verified
+TEST24 source-only contracts PASS; host speech/focus must be tested in REAPER
+TEST25 static/source and search-example checks PASS; REAPER/NVDA unverified
+TEST26 source and example semantics PASS; native build and NVDA testing pending
+TEST27 keyboard contracts PASS; native build and NVDA test pending
+TEST28 selection range and silent-edge source contracts PASS (native test pending)
+TEST29 range selection model (TEST30 corrected shortcut) PASS; native test pending
+TEST30 shortcut routing PASS (static checks only; native REAPER test pending)
+TEST40 scope, API wiring and lexical guards PASS; native/runtime not executed
+15 source-only suites passed. C++/REAPER tests NOT RUN.

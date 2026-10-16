@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # LReaParams TEST10 (0.0.11) — navigation bounds, absolute values, NVDA
 
 This package contains **C++ source only**. Build with GitHub Actions; no local build has been performed.

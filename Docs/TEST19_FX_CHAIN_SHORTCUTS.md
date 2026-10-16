@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 > Historical TEST19 design note. **Superseded by `Docs/TEST20_FX_CHAIN_KEY_ROUTING.md` for the current behavior.**
 
 # TEST19 – Action List shortcuts in FX Chain

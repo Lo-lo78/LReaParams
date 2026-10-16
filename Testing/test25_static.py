@@ -6,7 +6,7 @@ nav = (root / 'src/FxNavigator.cpp').read_text(encoding='utf-8')
 order = (root / 'src/FxNavigatorOrder.cpp').read_text(encoding='utf-8')
 mem = (root / 'src/FxNavigatorMemories.cpp').read_text(encoding='utf-8')
 header = (root / 'include/lrp/FxNavigator.h').read_text(encoding='utf-8')
-assert 'VERSION 0.0.31' in (root / 'CMakeLists.txt').read_text()
+assert 'VERSION 0.0.' in (root / 'CMakeLists.txt').read_text()
 assert 'if(groupSlot_==slot)' in order
 assert 'groupReturnCustom_=fxOrder_.custom;' in order
 assert 'fxOrder_.custom=wasCustom;' in order

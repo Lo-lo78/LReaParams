@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST20 — FX Chain P and Ctrl+Shift+P
 
 ## Expected behavior

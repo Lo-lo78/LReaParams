@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST30 — Ctrl+Home/End muove, Ctrl+Maiusc+Home/End seleziona
 
 Correzione della mappatura TEST29, **senza modifica del motore di selezione**.

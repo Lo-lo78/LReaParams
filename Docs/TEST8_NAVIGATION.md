@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST8 — navigazione, bordi e titoli NVDA
 
 Non compilare localmente: fai push e usa soltanto GitHub Actions.

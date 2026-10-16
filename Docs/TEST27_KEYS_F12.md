@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST27 — verifica tasti in REAPER/NVDA
 
 1. Apri FX Params ed entra in F7; seleziona più parametri distribuiti su righe e colonne diverse.

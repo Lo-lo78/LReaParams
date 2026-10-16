@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # Aggiornamento TEST27 (0.0.28): il F12 SENZA modificatori ora resta libero e riservato a LReaParams, senza inoltro a OSARA e senza chiusura della finestra di navigazione. Ctrl+F12 e Ctrl+Maiusc+F12 mantengono la memoria 12; Alt+Maiusc+Frecce naviga i selezionati in F7. Le istruzioni storiche su F12/Alt+Frecce riportate sotto descrivono versioni precedenti e sono superate. Per il collaudo attuale: Docs/TEST27_KEYS_F12.md.
 
 # Collaudo della Fase 0 in REAPER
@@ -62,7 +64,7 @@ termina. All'avvio non interrompe il parlato con annunci. I riepiloghi diagnosti
 sono disponibili tramite OutputDebugString, senza log con nomi personali.
 
 1. Con cartelle storiche assenti: creazione cartelle vuote e avvio normale.
-2. Con i dati storici: nuovi .fx/.pp/.tp nella stessa struttura; vecchi TXT tutti presenti.
+2. Con i dati storici: nuovi .fx/.tp nella stessa struttura; vecchi TXT tutti presenti.
 3. Secondo import: nessun duplicato né modifica alle date dei file già convertiti.
 4. Modifica un profilo nativo e reimporta: non sovrascriverlo.
 5. Modifica un TXT storico: candidato in Settings/ImportConflicts; originale integro.

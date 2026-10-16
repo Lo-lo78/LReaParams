@@ -44,7 +44,7 @@ void FxNavigator::rebuildMemoryColumns() {
     // non-consecutive real Group and Memory slot numbers.
     for(const auto& pair:fxOrder_.paramSlots) {
         MemoryEntry e;e.slot=pair.first;e.param=pair.second;
-        e.label=(e.param>=0&&e.param<count_)?fxOrder_.label(e.param):"Missing parameter";
+        e.label=(e.param==compareParamIndex || (e.param>=0&&e.param<count_))?fxOrder_.label(e.param):"Missing parameter";
         memoryColumns_[0].push_back(std::move(e));
     }
     for(const auto& pair:fxOrder_.groups) {
@@ -60,8 +60,7 @@ void FxNavigator::rebuildMemoryColumns() {
         MemoryEntry e;e.param=id;e.label=fxOrder_.label(id);
         memoryColumns_[2].push_back(std::move(e));
     }
-    // MIDI CC links are loaded from the legacy Lua profile. Unlinking does
-    // not touch native REAPER learn state until the MIDI CC engine is ported.
+    // MIDI CC links share the native main-thread runtime and Lua profile keys.
     for(const auto& pair:fxOrder_.ccLinks) {
         MemoryEntry e;e.param=pair.first;
         e.label=fxOrder_.label(pair.first)+". "+pair.second;
@@ -94,6 +93,7 @@ std::string FxNavigator::memoryColumnName() const {
 }
 std::string FxNavigator::memoryReview() const {
     if(!memoryManager_)return {};
+    if(defaultConfirm_)return defaultYes_?"Clear memories and restore default? Yes":"Clear memories and restore default? No";
     if(!memoryHasEntries())return "Parameter Navigator. No memories";
     const auto& entries=memoryColumns_[static_cast<size_t>(memoryCol_)];
     if(entries.empty())return memoryColumnName()+". Empty";
@@ -145,9 +145,17 @@ void FxNavigator::memoryLoad(bool toEdit) {
     }
     if(memoryCol_==6) {
         if(toEdit) {speech_("Default has no F7 editor. Press Enter to restore");return;}
+        if(!defaultConfirm_) {
+            defaultConfirm_=true;defaultYes_=false;speakMemory();return;
+        }
+        defaultConfirm_=false;
         // Same reset engine as Ctrl+Shift+Backspace. If it cannot restore
         // (notably structural ReaEQ), remain in F8 with all data intact.
         if(!resetAllToDefault(false))return;
+        fxOrder_.paramSlots.clear();fxOrder_.groups.clear();fxOrder_.groupNames.clear();fxOrder_.ccLinks.clear();
+        fxOrder_.setExtraValue("cc_runtime_fixed_map_enabled_v1","");
+        fxOrder_.setExtraValue("temporary_group_v1","");
+        fxOrder_.deleteCustomOrder();fixedCc_=false;floatingCc_=floatingWaiting_=false;pickup_.clear();
         memoryReturnF7_=false;
         memoryReturnF7Filter_.clear();
         memoryReturnGroup_=0;
@@ -161,11 +169,11 @@ void FxNavigator::memoryLoad(bool toEdit) {
         return;
     }
     if(memoryCol_==3) {
-        if(entry.param<0){speech_("No parameter");return;}
-        // Jump to the parameter; MIDI learn edit is a separate later step.
+        if(entry.param<0 && entry.param!=compareParamIndex){speech_("No parameter");return;}
+        // Jump to the physical or Compare parameter without entering learn.
     }
     if(memoryCol_==0 || memoryCol_==2 || memoryCol_==3 || memoryCol_==5) {
-        if(entry.param<0 || entry.param>=count_){speech_("Missing parameter");return;}
+        if((entry.param<0 && entry.param!=compareParamIndex) || entry.param>=count_){speech_("Missing parameter");return;}
         if(memoryCol_==2) {
             fxOrder_.hidden.erase(entry.param);
             saveStructure();
@@ -229,11 +237,7 @@ void FxNavigator::memoryDelete() {
             // The legacy Lua removes the profile link and additionally clears
             // REAPER's native learn fields when the host supports those keys.
             if(!fxOrder_.deleteCcLink(entry.param))return;
-            for(const char* suffix:{"midi1","midi2","osc"}) {
-                const auto key="param."+std::to_string(entry.param)+".learn."+suffix;
-                if(take_)TakeFX_SetNamedConfigParm(take_,fx_,key.c_str(),"");
-                else TrackFX_SetNamedConfigParm(track_,fx_,key.c_str(),"");
-            }
+            clearNativeLearn(entry.param);pickup_.erase(entry.param);
             break;
         case 4: fxOrder_.deleteCustomOrder();groupSlot_=0;memoryReturnGroup_=0;memoryReturnF7_=false;break;
         case 5: {
@@ -244,10 +248,9 @@ void FxNavigator::memoryDelete() {
             saveStructure();break;
         }
         case 6:
-            // Lua's default deletion involves regeneration plus confirmation
-            // and special handling of dynamic ReaEQ bands; never silently
-            // approximate it or corrupt the sound.
-            speech_("Default snapshot deletion is not yet migrated. No changes made");return;
+            if(!fxOrder_.saveDefaultRows({})){speech_("Cannot delete default");return;}
+            defaultRegenerate_=true;
+            rebuildMemoryColumns();speech_("Default deleted. Press Enter or F8 to save a new default");return;
         default:return;
     }
     rebuildMemoryColumns();
@@ -261,6 +264,23 @@ void FxNavigator::memoryDelete() {
     speech_("Deleted "+removed+". "+(memoryHasEntries()?memoryColumnName():"Parameter Navigator. No memories"));
 }
 void FxNavigator::memoryNavigate(const Key& k) {
+    if(defaultConfirm_) {
+        if(k.repeat)return;
+        if(k.vk==VK_F8){defaultConfirm_=false;memoryExit();return;}
+        if(k.vk==VK_ESCAPE || k.vk=='N'){defaultConfirm_=false;defaultYes_=false;speakMemory("No");return;}
+        if(k.vk==VK_LEFT||k.vk==VK_UP){if(defaultYes_){defaultYes_=false;speakMemory();}return;}
+        if(k.vk==VK_RIGHT||k.vk==VK_DOWN){if(!defaultYes_){defaultYes_=true;speakMemory();}return;}
+        if(k.vk=='Y'||k.vk==VK_RETURN) {
+            if(k.vk=='Y'||defaultYes_) {memoryCol_=6;memoryRow_=0;memoryLoad(false);}
+            else {defaultConfirm_=false;speakMemory("No");}
+        }
+        return;
+    }
+    if(defaultRegenerate_ && !k.repeat && (k.vk==VK_RETURN||k.vk==VK_F8)) {
+        defaultRegenerate_=false;snapshotDefaultsIfMissing();
+        if(!fxOrder_.hasDefaultValues()){defaultRegenerate_=true;speech_("Cannot save default");return;}
+        memoryExit();return;
+    }
     if(k.repeat && (k.vk==VK_F7||k.vk==VK_F8||k.vk==VK_RETURN||k.vk==VK_DELETE))return;
     if(k.vk==VK_ESCAPE || (k.vk==VK_F8 && !k.ctrl && !k.alt)) {memoryExit();return;}
     if(k.vk==VK_TAB){speakMemory();return;}

@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # Aggiornamento TEST27 (0.0.28): il F12 SENZA modificatori ora resta libero e riservato a LReaParams, senza inoltro a OSARA e senza chiusura della finestra di navigazione. Ctrl+F12 e Ctrl+Maiusc+F12 mantengono la memoria 12; Alt+Maiusc+Frecce naviga i selezionati in F7. Le istruzioni storiche su F12/Alt+Frecce riportate sotto descrivono versioni precedenti e sono superate. Per il collaudo attuale: Docs/TEST27_KEYS_F12.md.
 
 TEST6: per la regressione del focus usare PRIMA Docs/FocusOwnerTest.md.
@@ -12,7 +14,6 @@ nessuna prova runtime è stata eseguita da chi ha preparato questo ZIP.
 
 1. Avvia REAPER e apri la Action List.
 2. Cerca `LReaParams`: devono esserci le azioni FX Params, Track Params,
-   Parameter Library (ancora non migrata), Import, Open Data Folder,
    Settings e About. La DLL crea una finestra reale di 1 pixel FUORI DALLO SCHERMO durante la navigazione, per NVDA+T; non deve coprire la GUI FX.
 3. Il menu Extensions deve contenere il sottomenu `LReaParams`.
 4. `Open Data Folder` deve aprire `REAPER/LReaParams`.
@@ -96,7 +97,6 @@ sulla sessione di lavoro prima di aver salvato una copia del progetto.
 ## Menu Memories e tasti funzione riservati (TEST5)
 
 - Verifica il sottomenu `Extensions → LReaParams → Memories` con le voci
-  FX Memories, Track Memories e Parameter Library. In questa TEST5 le prime
   due annunciano che la gestione memorie non è ancora implementata; la terza
   rimane in attesa di migrazione. Nessuna di queste voci deve modificare file.
 - In FX Params premi F1, F2 e F11: non deve cambiare la griglia e non deve

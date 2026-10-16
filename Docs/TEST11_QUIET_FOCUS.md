@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST11 — NVDA e bordi silenziosi (0.0.12)
 
 ## Perché la TEST10 parlava ai bordi

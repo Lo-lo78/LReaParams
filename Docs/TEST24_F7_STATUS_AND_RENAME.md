@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST24 — F7, selezione e Custom Order (solo sorgente)
 
 ## Collaudo con NVDA e REAPER

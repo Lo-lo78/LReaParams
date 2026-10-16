@@ -1,9 +1,10 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # ExtState: inventario e politica di migrazione
 
 `LuaExtStateCalls.csv` conserva tutte le 46 chiamate dirette individuate nei
 tre file, incluse le espressioni di chiave dinamiche e il parametro persist.
 Le guardie `if reaper.GetExtState then` non sono chiamate e non sono contate.
-Parameter Library non usa ExtState direttamente: nel Lua scambia packet TXT.
 
 | Sezione | Chiave/famiglia | Persistenza originale | Azione prevista nel porting |
 | --- | --- | --- | --- |

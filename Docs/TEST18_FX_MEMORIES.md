@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # TEST18 — FX Memories (azione indipendente + F8 del Lua)
 
 Progetto sorgente **non compilato**. Il test deve essere eseguito dall'utente

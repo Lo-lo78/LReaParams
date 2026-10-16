@@ -65,10 +65,10 @@ std::vector<std::string> split(std::string_view s, char delimiter) {
     } return out;
 }
 const char* kindName(ProfileKind k) noexcept {
-    switch (k) { case ProfileKind::fx: return "FX"; case ProfileKind::track: return "TRACK"; default: return "PP"; }
+    switch (k) { case ProfileKind::fx: return "FX"; case ProfileKind::track: return "TRACK"; default: return "TRACK"; }
 }
 const char* extension(ProfileKind k) noexcept {
-    switch (k) { case ProfileKind::fx: return ".fx"; case ProfileKind::track: return ".tp"; default: return ".pp"; }
+    switch (k) { case ProfileKind::fx: return ".fx"; case ProfileKind::track: return ".tp"; default: return ".tp"; }
 }
 Profile parseLegacy(std::string bytes) {
     require(!bytes.empty() && bytes.size() <= maxProfileBytes, "Empty or oversized profile");
@@ -77,16 +77,12 @@ Profile parseLegacy(std::string bytes) {
     std::string text = out.payload;
     if (text.compare(0, 3, "\xEF\xBB\xBF") == 0) text.erase(0, 3);
     std::string section;
-    bool packet = false, first = true;
     std::set<std::string> sectionNames;
     for (auto line : split(text, '\n')) {
         if (!line.empty() && line.back() == '\r') line.pop_back();
         if (trim(line).empty() || line[0] == '#' || line[0] == ';') continue;
-        if (first && line == "PARAMLIB_V1") { packet = true; first = false; continue; }
-        first = false;
-        if (packet && line.rfind("P\t", 0) == 0) { out.records.push_back(split(line, '\t')); continue; }
         if (line[0] == '[') {
-            require(!packet && line.size() > 2 && line.back() == ']', "Invalid section");
+            require(line.size() > 2 && line.back() == ']', "Invalid section");
             section = line.substr(1, line.size() - 2);
             require(sectionNames.insert(section).second, "Duplicate section");
             out.sections[section]; continue;
@@ -97,18 +93,7 @@ Profile parseLegacy(std::string bytes) {
     const auto h = [&](const char* key) -> std::string {
         const auto it = out.headers.find(key); require(it != out.headers.end(), "Required header missing"); return it->second;
     };
-    if (packet) {
-        out.kind = ProfileKind::library;
-        require(h("Mode") == "cell", "Handoff/Return packet is not a library cell");
-        require(!h("Plugin").empty() && !h("Cell").empty(), "Empty library identity");
-        integer(h("Grid"), 1, 2147483647); integer(h("Active"), 0, 2147483647);
-        const auto count = integer(h("Count"), 0, 1000000);
-        require(static_cast<std::size_t>(count) == out.records.size(), "Count mismatch");
-        for (const auto& r : out.records) {
-            require(r.size() == 6 && r[0] == "P", "Invalid library P record");
-            integer(r[1], 0, 2147483647); require(!r[2].empty() && !r[3].empty(), "Empty parameter name"); normalized(r[4]);
-        }
-    } else if (h("Version") == "3") {
+    if (h("Version") == "3") {
         out.kind = ProfileKind::fx;
         require(!h("PluginRaw").empty(), "Empty plugin identity");
         const auto last = h("LastParam"); if (!last.empty()) paramRef(last, false);

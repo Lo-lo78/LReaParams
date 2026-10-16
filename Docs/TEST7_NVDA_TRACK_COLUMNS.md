@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # LReaParams 0.0.8 — TEST7 NVDA review line / routing grid
 
 ## Regola di compilazione
@@ -70,6 +72,5 @@ di una finestra 1px fuori schermo puo' variare fra NVDA/Windows/configurazioni.
 
 ## Ancora non migrato
 
-Libreria Parameter Library, memorie FX/Track, gruppi e ordini dei profili,
 routing audio avanzato e MIDI CC di Track Params. Questa e' una versione
 sperimentale, NON un sostituto completo dei Lua.

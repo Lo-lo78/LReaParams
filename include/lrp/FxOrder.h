@@ -35,6 +35,12 @@ public:
     bool saveDefaultValues(const std::map<int,double>& values);
     std::map<int, std::string> ccLinks; // Lua cc_link_v1::param::n entries
     bool deleteCcLink(int param);
+    std::string extraValue(const std::string& key) const;
+    void setExtraValue(const std::string& key, const std::string& value);
+    std::vector<std::string> defaultRows() const;
+    bool saveDefaultRows(const std::vector<std::string>& rows);
+    std::string defaultMeta(const std::string& key) const;
+    bool regenerateDefaults(const std::map<int,double>& values);
     void deleteCustomOrder();
 
     std::vector<int> visibleOrder() const;

@@ -1,3 +1,5 @@
+> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+
 # Fonti tecniche consultate
 
 Le definizioni utilizzate sono state lette nei repository ufficiali; non sono

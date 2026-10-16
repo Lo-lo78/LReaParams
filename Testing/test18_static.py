@@ -21,5 +21,5 @@ for op in ('fxOrder_.deleteCustomOrder()','fxOrder_.hidden.erase(entry.param)',
 assert 'if(!standalone && !editF7_)' in mem
 assert 'memories' not in str(root/'src/FxNavigatorMemories.cpp')
 assert 'group_slot_name_v1::slot::' in order
-assert 'Default snapshot deletion is not yet migrated' in mem
+assert 'defaultRegenerate_=true' in mem and 'saveDefaultRows({})' in mem
 print('TEST18 static contracts PASS. Runtime tests NOT RUN.')

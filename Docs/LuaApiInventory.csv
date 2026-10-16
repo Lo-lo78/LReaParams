@@ -1,12 +1,4 @@
 ﻿module,api,lexical_calls,replacement
-Parameter Library.lua,AddRemoveReaScript,1,review at porting gate
-Parameter Library.lua,EnumerateFiles,1,review at porting gate
-Parameter Library.lua,JS_VKeys_GetState,1,Win32/SDK required
-Parameter Library.lua,Main_OnCommand,1,review at porting gate
-Parameter Library.lua,RecursiveCreateDirectory,1,review at porting gate
-Parameter Library.lua,ShowConsoleMsg,1,review at porting gate
-Parameter Library.lua,defer,19,review at porting gate
-Parameter Library.lua,osara_outputMessage,1,review at porting gate
 Speak FX Params - TrackTake Navigator.lua,AddRemoveReaScript,1,review at porting gate
 Speak FX Params - TrackTake Navigator.lua,CountProjectMarkers,2,review at porting gate
 Speak FX Params - TrackTake Navigator.lua,CountSelectedMediaItems,5,review at porting gate
