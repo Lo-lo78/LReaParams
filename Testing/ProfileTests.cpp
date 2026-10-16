@@ -109,7 +109,22 @@ int main(int argc, char** argv) {
         check(reopened.ccLinks.at(1)=="2\t74" && reopened.hidden.count(1),"Hidden MIDI association lost");
         check(reopened.paramSlots.at(12)==compareParamIndex,"Virtual memory index lost");
         check(reopened.extraValue("future_key")=="opaque value","Unknown extra lost");
-        check(reopened.deleteCcLink(1),"Hidden CC deletion failed");
+        // 0.0.48: native Step overrides and the legacy Lua Step table coexist;
+        // changing Ctrl+T on one parameter must not touch other preferences.
+        const std::string luaSteps="1\tParameter 1\tv3:4\n3\tParameter 3\tv3:12";
+        const std::string nativeSteps="1\tParameter 1\t-6\n3\tParameter 3\t0";
+        reopened.setExtraValue("param_step_scales_v1",luaSteps);
+        reopened.setExtraValue("lrp_param_step_scales_v1",nativeSteps);
+        reopened.setExtraValue("cc_param_speech_v1::1","1");
+        check(reopened.save(),"Unable to persist independent Step settings");
+        FxOrder stepped;
+        stepped.load(profileRoot,"Synthetic edit test",4,[](int id){return id==compareParamIndex?std::string("Compare"):"Parameter "+std::to_string(id);});
+        check(stepped.extraValue("param_step_scales_v1")==luaSteps,"Legacy Lua steps were overwritten");
+        check(stepped.extraValue("lrp_param_step_scales_v1")==nativeSteps,"Native parameter steps lost");
+        check(stepped.extraValue("cc_param_speech_v1::1")=="1","Per-parameter CC speech lost");
+        check(stepped.ccLinks.at(1)=="2\t74" && stepped.paramSlots.at(12)==compareParamIndex,
+              "Step changes damaged unrelated FX profile sections");
+        check(stepped.deleteCcLink(1),"Hidden CC deletion failed");
         FxOrder cleared;
         cleared.load(profileRoot,"Synthetic edit test",4,[](int id){return id==compareParamIndex?std::string("Compare"):"Parameter "+std::to_string(id);});
         check(!cleared.ccLinks.count(1),"Deleted hidden CC reappeared");

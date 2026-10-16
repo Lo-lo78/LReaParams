@@ -1,6 +1,7 @@
-LReaParams 0.0.47 — controlli statici sorgente, nessuna compilazione locale.
-PASS: Tools/audit.py (52 profili: 48 FX, 4 Track; preservazione dati)
-PASS: tutte le 37 suite Testing/test*_static.py, inclusa TEST47
-NUOVO: Testing/ProfileTests.cpp contiene fixture di F7/F8 per GitHub Actions
-BUILD MSVC, CTest C++ e prove in REAPER/NVDA/OSARA: NON ESEGUITI.
-Nota: i controlli statici non garantiscono assenza di errori C++.
+LReaParams 0.0.48 — soli controlli statici, nessuna compilazione locale.
+PASS: Tools/audit.py (52 profili: 48 FX, 4 Track; integrità sorgenti).
+PASS: 39 suite source-only di Tools/run_static.py, inclusa TEST48.
+NUOVO: Testing/ProfileTests.cpp verifica con GitHub Actions le preferenze
+Step per parametro e parlato CC in [Extra] senza danneggiare il campo Lua.
+NOT RUN: MSVC, CMake, CTest nativo, REAPER, NVDA e hardware MIDI.
+Le verifiche statiche NON garantiscono compilazione e comportamento runtime.

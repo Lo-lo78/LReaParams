@@ -36,6 +36,7 @@ void FxNavigator::flushPersistentPosition() noexcept {
 }
 void FxNavigator::end() noexcept {
     if (active_) {
+        flushParameterSteps();
         // end() is noexcept: even allocation failure in the session snapshot
         // must not crash REAPER while it closes.
         try {rememberPosition();} catch (...) {}
@@ -385,6 +386,7 @@ void FxNavigator::restoreParameterPosition() {
 void FxNavigator::rememberPosition() {
     if (!active_ || !track_ || count_ <= 0 || (parameter_ < 0 && parameter_!=compareParamIndex && !eqVirtualValid(parameter_) && !dynamicsVirtualValid(parameter_)) || parameter_ >= count_ ||
         browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size())) return;
+    syncParameterStep();
     auto& state = ensureContextMemory();
     state.hasLastFx = true;
     state.lastFxGuid = fxGuid_;
@@ -845,7 +847,7 @@ bool FxNavigator::resetAllToDefault(bool announceResult) {
     return true;
 }
 void FxNavigator::resetGridAndStep() {
-    columns_=10;stepScale_=0;speech_("Grid 10. Step 0");
+    columns_=10;stepScale_=0;markParameterStepChanged();speech_("Grid 10. Step 0");
     rememberPosition();
 }
 void FxNavigator::chooseSlotAccess(int mode) {
@@ -858,6 +860,7 @@ bool FxNavigator::selectFx(int index) {
     // Commit the previous FX position before FxOrder::load rebinds the profile.
     if (active_ && count_ > 0 && browserIndex_ != index) {
         rememberPosition();
+        flushParameterSteps();
         flushPersistentPosition();
     }
     if (index < 0 || index >= static_cast<int>(entries_.size())) return false;
@@ -1069,12 +1072,14 @@ double FxNavigator::valueFraction() const {
 }
 std::string FxNavigator::sliderLabel() const { return displayName(); }
 void FxNavigator::announce() {
+    if(!fxBrowserMode_)syncParameterStep();
     if(fxBrowserMode_) {speech_(browserSpeech());return;}
     if(memoryManager_) {speakMemory();return;}
     speech_(editF7_ ? editorParameterSpeech() : currentParameterSpeech());
 }
 void FxNavigator::announceTitle() {
     if (!active_) return;
+    if(!fxBrowserMode_)syncParameterStep();
     if(fxBrowserMode_){speech_("FX Browser. "+browserSpeech());return;}
     if(memoryManager_){speakMemory("FX Memories");return;}
     speech_(fxWindowTitleBase() + ". " + currentParameterSpeech());
@@ -1282,6 +1287,9 @@ void FxNavigator::searchPreview() {
 }
 void FxNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
+    // A filtered search or F8 may select a parameter without a position save.
+    // Before using its step for a value change, load that parameter's setting.
+    if (!fxBrowserMode_) syncParameterStep();
     // Mirror the original Lua transport semantics. Consume key repeats so a
     // held Space cannot alternately start/stop transport multiple times.
     // Shift+Space is intentionally left to the F7 selection controller.
@@ -1513,7 +1521,7 @@ void FxNavigator::handle(const Key& k) {
     if(k.alt||valueMode_) {
         if(k.vk==VK_LEFT||k.vk==VK_RIGHT){
             const int next=std::clamp(stepScale_+(k.vk==VK_LEFT?-1:1),-10,10);
-            if(next!=stepScale_){stepScale_=next;lastControl_=LastControl::step;rememberPosition();speech_("Step "+std::to_string(stepScale_));}
+            if(next!=stepScale_){stepScale_=next;lastControl_=LastControl::step;markParameterStepChanged();rememberPosition();speech_("Step "+std::to_string(stepScale_));}
         }else if (k.vk == VK_HOME) setValue(1);
         else if (k.vk == VK_END) setValue(0);
         else if(k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_PRIOR||k.vk==VK_NEXT)

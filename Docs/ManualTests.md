@@ -107,3 +107,7 @@ Vedere `Docs/TEST44_3_INITIAL_NAVIGATION.md` per il piano dettagliato di test di
 - [ ] Ctrl+Maiusc+D rimane globale: cancella Delta Solo su tutto il progetto, inclusi FX dell'altra catena.
 
 Tutti questi test richiedono la DLL compilata dall'utente tramite GitHub Actions; nessuna compilazione locale.
+
+## 0.0.48 — Step individuali e CC speech
+
+Per i casi di controllo della nuova versione vedere `Docs/TEST48_PARAM_STEPS_CC_SPEECH.md`.

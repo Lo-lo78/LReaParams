@@ -1,3 +1,16 @@
+## 0.0.48 — Steps individuali e parlato CC
+
+**Alt+Sinistra/Destra**: cambia lo Step del parametro corrente da -10 a +10.
+Quando passi a un altro parametro, il suo Step torna al valore personalizzato
+oppure a Step 0; la preferenza si ritrova anche dopo il riavvio di REAPER.
+**Ctrl+Backspace** ripristina Grid 10 e Step 0 del parametro corrente.
+**F3** comunica lo Step corrente.
+
+**Ctrl+T**: abilita/disabilita il parlato delle variazioni *ricevute via MIDI
+CC* per il singolo parametro. Default disattivo. Non spegne la voce NVDA
+quando ti sposti normalmente nella griglia. In risposta al MIDI, legge solo
+il valore del parametro corrente e nome+valore per gli altri parametri.
+
 ## 0.0.46.4 — Browser Master/Monitor a colonne
 
 - **Destra:** Master → Monitor FX. **Sinistra:** Monitor FX → Master.

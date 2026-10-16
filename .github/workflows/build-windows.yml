@@ -84,6 +84,8 @@ jobs:
         run: python Testing/test46_5_static.py
       - name: Verify 0.0.47 F7 F8 memory-editor safety (source only)
         run: python Testing/test47_static.py
+      - name: Verify 0.0.48 per-parameter Step and Ctrl T CC speech (source only)
+        run: python Testing/test48_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

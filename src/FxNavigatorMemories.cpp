@@ -308,7 +308,7 @@ void FxNavigator::memoryNavigate(const Key& k) {
     if(k.vk==VK_F7 && !k.ctrl && !k.alt){memoryLoad(true);return;}
     if(k.alt && !k.ctrl && !k.shift && (k.vk==VK_LEFT || k.vk==VK_RIGHT)) {
         const int next=std::clamp(stepScale_+(k.vk==VK_LEFT?-1:1),-10,10);
-        if(next!=stepScale_) {stepScale_=next;rememberPosition();speech_("Step "+std::to_string(stepScale_));}
+        if(next!=stepScale_) {stepScale_=next;markParameterStepChanged();rememberPosition();speech_("Step "+std::to_string(stepScale_));}
         return;
     }
     if(k.ctrl && !k.alt && !k.shift && (k.vk==VK_HOME || k.vk==VK_END)) {

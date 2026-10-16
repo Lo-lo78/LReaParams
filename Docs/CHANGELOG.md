@@ -1,3 +1,15 @@
+## 0.0.48 — Step per parametro e parlato MIDI CC
+
+- Step -10..+10 persistente per parametro FX, anche dopo riavvio REAPER.
+- Recupero (approssimato) dei valori Step v3/v2 dal Lua, senza alterare il
+  campo legacy nel profilo `.fx`.
+- Ctrl+T mantiene il toggling individuale CC speech; durante cambi MIDI il
+  valore solo viene annunciato per il parametro corrente, nome+valore per
+  altri; deduplicazione del valore formattato.
+- Nuovo test statico e fixture C++ di persistenza per GitHub Actions.
+- Nessun cambio a Track Params, F7/F8 strutturali, MIDI learn, Ctrl+Spazio o
+  browser Master/Monitor. Nessuna compilazione locale.
+
 ## 0.0.47
 - F8 Default: Canc e Invio richiedono conferma Yes/No; nessun reset o
   cancellazione di snapshot prima della conferma.

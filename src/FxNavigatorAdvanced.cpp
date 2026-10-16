@@ -118,6 +118,15 @@ std::string FxNavigator::currentParameterCcSpeech() const {
     return "CC channel " + std::to_string((status & 0x0Fu) + 1) +
            " CC " + std::to_string(number);
 }
+void FxNavigator::queueCcSpeech(int param,const std::string& formatted) {
+    if(formatted.empty() || fxOrder_.extraValue("cc_param_speech_v1::"+std::to_string(param))!="1")return;
+    if(midiSpoken_[param]==formatted)return;
+    midiSpoken_[param]=formatted;
+    std::string value=formatted;
+    // Lua omits a redundant plus sign from positive values.
+    if(!value.empty()&&value[0]=='+')value.erase(value.begin());
+    midiPendingSpeech_=param==parameter_?value:fxOrder_.label(param)+", "+value;
+}
 void FxNavigator::clearNativeLearn(int param) {
     if(param<0 || param>=count_)return;
     for(const char* field:{"midi1","midi2","osc"}) {
@@ -140,8 +149,7 @@ void FxNavigator::applyMidi(int param,int value) {
         const double target=value/127.0;
         if(eqVirtualSet(param,target)){
             state.applied(eqVirtualFraction(param));
-            if(fxOrder_.extraValue("cc_param_speech_v1::"+std::to_string(param))=="1")
-                midiPendingSpeech_=fxOrder_.label(param)+", "+eqVirtualFormatted(param);
+            queueCcSpeech(param,eqVirtualFormatted(param));
         }
         return;
     }
@@ -149,7 +157,7 @@ void FxNavigator::applyMidi(int param,int value) {
         auto& state=pickup_[param];const double current=compareFormatted()=="Original"?0:1;
         if(state.allows(value,current) && setCompare(value/127.0)) {
             state.applied(compareFormatted()=="Original"?0:1);
-            if(fxOrder_.extraValue("cc_param_speech_v1::"+std::to_string(param))=="1")midiPendingSpeech_="Compare, "+compareFormatted();
+            queueCcSpeech(param,compareFormatted());
         }
         return;
     }
@@ -159,8 +167,7 @@ void FxNavigator::applyMidi(int param,int value) {
         if(!pickup.allows(value,dynamicsFraction(param)))return;
         if(dynamicsSetDetectorAt(param,value/127.0)) {
             pickup.applied(dynamicsFraction(param));
-            if(fxOrder_.extraValue("cc_param_speech_v1::"+std::to_string(param))=="1")
-                midiPendingSpeech_=fxOrder_.label(param)+", "+dynamicsRealFormatted(param,"");
+            queueCcSpeech(param,dynamicsRealFormatted(param,""));
         }
         return;
     }
@@ -168,8 +175,7 @@ void FxNavigator::applyMidi(int param,int value) {
         auto& state=pickup_[param];if(!state.allows(value,eqGainNorm(param)))return;
         if(writeEqGain(param,value/127.0)) {
             state.applied(eqGainNorm(param));
-            if(fxOrder_.extraValue("cc_param_speech_v1::"+std::to_string(param))=="1")
-                midiPendingSpeech_=fxOrder_.label(param)+", "+std::to_string(-150+186.1*eqGainNorm(param))+" dB";
+            queueCcSpeech(param,std::to_string(-150+186.1*eqGainNorm(param))+" dB");
         }return;
     }
     const double current=take_?TakeFX_GetParamNormalized(take_,fx_,param):TrackFX_GetParamNormalized(track_,fx_,param);
@@ -185,14 +191,10 @@ void FxNavigator::applyMidi(int param,int value) {
     if(!ok)return;
     if(take_)TakeFX_EndParamEdit(take_,fx_,param);else TrackFX_EndParamEdit(track_,fx_,param);
     state.applied(take_?TakeFX_GetParamNormalized(take_,fx_,param):TrackFX_GetParamNormalized(track_,fx_,param));
-    if(fxOrder_.extraValue("cc_param_speech_v1::"+std::to_string(param))=="1") {
-        char text[4096]{};
-        const bool formatted=take_?TakeFX_GetFormattedParamValue(take_,fx_,param,text,sizeof(text)):
-                                   TrackFX_GetFormattedParamValue(track_,fx_,param,text,sizeof(text));
-        if(formatted && midiSpoken_[param]!=text) {
-            midiSpoken_[param]=text;midiPendingSpeech_=fxOrder_.label(param)+", "+text;
-        }
-    }
+    char text[4096]{};
+    const bool formatted=take_?TakeFX_GetFormattedParamValue(take_,fx_,param,text,sizeof(text)):
+                               TrackFX_GetFormattedParamValue(track_,fx_,param,text,sizeof(text));
+    if(formatted)queueCcSpeech(param,text);
 }
 void FxNavigator::pollMidi() {
     if(!active_||!contextUnchanged()||memoryManager_||recentMode_||numericEdit_||textEdit_||searchMode_) {
@@ -292,10 +294,13 @@ bool FxNavigator::handleAdvanced(const Key& k) {
         return true;
     }
     if(k.vk=='T') {
+        if(parameter_!=compareParamIndex && !eqVirtualValid(parameter_) &&
+           (parameter_<0 || parameter_>=count_)) {speech_("CC speech not available");return true;}
         const auto key="cc_param_speech_v1::"+std::to_string(parameter_);
         const bool on=fxOrder_.extraValue(key)!="1";
         fxOrder_.setExtraValue(key,on?"1":"");saveStructure();
-        midiSpoken_.erase(parameter_);speech_(on?"MIDI speech on":"MIDI speech off");return true;
+        midiSpoken_.erase(parameter_);midiPendingSpeech_.clear();
+        speech_(std::string(on?"CC speech on. ":"CC speech off. ")+displayName());return true;
     }
     if(k.vk=='E'){numericBegin();return true;}
     if(k.vk=='R'){announce();return true;} // full review preserved separately

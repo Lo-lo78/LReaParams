@@ -48,3 +48,9 @@ Aggiunti controlli statici e test C++ (eseguiti solo dal workflow GitHub Actions
 ## 0.0.43.2 — Band property false-negative reports
 
 Aggiunto test statico `Testing/test43_2_static.py` e casi in `Testing/ControlTests.cpp`, eseguibili in C++ soltanto tramite GitHub Actions. Verifica del valore letto dopo `BANDENABLED#` / `BANDTYPE#`, fallback chunk e mantenimento di messaggi per veri errori. Nessuna compilazione locale, nessun test REAPER/NVDA effettuato.
+
+## 0.0.48
+
+Eseguiti Tools/audit.py e 39 test Python source-only PASS. Aggiunta fixture
+nativa per Step e CC speech, da compilare/eseguire esclusivamente su GitHub
+Actions. Nessun CMake, MSVC, compilazione locale, CTest nativo o REAPER.

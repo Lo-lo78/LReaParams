@@ -1,3 +1,36 @@
+## 0.0.48 — Step per parametro e parlato MIDI CC selettivo (candidato sorgente)
+
+- **Step per parametro:** Alt+Sinistra/Destra mantiene l'intervallo esistente
+  `Step -10` ... `Step 0` ... `Step +10`, ma la scala è ora associata al
+  **parametro reale** del plugin, non al parametro visitato per ultimo.
+  Cambiando parametro, lo Step si ripristina automaticamente. Le copie dello
+  stesso parametro in Custom Order condividono lo Step; i parametri diversi no.
+- **Persistenza:** i valori sono salvati in `[Extra]` del profilo `.fx` nella
+  chiave `lrp_param_step_scales_v1`, con indice, nome host e Step. Il salvataggio
+  avviene quando lasci il parametro, cambi FX/traccia o esci dalla finestra,
+  non su ogni modifica di valore. Il salvataggio usa il backup e la protezione
+  anti-sovrascrittura esistente; non scrive nei progetti REAPER.
+- **Retrocompatibilità Lua:** la chiave originale `param_step_scales_v1` non
+  viene riscritta. Se non esiste un valore nativo, il vecchio `v3:n` (e le
+  codifiche `v2`/numeriche) viene tradotto alla potenza di due più vicina della
+  griglia nativa. Poiché Lua aveva 18 moltiplicatori e il C++ usa 21 livelli,
+  la sensibilità numerica esatta può differire: è una compatibilità approssimata,
+  non una parità dei moltiplicatori. Nomi duplicati ambigui non vengono usati
+  come fallback.
+- **Ctrl+T:** era già disponibile, ma ora gli annunci delle variazioni MIDI
+  sono uniformati al Lua: solo i parametri abilitati parlano; sul parametro
+  corrente viene letto il **solo valore**, su un altro parametro nome e valore;
+  una variazione formattata identica all'ultima non viene ripetuta. Il parlato
+  ordinario (frecce, NVDA+Su) rimane sempre attivo, e gli stati persistono in
+  `cc_param_speech_v1::<indice>`.
+- **NON finale:** non è ancora stata provata la piena equivalenza con l'intero
+  Lua. Mancano almeno il browser gerarchico dei container FX e la verifica di
+  casi speciali/preset e dei contesti Take FX; le altre lacune di Status.md e
+  FxCommandMatrix.csv restano da censire/chiudere.
+- **Validazione:** soltanto verifiche statiche locali. Compilazione MSVC/CTest
+  e prova di NVDA, MIDI reale e ripristino dopo riavvio demandate a GitHub Actions
+  e al collaudo REAPER. **Nessuna build locale eseguita.**
+
 ## 0.0.47 — F7/F8 e sicurezza Default
 
 F8 Default Delete usa conferma Yes/No senza cancellazione preventiva, F7 da F8

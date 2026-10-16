@@ -7,6 +7,8 @@
 #include <cstring>
 #include <cwchar>
 #include <stdexcept>
+#include <sstream>
+#include <limits>
 #include <windows.h>
 
 namespace lrp {
@@ -34,11 +36,144 @@ bool opposite(const std::string& a,const std::string& b) {
            (a=="left"&&b=="right")||(a=="right"&&b=="left");
 }
 }
+
+// Store new native -10..+10 values without corrupting the Lua's 18-entry
+// param_step_scales_v1. Both live in [Extra] of the same .fx plugin profile.
+// Lua v3/v2/old numeric profiles are consulted only when no native override
+// exists. Raw REAPER names guard against parameter indices changing.
+namespace {
+constexpr const char* nativeParamStepsKey = "lrp_param_step_scales_v1";
+constexpr const char* legacyParamStepsKey = "param_step_scales_v1";
+constexpr double luaStepMultipliers[] = {
+    0.0001,0.0002,0.0005,0.002,0.01,0.02,0.05,0.10,0.25,0.50,
+    1.00,2.00,5.00,10.0,20.0,50.0,100.0,500.0
+};
+bool stepRow(const std::string& line,int& id,std::string& name,std::string& token) {
+    const auto first=line.find('\t');
+    if(first==std::string::npos)return false;
+    const auto second=line.find('\t',first+1);
+    if(second==std::string::npos)return false;
+    try {
+        size_t end=0;
+        const long candidate=std::stol(line.substr(0,first),&end,10);
+        if(end!=first || candidate<std::numeric_limits<int>::min() || candidate>std::numeric_limits<int>::max())return false;
+        id=static_cast<int>(candidate);
+        name=line.substr(first+1,second-first-1);
+        token=line.substr(second+1);
+        return true;
+    }catch(...) {return false;}
+}
+bool parseStepNumber(const std::string& token,int& result) {
+    try {size_t consumed=0;const auto n=std::stoi(token,&consumed,10);
+        if(consumed!=token.size())return false;result=n;return true;
+    }catch(...) {return false;}
+}
+int legacyStep(const std::string& token) {
+    auto version=std::string{};
+    auto number=token;
+    const auto sep=token.find(':');
+    if(sep!=std::string::npos) {version=token.substr(0,sep);number=token.substr(sep+1);}
+    int index=0;if(!parseStepNumber(number,index))return 0;
+    if(version=="v3") {}
+    else if(version=="v2")index+=2;
+    else if(version.empty())index+=3;
+    else return 0;
+    if(index<1 || index>18)return 0;
+    // The C++ navigator already uses Step -10..+10 as powers of two.
+    // Choose the nearest magnitude, never replace existing legacy bytes.
+    const auto factor=luaStepMultipliers[index-1];
+    return std::clamp(static_cast<int>(std::lround(std::log2(factor))),-10,10);
+}
+}
+std::string FxNavigator::stepParameterName(int param) const {
+    if(param==compareParamIndex)return "Compare";
+    if(eqVirtualValid(param))return eqVirtualName(param);
+    if(dynamicsVirtualValid(param))return dynamicsVirtualName(param);
+    if(param<0 || param>=count_)return {};
+    // Alias changes must not invalidate saved Step identities.
+    return originalName(track_,take_,fx_,param);
+}
+void FxNavigator::loadParameterSteps() {
+    parameterSteps_.clear(); parameterStepsDirty_=false;
+    stepActiveParameter_=INT_MIN;
+    const auto text=fxOrder_.extraValue(nativeParamStepsKey);
+    for(const auto& line:split(text,'\n')) {
+        int id=0,step=0;std::string name,raw;
+        if(!stepRow(line,id,name,raw) || !parseStepNumber(raw,step) || step< -10 || step>10)continue;
+        parameterSteps_[id]={name,step};
+    }
+}
+int FxNavigator::savedStepForParameter(int param) const {
+    const auto wanted=stepParameterName(param);
+    if(wanted.empty())return 0;
+    const auto byId=parameterSteps_.find(param);
+    if(byId!=parameterSteps_.end() && (byId->second.first.empty() || byId->second.first==wanted))
+        return byId->second.second;
+    // If plugin version shifted indices, only recover an unambiguous name.
+    int found=0,matchCount=0;
+    for(const auto& row:parameterSteps_)
+        if(!row.second.first.empty() && row.second.first==wanted) {
+            found=row.second.second;++matchCount;
+        }
+    if(matchCount==1)return found;
+    if(matchCount>1)return 0;
+    const auto legacy=fxOrder_.extraValue(legacyParamStepsKey);
+    int legacyIndex=0,legacyValue=0,legacyMatches=0;
+    for(const auto& line:split(legacy,'\n')) {
+        int id=0;std::string name,token;
+        if(!stepRow(line,id,name,token))continue;
+        const int v=legacyStep(token);
+        if(id==param && (name.empty() || name==wanted))return v;
+        if(!name.empty() && name==wanted){legacyIndex=id;legacyValue=v;++legacyMatches;}
+    }
+    (void)legacyIndex;
+    return legacyMatches==1?legacyValue:0;
+}
+void FxNavigator::syncParameterStep() {
+    if(!active_ || count_<=0 || browserIndex_<0)return;
+    if(stepActiveParameter_==parameter_)return;
+    if(parameterStepsDirty_)flushParameterSteps();
+    stepScale_=savedStepForParameter(parameter_);
+    stepActiveParameter_=parameter_;
+}
+void FxNavigator::markParameterStepChanged() {
+    if(!active_ || count_<=0 || browserIndex_<0 || !persistentPositionWriter_)return;
+    if(stepActiveParameter_!=parameter_)syncParameterStep();
+    if(stepActiveParameter_!=parameter_)return;
+    const auto name=stepParameterName(parameter_);
+    if(name.empty())return;
+    parameterSteps_[parameter_]={name,std::clamp(stepScale_,-10,10)};
+    parameterStepsDirty_=true;
+}
+void FxNavigator::stageParameterSteps() {
+    std::string data;
+    for(const auto& row:parameterSteps_) {
+        if(!data.empty())data+='\n';
+        // Names originate in host label fields; keep each record on one line.
+        std::string name=row.second.first;
+        for(char& c:name)if(c=='\t'||c=='\r'||c=='\n')c=' ';
+        data+=std::to_string(row.first)+"\t"+name+"\t"+std::to_string(row.second.second);
+    }
+    fxOrder_.setExtraValue(nativeParamStepsKey,data);
+}
+bool FxNavigator::flushParameterSteps() noexcept {
+    if(!parameterStepsDirty_ || !persistentPositionWriter_)return true;
+    try {
+        stageParameterSteps();
+        if(!fxOrder_.save())return false;
+        parameterStepsDirty_=false;
+        return true;
+    }catch(const std::exception&) {
+        OutputDebugStringW(L"LReaParams: could not persist per-parameter Step; profile untouched.\n");
+        return false;
+    }
+}
 std::string FxNavigator::displayName() const {
     auto label=fxOrder_.label(parameter_);
     return label.empty()?parameterName_:label;
 }
 void FxNavigator::loadFxOrder() {
+    flushParameterSteps();
     // Raw REAPER name corresponds to Lua get_fx_raw_label(), not its stripped
     // display name or a per-instance GUID.
     const std::string name=entries_.at(static_cast<size_t>(browserIndex_)).name;
@@ -52,7 +187,8 @@ void FxNavigator::loadFxOrder() {
             dynamicsVirtualValid(id)?dynamicsVirtualName(id):
             (id>=0 && id<count_?([this,id]{auto alias=dynamicsAlias(id);return alias.empty()?originalName(track_,take_,fx_,id):alias;}()):std::string());
     },nativeOrder);
-    groupSlot_=0;groupEditAll_=false;editF7_=false;searchMode_=false;
+    loadParameterSteps();
+    groupSlot_=0;groupEditAll_=false;searchMode_=false;editF7_=false;
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
     slotMode_=fxOrder_.groupSlotMode?0:1;
     visible_=fxOrder_.visibleOrder();
@@ -151,7 +287,9 @@ void FxNavigator::positionChanged(int position,bool speakIt) {
     if(speakIt)announce();
 }
 void FxNavigator::saveStructure() {
+    if(parameterStepsDirty_)stageParameterSteps();
     if(!fxOrder_.save())throw std::runtime_error("FX profile save failed");
+    parameterStepsDirty_=false;
     rememberPosition();
 }
 void FxNavigator::enterF7() {

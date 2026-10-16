@@ -1,4 +1,4 @@
-# LReaParams 0.0.47 — F7 e FX Memories F8
+# LReaParams 0.0.48 — F7 e FX Memories F8
 
 Aggiornamento della 0.0.46.5; preserva Track Params, le funzionalità FX
 collaudate, la memoria persistente e le scorciatoie. Migrazione mirata dei

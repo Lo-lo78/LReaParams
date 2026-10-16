@@ -60,6 +60,7 @@ bool FxNavigator::switchToContext(MediaTrack* destination, MediaItem_Take* desti
     if (!found) { speech_(destinationTake ? "No take FX parameters" : "Track has no FX parameters"); return false; }
 
     rememberPosition();
+    flushParameterSteps();
     flushPersistentPosition();
     // Preserve the complete original navigation state for failed transitions.
     // No undo point or external REAPER selection is changed on failure.

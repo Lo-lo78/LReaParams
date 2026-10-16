@@ -7,6 +7,7 @@
 #include <array>
 #include <set>
 #include <string>
+#include <climits>
 #include <functional>
 #include <vector>
 
@@ -207,6 +208,21 @@ private:
     void resetCurrentToDefault();
     bool resetAllToDefault(bool announceResult = true);
     void resetGridAndStep();
+    // Lua param_step_scales_v1, with a native -10..+10 override in the same
+    // plugin profile. Changing parameter loads that parameter's Step only.
+    using StepSetting = std::pair<std::string,int>;
+    std::map<int,StepSetting> parameterSteps_;
+    int stepActiveParameter_ = INT_MIN;
+    bool parameterStepsDirty_ = false;
+    void loadParameterSteps();
+    void syncParameterStep();
+    void markParameterStepChanged();
+    void stageParameterSteps();
+    bool flushParameterSteps() noexcept;
+    int savedStepForParameter(int param) const;
+    std::string stepParameterName(int param) const;
+    void queueCcSpeech(int param,const std::string& formatted);
+
     void copyParameterValue();
     void copyFxSnapshot();
     void pasteFxClipboard();
