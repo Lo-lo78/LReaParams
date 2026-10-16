@@ -1,8 +1,8 @@
-# LReaParams 0.0.41 — correzione annunci Auto (da 0.0.40)
+# LReaParams 0.0.42 — MIDI CC in background (da 0.0.41)
 
 Estensione nativa C++ per Windows x64, derivata da TEST30 (0.0.31). Restano FX Params, Track Params e le azioni ausiliarie esistenti. L'archivio contiene solo sorgenti, riferimenti Lua, SDK incluso e test: nessuna DLL o build locale.
 
-**Correzione 0.0.41:** sulla griglia FX Params, i parametri con envelope ACT=1 terminano la lettura con `. Auto`, anche con Alt+F3/F4 e NVDA+Freccia Su. Nessuna modifica ai valori, al parlato breve delle regolazioni, a Track Params o ai profili. Vedere Docs/TEST41_AUTO_SPEECH.md.
+**Novità 0.0.42:** Ctrl+Q lascia la tastiera a REAPER/TCP e mantiene i CC del singolo FX lasciato in background; l'azione `LReaParams: Stop background MIDI` li ferma. Il polling resta sul thread principale e protegge l'identità dell'FX. F8 legge il canale e il numero CC con etichette esplicite. Conservato l'annuncio `. Auto` della 0.0.41. Nessuna modifica a Track Params o al formato dei profili. Vedere `Docs/TEST42_BACKGROUND_MIDI.md`.
 
 Leggere prima **Docs/Status.md**: la migrazione è avanzata su tutta la roadmap, ma la parità completa Lua NON è raggiunta. Le lacune sono elencate senza placeholder di successo.
 

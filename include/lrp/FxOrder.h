@@ -16,6 +16,9 @@ public:
     void load(const std::filesystem::path& resource, const std::string& rawName,
               int paramCount, std::function<std::string(int)> paramName);
     bool save(); // only called after an intentional structural change
+    // A parked MIDI navigator is a snapshot of a foreground navigator.
+    // Rebind callbacks which originally captured that foreground object's this.
+    void rebindParamName(std::function<std::string(int)> callback) { paramName_ = std::move(callback); }
     void reset() noexcept;
     bool custom = false;
     bool groupSlotMode = false;

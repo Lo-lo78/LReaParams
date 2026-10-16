@@ -63,7 +63,14 @@ void FxNavigator::rebuildMemoryColumns() {
     // MIDI CC links share the native main-thread runtime and Lua profile keys.
     for(const auto& pair:fxOrder_.ccLinks) {
         MemoryEntry e;e.param=pair.first;
-        e.label=fxOrder_.label(pair.first)+". "+pair.second;
+        // Lua profiles store "channel\tCC"; announce both field names
+        // explicitly rather than presenting an opaque tab-separated pair.
+        const auto tab=pair.second.find('\t');
+        if(tab!=std::string::npos)
+            e.label=fxOrder_.label(pair.first)+". Channel "+pair.second.substr(0,tab)+
+                    ". CC "+pair.second.substr(tab+1);
+        else
+            e.label=fxOrder_.label(pair.first)+". "+pair.second;
         memoryColumns_[3].push_back(std::move(e));
     }
     if(fxOrder_.storedCustomOrder()) {

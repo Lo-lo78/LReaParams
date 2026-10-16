@@ -1,3 +1,12 @@
+# 0.0.42 — FX Params: Ctrl+Q e MIDI in background
+
+- Ctrl+Q restituisce il focus a REAPER lasciando parcheggiato un singolo contesto MIDI completo (learn/fixed/pickup/floating), se attivo.
+- Timer main-thread continua a ricevere CC anche senza finestra FX Params; nessuna intercettazione globale della tastiera.
+- Identità progetto/traccia/take/FX verificata a ogni ciclo; contesti scaduti disattivati in sicurezza e reintegro al rientro sullo stesso FX senza doppie applicazioni.
+- Rilegatura sicura del callback FxOrder al navigatore parcheggiato; persistenza `.fx` invariata.
+- Nuova azione `_LREAPARAMSSTOPMIDIBACKGROUND` per fermare manualmente il controllo; F8 mostra `Channel N. CC M`.
+- Test statici e documentazione del collaudo hardware aggiunti; **nessuna build locale** né verifica REAPER/NVDA/MIDI eseguita.
+
 # 0.0.41 — FX Params: annuncio stato Auto
 
 - Corretto `currentParameterSpeech()` per annunciare `. Auto` dopo il valore solo se il parametro fisico dispone di un envelope REAPER attivo (ACT=1).

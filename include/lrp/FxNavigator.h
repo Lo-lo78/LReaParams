@@ -17,6 +17,11 @@ public:
     void setResourceRoot(std::filesystem::path root) { resourceRoot_ = std::move(root); }
     bool begin() override;
     void pollMidi();
+    // A parked navigator is an independent MIDI-only snapshot. No keyboard
+    // focus or native window is retained while REAPER's main timer polls it.
+    void prepareBackgroundMidi();
+    bool midiRunning() const noexcept { return learnCc_ || fixedCc_ || floatingCc_ || floatingWaiting_; }
+    bool sameMidiFx(const FxNavigator& other) const noexcept;
     bool openFxMemories(bool standalone = false);
     bool isMemoryManager() const noexcept { return memoryManager_; } // seven-column Lua F8 navigator
     void end() noexcept override { active_ = false; recentMode_=false; numericEdit_ = false; learnCc_ = false; floatingCc_ = false; floatingWaiting_ = false; pickup_.clear(); valueMode_ = false; searchMode_ = false; editF7_ = false; textEdit_ = false; memoryManager_ = false; defaultConfirm_=false; defaultRegenerate_=false; memoryStandalone_ = false; groupSlot_ = 0; groupReturnActive_ = false; f7FilterActive_ = false; f7FullView_.clear(); f7FilterPositions_.clear(); f7FilterQuery_.clear(); search_.clear(); entries_.clear(); count_ = 0; }

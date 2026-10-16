@@ -1,6 +1,6 @@
-# Stato sorgente 0.0.41 — correzione parlato Auto del candidato 0.0.40
+# Stato sorgente 0.0.42 — MIDI CC in background
 
-La correzione successiva alla 0.0.40 porta il suffisso `. Auto` nella lettura completa del parametro FX quando l’envelope ACT è attivo; non modifica il motore di automazione.
+La 0.0.42 mantiene l'annuncio `. Auto` della 0.0.41 e aggiunge **Ctrl+Q**: dopo il ritorno al focus di REAPER, il timer principale continua a elaborare i CC del contesto FX parcheggiato, anche quando il navigatore non è visibile. L'azione `_LREAPARAMSSTOPMIDIBACKGROUND` ferma esplicitamente il contesto. Consultare `TEST42_BACKGROUND_MIDI.md`. Il nuovo codice non è stato compilato o collaudato in REAPER.
 
 Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la parità Lua. Non è stata eseguita alcuna compilazione locale, CMake configure, build o prova della DLL. I test C++ inclusi saranno eseguiti dal workflow GitHub Actions dell'utente. Le verifiche Python sono controlli di testo e formati, non provano la correttezza eseguibile del C++.
 
@@ -8,8 +8,8 @@ Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la 
 |---|---|---|
 | 0: eliminazione terzo navigatore | Implementata: azione, dispatch, menu, formato e ramo importazione rimossi; enum per gli indici azione | File preesistenti ignorati, mai eliminati |
 | 1: learn CC | Implementato per parametri fisici e Compare, primo CC nuovo, profilo, riassegnazione duplicati, rimozione learn nativo | Non copre i virtuali ReaEQ/ReaComp; colonna F8 legge e seleziona i link ma non è un editor MIDI completo |
-| 2: fixed/pickup | Implementati Shift+C, persistenza flag, crossing/tolleranza 1/127, riarmo dopo modifica esterna, anti-jitter Lua; Gain ReaEQ esteso | Attivo sul contesto aperto; non continua in background dopo l'uscita; nessuna polarità inventata (il link Lua salva canale e CC) |
-| 3: Floating/parlato | Implementati Ctrl+Shift+C, capture, parametro corrente, pickup, ritorno fixed, Ctrl+T persistente per parametro, accorpamento parlato | Parlato limitato a un annuncio ogni 180 ms; sessione Floating non ricostruita dopo chiusura; nessun background Ctrl+Q |
+| 2: fixed/pickup | Implementati Shift+C, persistenza flag, crossing/tolleranza 1/127, riarmo dopo modifica esterna, anti-jitter Lua; Gain ReaEQ esteso | Attivo anche dopo Ctrl+Q nel singolo contesto parcheggiato, con stop su cambio identità; nessuna polarità inventata (il link Lua salva canale e CC) |
+| 3: Floating/parlato | Implementati Ctrl+Shift+C, capture, parametro corrente, pickup, ritorno fixed, Ctrl+T persistente per parametro, accorpamento parlato | Parlato limitato a un annuncio ogni 180 ms; sessione Floating conservata con Ctrl+Q, non ricostruita dopo una chiusura ordinaria o un riavvio |
 | 4: automazione | Ctrl+Shift+A ACT/VIS, Ctrl+Shift+Alt+A solo FX corrente, Alt+F3/F4 nella griglia visibile, Undo | Griglia filtrata/gruppo limita la navigazione, mentre Lua può uscire verso la griglia completa; confermare Monitor FX nel runtime |
 | 5: preset/numeri/ricerche | Alt+F1/F2; Ctrl+E vero EDIT con inversione dei formatter monotoni o unità raw dichiarate; storico 20 voci, import storico Lua in lettura, salvataggio Settings | Adattatori specifici non monotoni e unità variabili non coperti; i recenti si applicano al recinto corrente; alcuni gesti extra mancanti |
 | 6: plugin speciali | ReaEQ: codec chunk verificato, default strutturale, coda wrapper, Gain CC/tastiera -150..+36.1 dB; numerico Hz/Gain/Bandwidth per Track FX | Mancano virtuali Enabled/Type/Target/Action, aggiunta/rimozione/navigazione bande, tutti gli adattamenti per tipi problematici/Q; ReaComp/ReaGate restano generici |
@@ -23,7 +23,7 @@ Questo archivio amplia TEST30 su più fasi della roadmap. NON completa tutta la 
 - Adattatori ReaComp: Detector input con valori sparsi, riepilogo filtri virtuale, alias e toggle specializzati. Adattatori ReaGate corrispondenti.
 - Clipboard snapshot completo Ctrl+Alt+Shift+C/Ctrl+V; copia/incolla valore fuori da F7.
 - Browser FX interno completo, riposizionamento fisico FX in catena, navigazione item/take Ctrl+Left/Right, ritorno Take→Track Ctrl+W, Ctrl+PageUp/Down, apertura FX Chain/browser.
-- Background MIDI Ctrl+Q, trasporto/marker globali e switch Ctrl+Tab verso Track Params.
+- Background MIDI Ctrl+Q implementato per un singolo contesto FX parcheggiato (richiede collaudo hardware); restano trasporto/marker globali e switch Ctrl+Tab verso Track Params.
 - Compatibilità semantica totale con virtuali negativi dei vecchi profili: le voci non supportate sono conservate come record opachi in ordine, slot, gruppi e associazioni, senza esporle come controlli. Non è possibile modificarle finché manca il relativo adattatore; i backup conservano il precedente .fx.
 - La persistenza dei profili preserva sezioni sconosciute, campi Extra e commenti; le sezioni gestite vengono riserializzate, quindi non conserva il posizionamento originale dei commenti ; le voci dinamiche non supportate sono conservate come record opachi.
 

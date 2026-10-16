@@ -724,6 +724,9 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if(recentMode_)return !k.alt && (k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_TAB||k.vk==VK_DELETE||k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT||(k.ctrl&&k.vk=='R'));
     if (numericEdit_) return k.vk==VK_ESCAPE || k.vk==VK_RETURN || (k.ctrl && k.vk=='E');
     if (textEdit_) return true;
+    // Ctrl+Q parks MIDI while releasing the native window, input hook and
+    // REAPER keyboard focus. Extension owns the transition, not the navigator.
+    if (k.ctrl && !k.shift && !k.alt && k.vk == 'Q') return true;
     if (acceptsAdvanced(k) && !searchMode_) return true;
     if (searchMode_ && k.ctrl && (k.vk==VK_UP || k.vk==VK_DOWN))return true;
     if (searchMode_) return k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_BACK||

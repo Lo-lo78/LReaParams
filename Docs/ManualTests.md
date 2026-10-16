@@ -14,7 +14,7 @@ Tutte le caselle sono da eseguire dall'utente DOPO la build GitHub Actions. Non 
 10. [ ] Chiudere/riaprire REAPER: Shift+C torna allo stato salvato, il pickup riparte. Due FX con stesso nome su tracce diverse: cambia soltanto l'istanza attiva.
 11. [ ] Imparare lo stesso CC su altro parametro: viene riassegnato, non controlla entrambi. Learn→Delete rimuove soltanto il target; Esc non modifica il link. Verificare anche F8 MIDI CC Delete su parametro nascosto e Compare.
 12. [ ] Modificare da tastiera/mouse/automation/preset dopo l'aggancio: la manopola deve riagganciare senza salto. Provare estremi 0/127, crossing in entrambe le direzioni e piccoli tremolii.
-13. [ ] Floating segue il parametro corrente; cambio parametro richiede pickup; spegnimento recupera fixed salvato. F8/ricerca/numeri non devono muovere parametri. Perdita focus deve fermare il motore; background è ancora mancante.
+13. [ ] Floating segue il parametro corrente; cambio parametro richiede pickup; spegnimento recupera fixed salvato. F8/ricerca/numeri non devono muovere parametri. La chiusura ordinaria ferma il motore; **Ctrl+Q** mantiene il controllo MIDI sul solo FX parcheggiato (TEST42).
 14. [ ] Ctrl+T abilita soltanto quel parametro; stesso valore formattato non viene ripetuto; movimenti rapidi producono parlato accorpato senza doppie letture.
 15. [ ] Ctrl+Shift+A sul parametro fisico: ACT e VIS cambiano, punti e automation item restano. REAPER Undo ripristina. Ctrl+Shift+Alt+A riguarda soltanto l'FX aperto. Alt+F3/F4 usa la vista corrente.
 15a. [ ] TEST41: creare un envelope sul parametro Cutoff, attivare ACT, raggiungerlo con Alt+F3/F4 o frecce; l’annuncio e NVDA+Freccia Su devono dire `Cutoff, valore. Auto`. Disattivare ACT conservando l’envelope: il suffisso Auto deve sparire. Con Alt+Frecce modificare il valore: si sente solo il nuovo valore. Ripetere su Track FX, Take FX, Master/Monitor e F7. Verificare che un parametro senza envelope e Compare non dicano Auto.
@@ -28,3 +28,5 @@ Tutte le caselle sono da eseguire dall'utente DOPO la build GitHub Actions. Non 
 23. [ ] Ripetere valori/preset/CC/envelope su Master, Monitor e Take FX, su Custom Order con copie e profili importati.
 24. [ ] P assegnata nella Action List, Ctrl+Shift+P nella FX Chain, slot Ctrl+F12 e watcher Alt+F10/F11/F12. Testare tutte le funzioni Track Params TEST30.
 25. [ ] Leggere le lacune in Status.md: nessun collaudo può concludere parità Lua finché quelle funzioni non sono migrate.
+
+26. [ ] TEST42: seguire l'intera sequenza in `TEST42_BACKGROUND_MIDI.md` (Fixed/Pickup/Floating/Learn dopo Ctrl+Q, TCP libera, Track Params, cambio progetto, stop tramite nuova Action List).

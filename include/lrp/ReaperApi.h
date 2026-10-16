@@ -54,6 +54,7 @@
 #define REAPERAPI_WANT_TakeFX_GetOpen
 #define REAPERAPI_WANT_Undo_BeginBlock2
 #define REAPERAPI_WANT_Undo_EndBlock2
+#define REAPERAPI_WANT_SetCursorContext
 #define REAPERAPI_WANT_GetCursorContext2
 #define REAPERAPI_WANT_GetSelectedTrack
 #define REAPERAPI_WANT_CountSelectedTracks

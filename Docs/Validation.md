@@ -19,3 +19,5 @@ Test C++ predisposti per il runner dell'utente:
 I risultati runtime devono essere registrati dall'utente seguendo ManualTests.md. La lista delle funzioni ancora mancanti è in Status.md e FxCommandMatrix.csv. Nessuna prova statica consente di dichiarare conclusa la migrazione.
 
 TEST41: regressione statica `Auto` sugli annunci aggiunta; nessun test runtime o compilazione locale.
+
+TEST42: 17 suite Python non compilanti passate; nuovo test42_static e workflow GitHub Actions aggiunti. Nessun MSVC/CMake/CTest locale o REAPER/NVDA/MIDI reale eseguito. La compatibilità runtime del motore background è ancora da verificare.

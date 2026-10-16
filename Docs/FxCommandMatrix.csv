@@ -5,7 +5,7 @@ cc_learn_apply_to_param,MIDI,Learn,Persist link; remove duplicate and native lea
 handle_cc_learn_key,Esc/Delete/Tab/Enter,Learn,Cancel/read/remove; Enter no-op,handleAdvanced,Implemented,11
 cc_runtime_toggle_fixed_map,Shift+C,FX,Persistent fixed mapping state,handleAdvanced/resetMidiContext,Implemented while navigator active,"10,12"
 cc_runtime_pickup_allows_value,MIDI,Fixed/Floating,Crossing/tolerance/external-edit rearm,Pickup::allows,Implemented; runtime pending,12
-cc_runtime_poll_recent_input,MIDI,Fixed,Apply to current FX only,pollMidi/applyMidi,Partial: no background,"9,10,13"
+cc_runtime_poll_recent_input,MIDI,Fixed,Apply to current FX only,pollMidi/applyMidi,Implemented also for parked Ctrl+Q FX; hardware test pending,"9,10,13"
 toggle_cc_focus_mode,Ctrl+Shift+C,Grid/Value,Capture volatile controller; follow current param,handleAdvanced/pollMidi,Partial: no session background restore,13
 toggle_cc_combo_speech,Ctrl+T,Parameter,Persist per-param speech flag,handleAdvanced/applyMidi,Partial: speech coalescing intentional,14
 show_hide_current_param_envelope,Ctrl+Shift+A,Physical parameter,Toggle ACT/VIS with undo,toggleEnvelope/setEnvelope,Implemented; runtime pending,15
@@ -37,3 +37,6 @@ switch_take_context_to_current_track_fx,Ctrl+W,Take FX,Return to Track FX,None,M
 open_current_context_fx_chain,Ctrl+Shift+F,FX,Open FX chain and release keyboard,None,Missing,25
 switch_to_track_params_script,Ctrl+Tab outside F7,FX,Switch navigator,None,Missing; no library routing,25
 get_param_automation_spoken_label / get_param_label_for_param,"Grid arrows, Alt+F3/F4, NVDA+Up",FX Params physical parameter,Say Auto after formatted value iff REAPER envelope ACT=1,currentParameterSpeech/envelopeActive,Implemented in 0.0.41; runtime NVDA pending,15a
+leave_script_focus_to_tcp_background,Ctrl+Q,FX Params grid or F7,Release focus without stopping the single FX MIDI engine,Extension::parkMidiAndReturnToReaper,Implemented in 0.0.42; REAPER MIDI test pending,TEST42
+background_live_poll_tick,REAPER timer,No FX Params keyboard window,Continue CC pickup/floating/learn while validating GUID,Extension::tick/backgroundMidi_.pollMidi,Implemented single parked context; hardware test pending,TEST42
+stop_background_midi,Action List,Global,Stop parked MIDI without changing profile or focused navigator,Extension::action(stopBackgroundMidi),Implemented in 0.0.42; runtime pending,TEST42

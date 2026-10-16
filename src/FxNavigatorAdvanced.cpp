@@ -43,6 +43,38 @@ bool chunkActive(const std::string& chunk) {
     }return false;
 }
 }
+void FxNavigator::prepareBackgroundMidi() {
+    // FxOrder is copied with the navigator, but its label callback captured
+    // the foreground navigator at load time. Repair that capture to prevent
+    // speaking/saving CC links against the wrong FX after reopening the UI.
+    fxOrder_.rebindParamName([this](int id) -> std::string {
+        if (id == compareParamIndex) return "Compare";
+        if (id < 0 || id >= count_) return {};
+        char name[4096]{};
+        const bool ok = take_ ? TakeFX_GetParamName(take_, fx_, id, name, sizeof(name)) :
+                                TrackFX_GetParamName(track_, fx_, id, name, sizeof(name));
+        return ok ? std::string(name) : std::string();
+    });
+    // A MIDI-only context must never operate a text editor, memory manager,
+    // numeric editor or keyboard navigator after Ctrl+Q releases the focus.
+    recentMode_ = false;
+    numericEdit_ = false;
+    textEdit_ = false;
+    searchMode_ = false;
+    memoryManager_ = false;
+    defaultConfirm_ = false;
+    defaultRegenerate_ = false;
+    valueMode_ = false;
+    editF7_ = false;
+    midiPendingSpeech_.clear();
+    // Keep the MIDI sequence, pickup, learn and floating mappings unchanged:
+    // the next CC must not jump or capture a stale event after losing focus.
+}
+bool FxNavigator::sameMidiFx(const FxNavigator& other) const noexcept {
+    return active_ && other.active_ && project_ == other.project_ &&
+           take_ == other.take_ && track_ == other.track_ && fx_ == other.fx_ &&
+           std::memcmp(&fxGuid_, &other.fxGuid_, sizeof(GUID)) == 0;
+}
 void FxNavigator::resetMidiContext() {
     learnCc_=false;learnParam_=-1;pickup_.clear();midiSpoken_.clear();
     floatingParam_=-1;numericEdit_=false;midiPendingSpeech_.clear();

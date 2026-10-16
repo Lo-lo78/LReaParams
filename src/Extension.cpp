@@ -31,7 +31,7 @@ struct Action {
 };
 class Extension {
 public:
-    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_), titleProxy_(info->hwnd_main) {}
+    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), backgroundMidi_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_), titleProxy_(info->hwnd_main) {}
     ~Extension() { shutdown(); }
     void init() {
         if (REAPERAPI_LoadAPI(info_.GetFunc) != 0) throw std::runtime_error("Required REAPER API missing");
@@ -39,6 +39,7 @@ public:
         const char* path = GetResourcePath(); if (!path || !*path) throw std::runtime_error("No resource path");
         resource_ = fs::u8path(path);
         navigator_.setResourceRoot(resource_);
+        backgroundMidi_.setResourceRoot(resource_);
         for (auto& a : actions_) {
             a.command = info_.Register("command_id", const_cast<char*>(a.id));
             if (a.command <= 0 || a.command > 65535) throw std::runtime_error("Cannot register action ID");
@@ -72,6 +73,25 @@ public:
         auto output = reinterpret_cast<void(*)(const char*)>(info_.GetFunc("osara_outputMessage"));
         if (output && !text.empty()) output(text.c_str());
     }
+    // Ctrl+Q follows the Lua: close the NVDA keyboard window, leave REAPER
+    // fully interactive, and keep ONLY a validated FX MIDI runtime parked.
+    void parkMidiAndReturnToReaper() {
+        if (current_ != &navigator_ || !navigator_.active()) return;
+        backgroundMidi_.end(); // one parked context, never accumulate old FX
+        if (navigator_.midiRunning()) {
+            backgroundMidi_ = navigator_; // independent copy; no UI handles owned
+            backgroundMidi_.prepareBackgroundMidi();
+        }
+        exitNavigation(false);
+        // Restore ordinary REAPER/TCP keyboard behavior. Do not install a
+        // persistent keyboard hook or simulate a global key accelerator.
+        SetCursorContext(0, nullptr);
+        if (IsWindow(info_.hwnd_main) && IsWindowEnabled(info_.hwnd_main)) {
+            SetForegroundWindow(info_.hwnd_main);
+            SetFocus(info_.hwnd_main);
+        }
+        speak(backgroundMidi_.active() ? "Back to REAPER. MIDI active" : "Back to REAPER");
+    }
     void exitNavigation(bool announce) {
         const bool wasActive = current_ && current_->active();
         input_.stop(); titleProxy_.hideAndRestore(); titleProxyActive_ = false;
@@ -80,6 +100,7 @@ public:
         if (announce && wasActive) speak("LReaParams navigation off");
     }
     void fail() noexcept {
+        backgroundMidi_.end();
         // Fail open at the ABI boundary: unregister capture, discard queued commands.
         input_.stop(); titleProxy_.hideAndRestore(); titleProxyActive_ = false;
         navigator_.end(); trackNavigator_.end(); current_ = nullptr;
@@ -135,7 +156,7 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.41 - automation speech fix\n\n"
+            ShowMessageBox("LReaParams 0.0.42 - background MIDI\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
@@ -159,6 +180,10 @@ public:
         case trackMemories:
             exitNavigation(false);
             speak("LReaParams - Track Memories. Memory management is reserved for a later test; no memory was changed.");
+            break;
+        case stopBackgroundMidi:
+            backgroundMidi_.end();
+            speak("Background MIDI off");
             break;
         case nvdaTitle:
             exitNavigation(false);
@@ -241,6 +266,10 @@ public:
         return action(actions_[fxParams].command) ? 1 : 0;
     }
     void launchNavigator(Navigator* desired) {
+                // Reopening the very same FX transfers control back to the
+                // foreground and prevents two contexts driving one parameter.
+                if (desired == &navigator_ && backgroundMidi_.sameMidiFx(navigator_))
+                    backgroundMidi_.end();
                 current_ = desired;
                 input_.select(*desired);
                 // Lua gfx.init-style focus owner: keys go straight from its
@@ -273,6 +302,22 @@ public:
             OutputDebugStringA(("LReaParams " + report->summary() + "\n").c_str());
             if (announceImport_) { speak(report->summary()); announceImport_ = false; }
         }
+        // Background CC has no window/focus dependency: validate identities
+        // on every REAPER main-thread tick, including while Track Params is up.
+        if (backgroundMidi_.active()) {
+            try {
+                if (!backgroundMidi_.contextUnchanged() || !backgroundMidi_.midiRunning())
+                    backgroundMidi_.end();
+                else if (!navigator_.active() || !backgroundMidi_.sameMidiFx(navigator_))
+                    backgroundMidi_.pollMidi();
+            } catch (const std::exception&) {
+                backgroundMidi_.end();
+                OutputDebugStringW(L"LReaParams: invalid parked MIDI context stopped.\n");
+            } catch (...) {
+                backgroundMidi_.end();
+                OutputDebugStringW(L"LReaParams: parked MIDI callback stopped.\n");
+            }
+        }
         if (!current_ || !current_->active()) return;
         if (titleProxyActive_ && !titleProxy_.active()) { exitNavigation(false); return; }
         if (shortcutHelp() || input_.exitRequested() || !current_->contextUnchanged() || !current_->uiStillOpen() || !input_.environmentSafe()) {
@@ -300,6 +345,12 @@ public:
             // its own caret/selection/Unicode editor handles ordinary typing.
             if(titleProxyActive_ && current_==&navigator_ && navigator_.nativeTextField())
                 navigator_.setNativeText(titleProxy_.textValue());
+            // Do not let Ctrl+Q fall through to REAPER, or let the UI
+            // navigator clear the MIDI state before we park its own copy.
+            if (current_ == &navigator_ && key.ctrl && !key.shift && !key.alt && key.vk == 'Q') {
+                parkMidiAndReturnToReaper();
+                return;
+            }
             current_->handle(key);
             if (!current_->active()) { exitNavigation(false); speak("LReaParams navigation off"); break; }
             if (titleProxyActive_) {
@@ -348,6 +399,7 @@ public:
                     DestroyMenu(memories);
             }
             AppendMenuW(sub, MF_SEPARATOR, 0, nullptr);
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[stopBackgroundMidi].command), actions_[stopBackgroundMidi].menu);
             for (int i : {importLegacy, openData, settings})
                 AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[i].command), actions_[i].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[nvdaTitle].command), actions_[nvdaTitle].menu);
@@ -357,7 +409,7 @@ public:
     }
     void shutdown() noexcept {
         input_.stop(); titleProxy_.shutdown(); titleProxyActive_ = false;
-        navigator_.end(); trackNavigator_.end(); current_ = nullptr;
+        backgroundMidi_.end(); navigator_.end(); trackNavigator_.end(); current_ = nullptr;
         if (fxChainAccelRegistered_) {
             info_.Register("-accelerator", &fxChainAccel_);
             fxChainAccelRegistered_ = false;
@@ -388,6 +440,7 @@ private:
     reaper_plugin_info_t info_;
     DWORD mainThread_{};
     FxNavigator navigator_;
+    FxNavigator backgroundMidi_; // separate from the foreground and Track Params
     TrackNavigator trackNavigator_;
     Navigator* current_ = nullptr;
     InputRouter input_;
@@ -399,7 +452,7 @@ private:
     bool titleModeEnabled_ = true, titleProxyActive_ = false;
     accelerator_register_t fxChainAccel_{};
     bool fxChainAccelRegistered_ = false;
-    enum ActionIndex { fxParams, trackParams, importLegacy, openData, settings, about, fxMemories, trackMemories, nvdaTitle, actionCount };
+    enum ActionIndex { fxParams, trackParams, importLegacy, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, actionCount };
     std::array<Action, actionCount> actions_{{
         {"LREAPARAMSFXPARAMS", "LReaParams: FX Params (native test)", L"FX Params"},
         {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params (basic native controls)", L"Track Params (basic controls)"},
@@ -409,7 +462,8 @@ private:
         {"LREAPARAMSABOUT", "LReaParams: About LReaParams", L"About LReaParams"},
         {"LREAPARAMSFXMEMORIES", "LReaParams: FX Memories", L"FX Memories"},
         {"LREAPARAMSTRACKMEMORIES", "LReaParams: Track Memories (future)", L"Track Memories (future)"},
-        {"LREAPARAMSNVDATITLE", "LReaParams: Toggle Lua-style keyboard focus window", L"Lua-style keyboard window (1px)"}
+        {"LREAPARAMSNVDATITLE", "LReaParams: Toggle Lua-style keyboard focus window", L"Lua-style keyboard window (1px)"},
+        {"LREAPARAMSSTOPMIDIBACKGROUND", "LReaParams: Stop background MIDI", L"Stop background MIDI"}
     }};
 };
 int fxChainShortcutHook(MSG* msg, accelerator_register_t* ctx) noexcept {
