@@ -1,3 +1,9 @@
+## 0.0.44.5 — Lettere, numeri e punteggiatura
+
+Carattere stampabile senza Maiusc: prossimo parametro con quella iniziale (wrap in avanti).
+Maiusc+carattere stampabile: precedente parametro con quella iniziale (wrap all’indietro).
+Restano disponibili le combinazioni di selezione F7 e tutte le scorciatoie degli editor.
+
 # Tastiera attuale
 
 Le azioni FX Params, Track Params e FX Memories si assegnano nella Action List. P non è fissato nel codice. Nella lista FX Chain resta Ctrl+Shift+P contestuale.

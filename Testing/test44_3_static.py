@@ -15,13 +15,14 @@ assert 'key.character = printableKey(vk)' in router and 'VK_RMENU' in router
 assert router.count('key.character = printableKey(vk)') == 2
 assert '0x04, layout' in router, 'Must not damage keyboard dead-key state'
 assert 'void FxNavigator::cycleByInitial(wchar_t character)' in navigator
-assert 'const int index = (viewPos_ + offset) % total;' in navigator
+assert 'const int index = backwards ?' in navigator
+assert '(viewPos_ + offset) % total;' in navigator
 assert 'fxOrder_.label(visible_[static_cast<size_t>(index)])' in navigator
 assert 'if (index == viewPos_) announce();' in navigator
 assert 'if (!k.ctrl && !k.alt && k.character) return true;' in navigator
 assert 'if (k.altGr && k.character) return true;' in navigator
 assert 'k.shift && !k.alt && !k.ctrl) return k.character' in navigator
-assert 'if (!valueMode_) cycleByInitial(k.character);' in navigator
+assert 'else cycleByInitial(k.character);' in navigator
 assert 'if (editF7_ && handleF7(k)) return;' in navigator
 # Pure reference-level examples for the Lua forward/wrap matching rule.
 def cycle(names, current, letter):

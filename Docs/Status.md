@@ -1,3 +1,7 @@
+## 0.0.44.5 — Navigazione inversa per iniziale con Maiusc
+
+Le iniziali digitabili senza Maiusc continuano a ciclare in avanti; con Maiusc la ricerca procede all’indietro, con wrap, sul nome visibile del parametro. Conservate le selezioni F7 e la memoria FX persistente. Vedere TEST44_5_SHIFT_REVERSE_INITIAL.md. Solo sorgente; compilazione tramite GitHub Actions.
+
 ## 0.0.44.4 — Last FX parameter persists after REAPER restart
 
 FX Params now stores `LastParam` inside each plugin `.fx` file when the user closes the navigator or switches FX/track. When REAPER restarts, the parameter position is restored from that field if there is no more-specific current session position. Profile edits are backed up and guarded against concurrent changes; a background MIDI navigator cannot overwrite this position. See `Docs/TEST44_4_PERSISTENT_FX_POSITION.md`.

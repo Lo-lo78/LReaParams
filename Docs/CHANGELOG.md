@@ -1,3 +1,9 @@
+## 0.0.44.5 — Navigazione indietro con Maiusc
+
+- Maiusc+lettera/numero/punteggiatura passa al parametro precedente con la stessa iniziale; senza Maiusc continua in avanti.
+- Supporto Plugin/Custom Order, gruppi, ricerche filtrate e F7; nessuna modifica agli input dei campi testo e alla memoria persistente FX.
+- Test statico TEST44.5 e workflow aggiornati; nessuna compilazione locale.
+
 ## 0.0.44.4 — GitHub Actions compilation hotfix
 
 - Fixed MSVC C2065 in `src/InputRouter.cpp`: `VK_0` is not defined in Windows SDK; use `'0'` (virtual-key 0x30).

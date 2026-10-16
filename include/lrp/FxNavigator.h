@@ -190,6 +190,7 @@ private:
     void setValue(double value);
     void navigate(int delta);
     void cycleByInitial(wchar_t character);
+    void cycleByInitial(wchar_t character, bool backwards);
     void findMatching(bool forward);
     // Quoted queries match adjacent words: whole preceding words and a
     // possible final prefix. A quoted single word requires a whole word.

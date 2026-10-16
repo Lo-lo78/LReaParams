@@ -979,15 +979,19 @@ void FxNavigator::navigate(int delta) {
     positionChanged(next);
 }
 void FxNavigator::cycleByInitial(wchar_t character) {
+    cycleByInitial(character, false);
+}
+void FxNavigator::cycleByInitial(wchar_t character, bool backwards) {
     if (!character || visible_.empty()) return;
-    // Lua starts at the NEXT item, wraps once, and compares the first
-    // character of the displayed (possibly aliased) parameter label.
+    // Without Shift: next match, wrapping forwards; with Shift: previous
+    // match, wrapping backwards. Both use the *displayed* parameter label.
     // Use Windows Unicode case conversion for Italian accents too. No speech
     // or position change if the current grid has no matching initial.
     CharLowerBuffW(&character, 1);
     const int total = static_cast<int>(visible_.size());
     for (int offset = 1; offset <= total; ++offset) {
-        const int index = (viewPos_ + offset) % total;
+        const int index = backwards ? (viewPos_ + total - (offset % total)) % total
+                                    : (viewPos_ + offset) % total;
         const std::string label = fxOrder_.label(visible_[static_cast<size_t>(index)]);
         if (label.empty()) continue;
         const auto byte0 = static_cast<unsigned char>(label[0]);
@@ -1162,7 +1166,10 @@ void FxNavigator::handle(const Key& k) {
     // AltGr generates Ctrl+Alt at the Win32 level, but is a text character
     // on many European keyboards, not an FX Ctrl+Alt command.
     if (k.altGr && k.character) {
-        if (!valueMode_ && !searchMode_) cycleByInitial(k.character);
+        if (!valueMode_ && !searchMode_) {
+            if (k.shift) cycleByInitial(k.character, true);
+            else cycleByInitial(k.character);
+        }
         return;
     }
     if (!searchMode_ && handleAdvanced(k))return;
@@ -1322,7 +1329,10 @@ void FxNavigator::handle(const Key& k) {
     // cycles through the CURRENT visible entries, exactly like the Lua.
     // It is not a multi-character filter: Ctrl+F owns that functionality.
     if (!k.ctrl && !k.alt && k.character) {
-        if (!valueMode_) cycleByInitial(k.character);
+        if (!valueMode_) {
+            if (k.shift) cycleByInitial(k.character, true);
+            else cycleByInitial(k.character);
+        }
         return; // Value remains open; characters do not modify its slider.
     }
     if(k.vk==VK_F1||k.vk==VK_F2){
