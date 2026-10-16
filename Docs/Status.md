@@ -1,3 +1,15 @@
+# Correzione puntuale 0.0.42.1 — parlato CC e Auto
+
+Questa revisione della 0.0.42 annuncia le associazioni MIDI sui parametri FX
+anche fuori da F8, nell'ordine `parametro, valore. CC channel N CC M. Auto`.
+L'informazione CC è letta in sola lettura dal profilo FX corrente o,
+come fallback, dal learn MIDI nativo REAPER. Non indica se Fixed CC è
+attualmente attivato: indica l'esistenza di una mappatura valida. Durante
+Floating CC i link fissi sono taciuti come nella lettura del Lua.
+`Auto` rimane visibile solo con envelope esistente e ACT=1.
+Nessuna modifica alle associazioni o al MIDI in background.
+Nessuna compilazione o prova REAPER/NVDA: per quelle usare GitHub Actions.
+
 # Stato sorgente 0.0.42 — MIDI CC in background
 
 La 0.0.42 mantiene l'annuncio `. Auto` della 0.0.41 e aggiunge **Ctrl+Q**: dopo il ritorno al focus di REAPER, il timer principale continua a elaborare i CC del contesto FX parcheggiato, anche quando il navigatore non è visibile. L'azione `_LREAPARAMSSTOPMIDIBACKGROUND` ferma esplicitamente il contesto. Consultare `TEST42_BACKGROUND_MIDI.md`. Il nuovo codice non è stato compilato o collaudato in REAPER.

@@ -21,3 +21,10 @@ I risultati runtime devono essere registrati dall'utente seguendo ManualTests.md
 TEST41: regressione statica `Auto` sugli annunci aggiunta; nessun test runtime o compilazione locale.
 
 TEST42: 17 suite Python non compilanti passate; nuovo test42_static e workflow GitHub Actions aggiunti. Nessun MSVC/CMake/CTest locale o REAPER/NVDA/MIDI reale eseguito. La compatibilità runtime del motore background è ancora da verificare.
+
+## Verifica delta 0.0.42.1
+
+Correzione read-only di CC/Auto nella lettura parametri, senza build locale.
+L'audit e i contratti statici vengono rieseguiti in `Tools/run_static.py`;
+GitHub Actions eseguirà MSVC e CTest sul runner. NVDA e REAPER devono
+essere collaudati con CC interno, CC nativo, envelope ACT e doppio suffisso.

@@ -15,5 +15,6 @@ TEST29 range selection model (TEST30 corrected shortcut) PASS; native test pendi
 TEST30 shortcut routing PASS (static checks only; native REAPER test pending)
 TEST40 scope, API wiring and lexical guards PASS; native/runtime not executed
 TEST41 Auto suffix routing and read-only envelope contract PASS — native/runtime not run
+TEST42.1 CC-before-Auto accessible speech source contract PASS; runtime not tested
 TEST42 source checks PASS; MSVC/REAPER/NVDA/MIDI hardware not executed
-17 source-only suites passed. C++/REAPER tests NOT RUN.
+18 source-only suites passed. C++/REAPER tests NOT RUN.

@@ -153,6 +153,7 @@ private:
     void snapshotDefaultsIfMissing();
     int count() const;
     std::string parameterName() const;
+    std::string currentParameterCcSpeech() const;
     std::string currentParameterSpeech() const;
     std::string editorParameterSpeech() const;
     std::string viewPositionSpeech() const;

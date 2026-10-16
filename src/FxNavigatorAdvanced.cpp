@@ -81,6 +81,37 @@ void FxNavigator::resetMidiContext() {
     fixedCc_=fxOrder_.extraValue("cc_runtime_fixed_map_enabled_v1")=="1";
     midiSequence_=recentSequence();
 }
+// Same persisted MIDI association read by FX Memories/F8. Speech lookup
+// is read-only and must not depend on the active Fixed CC runtime flag.
+std::string FxNavigator::currentParameterCcSpeech() const {
+    // As in the Lua's ordinary parameter label, Floating CC temporarily
+    // takes precedence over stored fixed assignments.
+    if (floatingCc_ || floatingWaiting_) return {};
+
+    const auto link = fxOrder_.ccLinks.find(parameter_);
+    if (link != fxOrder_.ccLinks.end()) {
+        int channel = 0, number = 0;
+        if (parseLink(link->second, channel, number))
+            return "CC channel " + std::to_string(channel) + " CC " + std::to_string(number);
+    }
+
+    // Lua fallback: also recognize a native REAPER MIDI Learn connection
+    // when there is no valid internal link. It is a two-byte binary value:
+    // B0..BF (channel) followed by the CC number, not a text/hex string.
+    // Use an actual byte buffer: std::string(c_str()) would lose CC 0.
+    if (parameter_ < 0 || parameter_ >= count_ || !valid()) return {};
+    const std::string key = "param." + std::to_string(parameter_) + ".learn.midi1";
+    char raw[16]{};
+    const bool ok = take_ ?
+        TakeFX_GetNamedConfigParm(take_, fx_, key.c_str(), raw, sizeof(raw)) :
+        TrackFX_GetNamedConfigParm(track_, fx_, key.c_str(), raw, sizeof(raw));
+    if (!ok) return {};
+    const auto status = static_cast<unsigned char>(raw[0]);
+    const auto number = static_cast<unsigned char>(raw[1]);
+    if ((status & 0xF0u) != 0xB0u || number > 127) return {};
+    return "CC channel " + std::to_string((status & 0x0Fu) + 1) +
+           " CC " + std::to_string(number);
+}
 void FxNavigator::clearNativeLearn(int param) {
     if(param<0 || param>=count_)return;
     for(const char* field:{"midi1","midi2","osc"}) {

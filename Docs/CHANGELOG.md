@@ -1,3 +1,12 @@
+# 0.0.42.1 — FX Params: stato MIDI CC nei parametri (prima della 0.43)
+
+- Annuncio del CC associato **subito dopo nome e valore** e **prima di Auto**: `Cutoff, 1200 Hz. CC channel 1 CC 74. Auto`.
+- Fonte della mappa identica a F8 (`fxOrder_.ccLinks`); link visualizzato anche con Fixed CC temporaneamente disattivato. Nessun profilo viene modificato.
+- Fallback in sola lettura ai MIDI Learn nativi di REAPER (`param.N.learn.midi1`) per Track/Take FX, se manca il link interno; non crea link né cattura CC.
+- Durante Floating CC i normali link fissi vengono temporaneamente omessi dal parlato come nel Lua originale.
+- Riuso del metodo `currentParameterSpeech()` in Grid, F7, Value e NVDA+Freccia Su. Alt+Frecce continua a pronunciare solo il valore.
+- Nessuna modifica a MIDI runtime, Track Params, profili, UI, scorciatoie, action ID o backend GitHub Actions. Nessuna build locale effettuata.
+
 # 0.0.42 — FX Params: Ctrl+Q e MIDI in background
 
 - Ctrl+Q restituisce il focus a REAPER lasciando parcheggiato un singolo contesto MIDI completo (learn/fixed/pickup/floating), se attivo.

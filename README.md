@@ -1,8 +1,15 @@
-# LReaParams 0.0.42 — MIDI CC in background (da 0.0.41)
+# LReaParams 0.0.42.1 — annuncio MIDI CC e Auto (base 0.0.42)
 
 Estensione nativa C++ per Windows x64, derivata da TEST30 (0.0.31). Restano FX Params, Track Params e le azioni ausiliarie esistenti. L'archivio contiene solo sorgenti, riferimenti Lua, SDK incluso e test: nessuna DLL o build locale.
 
-**Novità 0.0.42:** Ctrl+Q lascia la tastiera a REAPER/TCP e mantiene i CC del singolo FX lasciato in background; l'azione `LReaParams: Stop background MIDI` li ferma. Il polling resta sul thread principale e protegge l'identità dell'FX. F8 legge il canale e il numero CC con etichette esplicite. Conservato l'annuncio `. Auto` della 0.0.41. Nessuna modifica a Track Params o al formato dei profili. Vedere `Docs/TEST42_BACKGROUND_MIDI.md`.
+**Correzione 0.0.42.1:** i parametri collegati a un MIDI CC ora vengono annunciati
+nella lettura normale, in F7, in Value e con NVDA+Freccia Su come
+`Cutoff, 1200 Hz. CC channel 1 CC 74. Auto`. `Auto` rimane ultimo e viene letto
+solo se esiste un envelope FX attivo; senza CC non viene aggiunto alcun suffisso.
+I collegamenti F8 restano invariati, compreso MIDI Learn nativo come fallback
+in sola lettura. Non cambia l'annuncio dei soli valori con Alt+Frecce.
+
+**Base 0.0.42:** Ctrl+Q lascia la tastiera a REAPER/TCP e mantiene i CC del singolo FX lasciato in background; l'azione `LReaParams: Stop background MIDI` li ferma. Il polling resta sul thread principale e protegge l'identità dell'FX. F8 legge il canale e il numero CC con etichette esplicite. Conservato l'annuncio `. Auto` della 0.0.41. Nessuna modifica a Track Params o al formato dei profili. Vedere `Docs/TEST42_BACKGROUND_MIDI.md`.
 
 Leggere prima **Docs/Status.md**: la migrazione è avanzata su tutta la roadmap, ma la parità completa Lua NON è raggiunta. Le lacune sono elencate senza placeholder di successo.
 

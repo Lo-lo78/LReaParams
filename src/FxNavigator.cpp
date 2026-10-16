@@ -773,10 +773,15 @@ std::string FxNavigator::formattedValue() const {
     return ok && text[0] ? std::string(text) : std::to_string(v);
 }
 std::string FxNavigator::currentParameterSpeech() const {
-    // Lua parity: name, value, then "Auto" only when this parameter's
-    // *existing* REAPER envelope has ACT=1. Never create an envelope just
-    // to announce it; virtual parameters have no physical FX envelope.
+    // Read-only status suffixes used by the Grid, F7, Value and NVDA+Up.
+    // The CC association belongs to the parameter, not to its occurrence in
+    // the Custom Order or to whether Fixed CC is currently enabled.
+    // In this version, CC must precede Auto when both are present.
     std::string spoken = displayName() + ", " + formattedValue();
+    const std::string ccSpeech = currentParameterCcSpeech();
+    if (!ccSpeech.empty()) spoken += ". " + ccSpeech;
+    // Never create an envelope merely to announce its status; virtual
+    // parameters have no physical FX envelope.
     if (parameter_ >= 0 && parameter_ < count_ && envelopeActive(parameter_))
         spoken += ". Auto";
     return spoken;
