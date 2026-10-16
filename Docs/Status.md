@@ -1,4 +1,4 @@
-# Stato 0.0.44.1 — adattatori ReaComp/ReaGate
+# Stato 0.0.44.2 — adattatori ReaComp/ReaGate
 
 Aggiunti in C++ gli adattatori non audio dei parametri speciali di
 ReaComp e ReaGate: detector, nomi, interruttori, filtro virtuale,

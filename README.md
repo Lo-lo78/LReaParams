@@ -1,4 +1,4 @@
-# LReaParams 0.0.44.1 — ReaComp / ReaGate (sorgente GitHub Actions)
+# LReaParams 0.0.44.2 — ReaComp / ReaGate (sorgente GitHub Actions)
 
 Questa versione riparte dalla 0.0.43.5 già collaudata dall'utente per
 Ctrl+Spazio e aggiunge le funzioni accessibili del Lua FX Params per

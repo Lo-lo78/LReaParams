@@ -104,6 +104,18 @@ int main() {
             require(detectorRawFromFraction(i/7.0)==raw);
             require(detectorLabel(raw)==detectorChoices[static_cast<size_t>(i)].label);
         }
+        // VST SignIn sometimes reports [0,1], mapping raw 0..1084 to host
+        // fractions; every Lua enum must still decode to its real label.
+        for(int i=0;i<8;++i) {
+            const int raw=detectorChoices[static_cast<size_t>(i)].raw;
+            const double norm=detectorHostFraction(raw);
+            require(detectorHostIndex(norm,0.0,1.0,norm)==i);
+            require(detectorHostIndex(raw,0.0,1084.0,norm)==i);
+            require(detectorHostIndex(raw,0.0,2048.0,norm)==i);
+            require(std::abs(norm-raw/1084.0)<1e-10);
+        }
+        require(detectorHostIndex(0.5,0.0,1.0,0.5)==-1);
+        require(detectorHostIndex(500,0.0,1084.0,500.0/1084.0)==-1);
         require(detectorLabel(123)=="Main inputs");
         require(alias(Kind::comp,"signin")=="Detector input");
         require(alias(Kind::gate,"pre-open")=="Lookahead");

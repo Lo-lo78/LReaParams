@@ -18,7 +18,7 @@ assert 'TrackFX_SetParam(track_,fx_,param,wanted)' in dy
 assert 'TrackFX_SetParamNormalized(track_,fx_,param,fraction)' in dy
 assert 'TakeFX_SetParamNormalized(take_,fx_,param,fraction)' in dy
 assert 'wanted>=minimum && wanted<=maximum' in dy
-assert 'std::abs(readback-wanted)<=0.5' in dy
+assert 'after.index==desired' in dy
 assert 'OutputDebugStringA(diagnostic)' in dy
 assert 'Detector input unchanged' in dy
 print('0.0.44.1 FX session-memory aliases and detector source contracts PASS')

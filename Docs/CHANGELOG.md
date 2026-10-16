@@ -1,3 +1,9 @@
+## 0.0.44.2 — Detector Input sparse host normalization
+- Decode SignIn as raw enum or as normalized [0,1] using the 1084-step host scale.
+- Remove the incorrect raw-range prerequisite for normalized fallback.
+- Verify real readback before announcing success for all eight modes.
+- Both ReaComp and ReaGate, including Value and MIDI CC; Track Params unchanged.
+
 ## 0.0.44.1 — ReaComp/ReaGate: memoria della posizione e Detector Input
 - Ripristino della posizione tramite GUID e indice del parametro, accettando sia il nome originale sia l’alias accessibile del Lua: evita il ritorno a Threshold causato da differenze come Hipass / Detector Highpass.
 - Detector input: mantiene gli otto valori raw discreti del Lua. Se REAPER non conferma il valore richiesto e lo include nell’intervallo dichiarato del parametro, tenta anche la corrispondente scrittura normalizzata; verifica poi il valore finale. Non annuncia modalità non applicate.

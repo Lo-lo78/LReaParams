@@ -56,11 +56,33 @@ bool FxNavigator::dynamicsRms(int id) const {
     return isReaComp() && id>=0 && id<count_ &&
         dynamics::normalize(rawName(track_,take_,fx_,id))=="rms size";
 }
+// Host-aware SignIn readback. The raw API is not guaranteed to expose
+// ReaComp's internal sparse 0..1027 enumeration on every VST wrapper.
+// Query both representations and validate the actual selected mode.
+namespace {
+struct DetectorReadback {
+    double raw=0, minimum=0, maximum=0, normalized=0;
+    int index=-1;
+};
+DetectorReadback readDetector(MediaTrack* track,MediaItem_Take* take,int fx,int param) {
+    DetectorReadback result;
+    if(take) {
+        result.raw=TakeFX_GetParam(take,fx,param,&result.minimum,&result.maximum);
+        result.normalized=TakeFX_GetParamNormalized(take,fx,param);
+    } else {
+        result.raw=TrackFX_GetParam(track,fx,param,&result.minimum,&result.maximum);
+        result.normalized=TrackFX_GetParamNormalized(track,fx,param);
+    }
+    result.index=dynamics::detectorHostIndex(result.raw,result.minimum,result.maximum,result.normalized);
+    return result;
+}
+}
 std::string FxNavigator::dynamicsRealFormatted(int id,const std::string& formatted) const {
     if(dynamicsDetectorInput(id)) {
-        const double raw=take_?TakeFX_GetParam(take_,fx_,id,nullptr,nullptr):
-            TrackFX_GetParam(track_,fx_,id,nullptr,nullptr);
-        return dynamics::detectorLabel(raw);
+        const auto state=readDetector(track_,take_,fx_,id);
+        return state.index>=0?
+            dynamics::detectorChoices[static_cast<size_t>(state.index)].label:
+            (formatted.empty()?"Detector input unknown":formatted);
     }
     if(dynamicsToggle(id)) {
         const double raw=take_?TakeFX_GetParam(take_,fx_,id,nullptr,nullptr):
@@ -99,8 +121,8 @@ std::string FxNavigator::dynamicsVirtualFormatted(int id) const {
 }
 double FxNavigator::dynamicsFraction(int id) const {
     if(!dynamicsDetectorInput(id))return 0;
-    return dynamics::detectorFraction(take_?TakeFX_GetParam(take_,fx_,id,nullptr,nullptr):
-        TrackFX_GetParam(track_,fx_,id,nullptr,nullptr));
+    const auto state=readDetector(track_,take_,fx_,id);
+    return state.index>=0?state.index/7.0:0.0;
 }
 bool FxNavigator::dynamicsSetDetector(double normalized) {
     return dynamicsSetDetectorAt(parameter_,normalized);
@@ -108,51 +130,56 @@ bool FxNavigator::dynamicsSetDetector(double normalized) {
 bool FxNavigator::dynamicsSetDetectorAt(int param,double normalized) {
     if(!dynamicsDetectorInput(param) || !contextUnchanged() || !std::isfinite(normalized))return false;
     const int wanted=dynamics::detectorRawFromFraction(normalized);
-    double minimum=0,maximum=0;
-    const auto read=[&]() {return take_?TakeFX_GetParam(take_,fx_,param,nullptr,nullptr):
-                                     TrackFX_GetParam(track_,fx_,param,nullptr,nullptr);};
-    const double actual=take_?TakeFX_GetParam(take_,fx_,param,&minimum,&maximum):
-                              TrackFX_GetParam(track_,fx_,param,&minimum,&maximum);
-    if(std::abs(actual-wanted)<=0.5)return false;
-    // Match Lua: write SignIn's special raw values, not 0..1 normalized
-    // values. 1024..1027 and 999/1000 are meaningful ReaComp/ReaGate modes.
-    // Never substitute a continuous host parameter or clamp those values.
+    const int desired=dynamics::detectorExactIndex(wanted);
+    if(desired<0)return false;
+    const auto before=readDetector(track_,take_,fx_,param);
+    if(before.index==desired)return true;
+    const auto confirm=[&]() { return readDetector(track_,take_,fx_,param); };
+    const auto writeRaw=[&]() {
+        return take_?TakeFX_SetParam(take_,fx_,param,wanted):
+                     TrackFX_SetParam(track_,fx_,param,wanted);
+    };
+    const auto writeNormalized=[&](double fraction) {
+        return take_?TakeFX_SetParamNormalized(take_,fx_,param,fraction):
+                     TrackFX_SetParamNormalized(track_,fx_,param,fraction);
+    };
+    // 0 and 2 are also sparse raw codes. Never send a raw code > the
+    // host-reported maximum: it would be clamped to another input mode.
+    // A wrapper exposing [0,1] requires the documented SignIn step scaling.
+    const double minimum=before.minimum,maximum=before.maximum;
+    const bool rawInRange=std::isfinite(minimum) && std::isfinite(maximum) &&
+        maximum>minimum && wanted>=minimum && wanted<=maximum;
+    const double fraction=dynamics::detectorHostFraction(wanted);
     Undo_BeginBlock2(project_);
-    const bool accepted=take_?TakeFX_SetParam(take_,fx_,param,wanted):
-                               TrackFX_SetParam(track_,fx_,param,wanted);
-    double readback=read();
-    // Some REAPER wrappers refuse or quantize sparse raw values through the
-    // raw setter. Only when the host-advertised range contains the value,
-    // retry via the corresponding normalized API. Never invent a range.
-    if(std::abs(readback-wanted)>0.5 &&
-       std::isfinite(minimum) && std::isfinite(maximum) &&
-       maximum>minimum && wanted>=minimum && wanted<=maximum) {
-        const double fraction=(wanted-minimum)/(maximum-minimum);
-        if(take_)TakeFX_SetParamNormalized(take_,fx_,param,fraction);
-        else TrackFX_SetParamNormalized(track_,fx_,param,fraction);
-        readback=read();
+    bool accepted=false;
+    if(rawInRange)accepted=writeRaw();
+    auto after=confirm();
+    // The normalized path also handles wrappers whose GetParam returns 0..1
+    // while SignIn internally uses the 1084-step enum. We must not gate
+    // it on the *raw* advertised min/max as the previous implementation did.
+    if(after.index!=desired) {
+        accepted=writeNormalized(fraction)||accepted;
+        after=confirm();
     }
     if(take_)TakeFX_EndParamEdit(take_,fx_,param);
     else TrackFX_EndParamEdit(track_,fx_,param);
-    readback=read();
+    after=confirm();
     Undo_EndBlock2(project_,"LReaParams: detector input",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
-    if(std::abs(readback-wanted)<=0.5)return true;
-    // A setter's boolean may be unreliable, but a mismatched final value
-    // must never be announced as if the requested mode had been selected.
-    // Make debugging possible without flooding the screen reader.
-    char diagnostic[256]{};
+    if(after.index==desired)return true;
+    // Extra diagnostic is available to developers; never announce success
+    // when the actual readback is unknown or still on another mode.
+    char diagnostic[350]{};
     std::snprintf(diagnostic,sizeof(diagnostic),
-        "LReaParams detector: raw %d not confirmed; accepted=%d, readback=%.8g, range=[%.8g,%.8g]\n",
-        wanted,accepted?1:0,readback,minimum,maximum);
+        "LReaParams detector: raw %d not confirmed; accepted=%d, readback=%.8g, norm=%.8g, range=[%.8g,%.8g], decoded=%d\n",
+        wanted,accepted?1:0,after.raw,after.normalized,after.minimum,after.maximum,after.index);
     OutputDebugStringA(diagnostic);
     return false;
 }
 
 void FxNavigator::dynamicsNudgeDetector(int direction,bool big) {
     if(!direction || !dynamicsDetectorInput(parameter_))return;
-    const double raw=take_?TakeFX_GetParam(take_,fx_,parameter_,nullptr,nullptr):
-        TrackFX_GetParam(track_,fx_,parameter_,nullptr,nullptr);
-    const int index=dynamics::detectorIndex(raw);
+    const auto state=readDetector(track_,take_,fx_,parameter_);
+    const int index=state.index>=0?state.index:0;
     // Matches Lua's discrete step handling: Alt+arrows use one choice,
     // coarse Page Up/Down uses a larger jump without invalid raw values.
     const int amount=big?std::clamp(static_cast<int>(std::lround(std::pow(2.0,std::max(0,stepScale_)))),1,7):1;

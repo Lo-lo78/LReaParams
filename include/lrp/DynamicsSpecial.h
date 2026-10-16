@@ -82,6 +82,37 @@ inline constexpr std::array<DetectorChoice,8> detectorChoices{{
     {1026,"Auxiliary input left"},{1027,"Auxiliary input right"},
     {999,"Feedback pre-fader"},{1000,"Output feedback deprecated"}
 }};
+// ReaComp/ReaGate SignIn exposes eight sparse *logical* modes. In some
+// REAPER wrappers the exposed host parameter is normalized, with 1084 steps.
+// This divisor is for the SignIn parameter only, never for other FX params.
+inline constexpr double detectorHostSteps=1084.0;
+inline double detectorHostFraction(int mode) {
+    return std::clamp(mode/detectorHostSteps,0.0,1.0);
+}
+inline int detectorExactIndex(double raw) {
+    if(!std::isfinite(raw))return -1;
+    for(int i=0;i<static_cast<int>(detectorChoices.size());++i)
+        if(std::abs(raw-detectorChoices[static_cast<size_t>(i)].raw)<0.45)return i;
+    return -1;
+}
+// Resolve either true raw values (0, 2, 999, 1000, 1024..1027) or a
+// normalized host value. Do not mistake 0.944... for 'Main inputs'.
+// Return -1 for unrecognized states, rather than claiming a mode was set.
+inline int detectorHostIndex(double raw,double min,double max,double normalized) {
+    if(std::isfinite(min)&&std::isfinite(max)&&max>min&&max<=1.000001&&min>=-0.000001) {
+        const int byHost=detectorExactIndex(std::round(normalized*detectorHostSteps));
+        if(byHost>=0)return byHost;
+        const int byRaw=detectorExactIndex(std::round(raw*detectorHostSteps));
+        if(byRaw>=0)return byRaw;
+    }
+    const int direct=detectorExactIndex(raw);
+    if(direct>=0)return direct;
+    if(std::isfinite(normalized)&&normalized>=0&&normalized<=1) {
+        const int scaled=detectorExactIndex(std::round(normalized*detectorHostSteps));
+        if(scaled>=0)return scaled;
+    }
+    return -1;
+}
 inline int detectorIndex(double raw) {
     const int value=static_cast<int>(std::floor(raw+0.5));
     for(int i=0;i<static_cast<int>(detectorChoices.size());++i)
