@@ -1,3 +1,15 @@
+## 0.0.50 — Track Params: Tab e selezione F1 (prevale sui riferimenti storici)
+
+- **Tab**: contesto, parametro e valore, Step, annunci delle modifiche e preferenza MIDI, numero tracce selezionate su F1; **Ctrl+R non è più assegnato in Track Params**. I comandi di FX Params restano invariati.
+- **Ctrl+A**: seleziona tutte le tracce visibili; **Maiusc+Spazio** / **Ctrl+Maiusc+Spazio**: seleziona/deseleziona la traccia del cursore.
+- **Canc**: deseleziona solo la traccia del cursore; **Ctrl+Canc**: deseleziona tutte le tracce.
+- **Maiusc+Su/Giù, Maiusc+Pagina Su/Giù**: selezione dell'intervallo mantenendo la colonna F1 (primo gesto: seleziona l'ancora secondo Lua).
+- **Ctrl+Maiusc+Su/Giù**: estende la selezione dal cursore fino al bordo della lista.
+- **Ctrl+Alt+Pagina Su/Giù**: trova la folder visibile precedente/successiva senza modificare la selezione.
+- **Ctrl+Maiusc+V**: attiva/disattiva la modalità Value in F1. Invio e tutte le scorciatoie preesistenti per i parametri restano valide.
+- Ctrl+T / Ctrl+Maiusc+T e Alt+Sinistra/Destra mantengono la persistenza dei profili `.tp`.
+- F2/F3 rimangono verticali con 14 campi per colonna e sono da completare in TEST51.
+
 ## 0.0.49 — Track Params F1/F2/F3
 
 - Alt+Sinistra/Destra: Step -10..+10 separato per parametro (salvato nel `.tp`).

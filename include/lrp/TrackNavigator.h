@@ -3,6 +3,7 @@
 #include "ReaperApi.h"
 #include "TrackMemory.h"
 #include <vector>
+#include <unordered_set>
 
 namespace lrp {
 // F1: one track per row, nine parameter columns.
@@ -45,6 +46,18 @@ private:
     std::string pageKey() const;
     std::string rowGuid() const;
     bool ccSpeechSupported() const;
+    // TEST50 F1 selection: cursor rows are independent from REAPER's selected tracks.
+    void resetSelectionStroke();
+    void captureBaseSelection();
+    void applyRangeSelection(int first, int last);
+    void selectVisibleTracks();
+    void toggleCursorTrackSelection(bool deselectOnly);
+    void clearTrackSelection();
+    void extendTrackSelection(int direction, bool page);
+    void extendTrackSelectionToEdge(int direction);
+    void announceSelection() const;
+    void refreshTrackSelection();
+    void moveToFolder(int direction);
     void moveTrack(int delta);
     void moveParameter(int delta);
     void moveDetailColumn(int delta);
@@ -72,6 +85,9 @@ private:
     int sends_{}, receives_{};
     Page page_ = Page::tracks;
     bool active_ = false, valueMode_ = false;
+    bool selectionStroke_ = false;
+    int selectionAnchorRow_ = 0;
+    std::unordered_set<MediaTrack*> selectionBase_;
     std::function<void(const std::string&)> speech_;
     std::filesystem::path resource_;
     TrackMemory memory_;

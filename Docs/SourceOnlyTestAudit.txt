@@ -1,3 +1,5 @@
+TEST50 (0.0.50): only source. Tools/run_static.py PASSED 41 static Python suites (including TEST50). No native compilation, CMake, MSVC, CTest, REAPER, NVDA/OSARA were run. GitHub Actions will build/test C++.
+
 TEST49, LReaParams 0.0.49.
 The package contains no binaries and was not compiled locally.
 Tools/run_static.py passed 40 static Python suites (including TEST49).

@@ -37,7 +37,7 @@ void TrackNavigator::end() noexcept {
             try { speech_("Track Params: memory not saved. Check Track CC Map.tp"); } catch (...) {}
         }
     }
-    active_ = false; valueMode_ = false; rows_.clear(); entries_.clear();
+    active_ = false; valueMode_ = false; resetSelectionStroke(); rows_.clear(); entries_.clear();
 }
 
 bool TrackNavigator::begin() {
@@ -72,6 +72,7 @@ bool TrackNavigator::begin() {
     parameter_ = detailIndex_ = 0;
     page_ = Page::tracks;
     valueMode_ = false;
+    resetSelectionStroke();
     stepScale_ = 0;
     // Opening a different selected track must never unexpectedly jump to a
     // previously remembered track.  The current selection remains authoritative.
@@ -97,15 +98,28 @@ bool TrackNavigator::contextUnchanged() const {
 }
 
 bool TrackNavigator::accepts(const Key& k) const noexcept {
-    if (!active_ || (k.shift && !(k.ctrl && !k.alt && k.vk == 'T'))) return false;
-    if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END || k.vk == 'R' ||
-                         k.vk == 'T' || k.vk == VK_BACK);
-    if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END || k.vk == VK_LEFT || k.vk == VK_RIGHT;
+    if (!active_ || k.altGr) return false;
+    const bool f1 = page_ == Page::tracks;
+    // Ctrl+R is intentionally free: Tab is the only Track Params info key.
+    // Never swallow unknown shortcuts from REAPER, and do not leak selection
+    // gestures to the TCP while this owned keyboard window is active.
+    if (k.ctrl && k.alt) return f1 && !k.shift && (k.vk == VK_PRIOR || k.vk == VK_NEXT);
+    if (k.ctrl && k.shift) return !k.alt && (k.vk == 'T' ||
+        (f1 && (k.vk == 'V' || k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN)));
+    if (k.shift) return !k.alt && !k.ctrl && f1 &&
+        (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN ||
+         k.vk == VK_PRIOR || k.vk == VK_NEXT);
+    if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END ||
+        k.vk == 'T' || k.vk == VK_BACK || (f1 && (k.vk == 'A' || k.vk == VK_DELETE)));
+    if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
+        k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END ||
+        k.vk == VK_LEFT || k.vk == VK_RIGHT;
     switch (k.vk) {
-        case VK_ESCAPE: case VK_RETURN:
+        case VK_ESCAPE: case VK_RETURN: case VK_TAB:
         case VK_LEFT: case VK_RIGHT: case VK_UP: case VK_DOWN:
         case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT:
         case VK_F1: case VK_F2: case VK_F3: return true;
+        case VK_DELETE: return f1;
         default: return false;
     }
 }
@@ -234,6 +248,7 @@ bool TrackNavigator::selectPage(Page page) {
     if (page == Page::sends && GetTrackNumSends(track_, 0) <= 0) { speech_("No sends"); return false; }
     if (page == Page::receives && GetTrackNumSends(track_, -1) <= 0) { speech_("No receives"); return false; }
     rememberPosition();
+    resetSelectionStroke();
     page_ = page;
     parameter_ = detailIndex_ = 0;
     valueMode_ = false;
@@ -398,7 +413,13 @@ std::string TrackNavigator::currentParameterSpeech() const {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     const auto* e = current();
     if (!e) return trackName() + (page_ == Page::sends ? ", no sends" : page_ == Page::receives ? ", no receives" : ", no parameters");
-    if (page_ == Page::tracks) return trackName() + ", " + e->title + ", " + valueText(*e, get(*e));
+    if (page_ == Page::tracks) {
+        const std::string selected = IsTrackSelected(track_) ? "Selected. " : "";
+        const bool folder = GetMediaTrackInfo_Value(track_, "I_FOLDERDEPTH") > 0.5;
+        const std::string folderState = folder ?
+            (GetMediaTrackInfo_Value(track_, "I_FOLDERCOMPACT") >= 1.0 ? ", folder closed" : ", folder open") : "";
+        return selected + trackName() + folderState + ", " + e->title + ", " + valueText(*e, get(*e));
+    }
     const char* label = page_ == Page::sends ? "Send " : "Receive ";
     return trackName() + ", " + label + std::to_string(e->index + 1) +
         (page_ == Page::sends ? " to " : " from ") + detailPeerName(e->category, e->index) +
@@ -455,8 +476,116 @@ std::wstring TrackNavigator::windowTitle() const {
     return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + pageSuffix +
            (valueMode_ ? L" - Value" : L"");
 }
+// F1 selection follows Lua's visible-track row model, keeping the parameter
+// column fixed. A selection gesture is the only case allowed to change the
+// REAPER selected-track anchor without invalidating our own context guard.
+void TrackNavigator::resetSelectionStroke() {
+    selectionStroke_ = false;
+    selectionAnchorRow_ = 0;
+    selectionBase_.clear();
+}
+void TrackNavigator::captureBaseSelection() {
+    selectionBase_.clear();
+    for (int i = 0, n = CountTracks(project_); i < n; ++i) {
+        MediaTrack* tr = GetTrack(project_, i);
+        if (tr && IsTrackSelected(tr)) selectionBase_.insert(tr);
+    }
+}
+void TrackNavigator::refreshTrackSelection() {
+    TrackList_AdjustWindows(false);
+    UpdateArrange();
+    // Rebaseline only after our own explicit selection command. Unsolicited
+    // external selection changes still terminate the navigator safely.
+    initialSelection_ = GetSelectedTrack2(project_, 0, true);
+}
+void TrackNavigator::announceSelection() const {
+    if (page_ != Page::tracks) return;
+    speech_(std::to_string(CountSelectedTracks(project_)) + " Selected. " + currentParameterSpeech());
+}
+void TrackNavigator::applyRangeSelection(int first, int last) {
+    if (rows_.empty()) return;
+    first = std::clamp(first, 0, static_cast<int>(rows_.size()) - 1);
+    last = std::clamp(last, 0, static_cast<int>(rows_.size()) - 1);
+    std::unordered_set<MediaTrack*> wanted = selectionBase_;
+    if (first > last) std::swap(first, last);
+    for (int i = first; i <= last; ++i) wanted.insert(rows_[i].track);
+    for (int i = 0, n = CountTracks(project_); i < n; ++i) {
+        MediaTrack* tr = GetTrack(project_, i);
+        if (tr) SetTrackSelected(tr, wanted.count(tr) != 0);
+    }
+    refreshTrackSelection();
+}
+void TrackNavigator::selectVisibleTracks() {
+    resetSelectionStroke();
+    for (const auto& row : rows_) SetTrackSelected(row.track, true);
+    refreshTrackSelection();
+    announceSelection();
+}
+void TrackNavigator::toggleCursorTrackSelection(bool deselectOnly) {
+    resetSelectionStroke();
+    const bool wasSelected = IsTrackSelected(track_);
+    if (deselectOnly && !wasSelected) {
+        speech_(std::to_string(CountSelectedTracks(project_)) + " Selected. " + trackName() + ". Not selected");
+        return;
+    }
+    SetTrackSelected(track_, deselectOnly ? false : !wasSelected);
+    refreshTrackSelection();
+    speech_(std::to_string(CountSelectedTracks(project_)) + " Selected. " + trackName() +
+        (deselectOnly || wasSelected ? ". Deselected" : ". Selected"));
+}
+void TrackNavigator::clearTrackSelection() {
+    resetSelectionStroke();
+    for (int i = 0, n = CountTracks(project_); i < n; ++i) {
+        if (MediaTrack* tr = GetTrack(project_, i)) SetTrackSelected(tr, false);
+    }
+    refreshTrackSelection();
+    speech_("0 Selected");
+}
+void TrackNavigator::extendTrackSelection(int direction, bool page) {
+    if (!selectionStroke_) {
+        selectionStroke_ = true;
+        selectionAnchorRow_ = row_;
+        captureBaseSelection();
+        // Original Lua: first Shift+arrow selects the anchor, next one moves.
+        applyRangeSelection(row_, row_);
+        announceSelection();
+        return;
+    }
+    const int jump = page ? 5 : 1;
+    const int next = std::clamp(row_ + direction * jump, 0, static_cast<int>(rows_.size()) - 1);
+    if (next == row_) return;
+    applyRangeSelection(selectionAnchorRow_, next);
+    row_ = next;
+    track_ = rows_[row_].track;
+    rememberPosition();
+    announceSelection();
+}
+void TrackNavigator::extendTrackSelectionToEdge(int direction) {
+    resetSelectionStroke();
+    captureBaseSelection();
+    const int next = direction < 0 ? 0 : static_cast<int>(rows_.size()) - 1;
+    applyRangeSelection(row_, next);
+    row_ = next;
+    track_ = rows_[row_].track;
+    rememberPosition();
+    announceSelection();
+}
+void TrackNavigator::moveToFolder(int direction) {
+    resetSelectionStroke();
+    for (int i = row_ + direction; i >= 0 && i < static_cast<int>(rows_.size()); i += direction) {
+        if (GetMediaTrackInfo_Value(rows_[i].track, "I_FOLDERDEPTH") > 0.5) {
+            row_ = i;
+            track_ = rows_[row_].track;
+            rememberPosition();
+            announceTrack();
+            return;
+        }
+    }
+    // Silent boundary, same as ordinary F1 movement.
+}
 void TrackNavigator::moveTrack(int delta) {
     if (page_ != Page::tracks) return;
+    resetSelectionStroke();
     const int next = std::clamp(row_ + delta, 0, static_cast<int>(rows_.size()) - 1);
     if (next != row_) { row_ = next; track_ = rows_[row_].track; rememberPosition(); announceTrack(); }
 }
@@ -509,13 +638,51 @@ void TrackNavigator::nudge(int direction, bool coarse) {
 }
 void TrackNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
-    if (k.ctrl && !k.alt && !k.shift && k.vk == 'R') {
-        if (!k.repeat) speech_(currentParameterSpeech() + ". Step " +
-            std::to_string(memory_.step(parameterKey())) +
-            (memory_.valueSpeech(parameterKey()) ? ". Value speech on" : ". Value speech off") +
-            (ccSpeechSupported() ? (memory_.ccSpeech(page_ == Page::tracks ? "Track" : page_ == Page::sends ? "Sends" : "Receives",
-                parameterKey().substr(parameterKey().find('.') + 1)) ? ". MIDI speech on" : ". MIDI speech off") : ""));
+    if (!k.ctrl && !k.alt && !k.shift && k.vk == VK_TAB) {
+        if (!k.repeat && current()) {
+            const std::string id = parameterKey();
+            const std::string page = page_ == Page::tracks ? "Track" : page_ == Page::sends ? "Sends" : "Receives";
+            const auto dot = id.find('.');
+            const std::string bare = dot == std::string::npos ? id : id.substr(dot + 1);
+            std::string info = currentParameterSpeech() + ". Step " + std::to_string(memory_.step(id)) +
+                (memory_.valueSpeech(id) ? ". Value speech on" : ". Value speech off");
+            if (ccSpeechSupported()) info += memory_.ccSpeech(page, bare) ? ". MIDI speech on" : ". MIDI speech off";
+            if (page_ == Page::tracks) info += ". " + std::to_string(CountSelectedTracks(project_)) + " tracks selected";
+            speech_(info);
+        }
         return;
+    }
+    // In F1, REAPER track selection is independent of the invisible cursor.
+    if (page_ == Page::tracks) {
+        if (k.ctrl && k.alt && !k.shift && (k.vk == VK_PRIOR || k.vk == VK_NEXT)) {
+            moveToFolder(k.vk == VK_PRIOR ? -1 : 1); return;
+        }
+        if (k.ctrl && k.shift && !k.alt && k.vk == 'V') {
+            if (!k.repeat) {
+                valueMode_ = !valueMode_;
+                if (valueMode_) speech_(reviewLine()); else announceTitle();
+            }
+            return;
+        }
+        if (k.ctrl && k.shift && !k.alt && (k.vk == VK_UP || k.vk == VK_DOWN)) {
+            if (!k.repeat) extendTrackSelectionToEdge(k.vk == VK_UP ? -1 : 1);
+            return;
+        }
+        if (k.ctrl && k.shift && !k.alt && k.vk == VK_SPACE) {
+            if (!k.repeat) toggleCursorTrackSelection(false);
+            return;
+        }
+        if (k.shift && !k.ctrl && !k.alt) {
+            if (k.vk == VK_SPACE) { if (!k.repeat) toggleCursorTrackSelection(false); return; }
+            if (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT) {
+                extendTrackSelection(k.vk == VK_UP || k.vk == VK_PRIOR ? -1 : 1,
+                    k.vk == VK_PRIOR || k.vk == VK_NEXT);
+                return;
+            }
+        }
+        if (k.ctrl && !k.alt && !k.shift && k.vk == 'A') { if (!k.repeat) selectVisibleTracks(); return; }
+        if (k.ctrl && !k.alt && !k.shift && k.vk == VK_DELETE) { if (!k.repeat) clearTrackSelection(); return; }
+        if (!k.ctrl && !k.alt && !k.shift && k.vk == VK_DELETE) { if (!k.repeat) toggleCursorTrackSelection(true); return; }
     }
     if (k.ctrl && !k.alt && k.vk == 'T') {
         if (k.repeat || !current()) return;

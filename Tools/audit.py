@@ -105,10 +105,11 @@ def main():
           'TEST13 native accessible Value slider missing')
     track_src=(ROOT/'src/TrackNavigator.cpp').read_text()
     # TEST16: NVDA+Up uses the passive reviewLine, now parameter/value ONLY.
-    # Moving tracks still speaks track context; explicit Ctrl+R stays full.
+    # Moving tracks still speaks track context; TEST50 uses Tab for full info.
     check('void TrackNavigator::announce() { speech_(parameterValueSpeech()); }' in track_src and
           'row_ = next; track_ = rows_[row_].track; rememberPosition(); announceTrack();' in track_src and
-          'if (!k.repeat) speech_(currentParameterSpeech()' in track_src and
+          'const std::string id = parameterKey();' in track_src and
+          'k.vk == VK_TAB' in track_src and
           'if (!valueMode_) return parameterValueSpeech();' in track_src and
           'std::string TrackNavigator::reviewLine() const' in track_src,
           'TEST16 native NVDA Track review contract missing')
@@ -135,8 +136,10 @@ def main():
     check('WM_SYSKEYDOWN' in title_src and 'keyboardKey_' in title_src and
           'DLGC_WANTALLKEYS' in title_src,
           'Window procedure keyboard ownership missing')
-    check("k.vk == 'R'" in fx_source and "k.vk == 'R'" in (ROOT/'src/TrackNavigator.cpp').read_text(),
-          'Explicit Ctrl+R parameter review missing')
+    check("k.vk == 'R'" in fx_source and
+          'k.vk == VK_TAB' in track_src and
+          'k.vk == \'R\'' not in track_src,
+          'FX review and TEST50 Track Tab review mismatch')
     check('reassertFocusAfterNavigationKey' in title_src,
           'Post-parameter-change focus recovery missing')
     corpus(ROOT/'Testing/fixtures')

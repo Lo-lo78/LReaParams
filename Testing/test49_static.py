@@ -7,7 +7,8 @@ hdr = (root / 'include/lrp/TrackNavigator.h').read_text()
 parser = (root / 'src/Profile.cpp').read_text()
 ext = (root / 'src/Extension.cpp').read_text()
 cmake = (root / 'CMakeLists.txt').read_text()
-assert 'VERSION 0.0.49' in cmake
+from version_contract import version_at_least
+assert version_at_least(root, (0, 0, 49))
 assert 'src/TrackMemory.cpp' in cmake
 assert 'setResourceRoot(resource_)' in ext
 assert 'TrackMemory memory_' in hdr

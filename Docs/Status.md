@@ -1,3 +1,7 @@
+# 0.0.50 (TEST50): Track Params — F1 selezione e Tab
+
+Tab sostituisce Ctrl+R per le informazioni su Track Params. F1 comprende selezione reale delle tracce tramite gesti Lua, intervalli cumulativi, navigazione fra folder e Ctrl+Maiusc+V per la modalità Value; gli annunci segnalano la selezione. La memoria persistente `.tp` e FX Params restano come TEST49. **Non è la migrazione integrale di F1**: le operazioni clipboard con routing, spostamento fisico delle tracce, filter/ricerca e automazioni devono ancora essere portate dal Lua. GitHub Actions e REAPER/NVDA devono ancora confermare compilazione e comportamento. [TEST50](TEST50_TRACK_F1_SELECTION_TAB.md).
+
 # 0.0.49 (TEST49): Track Params memoria persistente
 
 Il navigatore Track F1/F2/F3 salva Step, annunci delle variazioni e posizioni; Ctrl+T memorizza le preferenze MIDI del Lua senza runtime MIDI Track. Il supporto alle restanti pagine e CC operativi rimane incompleto. [Piano di prova](TEST49_TRACK_PERSISTENT_MEMORY.md). **NON compilato localmente**.

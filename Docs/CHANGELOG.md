@@ -1,3 +1,11 @@
+# 0.0.50 — Track Params F1 selezione / Tab informazioni
+
+- Tab sostituisce Ctrl+R per il riepilogo completo delle informazioni in Track Params (anche F2/F3); FX Params invariato.
+- Selezione tracce F1: Ctrl+A, Maiusc+Spazio/Ctrl+Maiusc+Spazio, Canc/Ctrl+Canc, Maiusc+frecce/Pagine, Ctrl+Maiusc+Su/Giù. Il cursore invisibile è indipendente dalla selezione REAPER; ribasamento del controllo dopo selezioni richieste dal navigatore.
+- Ctrl+Alt+Pagina Su/Giù: salto alla folder visibile precedente/successiva, preservando la colonna e senza selezione reale della traccia.
+- Ctrl+Maiusc+V: alterna Grid/Value in F1; lo Step e le preferenze `.tp` della TEST49 sono preservati.
+- Non ancora migrate: cut/copy/paste tracks with routing, riordino fisico, filtri e automazioni F1, F4–F8, routing completo F2/F3, MIDI CC runtime. Vedere test manuali, nessuna compilazione locale.
+
 # 0.0.49 — Track Params / memoria persistente
 
 - Step separati per parametro F1/F2/F3, preferenza annunci editing, Ctrl+T compatibile con CCSpeech Lua; ripristino pagina/parametro/colonna.
