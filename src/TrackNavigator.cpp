@@ -37,7 +37,7 @@ void TrackNavigator::end() noexcept {
             try { speech_("Track Params: memory not saved. Check Track CC Map.tp"); } catch (...) {}
         }
     }
-    active_ = false; valueMode_ = false; filterEditing_ = false;
+    active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false; resetMidiState();
     filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear();
 }
 
@@ -66,6 +66,7 @@ bool TrackNavigator::begin() {
     // Opening a different selected track must never unexpectedly jump to a
     // previously remembered track.  The current selection remains authoritative.
     restorePosition();
+    midiSequence_ = 0; // populated by pollMidi before consuming subsequent controller input
     active_ = true;
     return true;
 }
@@ -88,7 +89,7 @@ bool TrackNavigator::contextUnchanged() const {
 
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.altGr) return false;
-    if (filterEditing_) {
+    if (filterEditing_ || numericEditing_) {
         // The standard EDIT handles actual typing, selection and clipboard.
         // Only accept navigation-ending keys; other keys must never reach
         // REAPER's Main section while the text field has focus.
@@ -100,15 +101,15 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     // Enter toggles Grid/Value, and Ctrl+Alt+Up/Down moves among folders.
     // Never swallow unknown shortcuts from REAPER, and do not leak selection
     // gestures to the TCP while this owned keyboard window is active.
-    if (k.ctrl && k.alt) return f1 && !k.shift && (k.vk == VK_UP || k.vk == VK_DOWN);
+    if (k.ctrl && k.alt) return !k.shift && (k.vk == 'C' || (f1 && (k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.alt && k.shift) return f1 && !k.ctrl && (k.vk == VK_UP || k.vk == VK_DOWN);
-    if (k.ctrl && k.shift) return !k.alt && (k.vk == 'T' ||
+    if (k.ctrl && k.shift) return !k.alt && (k.vk == 'C' || k.vk == 'T' ||
         (k.vk == 'S' || k.vk == 'R' || k.vk == 'A') ||
         (f1 && (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN)));
-    if (k.shift) return !k.alt && !k.ctrl && f1 &&
+    if (k.shift) return !k.alt && !k.ctrl && (k.vk == 'C' || (f1 &&
         (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN ||
-         k.vk == VK_PRIOR || k.vk == VK_NEXT);
-    if (k.ctrl) return !k.alt && (k.vk == 'F' || k.vk == VK_HOME || k.vk == VK_END ||
+         k.vk == VK_PRIOR || k.vk == VK_NEXT)));
+    if (k.ctrl) return !k.alt && (k.vk == 'E' || k.vk == 'F' || k.vk == VK_HOME || k.vk == VK_END ||
         k.vk == 'T' || k.vk == VK_BACK || (!f1 && (k.vk == VK_UP || k.vk == VK_DOWN)) || (f1 && (k.vk == VK_RETURN || k.vk == 'A' || k.vk == 'C' ||
             k.vk == 'X' || k.vk == 'V' || k.vk == VK_DELETE)));
     if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
@@ -470,7 +471,7 @@ void TrackNavigator::put(const Entry& e, double value) {
     }
     TrackList_AdjustWindows(false);
     UpdateArrange();
-    if (memory_.valueSpeech(parameterKey())) speech_(valueText(e, get(e)));
+    if (!suppressPutSpeech_ && memory_.valueSpeech(parameterKey())) speech_(valueText(e, get(e)));
 }
 std::string TrackNavigator::valueText(const Entry& e, double value) const {
     if (e.type == Entry::header) return (e.category == 0 ? "to " : "from ") + detailPeerName(e.category, e.index);
@@ -590,6 +591,7 @@ std::string TrackNavigator::reviewLine() const {
     // Track/page names remain available via NVDA+T. Moving between tracks
     // announces the track name; Tab provides the full context.
     if (filterEditing_) return nativeTextLabel() + ", " + filterBuffer_;
+    if (numericEditing_) return "Parameter value, " + numericBuffer_;
     if (!valueMode_) return parameterValueSpeech();
     const auto* e = current();
     return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
@@ -637,7 +639,7 @@ std::wstring TrackNavigator::windowTitle() const {
     const wchar_t* pageSuffix = page_ == Page::tracks ? L"" :
                                 page_ == Page::sends ? L" - Sends" : L" - Receives";
     return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + pageSuffix +
-           (filterEditing_ ? L" - Filter" : !filterQuery_.empty() ? L" - Filter active" : L"") +
+           (numericEditing_ ? L" - Numeric edit" : filterEditing_ ? L" - Filter" : !filterQuery_.empty() ? L" - Filter active" : L"") +
            (valueMode_ ? L" - Value" : L"");
 }
 // F1 selection follows Lua's visible-track row model, keeping the parameter
@@ -751,7 +753,7 @@ void TrackNavigator::moveTrack(int delta) {
     if (page_ != Page::tracks) return;
     resetSelectionStroke();
     const int next = std::clamp(row_ + delta, 0, static_cast<int>(rows_.size()) - 1);
-    if (next != row_) { row_ = next; track_ = rows_[row_].track; rememberPosition(); announceTrack(); }
+    if (next != row_) { row_ = next; track_ = rows_[row_].track; midiPickup_.clear(); rememberPosition(); announceTrack(); }
 }
 void TrackNavigator::moveParameter(int delta) {
     if (entries_.empty()) return;
@@ -766,6 +768,7 @@ void TrackNavigator::moveDetailColumn(int delta) {
     if (next != detailIndex_) {
         const int previousColumn = detailIndex_;
         detailIndex_ = next;
+        midiPickup_.clear();
         rememberPosition();
         speech_(detailColumnSpeech(previousColumn));
     }
@@ -782,6 +785,7 @@ void TrackNavigator::switchDetailTrack(int direction) {
         row_ = candidate;
         track_ = nextTrack;
         detailIndex_ = 0;
+        midiPickup_.clear();
         buildEntries();
         parameter_ = std::clamp(parameter_, 0, detailHeight - 1);
         stepScale_ = memory_.step(parameterKey());
@@ -839,11 +843,35 @@ void TrackNavigator::handle(const Key& k) {
             const std::string bare = dot == std::string::npos ? id : id.substr(dot + 1);
             std::string info = currentParameterSpeech() + ". Step " + std::to_string(memory_.step(id)) +
                 (memory_.valueSpeech(id) ? ". Value speech on" : ". Value speech off");
-            if (ccSpeechSupported()) info += memory_.ccSpeech(page, bare) ? ". MIDI speech on" : ". MIDI speech off";
+            if (ccSpeechSupported()) {
+                info += memory_.ccSpeech(page, bare) ? ". MIDI speech on" : ". MIDI speech off";
+                std::string ccSection, ccName;
+                if (midiTarget(ccSection, ccName)) {
+                    const auto link = memory_.ccLink(ccSection, ccName);
+                    if (!link.empty()) info += ". CC " + link;
+                }
+            }
             if (page_ == Page::tracks) info += ". " + std::to_string(CountSelectedTracks(project_)) + " tracks selected";
             info += filterSuffix();
             speech_(info);
         }
+        return;
+    }
+    if (numericEditing_) {
+        if (k.vk == VK_RETURN) commitNumericEdit();
+        else if (k.vk == VK_ESCAPE) { numericEditing_ = false; speech_("Edit cancelled. " + parameterValueSpeech()); }
+        return;
+    }
+    if ((k.ctrl && k.alt && !k.shift && k.vk == 'C') ||
+        (!k.ctrl && !k.alt && k.shift && k.vk == 'C') ||
+        (k.ctrl && !k.alt && k.shift && k.vk == 'C') ||
+        (k.ctrl && !k.alt && !k.shift && page_ != Page::tracks && k.vk == VK_DELETE)) {
+        if (!k.repeat) midiShortcut(k);
+        return;
+    }
+    if (k.vk == VK_ESCAPE && learnCc_) { learnCc_ = false; learnSection_.clear(); learnKey_.clear(); speech_("CC learn cancelled"); return; }
+    if (k.ctrl && !k.shift && !k.alt && k.vk == 'E') {
+        if (!k.repeat) beginNumericEdit();
         return;
     }
     // Ctrl+F works in all F1/F2/F3 pages, with a real NVDA-accessible EDIT.
@@ -927,7 +955,7 @@ void TrackNavigator::handle(const Key& k) {
             const auto bare = id.substr(id.find('.') + 1);
             const bool on = !memory_.ccSpeech(page, bare);
             memory_.setCcSpeech(page, bare, on); memory_.flush();
-            speech_(std::string(on ? "MIDI speech on" : "MIDI speech off") + ". MIDI control will arrive in a later test");
+            speech_(on ? "MIDI speech on" : "MIDI speech off");
         }
         return;
     }
@@ -976,9 +1004,10 @@ void TrackNavigator::handle(const Key& k) {
                 ". Routing status: set MIDI source to None for off, or All / a channel for on.");
             return;
         }
-        if (!e || e->type == Entry::header) {
-            announce(); return;
+        if (e && e->type == Entry::header && page_ != Page::tracks) {
+            jumpToLinkedRouting(); return;
         }
+        if (!e) { announce(); return; }
         valueMode_ = !valueMode_;
         if (valueMode_) speech_(reviewLine());
         else announceTitle();

@@ -1,3 +1,7 @@
+## 0.0.54 — TEST54 prima migrazione runtime MIDI Track e Ctrl+E
+
+MIDI CC F1/F2/F3 (Fixed, Floating, pickup, learn e parlato); Ctrl+E con campo nativo; Enter su intestazioni send/receive si sposta sul collegamento gemello, anche duplicato. Non ancora completato: Ctrl+Q Track background, automazioni Width/Send/Receive da creare, clear all, range volume e F4-F8. [Dettagli](TEST54_TRACK_CC_NUMERIC_ROUTING.md). Solo 49 suite statiche, nessuna compilazione o verifica NVDA.
+
 ## 0.0.53 — TEST53.2: annunci direzionali F2/F3
 
 Correzione TEST53.1: Verticale = solo parametro e valore (header solo Send/Receive); Orizzontale = contesto traccia soltanto al primo link o al cambio peer, e suffisso progressivo dei collegamenti della stessa traccia. Tab completo, Search cleared breve. [Test](TEST53_2_DIRECTIONAL_ROUTING_SPEECH.md). Da compilare in GitHub Actions e provare con NVDA.

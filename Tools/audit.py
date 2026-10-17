@@ -107,7 +107,7 @@ def main():
     # TEST16: NVDA+Up uses the passive reviewLine, now parameter/value ONLY.
     # Moving tracks still speaks track context; TEST50 uses Tab for full info.
     check('void TrackNavigator::announce() { speech_(parameterValueSpeech()); }' in track_src and
-          'row_ = next; track_ = rows_[row_].track; rememberPosition(); announceTrack();' in track_src and
+          'row_ = next; track_ = rows_[row_].track; midiPickup_.clear(); rememberPosition(); announceTrack();' in track_src and
           'const std::string id = parameterKey();' in track_src and
           'k.vk == VK_TAB' in track_src and
           'if (!valueMode_) return parameterValueSpeech();' in track_src and

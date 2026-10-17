@@ -1,2 +1,2 @@
-LReaParams 0.0.53 — TEST53 Track Params Ctrl+F filters, accessible native text field and routing identity.
-Source-only archive; compile and test only via GitHub Actions. Parameter Library excluded.
+LReaParams 0.0.54 — TEST54 F1/F2/F3 MIDI CC, numeric edit, linked send/receive.
+Source-only. No local compilation. Build only with GitHub Actions. Parameter Library excluded.

@@ -11,7 +11,7 @@ lua=(root/'Legacy/Speak Track Params - TrackTake Navigator.lua').read_text(encod
 assert version_at_least(root,(0,0,51))
 assert "(k.vk == VK_UP || k.vk == VK_DOWN)" in s
 assert 'moveToFolder(k.vk == VK_UP ? -1 : 1)' in s
-assert 'return f1 && !k.shift && (k.vk == VK_UP || k.vk == VK_DOWN)' in s
+assert "k.vk == 'C' || (f1 && (k.vk == VK_UP || k.vk == VK_DOWN))" in s  # TEST54: folder keys coexist with MIDI CC learn
 assert "k.ctrl && k.shift && !k.alt && k.vk == 'V'" not in s  # TEST52 Ctrl+V clipboard, not Shift+V Value
 assert 'if (k.vk == VK_RETURN)' in s and 'valueMode_ = !valueMode_' in s
 assert 'detailHeight = 14' in h and 'entries_.push_back(' in s

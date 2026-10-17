@@ -136,6 +136,28 @@ void TrackMemory::setCcSpeech(const std::string& page, const std::string& id, bo
     if (page != "Track" && page != "Sends" && page != "Receives") throw ProfileError("Unsupported CC speech page");
     edit("CCSpeech." + page, ccKey(id), on ? "1" : "");
 }
+std::string TrackMemory::ccLink(const std::string& section, const std::string& key) const {
+    if (section != "Track" && section != "Sends" && section != "Receives") return {};
+    return read(section, key);
+}
+void TrackMemory::setCcLink(const std::string& section, const std::string& key, const std::string& link) {
+    if (section != "Track" && section != "Sends" && section != "Receives")
+        throw ProfileError("Unsupported Track CC section");
+    edit(section, key, link);
+}
+std::map<std::string, std::string> TrackMemory::ccLinks(const std::string& section) const {
+    std::map<std::string, std::string> result;
+    if (section != "Track" && section != "Sends" && section != "Receives") return result;
+    if (const auto it = profile_.sections.find(section); it != profile_.sections.end()) {
+        for (const auto& line : it->second) {
+            const auto pos = line.find('=');
+            if (pos != std::string::npos) result[line.substr(0, pos)] = line.substr(pos + 1);
+        }
+    }
+    if (const auto it = edits_.find(section); it != edits_.end())
+        for (const auto& item : it->second) result[item.first] = item.second;
+    return result;
+}
 std::string TrackMemory::position(const std::string& key) const { return read(navigationSection, key); }
 void TrackMemory::setPosition(const std::string& key, const std::string& value) { edit(navigationSection, key, value); }
 void TrackMemory::flush() {

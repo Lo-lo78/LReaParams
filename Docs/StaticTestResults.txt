@@ -1,2 +1,2 @@
-LReaParams 0.0.53 TEST53.2: Tools/run_static.py 48 suites Python SOURCE-ONLY PASS. Includes directional F2/F3 routing announcements, duplicate ordinals, Search cleared and TEST53.1 paste.
-NOT RUN: native compilation/linking, MSVC, CMake, MSBuild, CTest, REAPER, NVDA/OSARA, Windows keyboard input. GitHub Actions required.
+LReaParams 0.0.54 TEST54: Tools/run_static.py 49 Python SOURCE-ONLY suites PASS. Includes Track Params MIDI CC, Lua-compatible .tp patching, numeric Ctrl+E, linked routing, plus all prior contracts.
+NOT RUN: C++ native compilation, MSVC, CMake, MSBuild, CTest, REAPER, NVDA/OSARA or MIDI hardware. Build via GitHub Actions.

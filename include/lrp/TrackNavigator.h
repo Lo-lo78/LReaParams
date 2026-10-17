@@ -2,6 +2,8 @@
 #include "Navigator.h"
 #include "ReaperApi.h"
 #include "TrackMemory.h"
+#include "MidiControl.h"
+#include <map>
 #include <vector>
 #include <unordered_set>
 
@@ -21,15 +23,16 @@ public:
     void handle(const Key&) override;
     void announce() override;
     void announceTitle() override;
+    void tickMidi() { pollMidi(); }
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
     // TEST53: a real Win32 EDIT owns filter text/selection/caret, including UTF-8.
     // The extension binds this to the existing accessible keyboard window.
-    bool nativeTextField() const noexcept { return active_ && filterEditing_; }
-    std::string nativeTextValue() const { return filterBuffer_; }
-    std::string nativeTextLabel() const { return page_ == Page::tracks ? "Filter tracks" :
+    bool nativeTextField() const noexcept { return active_ && (filterEditing_ || numericEditing_); }
+    std::string nativeTextValue() const { return numericEditing_ ? numericBuffer_ : filterBuffer_; }
+    std::string nativeTextLabel() const { if (numericEditing_) return "Parameter value"; return page_ == Page::tracks ? "Filter tracks" :
         page_ == Page::sends ? "Filter sends" : "Filter receives"; }
-    void setNativeText(const std::string& text) { if (filterEditing_) filterBuffer_ = text; }
+    void setNativeText(const std::string& text) { if (numericEditing_) numericBuffer_ = text; else if (filterEditing_) filterBuffer_ = text; }
     bool nativeValueSlider() const override;
     double valueFraction() const override;
     std::string sliderLabel() const override;
@@ -85,6 +88,15 @@ private:
     // F2/F3 Delete: remove the exact routing instance, including duplicate
     // receives coming from the same source track.
     void deleteCurrentRouting();
+    void jumpToLinkedRouting(); // Enter on F2/F3 header; retain Value for editable fields
+    void beginNumericEdit();
+    void commitNumericEdit();
+    // TEST54 CC map in the same main .tp as Lua, with pickup and no stale MIDI replay.
+    void midiShortcut(const Key&);
+    void pollMidi();
+    bool midiTarget(std::string& section, std::string& key) const;
+    void applyMidi(const std::string& section, const std::string& key, int value);
+    void resetMidiState();
     // TEST52: native SWS clipboard keeps track-to-track routing intact.
     enum class TrackClipboardAction { cut, copy, paste };
     void trackClipboard(TrackClipboardAction action);
@@ -131,6 +143,16 @@ private:
     std::vector<Entry> entries_;
     std::string filterQuery_; // scoped to this Track Params session (Lua runtime state)
     std::string filterBuffer_;
+    std::string numericBuffer_;
+    bool numericEditing_ = false;
+    bool learnCc_ = false, fixedCc_ = false, floatingCc_ = false, floatingWaiting_ = false;
+    std::string learnSection_, learnKey_;
+    int midiSequence_ = 0, floatingChannel_ = -1, floatingNumber_ = -1;
+    std::string floatingTarget_;
+    std::map<std::string, Pickup> midiPickup_;
+    bool suppressPutSpeech_ = false;
+    std::string pendingMidiSpeech_;
+    ULONGLONG midiSpeechAt_ = 0;
     bool filterEditing_ = false;
     bool nativeFilterAvailable_ = false;
     ReaProject* project_{};

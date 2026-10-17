@@ -18,6 +18,10 @@ public:
     void setValueSpeech(const std::string& parameter, bool enabled);
     bool ccSpeech(const std::string& page, const std::string& parameter) const;
     void setCcSpeech(const std::string& page, const std::string& parameter, bool enabled);
+    // Read and patch existing Lua-compatible MIDI maps; never rebuild the .tp.
+    std::string ccLink(const std::string& section, const std::string& key) const;
+    void setCcLink(const std::string& section, const std::string& key, const std::string& link);
+    std::map<std::string, std::string> ccLinks(const std::string& section) const;
     std::string position(const std::string& key) const;
     void setPosition(const std::string& key, const std::string& value);
 private:

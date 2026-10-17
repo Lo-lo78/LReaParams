@@ -329,6 +329,7 @@ public:
         if (shortcutHelp() || input_.exitRequested() || !current_->contextUnchanged() || !current_->uiStillOpen() || !input_.environmentSafe()) {
             exitNavigation(false); return;
         }
+        if (current_ == &trackNavigator_) trackNavigator_.tickMidi();
         if(current_==&navigator_) {
             const auto previous=current_->reviewLine();
             navigator_.pollMidi();
