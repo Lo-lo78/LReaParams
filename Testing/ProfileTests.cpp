@@ -307,12 +307,13 @@ int main(int argc, char** argv) {
             anotherProject.step("Track.Volume") == 0,
             "Unrelated projects with the same name shared MIDI or preferences");
         // Stale sessions must not overwrite externally changed project .tp.
-        TrackMemory stale;
-        stale.load(trackRoot, savedProject);
+        // Keep this instance distinct from the earlier FxOrder stale fixture.
+        TrackMemory staleTrack;
+        staleTrack.load(trackRoot, savedProject);
         off.setStep("Track.Volume", -8); off.flush();
         const auto newerTrackBytes = readFile(projectTp);
-        stale.setStep("Track.Volume", 7);
-        rejected([&] { stale.flush(); });
+        staleTrack.setStep("Track.Volume", 7);
+        rejected([&] { staleTrack.flush(); });
         check(readFile(projectTp) == newerTrackBytes,
             "Stale project Track profile overwritten");
         const auto trackBackup = trackRoot / L"LReaParams" / L"Backups" / L"ProfileEdits";

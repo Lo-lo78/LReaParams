@@ -1,3 +1,8 @@
+### 0.0.54.1 — GitHub Actions compilation fix
+- Corrected a duplicate `stale` fixture variable in `Testing/ProfileTests.cpp` (MSVC C2371 and cascading C2039); TrackMemory test now uses `staleTrack`.
+- No changes to DLL source, MIDI CC, `.tp` storage, shortcuts, or project routing.
+- Rebuild and native tests must run on GitHub Actions; no local native build was performed.
+
 ## 0.0.54.1 — Track Fixed CC e profilo di progetto
 
 Le memorie Track Params sono ora per progetto, con Fixed CC persistente, annunci CC prima di Auto e trasporto condiviso con FX Params. Ctrl+Canc elimina il CC anche in F1; Ctrl+Maiusc+Canc deseleziona le tracce. Rinominati i comandi REAPER senza cambiarne gli ID. F4 futuro nello stesso `.tp`. Solo sorgente.

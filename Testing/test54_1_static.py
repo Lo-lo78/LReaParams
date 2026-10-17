@@ -41,4 +41,5 @@ assert 'tmAgain.load(trackRoot, savedProject)' in unit
 assert 'tmAgain.fixedEnabled()' in unit and 'tmAgain.ccLink' in unit
 assert 'Unrelated projects with the same name' in unit
 assert 'Project save stole legacy import target' in unit
+assert unit.count('TrackMemory staleTrack;') == 1 and 'staleTrack.setStep(' in unit and 'staleTrack.flush()' in unit
 print('TEST54.1 project .tp, persistent Fixed CC, speech/transport and compatibility source contracts PASS')
