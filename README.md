@@ -1,3 +1,5 @@
+> **TEST49 / LReaParams 0.0.49:** Track Params F1/F2/F3 ora dispone di Step persistenti individuali, annunci editing per parametro e memoria delle posizioni nel file `Tracks/Track CC Map.tp`. Ctrl+T memorizza il parlato MIDI Track ma il runtime MIDI non è ancora migrato. Vedere [test e scorciatoie](Docs/TEST49_TRACK_PERSISTENT_MEMORY.md). Solo sorgente, nessuna compilazione locale.
+
 # LReaParams 0.0.48 — F7 e FX Memories F8
 
 Aggiornamento della 0.0.46.5; preserva Track Params, le funzionalità FX

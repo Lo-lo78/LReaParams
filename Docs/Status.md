@@ -1,3 +1,7 @@
+# 0.0.49 (TEST49): Track Params memoria persistente
+
+Il navigatore Track F1/F2/F3 salva Step, annunci delle variazioni e posizioni; Ctrl+T memorizza le preferenze MIDI del Lua senza runtime MIDI Track. Il supporto alle restanti pagine e CC operativi rimane incompleto. [Piano di prova](TEST49_TRACK_PERSISTENT_MEMORY.md). **NON compilato localmente**.
+
 ## 0.0.48 — Step per parametro e parlato MIDI CC selettivo (candidato sorgente)
 
 - **Step per parametro:** Alt+Sinistra/Destra mantiene l'intervallo esistente

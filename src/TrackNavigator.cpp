@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstring>
 #include <iomanip>
+#include <cstdio>
 #include <sstream>
 #include <stdexcept>
 
@@ -24,6 +25,19 @@ std::wstring wideUtf8(const std::string& text) {
     converted.resize(static_cast<size_t>(length - 1));
     return converted;
 }
+}
+
+// TEST49: preserve preferences even on an external REAPER action that closes
+// navigation. All IO errors are reported without escaping a noexcept callback.
+void TrackNavigator::end() noexcept {
+    if (active_) {
+        try { rememberPosition(); memory_.flush(); }
+        catch (...) {
+            OutputDebugStringW(L"LReaParams: Track Params memory could not be saved.\n");
+            try { speech_("Track Params: memory not saved. Check Track CC Map.tp"); } catch (...) {}
+        }
+    }
+    active_ = false; valueMode_ = false; rows_.clear(); entries_.clear();
 }
 
 bool TrackNavigator::begin() {
@@ -49,6 +63,7 @@ bool TrackNavigator::begin() {
         if (hiddenLevel >= 0 && nesting <= hiddenLevel) hiddenLevel = -1;
     }
     if (rows_.empty()) { speech_("Track Params: no visible tracks"); return false; }
+    memory_.load(resource_);
     row_ = 0;
     for (int i = 0; i < static_cast<int>(rows_.size()); ++i) {
         if (rows_[i].track == initialSelection_) { row_ = i; break; }
@@ -58,7 +73,9 @@ bool TrackNavigator::begin() {
     page_ = Page::tracks;
     valueMode_ = false;
     stepScale_ = 0;
-    buildEntries();
+    // Opening a different selected track must never unexpectedly jump to a
+    // previously remembered track.  The current selection remains authoritative.
+    restorePosition();
     active_ = true;
     return true;
 }
@@ -80,8 +97,9 @@ bool TrackNavigator::contextUnchanged() const {
 }
 
 bool TrackNavigator::accepts(const Key& k) const noexcept {
-    if (!active_ || k.shift) return false;
-    if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END || k.vk == 'R');
+    if (!active_ || (k.shift && !(k.ctrl && !k.alt && k.vk == 'T'))) return false;
+    if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END || k.vk == 'R' ||
+                         k.vk == 'T' || k.vk == VK_BACK);
     if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END || k.vk == VK_LEFT || k.vk == VK_RIGHT;
     switch (k.vk) {
         case VK_ESCAPE: case VK_RETURN:
@@ -129,14 +147,117 @@ void TrackNavigator::buildEntries() {
         entries_.push_back({"MIDI merge", "I_MIDIFLAGS", cat, i, Entry::midiMerge});
     }
 }
+std::string TrackNavigator::pageKey() const {
+    return page_ == Page::tracks ? "F1" : page_ == Page::sends ? "F2" : "F3";
+}
+std::string TrackNavigator::rowGuid() const {
+    if (row_ < 0 || row_ >= static_cast<int>(rows_.size())) return {};
+    const GUID& g = rows_[row_].guid;
+    char text[64]{};
+    std::snprintf(text, sizeof(text), "{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
+        static_cast<unsigned long>(g.Data1), static_cast<unsigned short>(g.Data2),
+        static_cast<unsigned short>(g.Data3), g.Data4[0], g.Data4[1], g.Data4[2], g.Data4[3],
+        g.Data4[4], g.Data4[5], g.Data4[6], g.Data4[7]);
+    return text;
+}
+std::string TrackNavigator::parameterKey() const {
+    const auto* e = current();
+    if (!e) return {};
+    const char* key = nullptr;
+    switch (e->type) {
+        case Entry::volume: key = "Volume"; break;
+        case Entry::pan: key = "Pan"; break;
+        case Entry::width: key = "Width"; break;
+        case Entry::flag: key = e->parm == "B_PHASE" ? "PhaseInvert" : "Mute"; break;
+        case Entry::solo: key = "Solo"; break;
+        case Entry::sendCount: key = "SendCount"; break;
+        case Entry::receiveCount: key = "ReceiveCount"; break;
+        case Entry::fxCount: key = "FXCount"; break;
+        case Entry::header: key = "Header"; break;
+        case Entry::audioSourceMode: key = "AudioSourceMode"; break;
+        case Entry::audioSource: key = "AudioSource"; break;
+        case Entry::audioDestination: key = "AudioDestination"; break;
+        case Entry::sendType: key = "SendType"; break;
+        case Entry::midiSource: key = "MidiSource"; break;
+        case Entry::midiDestination: key = "MidiDestination"; break;
+        case Entry::midiSourceBus: key = "MidiSourceBus"; break;
+        case Entry::midiDestinationBus: key = "MidiDestinationBus"; break;
+        case Entry::midiFollowsFader: key = "MidiFollowsFader"; break;
+        case Entry::midiMerge: key = "MidiMerge"; break;
+    }
+    return std::string(page_ == Page::tracks ? "Track." : page_ == Page::sends ? "Sends." : "Receives.") + key;
+}
+void TrackNavigator::rememberPosition() {
+    if (rows_.empty() || !current()) return;
+    const auto section = pageKey();
+    memory_.setPosition("LastPage", section);
+    memory_.setPosition(section + ".Parameter", parameterKey());
+    memory_.setPosition(section + ".TrackGUID", rowGuid());
+    if (page_ != Page::tracks) memory_.setPosition(section + ".Column", std::to_string(detailIndex_));
+}
+void TrackNavigator::restorePosition() {
+    const auto savedPage = memory_.position("LastPage");
+    if (savedPage == "F2" && GetTrackNumSends(track_, 0) > 0) page_ = Page::sends;
+    else if (savedPage == "F3" && GetTrackNumSends(track_, -1) > 0) page_ = Page::receives;
+    else page_ = Page::tracks;
+    buildEntries();
+    parameter_ = detailIndex_ = 0;
+    const auto savedParameter = memory_.position(pageKey() + ".Parameter");
+    const int limit = page_ == Page::tracks ? static_cast<int>(entries_.size()) : detailHeight;
+    bool found = false;
+    for (int i = 0; i < limit; ++i) {
+        parameter_ = i;
+        if (parameterKey() == savedParameter) { found = true; break; }
+    }
+    if (!found) parameter_ = 0;
+    if (page_ != Page::tracks && memory_.position(pageKey() + ".TrackGUID") == rowGuid()) {
+        try { const auto raw = memory_.position(pageKey() + ".Column");
+            if (!raw.empty()) {
+                std::size_t n = 0; const int index = std::stoi(raw, &n);
+                if (n == raw.size()) detailIndex_ = std::clamp(index, 0, static_cast<int>(entries_.size()) / detailHeight - 1);
+            }
+        } catch (...) { detailIndex_ = 0; }
+    }
+    stepScale_ = memory_.step(parameterKey());
+}
+bool TrackNavigator::ccSpeechSupported() const {
+    const auto* e = current();
+    if (!e) return false;
+    if (page_ == Page::tracks)
+        return e->type == Entry::volume || e->type == Entry::pan || e->type == Entry::width ||
+            e->type == Entry::flag || e->type == Entry::solo;
+    return e->type == Entry::volume || e->type == Entry::pan || e->type == Entry::flag;
+}
+
 bool TrackNavigator::selectPage(Page page) {
     if (page == page_) return true; // Repeated page key is silent
     if (page == Page::sends && GetTrackNumSends(track_, 0) <= 0) { speech_("No sends"); return false; }
     if (page == Page::receives && GetTrackNumSends(track_, -1) <= 0) { speech_("No receives"); return false; }
+    rememberPosition();
     page_ = page;
     parameter_ = detailIndex_ = 0;
     valueMode_ = false;
     buildEntries();
+    // Restore this page's last parameter. Keep send-column memory only for
+    // the same track GUID, not for unrelated newly selected tracks.
+    const auto savedParameter = memory_.position(pageKey() + ".Parameter");
+    const int limit = page_ == Page::tracks ? static_cast<int>(entries_.size()) : detailHeight;
+    bool found = false;
+    for (int i = 0; i < limit; ++i) {
+        parameter_ = i;
+        if (parameterKey() == savedParameter) { found = true; break; }
+    }
+    if (!found) parameter_ = 0;
+    if (page_ != Page::tracks && memory_.position(pageKey() + ".TrackGUID") == rowGuid()) {
+        try { const auto raw = memory_.position(pageKey() + ".Column");
+            if (!raw.empty()) {
+                std::size_t n = 0; const int index = std::stoi(raw, &n);
+                if (n == raw.size()) detailIndex_ = std::clamp(index, 0, static_cast<int>(entries_.size()) / detailHeight - 1);
+            }
+        } catch (...) { detailIndex_ = 0; }
+    }
+    stepScale_ = memory_.step(parameterKey());
+    rememberPosition();
     announceTitle();
     return true;
 }
@@ -227,7 +348,7 @@ void TrackNavigator::put(const Entry& e, double value) {
     const bool ok = e.index < 0 ? SetMediaTrackInfo_Value(track_, parm.c_str(), raw) :
         SetTrackSendInfo_Value(track_, e.category, e.index, parm.c_str(), raw);
     if (!ok) throw std::runtime_error("REAPER refused track change");
-    speech_(valueText(e, get(e)));
+    if (memory_.valueSpeech(parameterKey())) speech_(valueText(e, get(e)));
 }
 std::string TrackNavigator::valueText(const Entry& e, double value) const {
     if (e.type == Entry::header) return (e.category == 0 ? "to " : "from ") + detailPeerName(e.category, e.index);
@@ -337,19 +458,19 @@ std::wstring TrackNavigator::windowTitle() const {
 void TrackNavigator::moveTrack(int delta) {
     if (page_ != Page::tracks) return;
     const int next = std::clamp(row_ + delta, 0, static_cast<int>(rows_.size()) - 1);
-    if (next != row_) { row_ = next; track_ = rows_[row_].track; announceTrack(); }
+    if (next != row_) { row_ = next; track_ = rows_[row_].track; rememberPosition(); announceTrack(); }
 }
 void TrackNavigator::moveParameter(int delta) {
     if (entries_.empty()) return;
     const int limit = page_ == Page::tracks ? 8 : detailHeight - 1;
     const int next = std::clamp(parameter_ + delta, 0, limit);
-    if (next != parameter_) { parameter_ = next; announce(); }
+    if (next != parameter_) { parameter_ = next; stepScale_ = memory_.step(parameterKey()); rememberPosition(); announce(); }
 }
 void TrackNavigator::moveDetailColumn(int delta) {
     if (page_ == Page::tracks || entries_.empty()) return;
     const int count = static_cast<int>(entries_.size()) / detailHeight;
     const int next = std::clamp(detailIndex_ + delta, 0, count - 1);
-    if (next != detailIndex_) { detailIndex_ = next; announce(); }
+    if (next != detailIndex_) { detailIndex_ = next; rememberPosition(); announce(); }
 }
 void TrackNavigator::toggle(const Entry& e) {
     if (e.type != Entry::flag && e.type != Entry::solo && e.type != Entry::midiFollowsFader) return;
@@ -359,7 +480,7 @@ void TrackNavigator::nudge(int direction, bool coarse) {
     const auto* e = current();
     if (!e) return;
     const double old = get(*e);
-    const double factor = std::pow(2.0, stepScale_);
+    const double factor = std::pow(2.0, memory_.step(parameterKey()));
     double next = old;
     switch (e->type) {
         case Entry::volume: next = amp(std::clamp(db(old) + (coarse ? 3.0 : 0.5) * factor * direction, minDb, maxDb)); break;
@@ -389,8 +510,35 @@ void TrackNavigator::nudge(int direction, bool coarse) {
 void TrackNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     if (k.ctrl && !k.alt && !k.shift && k.vk == 'R') {
-        if (!k.repeat) announceTrack();  // explicit full review via OSARA
+        if (!k.repeat) speech_(currentParameterSpeech() + ". Step " +
+            std::to_string(memory_.step(parameterKey())) +
+            (memory_.valueSpeech(parameterKey()) ? ". Value speech on" : ". Value speech off") +
+            (ccSpeechSupported() ? (memory_.ccSpeech(page_ == Page::tracks ? "Track" : page_ == Page::sends ? "Sends" : "Receives",
+                parameterKey().substr(parameterKey().find('.') + 1)) ? ". MIDI speech on" : ". MIDI speech off") : ""));
         return;
+    }
+    if (k.ctrl && !k.alt && k.vk == 'T') {
+        if (k.repeat || !current()) return;
+        if (k.shift) {
+            const auto id = parameterKey();
+            const bool on = !memory_.valueSpeech(id);
+            memory_.setValueSpeech(id, on); memory_.flush();
+            speech_(on ? "Value speech on" : "Value speech off");
+        } else {
+            if (!ccSpeechSupported()) { speech_("MIDI speech not available for this field"); return; }
+            const auto id = parameterKey();
+            const auto page = page_ == Page::tracks ? "Track" : page_ == Page::sends ? "Sends" : "Receives";
+            const auto bare = id.substr(id.find('.') + 1);
+            const bool on = !memory_.ccSpeech(page, bare);
+            memory_.setCcSpeech(page, bare, on); memory_.flush();
+            speech_(std::string(on ? "MIDI speech on" : "MIDI speech off") + ". MIDI control will arrive in a later test");
+        }
+        return;
+    }
+    if (k.ctrl && !k.alt && !k.shift && k.vk == VK_BACK) {
+        if (k.repeat || !current()) return;
+        memory_.setStep(parameterKey(), 0); stepScale_ = 0; memory_.flush();
+        speech_("Step 0"); return;
     }
     if (k.vk == VK_ESCAPE) {
         if (valueMode_) { valueMode_ = false; announceTitle(); }
@@ -436,7 +584,12 @@ void TrackNavigator::handle(const Key& k) {
     if (k.alt || valueMode_) {
         if (k.vk == VK_LEFT || k.vk == VK_RIGHT) {
             const int next = std::clamp(stepScale_ + (k.vk == VK_LEFT ? -1 : 1), -10, 10);
-            if (next != stepScale_) { stepScale_ = next; speech_("Step " + std::to_string(stepScale_)); }
+            if (next != stepScale_) {
+                stepScale_ = next;
+                memory_.setStep(parameterKey(), stepScale_);
+                memory_.flush();
+                speech_("Step " + std::to_string(stepScale_));
+            }
         }
         else if (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT)
             nudge(k.vk == VK_UP || k.vk == VK_PRIOR ? 1 : -1, k.vk == VK_PRIOR || k.vk == VK_NEXT);

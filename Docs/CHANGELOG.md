@@ -1,3 +1,10 @@
+# 0.0.49 — Track Params / memoria persistente
+
+- Step separati per parametro F1/F2/F3, preferenza annunci editing, Ctrl+T compatibile con CCSpeech Lua; ripristino pagina/parametro/colonna.
+- Aggiornamenti conservativi del file esistente `Tracks/Track CC Map.tp`, backup SHA-256, conflitti esterni protetti, parser e test nativi ampliati.
+- Invariato il motore FX Params e fuori scope Parameter Library. Runtime MIDI Track e sezioni F4-F8 rimandati.
+- **Solo sorgente**; build MSVC e test runtime saranno eseguiti in GitHub Actions/dall’utente.
+
 ## 0.0.48 — Step per parametro e parlato MIDI CC
 
 - Step -10..+10 persistente per parametro FX, anche dopo riavvio REAPER.

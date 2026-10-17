@@ -142,6 +142,22 @@ Profile parseLegacy(std::string bytes) {
                 for (const auto& l : pair.second) { const auto f = field(l); require(f.value.empty() || f.value == "1", "Invalid CC speech flag"); }
             } else if (name == "F4Order") {
                 for (const auto& l : pair.second) { const auto f = field(l); if (!f.value.empty()) for (const auto& v : split(f.value, ',')) integer(v, 0, 2147483647); }
+            } else if (name == "LReaParams.StepScales") {
+                for (const auto& l : pair.second) {
+                    const auto f = field(l);
+                    require(f.key.size() <= 200 && !f.key.empty(), "Invalid Track Step key");
+                    integer(f.value, -10, 10);
+                }
+            } else if (name == "LReaParams.ParameterSpeech") {
+                for (const auto& l : pair.second) {
+                    const auto f = field(l);
+                    require(f.key.size() <= 200 && !f.key.empty() && (f.value == "0" || f.value == "1"), "Invalid Track speech preference");
+                }
+            } else if (name == "LReaParams.NavigationMemory") {
+                for (const auto& l : pair.second) {
+                    const auto f = field(l);
+                    require(!f.key.empty() && f.key.size() <= 200 && f.value.size() <= 256, "Invalid Track navigation preference");
+                }
             }
         }
     } else throw ProfileError("Unknown profile version");

@@ -1,1 +1,3 @@
-LReaParams 0.0.46.4 — Browser Master/Monitor: Sinistra/Destra cambia colonna, verticali isolate. Solo sorgenti, build esclusivamente GitHub Actions.
+LReaParams 0.0.49 — TEST49 Track Params persistent memory.
+Source code only. Native compilation and runtime verification are reserved for the user's GitHub Actions Windows runner and REAPER/NVDA/OSARA tests.
+The Parameter Library code is intentionally excluded.

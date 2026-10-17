@@ -1,44 +1,8 @@
-LReaParams 0.0.47 — Audit sorgente (esclusi build C++, CMake e REAPER)
-- Tools/audit.py: PASS, 52 profili fixture verificati
-- 37 test Python statici: PASS
-- F8 Default non cancella senza conferma; F7-da-F8 limitato a 4 colonne
-- Hidden include virtuali ReaComp/ReaGate
-- Fixture native aggiunte a ProfileTests.cpp ma NON eseguite localmente
-- Compilazione Windows: esclusivamente GitHub Actions
-
-LReaParams 0.0.46.3 — source-only verification
-Tools/audit.py: PASS (2.08s) 
-Testing/test18_static.py: PASS (1.26s) 
-Testing/test19_static.py: PASS (1.85s) 
-Testing/test20_static.py: PASS (1.26s) 
-Testing/test21_static.py: PASS (1.33s) 
-Testing/test22_static.py: PASS (1.37s) 
-Testing/test23_static.py: PASS (1.26s) 
-Testing/test24_static.py: PASS (1.2s) 
-Testing/test25_static.py: PASS (2.89s) 
-Testing/test26_static.py: PASS (2.27s) 
-Testing/test27_static.py: PASS (1.38s) 
-Testing/test28_static.py: PASS (1.4s) 
-Testing/test29_static.py: PASS (1.32s) 
-Testing/test30_static.py: PASS (1.4s) 
-Testing/test40_static.py: PASS (2.42s) 
-Testing/test41_static.py: PASS (1.47s) 
-Testing/test42_cc_speech_static.py: PASS (1.39s) 
-Testing/test42_static.py: PASS (1.55s) 
-Testing/test43_1_static.py: PASS (1.73s) 
-Testing/test43_2_static.py: PASS (2.52s) 
-Testing/test43_3_static.py: PASS (1.43s) 
-Testing/test43_4_static.py: PASS (1.41s) 
-Testing/test43_5_static.py: PASS (1.19s) 
-Testing/test43_static.py: PASS (1.79s) 
-Testing/test44_1_static.py: PASS (1.37s) 
-Testing/test44_2_static.py: PASS (2.35s) 
-Testing/test44_3_static.py: PASS (1.44s) 
-Testing/test44_4_static.py: PASS (1.42s) 
-Testing/test44_5_static.py: PASS (1.94s) 
-Testing/test44_static.py: PASS (1.56s) 
-Testing/test45_static.py: PASS (1.6s) 
-Testing/test46_1_static.py: PASS (1.34s) 
-Testing/test46_2_static.py: PASS (1.43s) 
-Testing/test46_3_static.py: PASS (1.05s) 
-Testing/test46_static.py: PASS (1.0s) 
+TEST49, LReaParams 0.0.49.
+The package contains no binaries and was not compiled locally.
+Tools/run_static.py passed 40 static Python suites (including TEST49).
+Testing/ProfileTests.cpp exercises TrackMemory persistence, old CC map preservation,
+readback, backup, stale writer rejection, new profile, and legacy-import race.
+These native tests are registered with CTest but HAVE NOT BEEN RUN here.
+The user's GitHub Actions Windows runner must complete MSVC build and CTest.
+Manual tests with REAPER, OSARA, NVDA and MIDI hardware are outstanding.

@@ -1,3 +1,12 @@
+## 0.0.49 — Track Params F1/F2/F3
+
+- Alt+Sinistra/Destra: Step -10..+10 separato per parametro (salvato nel `.tp`).
+- Ctrl+Backspace: azzera lo Step del solo parametro corrente.
+- Ctrl+Maiusc+T: annunci del valore dopo l'editing On/Off (non zittisce NVDA+Su e la navigazione).
+- Ctrl+T: preferenza persistente annunci MIDI CC secondo Lua; runtime MIDI Track non ancora presente.
+- Ctrl+R: rilegge contesto, Step e stati di parlato.
+- Riapertura: ultima sezione/parametro; F2/F3 ricordano la colonna se la traccia GUID è la stessa.
+
 ## 0.0.48 — Steps individuali e parlato CC
 
 **Alt+Sinistra/Destra**: cambia lo Step del parametro corrente da -10 a +10.

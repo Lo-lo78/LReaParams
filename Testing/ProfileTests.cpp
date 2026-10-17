@@ -1,6 +1,7 @@
 #include "lrp/Profile.h"
 #include "lrp/Storage.h"
 #include "lrp/FxOrder.h"
+#include "lrp/TrackMemory.h"
 #include "lrp/ReaEqVirtual.h"
 #include <windows.h>
 #include <fstream>
@@ -242,6 +243,89 @@ int main(int argc, char** argv) {
         check(f8.ccLinks.at(1)=="2\t74","MIDI CC mapping lost");
         check(f8.visibleOrder()==std::vector<int>({0,1,2,compareParamIndex,3}),
               "Hidden virtuals leaked into visible Custom Order");
+        // 0.0.49: TRACK preferences live in Track CC Map.tp. Preserve all
+        // historical Lua associations, unknown sections and CRLF formatting.
+        const auto trackRoot = root / L"track-memory49";
+        const auto trackFile = trackRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp";
+        const std::string oldTrackPayload =
+            "# historical Track CC map\r\nVersion=2\r\nF4CCScope=ProjectTrack\r\n"
+            "[Track]\r\nVolume=1,7\r\nPan=2,10\r\n"
+            "[Sends]\r\nVolume=3,11\r\n[Receives]\r\n"
+            "[FXParams.Plugin]\r\nSynthetic|1:Parameter=1,25\r\n"
+            "[CCSpeech.Track]\r\nVolume=1\r\n"
+            "[UnknownFuture]\r\nopaque data\r\n";
+        overwrite(trackFile, serializeNative(parseLegacy(oldTrackPayload)));
+        TrackMemory tm;
+        tm.load(trackRoot);
+        check(tm.step("Track.Volume") == 0 && tm.valueSpeech("Track.Pan") &&
+              tm.ccSpeech("Track", "Volume"), "Track preference defaults incorrect");
+        tm.setStep("Track.Volume", -4);
+        tm.setStep("Track.Pan", 2);
+        tm.setStep("Sends.Volume", -3);
+        tm.setValueSpeech("Track.Pan", false);
+        tm.setCcSpeech("Track", "Volume", false);
+        tm.setCcSpeech("Sends", "Pan", true);
+        tm.setPosition("F1.Parameter", "Track.Pan");
+        tm.setPosition("F2.Column", "3");
+        tm.flush();
+        const auto trackEdited = parseNative(readFile(trackFile)).payload;
+        check(trackEdited.find("[Track]\r\nVolume=1,7\r\nPan=2,10\r\n") != std::string::npos &&
+              trackEdited.find("[Sends]\r\nVolume=3,11\r\n") != std::string::npos &&
+              trackEdited.find("[UnknownFuture]\r\nopaque data\r\n") != std::string::npos &&
+              trackEdited.find("[CCSpeech.Track]\r\nVolume=\r\n") != std::string::npos,
+              "TEST49 modified unrelated fields or did not edit MIDI speech");
+        check(trackEdited.find("[LReaParams.StepScales]\r\n") != std::string::npos,
+              "TEST49 lost CRLF formatting");
+        TrackMemory tmAgain;
+        tmAgain.load(trackRoot);
+        check(tmAgain.step("Track.Volume") == -4 && tmAgain.step("Track.Pan") == 2 &&
+              tmAgain.step("Sends.Volume") == -3 && tmAgain.step("Receives.Volume") == 0,
+              "Track steps were not independently saved");
+        check(!tmAgain.valueSpeech("Track.Pan") && tmAgain.valueSpeech("Track.Volume"),
+              "Independent automatic speech preferences lost");
+        check(!tmAgain.ccSpeech("Track", "Volume") && tmAgain.ccSpeech("Sends", "Pan") &&
+              tmAgain.position("F1.Parameter") == "Track.Pan" && tmAgain.position("F2.Column") == "3",
+              "MIDI speech or navigation memory lost");
+        tmAgain.setStep("Track.Volume", -8);
+        tmAgain.flush();
+        TrackMemory tmStale;
+        tmStale.load(trackRoot);
+        tmAgain.setStep("Track.Volume", -7);
+        tmAgain.flush();
+        const auto newerTrackBytes = readFile(trackFile);
+        tmStale.setStep("Track.Volume", 7);
+        rejected([&] { tmStale.flush(); });
+        check(readFile(trackFile) == newerTrackBytes, "Stale Track profile overwritten");
+        const auto trackBackup = trackRoot / L"LReaParams" / L"Backups" / L"ProfileEdits";
+        check(fs::exists(trackBackup) && !fs::is_empty(trackBackup), "Track profile backup missing");
+        const auto newTrackRoot = root / L"track-memory49-new";
+        TrackMemory tmNew;
+        tmNew.load(newTrackRoot);
+        check(!fs::exists(newTrackRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp"),
+              "Unmodified new Track map should not be created");
+        tmNew.setStep("Track.Width", 5);
+        tmNew.flush();
+        check(parseNative(readFile(newTrackRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp")).kind == ProfileKind::track,
+              "New Track profile invalid");
+        // Import-worker race: a pending historical .txt must not be masked
+        // by an empty new .tp. Resume only after exact imported bytes exist.
+        const auto raceRoot = root / L"track-memory49-race";
+        const auto raceLegacy = raceRoot / L"Scripts" / L"Lo-lo - Scripts" / L"Utility" /
+            L"Scripts" / L"Tracks" / L"Track CC Map.txt";
+        const auto raceNative = raceRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp";
+        overwrite(raceLegacy, oldTrackPayload);
+        TrackMemory tmRace;
+        tmRace.load(raceRoot);
+        tmRace.setStep("Track.Volume", -5);
+        rejected([&] { tmRace.flush(); });
+        check(!fs::exists(raceNative), "TEST49 stole historical CC map path before import");
+        overwrite(raceNative, serializeNative(parseLegacy(oldTrackPayload)));
+        tmRace.flush();
+        check(parseNative(readFile(raceNative)).payload.find("Volume=1,7") != std::string::npos &&
+              parseNative(readFile(raceNative)).payload.find("Track.Volume=-5") != std::string::npos,
+              "Imported Track CC map was not safely rebased");
+        rejected([] { parseLegacy("Version=2\nF4CCScope=Plugin\n[Track]\n[Sends]\n[Receives]\n[FXParams.Plugin]\n[LReaParams.StepScales]\nTrack.Volume=11\n"); });
+        rejected([] { parseLegacy("Version=2\nF4CCScope=Plugin\n[Track]\n[Sends]\n[Receives]\n[FXParams.Plugin]\n[LReaParams.ParameterSpeech]\nTrack.Pan=9\n"); });
         const auto collision = root / L"collision.txt";
         check(writeNewVerified(collision, "first"), "Create failed");
         check(!writeNewVerified(collision, "second") && readFile(collision) == "first", "Collision replaced bytes");

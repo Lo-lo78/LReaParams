@@ -40,6 +40,7 @@ public:
         resource_ = fs::u8path(path);
         navigator_.setResourceRoot(resource_);
         backgroundMidi_.setResourceRoot(resource_);
+        trackNavigator_.setResourceRoot(resource_);
         for (auto& a : actions_) {
             a.command = info_.Register("command_id", const_cast<char*>(a.id));
             if (a.command <= 0 || a.command > 65535) throw std::runtime_error("Cannot register action ID");
@@ -156,7 +157,7 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.48 - Per-parameter Step and MIDI CC speech\n\n"
+            ShowMessageBox("LReaParams 0.0.49 - Track Params memory\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"

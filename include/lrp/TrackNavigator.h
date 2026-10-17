@@ -1,6 +1,7 @@
 #pragma once
 #include "Navigator.h"
 #include "ReaperApi.h"
+#include "TrackMemory.h"
 #include <vector>
 
 namespace lrp {
@@ -9,8 +10,9 @@ namespace lrp {
 class TrackNavigator final : public Navigator {
 public:
     explicit TrackNavigator(std::function<void(const std::string&)> speech) : speech_(std::move(speech)) {}
+    void setResourceRoot(const std::filesystem::path& root) { resource_ = root; }
     bool begin() override;
-    void end() noexcept override { active_ = false; valueMode_ = false; rows_.clear(); entries_.clear(); }
+    void end() noexcept override;
     bool active() const noexcept override { return active_; }
     bool contextUnchanged() const override;
     bool accepts(const Key&) const noexcept override;
@@ -37,6 +39,12 @@ private:
     static constexpr int detailHeight = 14;
     void buildEntries();
     bool selectPage(Page);
+    void restorePosition();
+    void rememberPosition();
+    std::string parameterKey() const;
+    std::string pageKey() const;
+    std::string rowGuid() const;
+    bool ccSpeechSupported() const;
     void moveTrack(int delta);
     void moveParameter(int delta);
     void moveDetailColumn(int delta);
@@ -60,10 +68,12 @@ private:
     int row_{};
     int parameter_{};       // F1: 0..8 column; F2/F3: 0..13 vertical field
     int detailIndex_{};     // F2/F3 send/receive column
-    int stepScale_{};       // Alt+Left/Right: -10..+10 for continuous values
+    int stepScale_{};       // TEST49: restored from the current parameter's .tp preference
     int sends_{}, receives_{};
     Page page_ = Page::tracks;
     bool active_ = false, valueMode_ = false;
     std::function<void(const std::string&)> speech_;
+    std::filesystem::path resource_;
+    TrackMemory memory_;
 };
 }
