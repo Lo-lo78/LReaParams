@@ -1,3 +1,17 @@
+## Aggiornamento TEST51 — Crea send e receive in F1
+
+- **Ctrl+Maiusc+S**: seleziona tracce sorgenti, premi una volta per memorizzarle, poi seleziona destinazioni e ripremi: crea i send.
+- **Ctrl+Maiusc+R**: seleziona destinazioni, premi una volta, poi seleziona sorgenti e ripremi: crea i receive.
+- **Esc** durante l'operazione a due passaggi: annulla solo l'operazione in sospeso; **Tab** ne legge lo stato.
+- **Maiusc+Spazio** e le altre scorciatoie F1 selezionano le tracce su ciascuno dei due passaggi. Fuori F1 Ctrl+Maiusc+S/R non crea nulla.
+
+## 0.0.51 — Track Params F1/F2/F3 (prevale sulle precedenti TEST)
+
+- **Invio**: entra/esce da Value sui parametri continui (toggle sui booleani). **Ctrl+Maiusc+V non è più assegnato**.
+- **Ctrl+Alt+Su/Giù**: folder precedente/successiva in F1; **Ctrl+Alt+Pagina Su/Giù** non è più assegnato.
+- **F2/F3**: Su/Giù percorre 14 campi; Sinistra/Destra cambia send/receive. **Alt+Su/Giù** modifica source/destination audio, modalità, tipo di send e MIDI; **Invio** apre Value per campi modificabili. **Tab** legge gli stati di memoria.
+- Step, parlato e posizioni `.tp` invariati. [Dettagli](TEST51_TRACK_ROUTING_AND_SHORTCUTS.md).
+
 ## 0.0.50 — Track Params: Tab e selezione F1 (prevale sui riferimenti storici)
 
 - **Tab**: contesto, parametro e valore, Step, annunci delle modifiche e preferenza MIDI, numero tracce selezionate su F1; **Ctrl+R non è più assegnato in Track Params**. I comandi di FX Params restano invariati.

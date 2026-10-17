@@ -1,3 +1,9 @@
+# 0.0.51 (TEST51 aggiornata): Track Params — F1 creazione send/receive, F2/F3 routing
+
+**F1 crea send e receive tramite Ctrl+Maiusc+S e Ctrl+Maiusc+R in due passaggi**, mantenendo la selezione multipla originale del Lua. Esc cancella la procedura in sospeso, Tab ne legge lo stato. I collegamenti sono raggruppati in una sola operazione Undo e le tracce memorizzate vengono riconsultate per GUID. [Guida TEST51 add routing](TEST51_F1_ADD_SEND_RECEIVE.md).
+
+Altre novità TEST51: Ctrl+Alt+Su/Giù naviga fra folder; Ctrl+Maiusc+V rimosso. F2/F3 mantengono 14 voci verticali per send/receive; source/destination audio editabili entro 128 canali, con espansione automatica delle tracce reali, e MIDI bus 0–16. Nessuna modifica ai profili `.tp`, alla memoria o a FX Params. **Mancano ancora la cancellazione dei singoli send/receive in F2/F3, salto peer, filtri, automazioni e CC runtime, oltre a F4–F8.** Solo test statici, build GitHub Actions e collaudo REAPER/NVDA ancora necessari. [TEST51 F2/F3](TEST51_TRACK_ROUTING_AND_SHORTCUTS.md).
+
 # 0.0.50 (TEST50): Track Params — F1 selezione e Tab
 
 Tab sostituisce Ctrl+R per le informazioni su Track Params. F1 comprende selezione reale delle tracce tramite gesti Lua, intervalli cumulativi, navigazione fra folder e Ctrl+Maiusc+V per la modalità Value; gli annunci segnalano la selezione. La memoria persistente `.tp` e FX Params restano come TEST49. **Non è la migrazione integrale di F1**: le operazioni clipboard con routing, spostamento fisico delle tracce, filter/ricerca e automazioni devono ancora essere portate dal Lua. GitHub Actions e REAPER/NVDA devono ancora confermare compilazione e comportamento. [TEST50](TEST50_TRACK_F1_SELECTION_TAB.md).

@@ -95,8 +95,10 @@
 #define REAPERAPI_WANT_SetMediaTrackInfo_Value
 #define REAPERAPI_WANT_GetTrackSendName
 #define REAPERAPI_WANT_GetTrackReceiveName
+#define REAPERAPI_WANT_CreateTrackSend
 #define REAPERAPI_WANT_GetTrackNumSends
 #define REAPERAPI_WANT_GetTrackSendInfo_Value
+#define REAPERAPI_WANT_GetSetTrackSendInfo
 #define REAPERAPI_WANT_SetTrackSendInfo_Value
 #define REAPERAPI_WANT_RefreshToolbar2
 #define REAPERAPI_WANT_ShowMessageBox

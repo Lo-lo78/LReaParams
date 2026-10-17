@@ -1,3 +1,3 @@
-LReaParams 0.0.49 — TEST49 Track Params persistent memory.
-Source code only. Native compilation and runtime verification are reserved for the user's GitHub Actions Windows runner and REAPER/NVDA/OSARA tests.
-The Parameter Library code is intentionally excluded.
+LReaParams 0.0.51 — TEST51 Track Params F1 creation of sends/receives plus F2/F3 routing and shortcuts.
+Source-only archive. GitHub Actions is the only intended native build.
+Parameter Library is intentionally excluded. Old profiles, FX Params and F1 stay in place.

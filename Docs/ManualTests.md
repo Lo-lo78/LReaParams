@@ -1,3 +1,7 @@
+## 0.0.51 — Track Params: shortcut F1 e F2/F3 routing
+
+Collaudare anche [TEST51_F1_ADD_SEND_RECEIVE.md](TEST51_F1_ADD_SEND_RECEIVE.md): Ctrl+Maiusc+S/R in F1 con gruppi multipli, Esc, Tab, autoconnessioni, conteggi e Undo. Seguire [TEST51_TRACK_ROUTING_AND_SHORTCUTS.md](TEST51_TRACK_ROUTING_AND_SHORTCUTS.md) DOPO la build GitHub Actions: F1 Invio (Ctrl+Maiusc+V rimosso), Ctrl+Alt+Su/Giù; F2/F3 14 voci, source None/1–2..127–128, destination, mono, I_NCHAN automatico sulla traccia corretta, Send type 0–3, bus MIDI 0–16, nessuna contaminazione tra flag MIDI. Verificare profili `.tp`, NVDA/OSARA e regressioni FX.
+
 ## 0.0.46.5 — Delta Solo globale e Monitor FX
 
 - [ ] Aggiungere un FX Monitor e attivare Delta Solo con Ctrl+D nel browser Monitor; premere Ctrl+Maiusc+D: deve disattivarsi e non essere più annunciato.

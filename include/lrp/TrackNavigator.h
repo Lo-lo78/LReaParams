@@ -58,6 +58,18 @@ private:
     void announceSelection() const;
     void refreshTrackSelection();
     void moveToFolder(int direction);
+    // TEST51.1: Lua-compatible, two-pass F1 sends and receives. Stored GUIDs
+    // are re-resolved at commit time; no dangling MediaTrack* is retained.
+    enum class RoutingKind { none, send, receive };
+    std::vector<GUID> selectedTrackGuids() const;
+    MediaTrack* trackByGuid(const GUID& guid) const;
+    void addTrackRouting(RoutingKind kind);
+    void startTrackRouting(RoutingKind kind);
+    void completeTrackRouting();
+    void cancelTrackRouting();
+    void resetPendingRouting() noexcept;
+    std::string pendingRoutingStatus() const;
+
     void moveTrack(int delta);
     void moveParameter(int delta);
     void moveDetailColumn(int delta);
@@ -65,6 +77,7 @@ private:
     void toggle(const Entry&);
     double get(const Entry&) const;
     void put(const Entry&, double);
+    MediaTrack* routingEndpoint(const Entry&, bool source) const;
     std::string trackName() const;
     std::string detailPeerName(int category, int index) const;
     std::string currentParameterSpeech() const;
@@ -88,6 +101,8 @@ private:
     bool selectionStroke_ = false;
     int selectionAnchorRow_ = 0;
     std::unordered_set<MediaTrack*> selectionBase_;
+    RoutingKind pendingRouting_ = RoutingKind::none;
+    std::vector<GUID> pendingTrackGuids_;
     std::function<void(const std::string&)> speech_;
     std::filesystem::path resource_;
     TrackMemory memory_;

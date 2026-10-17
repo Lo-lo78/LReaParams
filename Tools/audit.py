@@ -138,8 +138,8 @@ def main():
           'Window procedure keyboard ownership missing')
     check("k.vk == 'R'" in fx_source and
           'k.vk == VK_TAB' in track_src and
-          'k.vk == \'R\'' not in track_src,
-          'FX review and TEST50 Track Tab review mismatch')
+          "if (k.ctrl && k.shift && !k.alt && (k.vk == 'S' || k.vk == 'R'))" in track_src,
+          'FX review / Track Tab versus Shift-only routing mismatch')
     check('reassertFocusAfterNavigationKey' in title_src,
           'Post-parameter-change focus recovery missing')
     corpus(ROOT/'Testing/fixtures')

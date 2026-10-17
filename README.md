@@ -1,3 +1,13 @@
+# LReaParams 0.0.51 — aggiornamento F1 Add Send / Add Receive
+
+Questa revisione della **stessa TEST51** introduce la creazione di send e receive in F1 secondo la procedura a due passaggi del Lua originale: Ctrl+Maiusc+S memorizza le sorgenti e Ctrl+Maiusc+R memorizza le destinazioni. Ripeti la stessa combinazione dopo aver selezionato il secondo gruppo. Esc annulla l'operazione in sospeso, Tab ne legge lo stato. Selezioni multiple e controllo delle autoconnessioni inclusi; le route sono annullabili tramite Undo di REAPER.
+
+Rimane invariato tutto il resto della 0.0.51, inclusa la memoria persistente `.tp`, il motore FX Params e la navigazione F2/F3. **Nessuna compilazione locale:** usa GitHub Actions, quindi testa in REAPER e con NVDA. I test Python sono statici e non attestano il comportamento runtime. Dettagli in `Docs/TEST51_F1_ADD_SEND_RECEIVE.md`.
+
+---
+
+> **TEST51 / LReaParams 0.0.51:** Track Params F2/F3: coppie sorgente/destinazione audio modificabili, espansione dei canali fino a 128, bus MIDI 0–16 e Send type 0–3. Ctrl+Maiusc+V rimosso (Invio basta); folder su Ctrl+Alt+Su/Giù. [Dettagli e test manuali](Docs/TEST51_TRACK_ROUTING_AND_SHORTCUTS.md). Solo sorgente per GitHub Actions; nessuna compilazione locale.
+
 > **TEST50 / LReaParams 0.0.50:** Tab ora legge le informazioni di Track Params al posto di Ctrl+R. La pagina F1 introduce selezione multipla, intervalli Shift e navigazione tra folder. [Dettagli e prove](Docs/TEST50_TRACK_F1_SELECTION_TAB.md). Solo sorgente, compilazione esclusiva tramite GitHub Actions.
 
 > **TEST49 / LReaParams 0.0.49:** Track Params F1/F2/F3 ora dispone di Step persistenti individuali, annunci editing per parametro e memoria delle posizioni nel file `Tracks/Track CC Map.tp`. Ctrl+T memorizza il parlato MIDI Track ma il runtime MIDI non è ancora migrato. Vedere [test e scorciatoie](Docs/TEST49_TRACK_PERSISTENT_MEMORY.md). Solo sorgente, nessuna compilazione locale.

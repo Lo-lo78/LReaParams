@@ -90,6 +90,10 @@ jobs:
         run: python Testing/test49_static.py
       - name: Verify 0.0.50 Track Params F1 selection and Tab info (source only)
         run: python Testing/test50_static.py
+      - name: Verify 0.0.51 Track Params F2 F3 routing and shortcuts (source only)
+        run: python Testing/test51_static.py
+      - name: Verify TEST51 F1 send and receive creation (source only)
+        run: python Testing/test51_f1_add_routing_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

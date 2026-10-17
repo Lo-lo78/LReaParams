@@ -1,3 +1,20 @@
+# 0.0.51 — aggiornamento F1: Add Send / Add Receive (senza cambiare versione)
+
+- **Ctrl+Maiusc+S** in F1: memorizza tutte le tracce sorgenti selezionate e deseleziona le tracce. Dopo aver selezionato le destinazioni, la seconda pressione crea tutte le coppie di send (escluse le autoconnessioni).
+- **Ctrl+Maiusc+R** in F1: memorizza tutte le tracce destinatarie, quindi seleziona le sorgenti e ripremi per creare i receive con `CreateTrackSend(sorgente, destinatario)`.
+- **Esc** annulla soltanto la creazione in sospeso, senza uscire dal navigatore; **Tab** legge numero e tipo delle tracce memorizzate e il gesto successivo.
+- GUID ripristinati sulle tracce ancora esistenti, esito con contatori creati/saltati/falliti, Undo di un gruppo; seconda selezione mantenuta e singola operazione su thread UI.
+- Se non sono selezionate tracce nella seconda fase, l'operazione resta in sospeso. Se si prova il comando opposto durante una creazione in sospeso, il navigatore chiede di concluderla o annullarla.
+- Rimangono esclusi la cancellazione di send/receive su F2/F3, il salto al peer, automazioni e funzioni F4-F8 non migrate.
+- Nessuna build locale; controlli Python soltanto statici. Vedere `Docs/TEST51_F1_ADD_SEND_RECEIVE.md`.
+
+# 0.0.51 — Track Params F2/F3 audio/MIDI routing
+
+- F1: eliminato Ctrl+Maiusc+V (Invio per Value); Ctrl+Alt+Su/Giù salta tra le folder al posto di Ctrl+Alt+Pagina Su/Giù.
+- F2/F3: source/destination audio ora editabili, con protezione bitfield, gestione `None`, verifica del peer e incremento automatico `I_NCHAN` entro 128. Bassa API C++ tipizzata.
+- Send type secondo Lua 0–3, MIDI bus 0–16, stato MIDI merge in sola lettura; annunci di routing aggiornati. Nessuna modifica al formato `.tp` o a FX Params. [Dettagli](TEST51_TRACK_ROUTING_AND_SHORTCUTS.md).
+- Non migrati in TEST51: add/delete sends, salto peer, ricerca, automazione send e CC runtime Track. Non sono state eseguite build native o prove REAPER/NVDA.
+
 # 0.0.50 — Track Params F1 selezione / Tab informazioni
 
 - Tab sostituisce Ctrl+R per il riepilogo completo delle informazioni in Track Params (anche F2/F3); FX Params invariato.

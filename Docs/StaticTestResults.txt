@@ -1,6 +1,2 @@
-LReaParams 0.0.49 — controlli soltanto statici, nessuna compilazione locale.
-PASS: Tools/run_static.py (40 suite tra audit + test di regressione + TEST49).
-NUOVO: Testing/ProfileTests.cpp include casi nativi di TEST49 che gireranno
-soltanto durante GitHub Actions Windows/MSVC tramite CTest.
-NOT RUN: CMake, MSVC, CTest, REAPER, NVDA, OSARA o hardware MIDI.
-Le verifiche statiche non garantiscono compilazione né comportamento runtime.
+TEST51 0.0.51 — Tools/run_static.py: 42 suite Python source-only PASS, inclusi test sintetici di routing.
+NOT RUN: compilazione C++/MSVC, CMake, CTest, REAPER, NVDA, OSARA. Solo GitHub Actions compilerà.

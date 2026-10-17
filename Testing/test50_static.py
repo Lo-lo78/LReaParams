@@ -7,7 +7,13 @@ h = (root / 'include/lrp/TrackNavigator.h').read_text(encoding='utf-8')
 api = (root / 'include/lrp/ReaperApi.h').read_text(encoding='utf-8')
 assert version_at_least(root, (0, 0, 50))
 assert 'k.vk == VK_TAB' in cpp and 'currentParameterSpeech() + ". Step "' in cpp
-assert 'k.vk == \'R\'' not in cpp and 'k.vk == \'R\'' not in cpp[cpp.index('bool TrackNavigator::accepts'):cpp.index('void TrackNavigator::buildEntries')]
+# Ctrl+R without Shift remains unbound; TEST51 adds only Ctrl+Shift+R
+# for Add Receive, and does not restore the old Ctrl+R review shortcut.
+assert 'k.vk == VK_TAB' in cpp
+if "(k.vk == 'S' || k.vk == 'R')" in cpp:
+    assert "if (k.ctrl && k.shift && !k.alt && (k.vk == 'S' || k.vk == 'R'))" in cpp
+else:
+    assert "k.vk == 'R'" not in cpp
 assert 'std::to_string(CountSelectedTracks(project_)) + " tracks selected"' in cpp
 assert 'k.vk == \'A\'' in cpp and 'k.vk == VK_DELETE' in cpp
 assert 'k.vk == VK_SPACE' in cpp and 'toggleCursorTrackSelection' in cpp
@@ -19,7 +25,12 @@ assert 'SetTrackSelected(tr, wanted.count(tr) != 0)' in cpp
 assert 'initialSelection_ = GetSelectedTrack2(project_, 0, true);' in cpp
 assert 'const int next = direction < 0 ? 0 : static_cast<int>(rows_.size()) - 1;' in cpp
 assert 'k.vk == VK_PRIOR || k.vk == VK_NEXT' in cpp and 'void TrackNavigator::moveToFolder' in cpp
-assert 'k.vk == \'V\'' in cpp and 'valueMode_ = !valueMode_' in cpp
+if version_at_least(root, (0, 0, 51)):
+    # TEST51 deliberately frees the old shortcut; Enter remains Grid/Value.
+    assert "k.vk == 'V'" not in cpp
+    assert 'if (k.vk == VK_RETURN)' in cpp and 'valueMode_ = !valueMode_' in cpp
+else:
+    assert "k.vk == 'V'" in cpp and 'valueMode_ = !valueMode_' in cpp
 assert 'REAPERAPI_WANT_SetTrackSelected' in api and 'REAPERAPI_WANT_IsTrackSelected' in api
 assert 'if (page_ == Page::tracks) {' in cpp and 'Selected. ' in cpp
 assert 'memory_.setValueSpeech(id, on)' in cpp and 'memory_.setStep(parameterKey(), stepScale_)' in cpp

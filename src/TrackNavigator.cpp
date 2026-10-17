@@ -37,7 +37,7 @@ void TrackNavigator::end() noexcept {
             try { speech_("Track Params: memory not saved. Check Track CC Map.tp"); } catch (...) {}
         }
     }
-    active_ = false; valueMode_ = false; resetSelectionStroke(); rows_.clear(); entries_.clear();
+    active_ = false; valueMode_ = false; resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear();
 }
 
 bool TrackNavigator::begin() {
@@ -73,6 +73,7 @@ bool TrackNavigator::begin() {
     page_ = Page::tracks;
     valueMode_ = false;
     resetSelectionStroke();
+    resetPendingRouting();
     stepScale_ = 0;
     // Opening a different selected track must never unexpectedly jump to a
     // previously remembered track.  The current selection remains authoritative.
@@ -100,12 +101,14 @@ bool TrackNavigator::contextUnchanged() const {
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.altGr) return false;
     const bool f1 = page_ == Page::tracks;
-    // Ctrl+R is intentionally free: Tab is the only Track Params info key.
+    // Ctrl+R and Ctrl+Shift+V are intentionally free.  Tab provides info,
+    // Enter toggles Grid/Value, and Ctrl+Alt+Up/Down moves among folders.
     // Never swallow unknown shortcuts from REAPER, and do not leak selection
     // gestures to the TCP while this owned keyboard window is active.
-    if (k.ctrl && k.alt) return f1 && !k.shift && (k.vk == VK_PRIOR || k.vk == VK_NEXT);
+    if (k.ctrl && k.alt) return f1 && !k.shift && (k.vk == VK_UP || k.vk == VK_DOWN);
     if (k.ctrl && k.shift) return !k.alt && (k.vk == 'T' ||
-        (f1 && (k.vk == 'V' || k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN)));
+        (k.vk == 'S' || k.vk == 'R') ||
+        (f1 && (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.shift) return !k.alt && !k.ctrl && f1 &&
         (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN ||
          k.vk == VK_PRIOR || k.vk == VK_NEXT);
@@ -297,6 +300,15 @@ const TrackNavigator::Entry* TrackNavigator::current() const {
     if (index < 0 || index >= static_cast<int>(entries_.size())) return nullptr;
     return &entries_[static_cast<size_t>(index)];
 }
+MediaTrack* TrackNavigator::routingEndpoint(const Entry& e, bool source) const {
+    if (e.category == 0 && source) return track_;
+    if (e.category == -1 && !source) return track_;
+    if (!GetSetTrackSendInfo) return nullptr;
+    const char* parm = source ? "P_SRCTRACK" : "P_DESTTRACK";
+    auto* peer = static_cast<MediaTrack*>(GetSetTrackSendInfo(track_, e.category, e.index, parm, nullptr));
+    return peer && ValidatePtr2(project_, peer, "MediaTrack*") ? peer : nullptr;
+}
+
 double TrackNavigator::get(const Entry& e) const {
     if (e.type == Entry::sendCount) return GetTrackNumSends(track_, 0);
     if (e.type == Entry::receiveCount) return GetTrackNumSends(track_, -1);
@@ -311,9 +323,9 @@ double TrackNavigator::get(const Entry& e) const {
         e.type == Entry::midiFollowsFader || e.type == Entry::midiMerge) {
         const int bits = static_cast<int>(value);
         switch (e.type) {
-            case Entry::audioSourceMode: return bits < 0 ? -1 : (bits >> 10) & 255;
+            case Entry::audioSourceMode: return bits < 0 ? 0 : std::clamp(bits >> 10, 0, 8);
             case Entry::audioSource: return bits < 0 ? -1 : (bits & 1023) / 2;
-            case Entry::audioDestination: return bits & 1023;
+            case Entry::audioDestination: return (bits & 1023) / 2;
             case Entry::midiSource: return bits & 31;
             case Entry::midiDestination: return (bits >> 5) & 31;
             case Entry::midiSourceBus: return (bits >> 14) & 255;
@@ -334,6 +346,9 @@ void TrackNavigator::put(const Entry& e, double value) {
     if (get(e) == value) return; // silent boundary: no change
     std::string parm = e.parm;
     double raw = value;
+    MediaTrack* channelTrack = nullptr;
+    int previousChannelCount = 0;
+    int requiredChannels = 0;
     // Preserve unrelated MIDI bits (other bus/channel/fader settings).
     if (e.type == Entry::midiSource || e.type == Entry::midiDestination ||
         e.type == Entry::midiSourceBus || e.type == Entry::midiDestinationBus ||
@@ -346,23 +361,63 @@ void TrackNavigator::put(const Entry& e, double value) {
         else if (e.type == Entry::midiDestinationBus) bits = (bits & ~(255 << 22)) | ((n & 255) << 22);
         else bits = value >= 0.5 ? bits | 1024 : bits & ~1024;
         raw = static_cast<double>(bits);
-    } else if (e.type == Entry::audioSourceMode) {
-        const int old = static_cast<int>(GetTrackSendInfo_Value(track_, e.category, e.index, "I_SRCCHAN"));
-        if (old < 0) { speech_("Audio source disabled. Change Audio source first."); return; }
-        raw = static_cast<double>((old & 1023) | (static_cast<int>(value) << 10));
-    } else if (e.type == Entry::audioSource || e.type == Entry::audioDestination) {
-        // Editing pair indices needs channel-count validation like the Lua;
-        // leave this advanced change disabled until that API migration is done.
-        speech_("Audio routing edit not yet migrated"); return;
+    } else if (e.type == Entry::audioSourceMode || e.type == Entry::audioSource ||
+               e.type == Entry::audioDestination) {
+        // REAPER uses -1 for disabled audio, a ten-bit channel offset and
+        // independent mode bits.  Never write a displayed pair number as a
+        // raw I_SRCCHAN/I_DSTCHAN value. Keep mode/mono flags intact.
+        const bool source = e.type != Entry::audioDestination;
+        const char* field = source ? "I_SRCCHAN" : "I_DSTCHAN";
+        const int old = static_cast<int>(GetTrackSendInfo_Value(track_, e.category, e.index, field));
+        int bits = old;
+        if (e.type == Entry::audioSourceMode) {
+            if (old < 0) { speech_("Audio source disabled. Change Audio source first."); return; }
+            bits = (old & 1023) | (std::clamp(static_cast<int>(value), 0, 8) << 10);
+        } else if (e.type == Entry::audioSource) {
+            // Pair -1 is the real REAPER None state; otherwise 1/2..127/128.
+            const int pair = std::clamp(static_cast<int>(value), -1, 63);
+            bits = pair < 0 ? -1 : ((pair * 2) | ((old < 0 ? 0 : old) & ~1023));
+        } else {
+            const int pair = std::clamp(static_cast<int>(value), 0, 63);
+            bits = (pair * 2) | (old & ~1023); // preserve destination mono
+        }
+        raw = static_cast<double>(bits);
+        if (bits >= 0) {
+            const int width = source ? ((bits >> 10) == 1 ? 1 :
+                (bits >> 10) == 0 ? 2 : (bits >> 10) * 2) :
+                ((bits & 1024) ? 1 : 2);
+            requiredChannels = (bits & 1023) + width;
+            if (requiredChannels > 128) {
+                speech_("Routing exceeds REAPER's 128 track channels"); return;
+            }
+            // F2: source = current track, dest = peer. F3 reverses this.
+            // Never expand an unrelated track based on an unverified pointer.
+            channelTrack = routingEndpoint(e, source);
+            if (!channelTrack) { speech_("Routing peer unavailable"); return; }
+            previousChannelCount = std::clamp(
+                static_cast<int>(GetMediaTrackInfo_Value(channelTrack, "I_NCHAN")), 2, 128);
+            if (requiredChannels % 2) ++requiredChannels;
+        }
     }
     struct UndoScope {
         ReaProject* project;
         explicit UndoScope(ReaProject* p) : project(p) { Undo_BeginBlock2(p); }
         ~UndoScope() { Undo_EndBlock2(project, "LReaParams: track or routing control", UNDO_STATE_TRACKCFG); }
     } undo(project_);
+    bool widened = false;
+    if (channelTrack && requiredChannels > previousChannelCount) {
+        if (!SetMediaTrackInfo_Value(channelTrack, "I_NCHAN", requiredChannels))
+            throw std::runtime_error("REAPER refused channel expansion");
+        widened = true;
+    }
     const bool ok = e.index < 0 ? SetMediaTrackInfo_Value(track_, parm.c_str(), raw) :
         SetTrackSendInfo_Value(track_, e.category, e.index, parm.c_str(), raw);
-    if (!ok) throw std::runtime_error("REAPER refused track change");
+    if (!ok) {
+        if (widened) SetMediaTrackInfo_Value(channelTrack, "I_NCHAN", previousChannelCount);
+        throw std::runtime_error("REAPER refused track change");
+    }
+    TrackList_AdjustWindows(false);
+    UpdateArrange();
     if (memory_.valueSpeech(parameterKey())) speech_(valueText(e, get(e)));
 }
 std::string TrackNavigator::valueText(const Entry& e, double value) const {
@@ -377,19 +432,33 @@ std::string TrackNavigator::valueText(const Entry& e, double value) const {
         num(std::abs(value) * 100.0, 0) + (value < 0 ? " percent left" : " percent right");
     if (e.type == Entry::width) return num(value * 100.0, 0) + " percent";
     if (e.type == Entry::audioSourceMode) {
-        if (value < 0) return "None";
+        if (static_cast<int>(GetTrackSendInfo_Value(track_, e.category, e.index, "I_SRCCHAN")) < 0)
+            return "None";
         if (value == 0) return "Stereo";
         if (value == 1) return "Mono";
         return std::to_string(static_cast<int>(value * 2)) + " channels";
     }
-    if (e.type == Entry::audioSource) return value < 0 ? "None" : "Channels " +
-        std::to_string(static_cast<int>(value) * 2 + 1) + "/" + std::to_string(static_cast<int>(value) * 2 + 2);
-    if (e.type == Entry::audioDestination) return "channel " + std::to_string(static_cast<int>(value) + 1);
+    if (e.type == Entry::audioSource || e.type == Entry::audioDestination) {
+        if (value < 0) return "None";
+        const int pair = static_cast<int>(value);
+        std::string text = "Channels " + std::to_string(pair * 2 + 1) + "/" + std::to_string(pair * 2 + 2);
+        if (e.type == Entry::audioSource) {
+            const int bits = static_cast<int>(GetTrackSendInfo_Value(track_, e.category, e.index, "I_SRCCHAN"));
+            const int mode = bits >> 10;
+            if (mode == 1) text += " mono";
+            else if (mode > 1) text += " " + std::to_string(mode * 2) + " channels";
+        } else {
+            const int bits = static_cast<int>(GetTrackSendInfo_Value(track_, e.category, e.index, "I_DSTCHAN"));
+            if (bits & 1024) text += " mono";
+        }
+        return text;
+    }
     if (e.type == Entry::sendType) {
         switch (static_cast<int>(value)) {
             case 0: return "Post fader";
             case 1: return "Pre FX";
-            case 2: case 3: return "Post FX";
+            case 2: return "Post FX deprecated";
+            case 3: return "Post FX";
             case 8: return "Pre receive";
             default: return "Mode " + std::to_string(static_cast<int>(value));
         }
@@ -405,6 +474,7 @@ std::string TrackNavigator::valueText(const Entry& e, double value) const {
     }
     if (e.type == Entry::midiSourceBus || e.type == Entry::midiDestinationBus) {
         if (value == 0) return "All buses";
+        if (value == 1) return "Normal bus";
         return "Bus " + std::to_string(static_cast<int>(value));
     }
     return num(value);
@@ -429,7 +499,7 @@ std::string TrackNavigator::reviewLine() const {
     if (!active_) return "";
     // NVDA+Up in Grid reviews only the parameter and value, like FX Params.
     // Track/page names remain available via NVDA+T. Moving between tracks
-    // continues to announce the track name; Ctrl+R still reviews context.
+    // announces the track name; Tab provides the full context.
     if (!valueMode_) return parameterValueSpeech();
     const auto* e = current();
     return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
@@ -451,8 +521,8 @@ std::string TrackNavigator::sliderLabel() const {
     return e ? e->title : "";
 }
 // Grid movement within the same track announces only the focused control.
-// The full track/parameter/value context stays available for NVDA+Up,
-// Ctrl+R and changes of track row.
+// The full track/parameter/value context stays available with Tab
+// and when moving to a different track row.
 std::string TrackNavigator::parameterValueSpeech() const {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     const auto* e = current();
@@ -616,13 +686,9 @@ void TrackNavigator::nudge(int direction, bool coarse) {
         case Entry::pan: case Entry::width: next = std::clamp(old + direction * (coarse ? 0.1 : 0.01) * factor, -1.0, 1.0); break;
         case Entry::flag: case Entry::solo: case Entry::midiFollowsFader: next = direction > 0 ? 1.0 : 0.0; break;
         case Entry::audioSourceMode: next = std::clamp(old + direction, 0.0, 8.0); break;
-        case Entry::sendType: {
-            // Defined REAPER modes: post-fader, pre-FX, post-FX, pre-receive.
-            const int modes[] = {0, 1, 3, 8};
-            int i = 0;
-            while (i < 3 && modes[i] < static_cast<int>(old)) ++i;
-            next = modes[std::clamp(i + direction, 0, 3)]; break;
-        }
+        case Entry::audioSource: next = std::clamp(old + direction, -1.0, 63.0); break;
+        case Entry::audioDestination: next = std::clamp(old + direction, 0.0, 63.0); break;
+        case Entry::sendType: next = std::clamp(old + direction, 0.0, 3.0); break;
         case Entry::midiSource: {
             // All, 1..16, None (31).
             const int oldIndex = old == 31 ? 17 : std::clamp(static_cast<int>(old), 0, 16);
@@ -631,7 +697,8 @@ void TrackNavigator::nudge(int direction, bool coarse) {
         }
         case Entry::midiDestination: next = std::clamp(old + direction, 0.0, 16.0); break;
         case Entry::midiSourceBus: case Entry::midiDestinationBus:
-            next = std::clamp(old + direction * (coarse ? 8.0 : 1.0), 0.0, 255.0); break;
+            // Match the original Lua's 0=All, 1=Normal, 2..16 bus stepping.
+            next = std::clamp(old + direction * (coarse ? 8.0 : 1.0), 0.0, 16.0); break;
         default: speech_("Read only or not yet migrated"); return;
     }
     put(*e, next);
@@ -639,6 +706,10 @@ void TrackNavigator::nudge(int direction, bool coarse) {
 void TrackNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     if (!k.ctrl && !k.alt && !k.shift && k.vk == VK_TAB) {
+        if (!k.repeat && pendingRouting_ != RoutingKind::none) {
+            speech_(pendingRoutingStatus());
+            return;
+        }
         if (!k.repeat && current()) {
             const std::string id = parameterKey();
             const std::string page = page_ == Page::tracks ? "Track" : page_ == Page::sends ? "Sends" : "Receives";
@@ -652,17 +723,16 @@ void TrackNavigator::handle(const Key& k) {
         }
         return;
     }
+    // Two-pass Lua routing: S = sources first, R = destinations first.
+    // These combinations are recognized on every page, but permitted only in F1.
+    if (k.ctrl && k.shift && !k.alt && (k.vk == 'S' || k.vk == 'R')) {
+        if (!k.repeat) addTrackRouting(k.vk == 'S' ? RoutingKind::send : RoutingKind::receive);
+        return;
+    }
     // In F1, REAPER track selection is independent of the invisible cursor.
     if (page_ == Page::tracks) {
-        if (k.ctrl && k.alt && !k.shift && (k.vk == VK_PRIOR || k.vk == VK_NEXT)) {
-            moveToFolder(k.vk == VK_PRIOR ? -1 : 1); return;
-        }
-        if (k.ctrl && k.shift && !k.alt && k.vk == 'V') {
-            if (!k.repeat) {
-                valueMode_ = !valueMode_;
-                if (valueMode_) speech_(reviewLine()); else announceTitle();
-            }
-            return;
+        if (k.ctrl && k.alt && !k.shift && (k.vk == VK_UP || k.vk == VK_DOWN)) {
+            moveToFolder(k.vk == VK_UP ? -1 : 1); return;
         }
         if (k.ctrl && k.shift && !k.alt && (k.vk == VK_UP || k.vk == VK_DOWN)) {
             if (!k.repeat) extendTrackSelectionToEdge(k.vk == VK_UP ? -1 : 1);
@@ -708,6 +778,7 @@ void TrackNavigator::handle(const Key& k) {
         speech_("Step 0"); return;
     }
     if (k.vk == VK_ESCAPE) {
+        if (pendingRouting_ != RoutingKind::none) { cancelTrackRouting(); return; }
         if (valueMode_) { valueMode_ = false; announceTitle(); }
         else if (page_ != Page::tracks) selectPage(Page::tracks);
         else end();
@@ -729,8 +800,7 @@ void TrackNavigator::handle(const Key& k) {
             if (e->type == Entry::fxCount) { speech_("Track FX page not yet migrated. Use FX Params."); return; }
         }
         // Detail headers and other read-only entries do not open an empty Value mode.
-        if (!e || e->type == Entry::header || e->type == Entry::audioSource ||
-            e->type == Entry::audioDestination || e->type == Entry::midiMerge) {
+        if (!e || e->type == Entry::header || e->type == Entry::midiMerge) {
             announce(); return;
         }
         valueMode_ = !valueMode_;
@@ -769,10 +839,12 @@ void TrackNavigator::handle(const Key& k) {
                 case Entry::pan: case Entry::width: put(*e, high ? 1.0 : -1.0); break;
                 case Entry::flag: case Entry::solo: case Entry::midiFollowsFader: put(*e, high ? 1.0 : 0.0); break;
                 case Entry::audioSourceMode: put(*e, high ? 8.0 : 0.0); break;
-                case Entry::sendType: put(*e, high ? 8.0 : 0.0); break;
+                case Entry::audioSource: put(*e, high ? 63.0 : -1.0); break;
+                case Entry::audioDestination: put(*e, high ? 63.0 : 0.0); break;
+                case Entry::sendType: put(*e, high ? 3.0 : 0.0); break;
                 case Entry::midiSource: put(*e, high ? 31.0 : 0.0); break;
                 case Entry::midiDestination: put(*e, high ? 16.0 : 0.0); break;
-                case Entry::midiSourceBus: case Entry::midiDestinationBus: put(*e, high ? 255.0 : 0.0); break;
+                case Entry::midiSourceBus: case Entry::midiDestinationBus: put(*e, high ? 16.0 : 0.0); break;
                 default: break; // read-only/unfinished fields remain silent
             }
         }
