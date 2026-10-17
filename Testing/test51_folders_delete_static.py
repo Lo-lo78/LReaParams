@@ -10,7 +10,8 @@ lua=(r/'Legacy/Speak Track Params - TrackTake Navigator.lua').read_text()
 a=(r/'include/lrp/ReaperApi.h').read_text()
 w=(r/'.github/workflows/build-windows.yml').read_text()
 cm=(r/'CMakeLists.txt').read_text()
-assert 'project(LReaParams VERSION 0.0.51' in cm
+from version_contract import version_at_least
+assert version_at_least(r, (0, 0, 51))
 assert 'TrackNavigatorFolders.cpp' in cm
 assert 'REAPERAPI_WANT_RemoveTrackSend' in a
 assert 'GetTrackNumSends(source, 0)' in f and '"P_DESTTRACK"' in f

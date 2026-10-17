@@ -1,3 +1,17 @@
+# LReaParams 0.0.53 — TEST53 Track Params Ctrl+F
+
+Filtro nativo e accessibile per F1/F2/F3 (tracce, send, receive) con indice REAPER reale per i collegamenti duplicati. La memoria `.tp`, le automazioni e la selezione rimangono compatibili con TEST52. [Dettagli e test NVDA](Docs/TEST53_TRACK_FILTERS.md). Nessuna compilazione locale eseguita.
+
+---
+
+# LReaParams 0.0.52 — TEST52: Track Params F1/F2/F3
+
+Continua la migrazione dei Lua originali con **Ctrl+C/X/V tramite SWS/S&M e routing**, **Alt+Maiusc+Su/Giù per spostamento fisico folder-aware**, **Ctrl+Su/Giù tra tracce con send/receive** e **Ctrl+Maiusc+A per gli envelope supportati**. `Auto` viene annunciato dopo il valore quando l'automazione esistente è attiva e visibile. Gli envelope mancanti di send/receive e Width non vengono creati artificialmente.
+
+Compatibilità mantenuta con la memoria `.tp`, la TEST51 e FX Params; Parameter Library esclusa. **Nessuna compilazione locale eseguita.** GitHub Actions deve verificare la build e il successivo test REAPER/NVDA. Dettagli: [TEST52 guida e piano di test](Docs/TEST52_TRACK_CLIPBOARD_MOVE_AUTOMATION.md).
+
+---
+
 # LReaParams 0.0.51 — TEST51 estesa: folder annidate + cancellazione F2/F3
 
 L'ultima traccia di ogni folder annuncia anche `end folder Nome`, anche per folder annidate. In F1 **Ctrl+Invio** apre e chiude le folder, mantenendo **Invio** per Value. In F2/F3 **Canc** elimina il collegamento corrente con risoluzione dell'istanza reale anche per receive duplicati. `MIDI merge` è uno stato di sola lettura derivato dalla sorgente MIDI, come nel Lua; Invio ne spiega la semantica.

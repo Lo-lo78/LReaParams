@@ -2,6 +2,9 @@
 #include <cstring>
 #define REAPERAPI_MINIMAL
 #define REAPERAPI_WANT_Main_OnCommand
+#define REAPERAPI_WANT_NamedCommandLookup
+#define REAPERAPI_WANT_ReorderSelectedTracks
+#define REAPERAPI_WANT_GetTrackEnvelopeByName
 #define REAPERAPI_WANT_GetPlayState
 #define REAPERAPI_WANT_OnPlayButton
 #define REAPERAPI_WANT_OnPauseButton

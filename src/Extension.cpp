@@ -157,7 +157,7 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.49 - Track Params memory\n\n"
+            ShowMessageBox("LReaParams 0.0.53 - Track Params filters\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
@@ -283,10 +283,14 @@ public:
                     [this](HWND window, UINT vk, bool repeat) {
                         return input_.enqueueOwnedKey(window, vk, repeat);
                     });
+                if (desired == &trackNavigator_)
+                    trackNavigator_.setNativeFilterAvailable(titleProxyActive_);
                 if (titleProxyActive_) {
                     titleProxy_.syncValueControl(desired->nativeValueSlider(), desired->sliderLabel(), desired->valueFraction());
                     if (desired==&navigator_)titleProxy_.syncTextControl(navigator_.nativeTextField(),
                         navigator_.nativeTextLabel(),navigator_.nativeTextValue());
+                    else if (desired==&trackNavigator_)titleProxy_.syncTextControl(trackNavigator_.nativeTextField(),
+                        trackNavigator_.nativeTextLabel(),trackNavigator_.nativeTextValue());
                 }
                 const InputBackend selected = titleProxyActive_ ? InputBackend::ownedWindow : backend_;
                 if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
@@ -345,8 +349,10 @@ public:
             const std::string oldReview = titleProxyActive_ ? current_->reviewLine() : "";
             // Read a real Win32 EDIT just before Enter/Escape or search arrows;
             // its own caret/selection/Unicode editor handles ordinary typing.
-            if(titleProxyActive_ && current_==&navigator_ && navigator_.nativeTextField())
+            if (titleProxyActive_ && current_==&navigator_ && navigator_.nativeTextField())
                 navigator_.setNativeText(titleProxy_.textValue());
+            else if (titleProxyActive_ && current_==&trackNavigator_ && trackNavigator_.nativeTextField())
+                trackNavigator_.setNativeText(titleProxy_.textValue());
             // Do not let Ctrl+Q fall through to REAPER, or let the UI
             // navigator clear the MIDI state before we park its own copy.
             if (current_ == &navigator_ && key.ctrl && !key.shift && !key.alt && key.vk == 'Q') {
@@ -384,6 +390,8 @@ public:
                                              current_->sliderLabel(), current_->valueFraction());
                 if(current_==&navigator_)titleProxy_.syncTextControl(navigator_.nativeTextField(),
                     navigator_.nativeTextLabel(),navigator_.nativeTextValue());
+                else if(current_==&trackNavigator_)titleProxy_.syncTextControl(trackNavigator_.nativeTextField(),
+                    trackNavigator_.nativeTextLabel(),trackNavigator_.nativeTextValue());
                 if (titleProxy_.hwnd() != oldKeyboard) {
                     // FX plugins may asynchronously restore focus while their
                     // formatted parameter value is queried. Recover the native

@@ -26,8 +26,10 @@ assert 'initialSelection_ = GetSelectedTrack2(project_, 0, true);' in cpp
 assert 'const int next = direction < 0 ? 0 : static_cast<int>(rows_.size()) - 1;' in cpp
 assert 'k.vk == VK_PRIOR || k.vk == VK_NEXT' in cpp and 'void TrackNavigator::moveToFolder' in cpp
 if version_at_least(root, (0, 0, 51)):
-    # TEST51 deliberately frees the old shortcut; Enter remains Grid/Value.
-    assert "k.vk == 'V'" not in cpp
+    # TEST51 freed Ctrl+Shift+V for Value; TEST52 intentionally reuses
+    # *Ctrl+V without Shift* for SWS Paste tracks with routing in F1.
+    assert "k.ctrl && k.shift && !k.alt && k.vk == 'V'" not in cpp
+    assert "k.ctrl && !k.alt && k.shift && k.vk == 'V'" not in cpp
     assert 'if (k.vk == VK_RETURN)' in cpp and 'valueMode_ = !valueMode_' in cpp
 else:
     assert "k.vk == 'V'" in cpp and 'valueMode_ = !valueMode_' in cpp

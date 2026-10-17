@@ -96,6 +96,10 @@ jobs:
         run: python Testing/test51_f1_add_routing_static.py
       - name: Verify TEST51 nested folders and send/receive deletion (source only)
         run: python Testing/test51_folders_delete_static.py
+      - name: Verify TEST52 clipboard, folder move and automation (source only)
+        run: python Testing/test52_static.py
+      - name: Verify TEST53 Track Ctrl F filters, UTF-8 EDIT and routing identity (source only)
+        run: python Testing/test53_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

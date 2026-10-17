@@ -37,7 +37,8 @@ void TrackNavigator::end() noexcept {
             try { speech_("Track Params: memory not saved. Check Track CC Map.tp"); } catch (...) {}
         }
     }
-    active_ = false; valueMode_ = false; resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear();
+    active_ = false; valueMode_ = false; filterEditing_ = false;
+    filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear();
 }
 
 bool TrackNavigator::begin() {
@@ -87,20 +88,29 @@ bool TrackNavigator::contextUnchanged() const {
 
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.altGr) return false;
+    if (filterEditing_) {
+        // The standard EDIT handles actual typing, selection and clipboard.
+        // Only accept navigation-ending keys; other keys must never reach
+        // REAPER's Main section while the text field has focus.
+        return k.vk == VK_RETURN || k.vk == VK_ESCAPE ||
+            (k.ctrl && !k.alt && !k.shift && k.vk == 'F');
+    }
     const bool f1 = page_ == Page::tracks;
     // Ctrl+R and Ctrl+Shift+V are intentionally free.  Tab provides info,
     // Enter toggles Grid/Value, and Ctrl+Alt+Up/Down moves among folders.
     // Never swallow unknown shortcuts from REAPER, and do not leak selection
     // gestures to the TCP while this owned keyboard window is active.
     if (k.ctrl && k.alt) return f1 && !k.shift && (k.vk == VK_UP || k.vk == VK_DOWN);
+    if (k.alt && k.shift) return f1 && !k.ctrl && (k.vk == VK_UP || k.vk == VK_DOWN);
     if (k.ctrl && k.shift) return !k.alt && (k.vk == 'T' ||
-        (k.vk == 'S' || k.vk == 'R') ||
+        (k.vk == 'S' || k.vk == 'R' || k.vk == 'A') ||
         (f1 && (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.shift) return !k.alt && !k.ctrl && f1 &&
         (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN ||
          k.vk == VK_PRIOR || k.vk == VK_NEXT);
-    if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END ||
-        k.vk == 'T' || k.vk == VK_BACK || (f1 && (k.vk == VK_RETURN || k.vk == 'A' || k.vk == VK_DELETE)));
+    if (k.ctrl) return !k.alt && (k.vk == 'F' || k.vk == VK_HOME || k.vk == VK_END ||
+        k.vk == 'T' || k.vk == VK_BACK || (!f1 && (k.vk == VK_UP || k.vk == VK_DOWN)) || (f1 && (k.vk == VK_RETURN || k.vk == 'A' || k.vk == 'C' ||
+            k.vk == 'X' || k.vk == 'V' || k.vk == VK_DELETE)));
     if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
         k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END ||
         k.vk == VK_LEFT || k.vk == VK_RIGHT;
@@ -134,6 +144,7 @@ void TrackNavigator::buildEntries() {
     const int cat = page_ == Page::sends ? 0 : -1;
     const int count = cat == 0 ? sends_ : receives_;
     for (int i = 0; i < count; ++i) {
+        if (!routeMatchesFilter(track_, cat, i)) continue;
         // Exactly 14 vertically ordered fields per send/receive as in the Lua.
         entries_.push_back({cat == 0 ? "Send" : "Receive", "", cat, i, Entry::header});
         entries_.push_back({"Volume", "D_VOL", cat, i, Entry::volume});
@@ -197,7 +208,10 @@ void TrackNavigator::rememberPosition() {
     memory_.setPosition("LastPage", section);
     memory_.setPosition(section + ".Parameter", parameterKey());
     memory_.setPosition(section + ".TrackGUID", rowGuid());
-    if (page_ != Page::tracks) memory_.setPosition(section + ".Column", std::to_string(detailIndex_));
+    if (page_ != Page::tracks) {
+        const auto* e = current();
+        memory_.setPosition(section + ".Column", std::to_string(e ? e->index : detailIndex_));
+    }
 }
 void TrackNavigator::restorePosition() {
     const auto savedPage = memory_.position("LastPage");
@@ -218,7 +232,14 @@ void TrackNavigator::restorePosition() {
         try { const auto raw = memory_.position(pageKey() + ".Column");
             if (!raw.empty()) {
                 std::size_t n = 0; const int index = std::stoi(raw, &n);
-                if (n == raw.size()) detailIndex_ = std::clamp(index, 0, static_cast<int>(entries_.size()) / detailHeight - 1);
+                if (n == raw.size()) {
+                    const int count = static_cast<int>(entries_.size()) / detailHeight;
+                    for (int col = 0; col < count; ++col) {
+                        if (entries_[static_cast<size_t>(col * detailHeight)].index == index) {
+                            detailIndex_ = col; break;
+                        }
+                    }
+                }
             }
         } catch (...) { detailIndex_ = 0; }
     }
@@ -235,11 +256,31 @@ bool TrackNavigator::ccSpeechSupported() const {
 
 bool TrackNavigator::selectPage(Page page) {
     if (page == page_) return true; // Repeated page key is silent
+    if (page == Page::tracks && !filterQuery_.empty()) {
+        bool found = false;
+        for (int i = 0; i < CountTracks(project_); ++i) {
+            MediaTrack* candidate = GetTrack(project_, i);
+            if (candidate && GetMediaTrackInfo_Value(candidate, "B_SHOWINTCP") > 0.5 &&
+                trackMatchesFilter(candidate)) { found = true; break; }
+        }
+        if (!found) { speech_("No matching tracks. Clear filter with Ctrl F"); return false; }
+    }
     if (page == Page::sends && GetTrackNumSends(track_, 0) <= 0) { speech_("No sends"); return false; }
     if (page == Page::receives && GetTrackNumSends(track_, -1) <= 0) { speech_("No receives"); return false; }
+    if (page != Page::tracks && matchingRoutingCount(track_, page == Page::sends ? 0 : -1) == 0) {
+        speech_(page == Page::sends ? "No matching sends" : "No matching receives"); return false;
+    }
     rememberPosition();
     resetSelectionStroke();
+    const GUID guid = rows_[static_cast<size_t>(row_)].guid;
     page_ = page;
+    rebuildVisibleRows();
+    // A filter applies to F1 track rows, while F2/F3 search each routing
+    // column.  Reanchor by GUID, never a stale index into a filtered list.
+    row_ = 0;
+    for (int i = 0; i < static_cast<int>(rows_.size()); ++i)
+        if (std::memcmp(&rows_[static_cast<size_t>(i)].guid, &guid, sizeof(GUID)) == 0) { row_ = i; break; }
+    track_ = rows_[static_cast<size_t>(row_)].track;
     parameter_ = detailIndex_ = 0;
     valueMode_ = false;
     buildEntries();
@@ -257,7 +298,14 @@ bool TrackNavigator::selectPage(Page page) {
         try { const auto raw = memory_.position(pageKey() + ".Column");
             if (!raw.empty()) {
                 std::size_t n = 0; const int index = std::stoi(raw, &n);
-                if (n == raw.size()) detailIndex_ = std::clamp(index, 0, static_cast<int>(entries_.size()) / detailHeight - 1);
+                if (n == raw.size()) {
+                    const int count = static_cast<int>(entries_.size()) / detailHeight;
+                    for (int col = 0; col < count; ++col) {
+                        if (entries_[static_cast<size_t>(col * detailHeight)].index == index) {
+                            detailIndex_ = col; break;
+                        }
+                    }
+                }
             }
         } catch (...) { detailIndex_ = 0; }
     }
@@ -470,22 +518,24 @@ std::string TrackNavigator::currentParameterSpeech() const {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     const auto* e = current();
     if (!e) return trackName() + (page_ == Page::sends ? ", no sends" : page_ == Page::receives ? ", no receives" : ", no parameters");
+    const std::string autoSuffix = currentEnvelopeActive() ? ". Auto" : "";
     if (page_ == Page::tracks) {
         const std::string selected = IsTrackSelected(track_) ? "Selected. " : "";
         // The folder-aware label contains open/closed and all ending folders.
         // Its suffix is critical when one track closes nested folders.
-        return selected + folderAwareTrackLabel() + ", " + e->title + ", " + valueText(*e, get(*e));
+        return selected + folderAwareTrackLabel() + ", " + e->title + ", " + valueText(*e, get(*e)) + autoSuffix;
     }
     const char* label = page_ == Page::sends ? "Send " : "Receive ";
     return trackName() + ", " + label + std::to_string(e->index + 1) +
         (page_ == Page::sends ? " to " : " from ") + detailPeerName(e->category, e->index) +
-        ", " + e->title + ", " + valueText(*e, get(*e));
+        ", " + e->title + ", " + valueText(*e, get(*e)) + autoSuffix;
 }
 std::string TrackNavigator::reviewLine() const {
     if (!active_) return "";
     // NVDA+Up in Grid reviews only the parameter and value, like FX Params.
     // Track/page names remain available via NVDA+T. Moving between tracks
     // announces the track name; Tab provides the full context.
+    if (filterEditing_) return nativeTextLabel() + ", " + filterBuffer_;
     if (!valueMode_) return parameterValueSpeech();
     const auto* e = current();
     return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
@@ -514,7 +564,7 @@ std::string TrackNavigator::parameterValueSpeech() const {
     const auto* e = current();
     if (!e) return page_ == Page::sends ? "No sends" :
                    page_ == Page::receives ? "No receives" : "No parameters";
-    return e->title + ", " + valueText(*e, get(*e));
+    return e->title + ", " + valueText(*e, get(*e)) + (currentEnvelopeActive() ? ". Auto" : "");
 }
 void TrackNavigator::announce() { speech_(parameterValueSpeech()); }
 void TrackNavigator::announceTrack() { speech_(currentParameterSpeech()); }
@@ -530,6 +580,7 @@ std::wstring TrackNavigator::windowTitle() const {
     const wchar_t* pageSuffix = page_ == Page::tracks ? L"" :
                                 page_ == Page::sends ? L" - Sends" : L" - Receives";
     return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + pageSuffix +
+           (filterEditing_ ? L" - Filter" : !filterQuery_.empty() ? L" - Filter active" : L"") +
            (valueMode_ ? L" - Value" : L"");
 }
 // F1 selection follows Lua's visible-track row model, keeping the parameter
@@ -657,6 +708,29 @@ void TrackNavigator::moveDetailColumn(int delta) {
     const int next = std::clamp(detailIndex_ + delta, 0, count - 1);
     if (next != detailIndex_) { detailIndex_ = next; rememberPosition(); announce(); }
 }
+void TrackNavigator::switchDetailTrack(int direction) {
+    if (page_ == Page::tracks || rows_.empty()) return;
+    const int category = page_ == Page::sends ? 0 : -1;
+    for (int candidate = row_ + direction;
+         candidate >= 0 && candidate < static_cast<int>(rows_.size());
+         candidate += direction) {
+        MediaTrack* nextTrack = rows_[candidate].track;
+        if (!nextTrack || matchingRoutingCount(nextTrack, category) <= 0) continue;
+        rememberPosition();
+        row_ = candidate;
+        track_ = nextTrack;
+        detailIndex_ = 0;
+        buildEntries();
+        parameter_ = std::clamp(parameter_, 0, detailHeight - 1);
+        stepScale_ = memory_.step(parameterKey());
+        valueMode_ = false;
+        resetSelectionStroke();
+        rememberPosition();
+        announceTrack();
+        return;
+    }
+    // Silent boundary, in line with the original vertical navigator.
+}
 void TrackNavigator::toggle(const Entry& e) {
     if (e.type != Entry::flag && e.type != Entry::solo && e.type != Entry::midiFollowsFader) return;
     put(e, get(e) >= 0.5 ? 0.0 : 1.0);
@@ -705,14 +779,51 @@ void TrackNavigator::handle(const Key& k) {
                 (memory_.valueSpeech(id) ? ". Value speech on" : ". Value speech off");
             if (ccSpeechSupported()) info += memory_.ccSpeech(page, bare) ? ". MIDI speech on" : ". MIDI speech off";
             if (page_ == Page::tracks) info += ". " + std::to_string(CountSelectedTracks(project_)) + " tracks selected";
+            info += filterSuffix();
             speech_(info);
         }
+        return;
+    }
+    // Ctrl+F works in all F1/F2/F3 pages, with a real NVDA-accessible EDIT.
+    // In the field, Windows owns printable keys, selection and clipboard;
+    // this function receives only Enter, Escape and Ctrl+F.
+    if (filterEditing_) {
+        if (k.repeat) return;
+        if (k.vk == VK_RETURN) applyFilter();
+        else if (k.vk == VK_ESCAPE || (k.ctrl && !k.alt && !k.shift && k.vk == 'F'))
+            cancelFilter();
+        return;
+    }
+    if (k.ctrl && !k.alt && !k.shift && k.vk == 'F') {
+        if (!k.repeat) toggleFilter();
         return;
     }
     // Two-pass Lua routing: S = sources first, R = destinations first.
     // These combinations are recognized on every page, but permitted only in F1.
     if (k.ctrl && k.shift && !k.alt && (k.vk == 'S' || k.vk == 'R')) {
         if (!k.repeat) addTrackRouting(k.vk == 'S' ? RoutingKind::send : RoutingKind::receive);
+        return;
+    }
+    if (page_ != Page::tracks && k.ctrl && !k.alt && !k.shift &&
+        (k.vk == VK_UP || k.vk == VK_DOWN)) {
+        switchDetailTrack(k.vk == VK_UP ? -1 : 1);
+        return;
+    }
+    // Lua F1: SWS/S&M clipboard with routing and folder-aware physical moves.
+    // Consume only our F1 gestures, and never fall back to REAPER's plain paste.
+    if (page_ == Page::tracks && !k.repeat && !k.alt && !k.shift && k.ctrl &&
+        (k.vk == 'C' || k.vk == 'X' || k.vk == 'V')) {
+        trackClipboard(k.vk == 'C' ? TrackClipboardAction::copy :
+            k.vk == 'X' ? TrackClipboardAction::cut : TrackClipboardAction::paste);
+        return;
+    }
+    if (page_ == Page::tracks && !k.repeat && k.alt && k.shift && !k.ctrl &&
+        (k.vk == VK_UP || k.vk == VK_DOWN)) {
+        moveSelectedTracks(k.vk == VK_UP ? -1 : 1);
+        return;
+    }
+    if (k.ctrl && k.shift && !k.alt && k.vk == 'A') {
+        if (!k.repeat) toggleCurrentAutomation();
         return;
     }
     // In F1, REAPER track selection is independent of the invisible cursor.

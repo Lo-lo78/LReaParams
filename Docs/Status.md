@@ -1,3 +1,7 @@
+## 0.0.53 — F1/F2/F3 Ctrl+F
+
+Nuovo filtro basato sul Lua, input tramite EDIT nativo NVDA, ricerca per traccia o colonne Send/Receive e preservazione degli indici reali anche per i routing duplicati. La persistenza `.tp` rimane invariata. [Guida](TEST53_TRACK_FILTERS.md). Restano da migrare MIDI CC runtime Track, envelope mancanti, clear-all e sezioni F4-F8. Nessuna build locale.
+
 # 0.0.51 — estesa prima di F4
 
 F1: folder aperte/chiuse e suffisso `end folder Nome` per folder annidate; Ctrl+Invio toggla. F2/F3: Canc elimina il singolo send/receive (anche istanze duplicate); MIDI Merge è stato derivato da MIDI source, non un parametro con bit autonomo. [Verifiche](TEST51_FOLDERS_AND_DELETE.md). Non è completa la migrazione di F1/F2/F3. Solo sorgente, nessuna build locale.

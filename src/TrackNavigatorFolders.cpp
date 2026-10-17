@@ -27,7 +27,8 @@ void TrackNavigator::rebuildVisibleRows() {
         if (!tr) continue;
         const int depth = folderDepth(tr);
         const bool hidden = hiddenLevel >= 0 && nesting > hiddenLevel;
-        if (!hidden && GetMediaTrackInfo_Value(tr, "B_SHOWINTCP") > 0.5) {
+        if (!hidden && GetMediaTrackInfo_Value(tr, "B_SHOWINTCP") > 0.5 &&
+            (page_ != Page::tracks || trackMatchesFilter(tr))) {
             if (const GUID* guid = GetTrackGUID(tr)) rows_.push_back({tr, *guid, i});
         }
         // Do not let a child collapsed folder override the outer fold.
@@ -79,6 +80,9 @@ std::string TrackNavigator::folderAwareTrackLabel() const {
 
 void TrackNavigator::toggleCurrentFolder() {
     if (page_ != Page::tracks || !track_) return;
+    if (!filterQuery_.empty()) {
+        speech_("Clear filter before collapsing folders"); return;
+    }
     MediaTrack* target = nullptr;
     if (folderDepth(track_) > 0) {
         target = track_;
@@ -167,6 +171,9 @@ void TrackNavigator::deleteCurrentRouting() {
     buildEntries();
     const int count = static_cast<int>(entries_.size()) / detailHeight;
     if (count == 0) {
+        // The last visible routing column may have been filtered out while
+        // other sends remain.  Clear the filter before returning to F1.
+        filterQuery_.clear();
         page_ = Page::tracks;
         detailIndex_ = 0;
         parameter_ = receive ? 7 : 6;

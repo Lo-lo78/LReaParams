@@ -12,6 +12,7 @@ class TrackNavigator final : public Navigator {
 public:
     explicit TrackNavigator(std::function<void(const std::string&)> speech) : speech_(std::move(speech)) {}
     void setResourceRoot(const std::filesystem::path& root) { resource_ = root; }
+    void setNativeFilterAvailable(bool enabled) noexcept { nativeFilterAvailable_ = enabled; }
     bool begin() override;
     void end() noexcept override;
     bool active() const noexcept override { return active_; }
@@ -22,6 +23,13 @@ public:
     void announceTitle() override;
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
+    // TEST53: a real Win32 EDIT owns filter text/selection/caret, including UTF-8.
+    // The extension binds this to the existing accessible keyboard window.
+    bool nativeTextField() const noexcept { return active_ && filterEditing_; }
+    std::string nativeTextValue() const { return filterBuffer_; }
+    std::string nativeTextLabel() const { return page_ == Page::tracks ? "Filter tracks" :
+        page_ == Page::sends ? "Filter sends" : "Filter receives"; }
+    void setNativeText(const std::string& text) { if (filterEditing_) filterBuffer_ = text; }
     bool nativeValueSlider() const override;
     double valueFraction() const override;
     std::string sliderLabel() const override;
@@ -39,6 +47,16 @@ private:
     enum class Page { tracks, sends, receives };
     static constexpr int detailHeight = 14;
     void buildEntries();
+    // Lua Ctrl+F: scoped logical filter, with no mutations to REAPER tracks.
+    void toggleFilter();
+    void applyFilter();
+    void cancelFilter();
+    void clearFilter();
+    bool routeMatchesFilter(MediaTrack* owner, int category, int index) const;
+    int matchingRoutingCount(MediaTrack* owner, int category) const;
+    bool trackMatchesFilter(MediaTrack* track) const;
+    bool rebuildForFilter(bool keepCurrentTrack);
+    std::string filterSuffix() const;
     bool selectPage(Page);
     void restorePosition();
     void rememberPosition();
@@ -67,6 +85,17 @@ private:
     // F2/F3 Delete: remove the exact routing instance, including duplicate
     // receives coming from the same source track.
     void deleteCurrentRouting();
+    // TEST52: native SWS clipboard keeps track-to-track routing intact.
+    enum class TrackClipboardAction { cut, copy, paste };
+    void trackClipboard(TrackClipboardAction action);
+    // Lua folder-aware move: expand selected folder blocks temporarily, then
+    // restore the original logical selection by GUID after REAPER reorders.
+    void moveSelectedTracks(int direction);
+    void refreshAfterTrackEdit(const GUID* preferredGuid, int fallbackRow);
+    void clearPhysicalSelection();
+    // F1/F2/F3 envelope controls: preserve existing point and item data.
+    bool currentEnvelopeActive() const;
+    void toggleCurrentAutomation();
     // TEST51.1: Lua-compatible, two-pass F1 sends and receives. Stored GUIDs
     // are re-resolved at commit time; no dangling MediaTrack* is retained.
     enum class RoutingKind { none, send, receive };
@@ -82,6 +111,7 @@ private:
     void moveTrack(int delta);
     void moveParameter(int delta);
     void moveDetailColumn(int delta);
+    void switchDetailTrack(int direction); // Lua Ctrl+Up/Down F2/F3
     void nudge(int direction, bool coarse);
     void toggle(const Entry&);
     double get(const Entry&) const;
@@ -96,6 +126,10 @@ private:
     const Entry* current() const;
     std::vector<TrackRow> rows_;
     std::vector<Entry> entries_;
+    std::string filterQuery_; // scoped to this Track Params session (Lua runtime state)
+    std::string filterBuffer_;
+    bool filterEditing_ = false;
+    bool nativeFilterAvailable_ = false;
     ReaProject* project_{};
     MediaTrack* track_{};
     MediaTrack* initialSelection_{};

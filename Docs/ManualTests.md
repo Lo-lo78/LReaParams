@@ -1,3 +1,7 @@
+## TEST53 — Track Params F1/F2/F3 filtro
+
+Seguire `Docs/TEST53_TRACK_FILTERS.md`: F1 con traccia sotto folder chiusa, ricerca Unicode/case insensitive, filtro senza risultati, Ctrl+F per cancellare, F2/F3 su due collegamenti duplicati con stessi peer (controllare che cambi/cancelli proprio il secondo), Tab, `.tp`, Undo, focus NVDA. Tutti da verificare dopo GitHub Actions; non sono test eseguiti dall’assistente.
+
 ## 0.0.51 — Track Params: shortcut F1 e F2/F3 routing
 
 Collaudare anche [TEST51_F1_ADD_SEND_RECEIVE.md](TEST51_F1_ADD_SEND_RECEIVE.md): Ctrl+Maiusc+S/R in F1 con gruppi multipli, Esc, Tab, autoconnessioni, conteggi e Undo. Seguire [TEST51_TRACK_ROUTING_AND_SHORTCUTS.md](TEST51_TRACK_ROUTING_AND_SHORTCUTS.md) DOPO la build GitHub Actions: F1 Invio (Ctrl+Maiusc+V rimosso), Ctrl+Alt+Su/Giù; F2/F3 14 voci, source None/1–2..127–128, destination, mono, I_NCHAN automatico sulla traccia corretta, Send type 0–3, bus MIDI 0–16, nessuna contaminazione tra flag MIDI. Verificare profili `.tp`, NVDA/OSARA e regressioni FX.

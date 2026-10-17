@@ -1,3 +1,9 @@
+## 0.0.53 — Track Params Ctrl+F (prevale sulle versioni precedenti)
+
+- **Ctrl+F** in F1/F2/F3: apre un campo EDIT di Windows se il filtro è spento; con filtro acceso lo elimina. **Invio** applica la ricerca, **Esc** (o Ctrl+F durante l’editazione) annulla. I campi testo hanno caret e clipboard nativi NVDA.
+- In F1 cerca tracce e apre le folder genitrici corrispondenti; in F2/F3 cerca le colonne Send/Receive, mantenendo 14 parametri verticali e gli indici reali per le operazioni. **Tab** legge la ricerca e il numero di risultati.
+- Un filtro attivo blocca temporaneamente Ctrl+Invio (folder) e Alt+Maiusc+Su/Giù (spostamento tracce): cancellarlo prima. Lo Step e i profili `.tp` non vengono modificati.
+
 ## TEST51 estesa — folder e cancellazione routing
 
 - F1: `Ctrl+Invio` = toggle folder, conservando `Invio` per Value. Su traccia finale, prima la folder più interna.

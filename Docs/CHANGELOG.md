@@ -1,3 +1,15 @@
+## 0.0.53 — F1/F2/F3 Ctrl+F
+
+Nuovo filtro basato sul Lua, input tramite EDIT nativo NVDA, ricerca per traccia o colonne Send/Receive e preservazione degli indici reali anche per i routing duplicati. La persistenza `.tp` rimane invariata. [Guida](TEST53_TRACK_FILTERS.md). Restano da migrare MIDI CC runtime Track, envelope mancanti, clear-all e sezioni F4-F8. Nessuna build locale.
+
+## 0.0.52 — Track Params: clipboard con routing, move, F2/F3 navigation, automation
+
+- F1 Ctrl+C/X/V via SWS/S&M (nessun fallback a copia senza routing); invalidazione dei vecchi puntatori dopo cut/paste e ripristino del cursore per GUID.
+- F1 Alt+Maiusc+Su/Giù sposta fisicamente i blocchi con i figli delle folder, ripristinando la selezione logica.
+- F2/F3 Ctrl+Su/Giù salta tra tracce che contengono routing, mantenendo il campo verticale.
+- Ctrl+Maiusc+A F1 e F2/F3 cambia lo stato degli envelope esistenti, con aggiunta `Auto` agli annunci; F1 Volume/Pan/Mute può crearli via azione nativa. F1 Width e send/receive non vengono creati se assenti.
+- Non migrati: filtro Ctrl+F, clear all automation, Track MIDI CC runtime e F4-F8. Nessuna build locale: solo controlli statici. [Guida](TEST52_TRACK_CLIPBOARD_MOVE_AUTOMATION.md).
+
 ## 0.0.51 — estensione folder annidate e Canc F2/F3
 
 - F1 parla `end folder Nome` sulle righe che chiudono una o più folder; Ctrl+Invio toggla la folder e ricostruisce il cursore sulle sole tracce visibili.
