@@ -1,3 +1,5 @@
+> **TEST54.2 / LReaParams 0.0.54.2:** Ctrl+Maiusc+A senza doppio Auto; envelope reali Send/Receive (AUXRECV, SWS/BR per creazione); Ctrl+Tab tra Track Params e FX Params. [Guida](Docs/TEST54_2_AUTOMATION_CTRL_TAB.md). Nessuna compilazione locale.
+
 > **TEST54.1 / LReaParams 0.0.54.1:** profilo Track Params per progetto, Fixed CC persistente, annunci CC prima di Auto, Ctrl+Canc e trasporto condiviso. [Guida](Docs/TEST54_1_PROJECT_TP_FIXED_CC.md). Nessuna build locale.
 
 > **TEST54 / LReaParams 0.0.54:** MIDI CC Fixed/Floating Track Params per F1-F3, Ctrl+E, Enter dal Send/Receive header verso il collegamento gemello. [Guida e limiti](Docs/TEST54_TRACK_CC_NUMERIC_ROUTING.md). Nessuna compilazione locale eseguita; test GitHub Actions obbligatorio.

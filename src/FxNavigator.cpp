@@ -98,11 +98,15 @@ void FxNavigator::restorePersistedParameter() {
 // Startup context follows the original Lua's track/item selection rather than
 // requiring GetTouchedOrFocusedFX, which is often empty when FX Params is invoked.
 bool FxNavigator::begin() {
+    MediaTrack* explicitTrack = nextStartTrack_;
+    nextStartTrack_ = nullptr;
     end();
     nativeFxWindowRequest_ = NativeFxWindow::none;
     project_ = EnumProjects(-1, nullptr, 0);
     if (!project_) { speech_("No REAPER project"); return false; }
     track_ = nullptr; take_ = nullptr;
+    if (explicitTrack && ValidatePtr2(project_, explicitTrack, "MediaTrack*"))
+        track_ = explicitTrack;
     // When invoked from a native FX Chain list, its focused FX determines
     // whether we entered Master FX or Monitor FX. A simultaneously visible
     // Monitor window must not override an explicitly focused Master FX.
@@ -110,7 +114,7 @@ bool FxNavigator::begin() {
     // Follow OSARA's GetTouchedOrFocusedFX logic when REAPER's FX list owns
     // focus. The visible chain might belong to a track not currently selected.
     // Never use the last-touched FX here: that might be from another track.
-    if (GetDlgCtrlID(GetFocus()) == 1076) {
+    if (!track_ && GetDlgCtrlID(GetFocus()) == 1076) {
         int tr = -1, item = -1, takeIdx = -1, fx = -1, state = 0;
         if (GetTouchedOrFocusedFX(1, &tr, &item, &takeIdx, &fx, &state) && !(state & 1)) {
             MediaTrack* owner = tr == -1 ? GetMasterTrack(project_) : GetTrack(project_, tr);
@@ -975,6 +979,10 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if(recentMode_)return !k.alt && (k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_TAB||k.vk==VK_DELETE||k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT||(k.ctrl&&k.vk=='R'));
     if (numericEdit_) return k.vk==VK_ESCAPE || k.vk==VK_RETURN || (k.ctrl && k.vk=='E');
     if (textEdit_) return true;
+    // Context switch is owned by Extension; do not intercept inside text editing.
+    if (k.ctrl && !k.shift && !k.alt && k.vk == VK_TAB &&
+        !memoryManager_ && !textEdit_ && !searchMode_ && !numericEdit_ &&
+        !recentMode_ && !fxBrowserMode_) return true;
     // Ctrl+Q parks MIDI while releasing the native window, input hook and
     // REAPER keyboard focus. Extension owns the transition, not the navigator.
     if (k.ctrl && !k.shift && !k.alt && k.vk == 'Q') return true;

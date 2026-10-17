@@ -105,6 +105,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     // Enter toggles Grid/Value, and Ctrl+Alt+Up/Down moves among folders.
     // Never swallow unknown shortcuts from REAPER, and do not leak selection
     // gestures to the TCP while this owned keyboard window is active.
+    if (k.ctrl && !k.alt && !k.shift && k.vk == VK_TAB) return true;
     if (k.ctrl && k.alt) return !k.shift && (k.vk == 'C' || (f1 && (k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.alt && k.shift) return f1 && !k.ctrl && (k.vk == VK_UP || k.vk == VK_DOWN);
     if (k.ctrl && k.shift) return !k.alt && (k.vk == 'C' || k.vk == 'T' ||

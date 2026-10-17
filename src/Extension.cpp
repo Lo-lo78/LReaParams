@@ -157,7 +157,7 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.54.1 - Project Track Params persistence\n\n"
+            ShowMessageBox("LReaParams 0.0.54.2 - Project Track Params persistence\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
@@ -354,6 +354,32 @@ public:
                 navigator_.setNativeText(titleProxy_.textValue());
             else if (titleProxyActive_ && current_==&trackNavigator_ && trackNavigator_.nativeTextField())
                 trackNavigator_.setNativeText(titleProxy_.textValue());
+            // Shared Ctrl+Tab moves between FX and Track Params using the SAME
+            // normal launch path. Preserve the cursor track without changing
+            // REAPER's physical selection, and never intercept Win32 text EDIT.
+            if (key.ctrl && !key.alt && !key.shift && key.vk == VK_TAB && !key.repeat &&
+                !((current_ == &navigator_ && (navigator_.nativeTextField() || navigator_.isMemoryManager())) ||
+                  (current_ == &trackNavigator_ && trackNavigator_.nativeTextField()))) {
+                const bool wasTrack = current_ == &trackNavigator_;
+                MediaTrack* preferred = wasTrack ? trackNavigator_.cursorTrack() : nullptr;
+                // A native FX owner is already a valid context for returning
+                // to REAPER's track selection; do not fabricate a track.
+                exitNavigation(false);
+                if (wasTrack) navigator_.setNextStartTrack(preferred);
+                Navigator* target = wasTrack ? static_cast<Navigator*>(&navigator_) :
+                    static_cast<Navigator*>(&trackNavigator_);
+                if (target->begin()) {
+                    launchNavigator(target);
+                } else {
+                    // A missing FX must not strand the user outside LReaParams.
+                    // Restore the previous navigator and its persisted position.
+                    Navigator* previous = wasTrack ? static_cast<Navigator*>(&trackNavigator_) :
+                        static_cast<Navigator*>(&navigator_);
+                    if (previous->begin()) launchNavigator(previous);
+                    else speak(wasTrack ? "FX Params unavailable" : "Track Params unavailable");
+                }
+                return;
+            }
             // Do not let Ctrl+Q fall through to REAPER, or let the UI
             // navigator clear the MIDI state before we park its own copy.
             if (current_ == &navigator_ && key.ctrl && !key.shift && !key.alt && key.vk == 'Q') {

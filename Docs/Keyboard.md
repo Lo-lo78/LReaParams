@@ -1,3 +1,8 @@
+## 0.0.54.2 — Scorciatoia comune e automazioni Track
+
+- **Ctrl+Tab**: passa fra Track Params e FX Params (non nei campi EDIT o in FX Memories).
+- **Ctrl+Maiusc+A**: mostra/nasconde e arma l’envelope del parametro F1/F2/F3; per crearne uno nuovo sui send/receive è richiesto SWS/BR.
+
 ## 0.0.54.1 — Track Params shortcut changes
 
 - Spazio: Play/Stop come FX Params. Ctrl+Spazio: Play/Pause nativo REAPER. Maiusc+Spazio: selezione traccia in F1.

@@ -37,7 +37,10 @@ assert 'void TrackNavigator::switchDetailTrack' in cpp and ('GetTrackNumSends(ne
 assert 'Ctrl+Shift+V' in cpp and 'k.vk == VK_RETURN' in cpp
 assert 'toggleCurrentAutomation();' in cpp and 'currentEnvelopeActive()' in cpp
 assert 'Auto' in cpp and 'GetEnvelopeStateChunk' in auto and 'SetEnvelopeStateChunk' in auto
-assert 'GetSetTrackSendInfo(track_, e->category, e->index, param, nullptr)' in auto
+assert 'resolveTarget(project_, track_, e->category, e->index)' in auto
+assert 'routingEnvelopeBlock(oldChunk, route.receive, tag)' in auto
+assert 'SetTrackStateChunk(route.destination, chunk.c_str(), true)' in auto
+assert 'Main_OnCommand(action, 0)' in auto
 assert 'Creation for this field is not yet migrated' in auto
 assert 'Main_OnCommand(nativeAction, 0)' in auto
 assert 'const auto selected = selectedTrackGuids();' in auto

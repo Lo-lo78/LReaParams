@@ -108,6 +108,8 @@ jobs:
         run: python Testing/test54_static.py
       - name: Verify TEST54.1 project TP and transport migration (source only)
         run: python Testing/test54_1_static.py
+      - name: Verify TEST54.2 automation and Ctrl Tab (source only)
+        run: python Testing/test54_2_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

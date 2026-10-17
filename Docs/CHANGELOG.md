@@ -1,3 +1,11 @@
+### 0.0.54.2 — Track automation e Ctrl+Tab
+
+- Ctrl+Maiusc+A: elimina l’annuncio duplicato `Auto`, mantenendo il CC nella posizione corretta.
+- Send/Receive: modifica gli envelope AUXRECV già presenti, distinguendo i collegamenti duplicati. Gli envelope mancanti richiedono SWS/BR: le relative azioni agiscono sui send della traccia sorgente.
+- Quando abilita l’envelope, imposta anche `ARM 1`, senza toccare punti o automation item, e verifica la modifica prima di annunciarla.
+- Ctrl+Tab alterna Track Params e FX Params tramite il focus nativo della DLL; dal Track apre l’FX della traccia sotto il cursore.
+- La compilazione è riservata a GitHub Actions.
+
 ### 0.0.54.1 — GitHub Actions compilation fix
 - Corrected a duplicate `stale` fixture variable in `Testing/ProfileTests.cpp` (MSVC C2371 and cascading C2039); TrackMemory test now uses `staleTrack`.
 - No changes to DLL source, MIDI CC, `.tp` storage, shortcuts, or project routing.

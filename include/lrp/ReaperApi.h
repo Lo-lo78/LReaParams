@@ -120,6 +120,8 @@
 #define REAPERAPI_WANT_TakeFX_FormatParamValue
 #define REAPERAPI_WANT_GetFXEnvelope
 #define REAPERAPI_WANT_TakeFX_GetEnvelope
+#define REAPERAPI_WANT_GetTrackStateChunk
+#define REAPERAPI_WANT_SetTrackStateChunk
 #define REAPERAPI_WANT_GetEnvelopeStateChunk
 #define REAPERAPI_WANT_SetEnvelopeStateChunk
 #define REAPERAPI_WANT_TrackList_AdjustWindows

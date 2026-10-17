@@ -1,3 +1,8 @@
+TEST54.2 (source-only): 50 Python static suites PASS; Tools/audit.py PASS.
+TEST54.2 adds nonduplicated Auto speech, send/receive envelope chunk+SWS/BR source verification and shared Ctrl+Tab source tests.
+No C++ compiler, CMake, MSBuild, native CTest, REAPER, NVDA or MIDI hardware was run locally.
+GitHub Actions + runtime validation required.
+
 TEST54.1 (source-only): 49 Python static suites passed locally; Tools/audit.py PASS.
 New GitHub Actions C++ fixtures cover project .tp Fixed CC reopen, OFF state,
 same-name projects, legacy import, conflict/backup and format.

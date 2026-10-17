@@ -24,6 +24,9 @@ public:
     void announce() override;
     void announceTitle() override;
     void tickMidi() { pollMidi(); }
+    // Ctrl+Tab targets the track under the logical F1/F2/F3 cursor, not
+    // the first physical track selected in REAPER.
+    MediaTrack* cursorTrack() const noexcept { return active_ ? track_ : nullptr; }
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
     // TEST53: a real Win32 EDIT owns filter text/selection/caret, including UTF-8.

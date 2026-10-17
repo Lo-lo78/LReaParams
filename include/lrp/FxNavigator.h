@@ -17,6 +17,8 @@ public:
     explicit FxNavigator(std::function<void(const std::string&)> speech) : speech_(std::move(speech)) {}
     void setResourceRoot(std::filesystem::path root) { resourceRoot_ = std::move(root); }
     bool begin() override;
+    // One-shot explicit target for shared Ctrl+Tab. No REAPER selection mutation.
+    void setNextStartTrack(MediaTrack* track) noexcept { nextStartTrack_ = track; }
     void pollMidi();
     // A parked navigator is an independent MIDI-only snapshot. No keyboard
     // focus or native window is retained while REAPER's main timer polls it.
@@ -283,6 +285,7 @@ private:
     std::string displayName() const;
     ReaProject* project_{};
     MediaTrack* track_{};
+    MediaTrack* nextStartTrack_{};
     MediaItem_Take* take_{};
     GUID trackGuid_{}, fxGuid_{};
     std::vector<FxEntry> entries_;

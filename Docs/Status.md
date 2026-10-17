@@ -1,3 +1,7 @@
+## 0.0.54.2 — Automazioni Track e Ctrl+Tab
+
+Ctrl+Maiusc+A senza Auto duplicato. Automazioni Volume/Pan/Mute di send e receive: stato ACT/VIS/ARM sul relativo AUXRECV, con riconoscimento di routing duplicati; creazione via SWS/BR quando mancante, con verifica. Ctrl+Tab alterna i navigatori FX e Track. [Guida e limiti](TEST54_2_AUTOMATION_CTRL_TAB.md). Solo sorgente, da compilare su GitHub Actions.
+
 ## 0.0.54.1 — Memorie Track per progetto
 
 Profilo `.tp` per progetto con importazione non distruttiva dei CC globali. Stato Fixed On/Off persistente; Step, parlato e navigazione nello stesso profilo. Spazio/Ctrl+Spazio come FX Params. [Dettagli](TEST54_1_PROJECT_TP_FIXED_CC.md). F4 futuro, non ancora migrato.
