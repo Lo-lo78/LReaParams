@@ -1,3 +1,9 @@
+> **TEST53.2 / LReaParams 0.0.53:** F2/F3 ora distinguono annunci verticali brevi (parametro e valore) e annunci orizzontali con traccia + Send/Receive e numerazione duplicati, evitando la ripetizione del nome sulla stessa traccia collegata. [Guida e casi di prova](Docs/TEST53_2_DIRECTIONAL_ROUTING_SPEECH.md). Solo sorgente per GitHub Actions.
+
+# LReaParams 0.0.53 — TEST53.1 correzioni F1/F2/F3
+
+Incolla dopo la posizione F1, annunci delle tracce collegate con numerazione solo dei send/receive ripetuti e `Search cleared` con valore corrente. [Istruzioni e prove](Docs/TEST53_1_TRACK_PASTE_SPEECH_SEARCH.md). Nessuna build locale.
+
 # LReaParams 0.0.53 — TEST53 Track Params Ctrl+F
 
 Filtro nativo e accessibile per F1/F2/F3 (tracce, send, receive) con indice REAPER reale per i collegamenti duplicati. La memoria `.tp`, le automazioni e la selezione rimangono compatibili con TEST52. [Dettagli e test NVDA](Docs/TEST53_TRACK_FILTERS.md). Nessuna compilazione locale eseguita.

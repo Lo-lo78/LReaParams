@@ -119,7 +119,10 @@ private:
     MediaTrack* routingEndpoint(const Entry&, bool source) const;
     std::string trackName() const;
     std::string detailPeerName(int category, int index) const;
+    int detailPeerOccurrence(int category, int index) const;
     std::string currentParameterSpeech() const;
+    // Only Left/Right sends/receives include peer context and per-peer ordinal.
+    std::string detailColumnSpeech(int previousColumn) const;
     std::string parameterValueSpeech() const;
     void announceTrack();
     std::string valueText(const Entry&, double) const;

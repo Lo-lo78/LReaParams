@@ -100,6 +100,10 @@ jobs:
         run: python Testing/test52_static.py
       - name: Verify TEST53 Track Ctrl F filters, UTF-8 EDIT and routing identity (source only)
         run: python Testing/test53_static.py
+      - name: Verify TEST53.1 paste position, routing speech and Search cleared (source only)
+        run: python Testing/test53_1_static.py
+      - name: Verify TEST53.2 vertical versus horizontal routing speech (source only)
+        run: python Testing/test53_2_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

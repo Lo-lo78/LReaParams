@@ -136,7 +136,7 @@ void TrackNavigator::toggleFilter() {
 void TrackNavigator::cancelFilter() {
     filterEditing_ = false;
     filterBuffer_.clear();
-    speech_("Filter cancelled");
+    speech_("Search cleared. " + parameterValueSpeech());
 }
 
 bool TrackNavigator::rebuildForFilter(bool keepCurrentTrack) {
@@ -181,7 +181,7 @@ void TrackNavigator::clearFilter() {
     filterEditing_ = false;
     filterBuffer_.clear();
     rebuildForFilter(true);
-    speech_("Filter cleared. " + currentParameterSpeech());
+    speech_("Search cleared. " + parameterValueSpeech());
 }
 
 void TrackNavigator::applyFilter() {

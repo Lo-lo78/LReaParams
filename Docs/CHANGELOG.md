@@ -1,3 +1,14 @@
+## 0.0.53 — TEST53.2: annunci distinti Su/Giù e Sinistra/Destra in F2/F3
+
+F2/F3 verticalmente dice solo parametro e valore; orizzontalmente dichiara `traccia, Send/Receive, parametro, valore` e omette la traccia nei duplicati consecutivi (`Send 2`, `Receive 3`). Ritorna a nominare il peer quando cambia. Primo link sempre `Send`/`Receive`. Tab conserva il contesto completo; filtri e paste TEST53.1 invariati. [Guida](TEST53_2_DIRECTIONAL_ROUTING_SPEECH.md). Solo controlli statici, nessuna build locale.
+
+## 0.0.53 — TEST53.1 correzioni F1/F2/F3
+
+- Ctrl+V SWS continua a preservare routing, ma riposiziona il gruppo di GUID appena incollati dopo la traccia corrente, se SWS non lo fa.
+- Annunci verticali e orizzontali F2/F3 con nome peer, parametro, valore; `Send/Receive N` soltanto dalla seconda istanza verso la stessa traccia.
+- Ctrl+F clear e Ctrl+F poi Esc: `Search cleared. <parametro>, <valore>` senza uscire dalla griglia.
+- Solo controlli statici; build e REAPER/NVDA non eseguiti localmente.
+
 ## 0.0.53 — F1/F2/F3 Ctrl+F
 
 Nuovo filtro basato sul Lua, input tramite EDIT nativo NVDA, ricerca per traccia o colonne Send/Receive e preservazione degli indici reali anche per i routing duplicati. La persistenza `.tp` rimane invariata. [Guida](TEST53_TRACK_FILTERS.md). Restano da migrare MIDI CC runtime Track, envelope mancanti, clear-all e sezioni F4-F8. Nessuna build locale.

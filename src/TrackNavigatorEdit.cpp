@@ -67,10 +67,14 @@ void TrackNavigator::refreshAfterTrackEdit(const GUID* desired, int fallback) {
     rememberPosition();
 }
 
+// SWS's paste action may insert tracks at the start of the project, even
+// though the F1 cursor has temporarily selected an anchor.  Move only GUIDs
+// that did not exist before paste. Do not guess by selection or track count:
+// selections may include existing tracks and SWS can change the TCP selection.
 void TrackNavigator::trackClipboard(TrackClipboardAction action) {
     if (page_ != Page::tracks || !track_) return;
-    // Lua's SWS/S&M commands preserve routing. Plain REAPER copy/paste is NOT
-    // a safe fallback because it may discard inter-track sends and receives.
+    // Lua's SWS/S&M actions preserve routing (including internal sends).
+    // Never substitute REAPER's ordinary clipboard commands.
     const char* named = action == TrackClipboardAction::cut ? "_S&M_CUTSNDRCV1" :
         action == TrackClipboardAction::copy ? "_S&M_COPYSNDRCV1" : "_S&M_PASTSNDRCV1";
     if (!NamedCommandLookup || !Main_OnCommand) {
@@ -80,40 +84,97 @@ void TrackNavigator::trackClipboard(TrackClipboardAction action) {
     if (command <= 0) {
         speech_("SWS/S&M not installed. Tracks with routing were not changed"); return;
     }
+    if (action == TrackClipboardAction::paste && !ReorderSelectedTracks) {
+        speech_("Paste at cursor unavailable: REAPER track reordering API missing"); return;
+    }
+    if (action == TrackClipboardAction::paste && !filterQuery_.empty()) {
+        speech_("Clear the track filter before pasting"); return;
+    }
     const int oldRow = row_;
-    const GUID currentGuid = rows_[row_].guid;
+    const GUID currentGuid = rows_[row_].guid; // value, never a stale track pointer
+    const int beforeCount = CountTracks(project_);
+    std::vector<GUID> existing;
     if (action == TrackClipboardAction::paste) {
-        // The invisible F1 cursor is not the physical TCP selection. The Lua
-        // selects exactly the anchor before invoking SWS's paste command.
-        for (int i = 0, n = CountTracks(project_); i < n; ++i)
+        existing.reserve(static_cast<size_t>(beforeCount));
+        for (int i = 0; i < beforeCount; ++i) {
+            if (auto* tr = GetTrack(project_, i))
+                if (const GUID* id = GetTrackGUID(tr)) existing.push_back(*id);
+        }
+        // SWS uses the *physical* TCP selection for its insertion anchor.
+        // Setting it is useful, but the explicit reposition below is the
+        // guarantee that the resulting tracks follow the *logical* F1 cursor.
+        for (int i = 0; i < beforeCount; ++i)
             if (auto* tr = GetTrack(project_, i)) SetTrackSelected(tr, tr == track_);
     } else if (CountSelectedTracks(project_) == 0) {
-        SetTrackSelected(track_, true); // Lua: current cursor if none selected
+        SetTrackSelected(track_, true);
     }
     refreshTrackSelection();
-    const int beforeCount = CountTracks(project_);
-    Main_OnCommand(command, 0); // One SWS undoable action, as in the Lua.
+    Main_OnCommand(command, 0);
+
     GUID focusGuid = currentGuid;
+    bool pasted = false;
+    bool placedAtCursor = true;
     if (action == TrackClipboardAction::paste) {
-        // SWS normally selects pasted tracks; use the earliest in project
-        // order before clearing the physical selection again.
-        for (int i = 0, n = CountTracks(project_); i < n; ++i) {
+        std::vector<GUID> added;
+        const int afterCount = CountTracks(project_);
+        int anchorIndex = -1;
+        for (int i = 0; i < afterCount; ++i) {
             auto* tr = GetTrack(project_, i);
-            if (tr && IsTrackSelected(tr)) {
-                if (const GUID* id = GetTrackGUID(tr)) focusGuid = *id;
-                break;
-            }
+            const GUID* id = tr ? GetTrackGUID(tr) : nullptr;
+            if (!id) continue;
+            if (equalGuid(*id, currentGuid)) anchorIndex = i;
+            const bool wasHere = std::any_of(existing.begin(), existing.end(),
+                [id](const GUID& g) { return equalGuid(g, *id); });
+            if (!wasHere) added.push_back(*id);
         }
+        if (!added.empty()) {
+            pasted = true;
+            focusGuid = added.front();
+            if (anchorIndex < 0) {
+                placedAtCursor = false;
+            } else {
+                // Check actual project order. Even if SWS already pasted
+                // after the anchor, never reorder just to create an undo step.
+                bool alreadyAfter = anchorIndex + static_cast<int>(added.size()) < afterCount;
+                for (int j = 0; j < static_cast<int>(added.size()) && alreadyAfter; ++j) {
+                    auto* tr = GetTrack(project_, anchorIndex + j + 1);
+                    const GUID* g = tr ? GetTrackGUID(tr) : nullptr;
+                    alreadyAfter = g && equalGuid(*g, added[static_cast<size_t>(j)]);
+                }
+                if (!alreadyAfter) {
+                    // Select precisely the newly pasted block, preserving its
+                    // internal routing.  REAPER moves selected tracks in order.
+                    for (int i = 0; i < afterCount; ++i) {
+                        auto* tr = GetTrack(project_, i);
+                        const GUID* g = tr ? GetTrackGUID(tr) : nullptr;
+                        const bool newTrack = g && std::any_of(added.begin(), added.end(),
+                            [g](const GUID& id) { return equalGuid(id, *g); });
+                        if (tr) SetTrackSelected(tr, newTrack);
+                    }
+                    refreshTrackSelection();
+                    Undo_BeginBlock2(project_);
+                    // The SDK index points to the track *before which* the
+                    // selected tracks will be placed: anchor + 1 means after.
+                    placedAtCursor = ReorderSelectedTracks(anchorIndex + 1, 0);
+                    Undo_EndBlock2(project_, "LReaParams: Place pasted tracks after F1 cursor", UNDO_STATE_TRACKCFG);
+                }
+            }
+        } else placedAtCursor = false; // nothing pasted: do not claim success
     }
-    // Never preserve a raw GUID pointer across the SWS edit: copies above
-    // are values. The old track may have been destroyed by Cut.
     clearPhysicalSelection();
     refreshAfterTrackEdit(action == TrackClipboardAction::cut ? nullptr : &focusGuid, oldRow);
     if (!active_) return;
+    if (action == TrackClipboardAction::paste && !pasted) {
+        speech_("No new tracks pasted. Check SWS clipboard"); return;
+    }
+    if (action == TrackClipboardAction::paste && !placedAtCursor) {
+        speech_("Tracks pasted, but placement after the current track could not be confirmed. " +
+            folderAwareTrackLabel()); return;
+    }
     const char* name = action == TrackClipboardAction::copy ? "Copied tracks with routing" :
         action == TrackClipboardAction::cut ? "Cut tracks with routing" : "Pasted tracks with routing";
-    if (action != TrackClipboardAction::copy && beforeCount == CountTracks(project_))
-        speech_(std::string(name) + ". Track count unchanged. Verify SWS result");
+    if (action == TrackClipboardAction::cut && beforeCount == CountTracks(project_))
+        speech_("Cut tracks with routing. Track count unchanged. Verify SWS result");
     else speech_(std::string(name) + ". " + folderAwareTrackLabel());
 }
 

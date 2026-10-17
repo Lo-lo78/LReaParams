@@ -320,15 +320,32 @@ std::string TrackNavigator::trackName() const {
     return "Track " + std::to_string(rows_.at(static_cast<size_t>(row_)).projectIndex + 1);
 }
 std::string TrackNavigator::detailPeerName(int category, int index) const {
+    if (!GetSetTrackSendInfo) return "Unknown track";
+    const char* field = category == 0 ? "P_DESTTRACK" : "P_SRCTRACK";
+    auto* peer = static_cast<MediaTrack*>(
+        GetSetTrackSendInfo(track_, category, index, field, nullptr));
+    if (!peer || !ValidatePtr2(project_, peer, "MediaTrack*")) return "Unknown track";
     char name[2048]{};
-    if (category == 0) {
-        // GetTrackSendName indexes the hardware outputs before the sends.
-        const int sendOffset = GetTrackNumSends(track_, 1);
-        if (GetTrackSendName(track_, index + sendOffset, name, sizeof(name)) && name[0]) return name;
-    } else if (category == -1) {
-        if (GetTrackReceiveName(track_, index, name, sizeof(name)) && name[0]) return name;
+    if (GetTrackName(peer, name, sizeof(name)) && name[0]) return name;
+    const int number = static_cast<int>(GetMediaTrackInfo_Value(peer, "IP_TRACKNUMBER"));
+    return number > 0 ? "Track " + std::to_string(number) : "Master track";
+}
+// Index is the true REAPER send/receive index, not a filtered column.
+// Number only the 2nd, 3rd, ... connection to the *same* peer.  A different
+// peer inserted between two Bass sends does not affect the Bass ordinal.
+int TrackNavigator::detailPeerOccurrence(int category, int index) const {
+    if (!GetSetTrackSendInfo || index < 0) return 1;
+    const char* field = category == 0 ? "P_DESTTRACK" : "P_SRCTRACK";
+    auto* target = static_cast<MediaTrack*>(
+        GetSetTrackSendInfo(track_, category, index, field, nullptr));
+    if (!target || !ValidatePtr2(project_, target, "MediaTrack*")) return 1;
+    int ordinal = 0;
+    for (int i = 0; i <= index; ++i) {
+        auto* other = static_cast<MediaTrack*>(
+            GetSetTrackSendInfo(track_, category, i, field, nullptr));
+        if (other == target) ++ordinal;
     }
-    return "Unknown track";
+    return std::max(1, ordinal);
 }
 const TrackNavigator::Entry* TrackNavigator::current() const {
     const int index = page_ == Page::tracks ? parameter_ : detailIndex_ * detailHeight + parameter_;
@@ -525,10 +542,47 @@ std::string TrackNavigator::currentParameterSpeech() const {
         // Its suffix is critical when one track closes nested folders.
         return selected + folderAwareTrackLabel() + ", " + e->title + ", " + valueText(*e, get(*e)) + autoSuffix;
     }
-    const char* label = page_ == Page::sends ? "Send " : "Receive ";
-    return trackName() + ", " + label + std::to_string(e->index + 1) +
-        (page_ == Page::sends ? " to " : " from ") + detailPeerName(e->category, e->index) +
-        ", " + e->title + ", " + valueText(*e, get(*e)) + autoSuffix;
+    // Tab/page review always gives complete context; directional navigation
+    // follows separate vertical and horizontal announcement rules.
+    const int occurrence = detailPeerOccurrence(e->category, e->index);
+    std::string label = detailPeerName(e->category, e->index);
+    label += page_ == Page::sends ? ", Send" : ", Receive";
+    if (occurrence > 1) label += " " + std::to_string(occurrence);
+    if (e->type == Entry::header) return label;
+    return label + ", " + e->title + ", " + valueText(*e, get(*e)) + autoSuffix;
+}
+// F2/F3 LEFT/RIGHT only: name a new peer, then avoid repeating the same
+// track on further sends/receives to that peer. Duplicate numbering follows
+// actual REAPER routing indices, even under a filtered column view.
+std::string TrackNavigator::detailColumnSpeech(int previousColumn) const {
+    if (!contextUnchanged()) throw std::runtime_error("Track context changed");
+    const auto* e = current();
+    if (!e) return parameterValueSpeech();
+    if (page_ == Page::tracks) return parameterValueSpeech();
+    const int occurrence = detailPeerOccurrence(e->category, e->index);
+    const std::string direction = page_ == Page::sends ? "Send" : "Receive";
+    std::string prefix;
+    bool samePeer = false;
+    if (previousColumn >= 0 && previousColumn != detailIndex_ && GetSetTrackSendInfo) {
+        const int offset = previousColumn * detailHeight;
+        if (offset >= 0 && offset < static_cast<int>(entries_.size())) {
+            const auto& previous = entries_[static_cast<size_t>(offset)];
+            const char* field = e->category == 0 ? "P_DESTTRACK" : "P_SRCTRACK";
+            auto* peer = static_cast<MediaTrack*>(
+                GetSetTrackSendInfo(track_, e->category, e->index, field, nullptr));
+            auto* oldPeer = static_cast<MediaTrack*>(
+                GetSetTrackSendInfo(track_, previous.category, previous.index, field, nullptr));
+            samePeer = peer && peer == oldPeer && ValidatePtr2(project_, peer, "MediaTrack*");
+        }
+    }
+    // Always announce the first link by peer name; a different peer must be
+    // named even if its ordinal is already 2, 3, ... in the full routing list.
+    if (!samePeer || occurrence == 1) prefix = detailPeerName(e->category, e->index) + ", ";
+    prefix += direction;
+    if (occurrence > 1) prefix += " " + std::to_string(occurrence);
+    if (e->type == Entry::header) return prefix;
+    return prefix + ", " + e->title + ", " + valueText(*e, get(*e)) +
+        (currentEnvelopeActive() ? ". Auto" : "");
 }
 std::string TrackNavigator::reviewLine() const {
     if (!active_) return "";
@@ -564,6 +618,9 @@ std::string TrackNavigator::parameterValueSpeech() const {
     const auto* e = current();
     if (!e) return page_ == Page::sends ? "No sends" :
                    page_ == Page::receives ? "No receives" : "No parameters";
+    // Vertical navigation (and NVDA+Up) never repeats the connected track,
+    // send number or receive number. Header fields have no numeric value.
+    if (e->type == Entry::header) return e->title;
     return e->title + ", " + valueText(*e, get(*e)) + (currentEnvelopeActive() ? ". Auto" : "");
 }
 void TrackNavigator::announce() { speech_(parameterValueSpeech()); }
@@ -706,7 +763,12 @@ void TrackNavigator::moveDetailColumn(int delta) {
     if (page_ == Page::tracks || entries_.empty()) return;
     const int count = static_cast<int>(entries_.size()) / detailHeight;
     const int next = std::clamp(detailIndex_ + delta, 0, count - 1);
-    if (next != detailIndex_) { detailIndex_ = next; rememberPosition(); announce(); }
+    if (next != detailIndex_) {
+        const int previousColumn = detailIndex_;
+        detailIndex_ = next;
+        rememberPosition();
+        speech_(detailColumnSpeech(previousColumn));
+    }
 }
 void TrackNavigator::switchDetailTrack(int direction) {
     if (page_ == Page::tracks || rows_.empty()) return;

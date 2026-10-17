@@ -1,3 +1,11 @@
+## 0.0.53 — TEST53.2: annunci direzionali F2/F3
+
+Correzione TEST53.1: Verticale = solo parametro e valore (header solo Send/Receive); Orizzontale = contesto traccia soltanto al primo link o al cambio peer, e suffisso progressivo dei collegamenti della stessa traccia. Tab completo, Search cleared breve. [Test](TEST53_2_DIRECTIONAL_ROUTING_SPEECH.md). Da compilare in GitHub Actions e provare con NVDA.
+
+## 0.0.53 — TEST53.1 bugfix paste, speech, search
+
+Mantenuta la TEST53, corretto Ctrl+V rispetto al cursore F1 mediante GUID e riposizionamento del gruppo; annunci completi per ogni colonna e riga F2/F3, numerazione peer ripetuti; `Search cleared` in uscita dal filtro senza uscire dal navigatore. [Test manuale](TEST53_1_TRACK_PASTE_SPEECH_SEARCH.md).
+
 ## 0.0.53 — F1/F2/F3 Ctrl+F
 
 Nuovo filtro basato sul Lua, input tramite EDIT nativo NVDA, ricerca per traccia o colonne Send/Receive e preservazione degli indici reali anche per i routing duplicati. La persistenza `.tp` rimane invariata. [Guida](TEST53_TRACK_FILTERS.md). Restano da migrare MIDI CC runtime Track, envelope mancanti, clear-all e sezioni F4-F8. Nessuna build locale.
