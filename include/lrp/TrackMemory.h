@@ -5,11 +5,15 @@
 #include <string>
 
 namespace lrp {
-// TEST49: Track Params preferences are part of the existing main .tp, not a
-// parallel settings file.  REAPER values and MIDI CC mappings are untouched.
+// TEST54.1: one native Track Params profile per saved REAPER project.
+// Old global Track CC Map.tp is read-only seed material for first use.
+// The same .tp will also host future per-track F4 entries.
 class TrackMemory {
 public:
-    void load(const std::filesystem::path& resource);
+    void load(const std::filesystem::path& resource, const std::string& projectFilename);
+    const std::filesystem::path& file() const noexcept { return file_; }
+    bool fixedEnabled() const;
+    void setFixedEnabled(bool on);
     void flush();
     void reset() noexcept;
     int step(const std::string& parameter) const;
@@ -28,6 +32,7 @@ private:
     std::string read(const std::string& section, const std::string& key) const;
     void edit(const std::string& section, const std::string& key, const std::string& value);
     std::filesystem::path resource_, file_;
+    std::string projectIdentity_;
     Profile profile_{};
     std::string digest_, pendingLegacyPayload_;
     // Section -> key -> requested value. Only explicitly edited keys are patched.

@@ -1,2 +1,7 @@
+TEST54.1 (source-only): 49 Python static suites passed locally; Tools/audit.py PASS.
+New GitHub Actions C++ fixtures cover project .tp Fixed CC reopen, OFF state,
+same-name projects, legacy import, conflict/backup and format.
+NO C++ compilation, native CTest, REAPER runtime, NVDA or MIDI hardware test performed.
+
 LReaParams 0.0.54 TEST54: Tools/run_static.py 49 Python SOURCE-ONLY suites PASS. Includes Track Params MIDI CC, Lua-compatible .tp patching, numeric Ctrl+E, linked routing, plus all prior contracts.
 NOT RUN: C++ native compilation, MSVC, CMake, MSBuild, CTest, REAPER, NVDA/OSARA or MIDI hardware. Build via GitHub Actions.

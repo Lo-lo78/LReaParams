@@ -136,6 +136,10 @@ private:
     // Only Left/Right sends/receives include peer context and per-peer ordinal.
     std::string detailColumnSpeech(int previousColumn) const;
     std::string parameterValueSpeech() const;
+    // Like FX Params: parameter, value, CC channel/number, Auto.
+    // The CC is read from the project .tp regardless of Fixed map on/off.
+    std::string ccParameterSuffix() const;
+    std::string statusSuffix() const;
     void announceTrack();
     std::string valueText(const Entry&, double) const;
     const Entry* current() const;

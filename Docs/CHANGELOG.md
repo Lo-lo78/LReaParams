@@ -1,3 +1,7 @@
+## 0.0.54.1 — Track Fixed CC e profilo di progetto
+
+Le memorie Track Params sono ora per progetto, con Fixed CC persistente, annunci CC prima di Auto e trasporto condiviso con FX Params. Ctrl+Canc elimina il CC anche in F1; Ctrl+Maiusc+Canc deseleziona le tracce. Rinominati i comandi REAPER senza cambiarne gli ID. F4 futuro nello stesso `.tp`. Solo sorgente.
+
 ## 0.0.53 — TEST53.2: annunci distinti Su/Giù e Sinistra/Destra in F2/F3
 
 F2/F3 verticalmente dice solo parametro e valore; orizzontalmente dichiara `traccia, Send/Receive, parametro, valore` e omette la traccia nei duplicati consecutivi (`Send 2`, `Receive 3`). Ritorna a nominare il peer quando cambia. Primo link sempre `Send`/`Receive`. Tab conserva il contesto completo; filtri e paste TEST53.1 invariati. [Guida](TEST53_2_DIRECTIONAL_ROUTING_SPEECH.md). Solo controlli statici, nessuna build locale.

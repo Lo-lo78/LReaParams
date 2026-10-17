@@ -34,7 +34,7 @@ void TrackNavigator::end() noexcept {
         try { rememberPosition(); memory_.flush(); }
         catch (...) {
             OutputDebugStringW(L"LReaParams: Track Params memory could not be saved.\n");
-            try { speech_("Track Params: memory not saved. Check Track CC Map.tp"); } catch (...) {}
+            try { speech_("Track Params: project memory not saved. Check the project .tp"); } catch (...) {}
         }
     }
     active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false; resetMidiState();
@@ -49,7 +49,11 @@ bool TrackNavigator::begin() {
     initialSelection_ = GetSelectedTrack2(project_, 0, true);
     rebuildVisibleRows();
     if (rows_.empty()) { speech_("Track Params: no visible tracks"); return false; }
-    memory_.load(resource_);
+    char projectFilename[4096]{};
+    EnumProjects(-1, projectFilename, static_cast<int>(sizeof(projectFilename)));
+    memory_.load(resource_, projectFilename);
+    // Persisted Fixed CC is re-enabled on every entry, never silently lost.
+    fixedCc_ = memory_.fixedEnabled();
     row_ = 0;
     for (int i = 0; i < static_cast<int>(rows_.size()); ++i) {
         if (rows_[i].track == initialSelection_) { row_ = i; break; }
@@ -104,19 +108,19 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (k.ctrl && k.alt) return !k.shift && (k.vk == 'C' || (f1 && (k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.alt && k.shift) return f1 && !k.ctrl && (k.vk == VK_UP || k.vk == VK_DOWN);
     if (k.ctrl && k.shift) return !k.alt && (k.vk == 'C' || k.vk == 'T' ||
-        (k.vk == 'S' || k.vk == 'R' || k.vk == 'A') ||
+        (k.vk == 'S' || k.vk == 'R' || k.vk == 'A') || (f1 && k.vk == VK_DELETE) ||
         (f1 && (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.shift) return !k.alt && !k.ctrl && (k.vk == 'C' || (f1 &&
         (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN ||
          k.vk == VK_PRIOR || k.vk == VK_NEXT)));
     if (k.ctrl) return !k.alt && (k.vk == 'E' || k.vk == 'F' || k.vk == VK_HOME || k.vk == VK_END ||
-        k.vk == 'T' || k.vk == VK_BACK || (!f1 && (k.vk == VK_UP || k.vk == VK_DOWN)) || (f1 && (k.vk == VK_RETURN || k.vk == 'A' || k.vk == 'C' ||
+        k.vk == 'T' || k.vk == VK_BACK || k.vk == VK_DELETE || k.vk == VK_SPACE || (!f1 && (k.vk == VK_UP || k.vk == VK_DOWN)) || (f1 && (k.vk == VK_RETURN || k.vk == 'A' || k.vk == 'C' ||
             k.vk == 'X' || k.vk == 'V' || k.vk == VK_DELETE)));
     if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
         k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END ||
         k.vk == VK_LEFT || k.vk == VK_RIGHT;
     switch (k.vk) {
-        case VK_ESCAPE: case VK_RETURN: case VK_TAB:
+        case VK_ESCAPE: case VK_RETURN: case VK_TAB: case VK_SPACE:
         case VK_LEFT: case VK_RIGHT: case VK_UP: case VK_DOWN:
         case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT:
         case VK_F1: case VK_F2: case VK_F3: return true;
@@ -532,16 +536,37 @@ std::string TrackNavigator::valueText(const Entry& e, double value) const {
     }
     return num(value);
 }
+std::string TrackNavigator::ccParameterSuffix() const {
+    std::string section, key;
+    if (!midiTarget(section, key)) return {};
+    const std::string link = memory_.ccLink(section, key);
+    const auto separator = link.find(',');
+    if (separator == std::string::npos) return {};
+    try {
+        std::size_t lengthCh = 0, lengthCc = 0;
+        const int channel = std::stoi(link.substr(0, separator), &lengthCh);
+        const auto second = link.substr(separator + 1);
+        const int number = std::stoi(second, &lengthCc);
+        if (lengthCh == separator && lengthCc == second.size() &&
+            channel >= 1 && channel <= 16 && number >= 0 && number <= 127)
+            return ". CC channel " + std::to_string(channel) + " CC " + std::to_string(number);
+    } catch (...) {}
+    return {};
+}
+std::string TrackNavigator::statusSuffix() const {
+    // FX Params contract: CC before Auto, even when fixed CC is disabled.
+    return ccParameterSuffix() + (currentEnvelopeActive() ? ". Auto" : "");
+}
 std::string TrackNavigator::currentParameterSpeech() const {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     const auto* e = current();
     if (!e) return trackName() + (page_ == Page::sends ? ", no sends" : page_ == Page::receives ? ", no receives" : ", no parameters");
-    const std::string autoSuffix = currentEnvelopeActive() ? ". Auto" : "";
+    const std::string suffix = statusSuffix();
     if (page_ == Page::tracks) {
         const std::string selected = IsTrackSelected(track_) ? "Selected. " : "";
         // The folder-aware label contains open/closed and all ending folders.
         // Its suffix is critical when one track closes nested folders.
-        return selected + folderAwareTrackLabel() + ", " + e->title + ", " + valueText(*e, get(*e)) + autoSuffix;
+        return selected + folderAwareTrackLabel() + ", " + e->title + ", " + valueText(*e, get(*e)) + suffix;
     }
     // Tab/page review always gives complete context; directional navigation
     // follows separate vertical and horizontal announcement rules.
@@ -550,7 +575,7 @@ std::string TrackNavigator::currentParameterSpeech() const {
     label += page_ == Page::sends ? ", Send" : ", Receive";
     if (occurrence > 1) label += " " + std::to_string(occurrence);
     if (e->type == Entry::header) return label;
-    return label + ", " + e->title + ", " + valueText(*e, get(*e)) + autoSuffix;
+    return label + ", " + e->title + ", " + valueText(*e, get(*e)) + suffix;
 }
 // F2/F3 LEFT/RIGHT only: name a new peer, then avoid repeating the same
 // track on further sends/receives to that peer. Duplicate numbering follows
@@ -582,8 +607,7 @@ std::string TrackNavigator::detailColumnSpeech(int previousColumn) const {
     prefix += direction;
     if (occurrence > 1) prefix += " " + std::to_string(occurrence);
     if (e->type == Entry::header) return prefix;
-    return prefix + ", " + e->title + ", " + valueText(*e, get(*e)) +
-        (currentEnvelopeActive() ? ". Auto" : "");
+    return prefix + ", " + e->title + ", " + valueText(*e, get(*e)) + statusSuffix();
 }
 std::string TrackNavigator::reviewLine() const {
     if (!active_) return "";
@@ -623,7 +647,7 @@ std::string TrackNavigator::parameterValueSpeech() const {
     // Vertical navigation (and NVDA+Up) never repeats the connected track,
     // send number or receive number. Header fields have no numeric value.
     if (e->type == Entry::header) return e->title;
-    return e->title + ", " + valueText(*e, get(*e)) + (currentEnvelopeActive() ? ". Auto" : "");
+    return e->title + ", " + valueText(*e, get(*e)) + statusSuffix();
 }
 void TrackNavigator::announce() { speech_(parameterValueSpeech()); }
 void TrackNavigator::announceTrack() { speech_(currentParameterSpeech()); }
@@ -845,15 +869,24 @@ void TrackNavigator::handle(const Key& k) {
                 (memory_.valueSpeech(id) ? ". Value speech on" : ". Value speech off");
             if (ccSpeechSupported()) {
                 info += memory_.ccSpeech(page, bare) ? ". MIDI speech on" : ". MIDI speech off";
-                std::string ccSection, ccName;
-                if (midiTarget(ccSection, ccName)) {
-                    const auto link = memory_.ccLink(ccSection, ccName);
-                    if (!link.empty()) info += ". CC " + link;
-                }
             }
             if (page_ == Page::tracks) info += ". " + std::to_string(CountSelectedTracks(project_)) + " tracks selected";
             info += filterSuffix();
             speech_(info);
+        }
+        return;
+    }
+    // Shared extension transport: Space Play/Stop, Ctrl+Space Play/Pause.
+    // Leave text editors and Shift+Space selection untouched. REAPER/OSARA
+    // own transport speech, as in FX Params.
+    if (k.vk == VK_SPACE && !k.shift && !k.alt && !filterEditing_ && !numericEditing_) {
+        if (!k.repeat) {
+            if (k.ctrl) { if (Main_OnCommand) Main_OnCommand(40073, 0); }
+            else {
+                const int state = GetPlayState ? GetPlayState() : 0;
+                if ((state & 2) && OnPlayButton) OnPlayButton();
+                else if (Main_OnCommand) Main_OnCommand(40044, 0);
+            }
         }
         return;
     }
@@ -865,7 +898,7 @@ void TrackNavigator::handle(const Key& k) {
     if ((k.ctrl && k.alt && !k.shift && k.vk == 'C') ||
         (!k.ctrl && !k.alt && k.shift && k.vk == 'C') ||
         (k.ctrl && !k.alt && k.shift && k.vk == 'C') ||
-        (k.ctrl && !k.alt && !k.shift && page_ != Page::tracks && k.vk == VK_DELETE)) {
+        (k.ctrl && !k.alt && !k.shift && k.vk == VK_DELETE)) {
         if (!k.repeat) midiShortcut(k);
         return;
     }
@@ -938,7 +971,7 @@ void TrackNavigator::handle(const Key& k) {
             }
         }
         if (k.ctrl && !k.alt && !k.shift && k.vk == 'A') { if (!k.repeat) selectVisibleTracks(); return; }
-        if (k.ctrl && !k.alt && !k.shift && k.vk == VK_DELETE) { if (!k.repeat) clearTrackSelection(); return; }
+        if (k.ctrl && k.shift && !k.alt && k.vk == VK_DELETE) { if (!k.repeat) clearTrackSelection(); return; }
         if (!k.ctrl && !k.alt && !k.shift && k.vk == VK_DELETE) { if (!k.repeat) toggleCursorTrackSelection(true); return; }
     }
     if (k.ctrl && !k.alt && k.vk == 'T') {

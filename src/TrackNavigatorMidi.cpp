@@ -63,7 +63,10 @@ void TrackNavigator::midiShortcut(const Key& k) {
         return;
     }
     if (toggleFixed) {
-        if (fixedCc_) { fixedCc_ = false; midiPickup_.clear(); speech_("Fixed CC map off"); return; }
+        if (fixedCc_) {
+            fixedCc_ = false; memory_.setFixedEnabled(false); memory_.flush();
+            midiPickup_.clear(); speech_("Fixed CC map off"); return;
+        }
         int count = 0;
         for (const char* group : {"Track", "Sends", "Receives"})
             for (const auto& entry : memory_.ccLinks(group)) {
@@ -72,6 +75,7 @@ void TrackNavigator::midiShortcut(const Key& k) {
             }
         if (!count) { speech_("No fixed CC map"); return; }
         fixedCc_ = true; floatingCc_ = floatingWaiting_ = false;
+        memory_.setFixedEnabled(true); memory_.flush();
         midiSequence_ = recentSequence(); midiPickup_.clear();
         speech_("Fixed CC map on. " + std::to_string(count) + " parameters");
         return;
@@ -172,9 +176,11 @@ void TrackNavigator::pollMidi() {
                         memory_.setCcLink(group, row.first, "");
                 }
             memory_.setCcLink(learnSection_, learnKey_, link);
+            memory_.setFixedEnabled(true);
             memory_.flush();
             const auto target = learnKey_;
             learnCc_ = false; fixedCc_ = true; floatingCc_ = floatingWaiting_ = false;
+        memory_.setFixedEnabled(true); memory_.flush();
             midiPickup_.clear();
             speech_("CC learned. Channel " + std::to_string(cc.channel) + " CC " +
                 std::to_string(cc.number) + ". " + target);

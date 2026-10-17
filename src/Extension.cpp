@@ -149,7 +149,7 @@ public:
         case settings: {
             exitNavigation(false);
             const int answer = MessageBoxW(info_.hwnd_main,
-                L"Native test keyboard backend, current REAPER session only.\n\nYes: main REAPER thread hook (WH_GETMESSAGE).\nNo: REAPER SDK accelerator plus Escape-only hook (default).\nCancel: keep current setting.\n\nCapture is confined to REAPER's main thread and active navigator.",
+                L"Keyboard backend, current REAPER session only.\n\nYes: main REAPER thread hook (WH_GETMESSAGE).\nNo: REAPER SDK accelerator plus Escape-only hook (default).\nCancel: keep current setting.\n\nCapture is confined to REAPER's main thread and active navigator.",
                 L"LReaParams Settings", MB_YESNOCANCEL | MB_ICONINFORMATION);
             if (answer == IDYES) backend_ = InputBackend::mainThreadHook;
             else if (answer == IDNO) backend_ = InputBackend::sdkAccelerator;
@@ -157,12 +157,12 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.53 - Track Params filters\n\n"
+            ShowMessageBox("LReaParams 0.0.54.1 - Project Track Params persistence\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
                 "Alt+F1/F2 presets; Alt+F3/F4 automated parameters. Ctrl+E numeric edit.\n"
-                "Space Play/Stop; Ctrl+Space Play/Pause in FX Params. Shift+Space selects in F7.\n"
+                "Space Play/Stop; Ctrl+Space Play/Pause in FX Params and Track Params. Shift+Space selects in F7 or F1.\n"
                 "Ctrl+R recent searches; Ctrl+Shift+R full context review.\n"
                 "F12 alone is reserved; Ctrl+F12 keeps slot 12; Alt+F10/F11/F12 remain with OSARA.\n"
                 "See Docs/Status.md for remaining Lua differences and required runtime tests.\n"
@@ -181,7 +181,7 @@ public:
         }
         case trackMemories:
             exitNavigation(false);
-            speak("LReaParams - Track Memories. Memory management is reserved for a later test; no memory was changed.");
+            speak("Track Memories manager is not yet implemented. Track settings are saved in the project TP profile.");
             break;
         case stopBackgroundMidi:
             backgroundMidi_.end();
@@ -484,15 +484,15 @@ private:
     bool fxChainAccelRegistered_ = false;
     enum ActionIndex { fxParams, trackParams, importLegacy, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, actionCount };
     std::array<Action, actionCount> actions_{{
-        {"LREAPARAMSFXPARAMS", "LReaParams: FX Params (native test)", L"FX Params"},
-        {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params (basic native controls)", L"Track Params (basic controls)"},
+        {"LREAPARAMSFXPARAMS", "LReaParams: FX Params", L"FX Params"},
+        {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params", L"Track Params"},
         {"LREAPARAMSIMPORTLEGACY", "LReaParams: Import legacy profiles", L"Import legacy profiles"},
         {"LREAPARAMSOPENDATAFOLDER", "LReaParams: Open Data Folder", L"Open Data Folder"},
         {"LREAPARAMSSETTINGS", "LReaParams: Settings", L"Settings"},
         {"LREAPARAMSABOUT", "LReaParams: About LReaParams", L"About LReaParams"},
         {"LREAPARAMSFXMEMORIES", "LReaParams: FX Memories", L"FX Memories"},
-        {"LREAPARAMSTRACKMEMORIES", "LReaParams: Track Memories (future)", L"Track Memories (future)"},
-        {"LREAPARAMSNVDATITLE", "LReaParams: Toggle Lua-style keyboard focus window", L"Lua-style keyboard window (1px)"},
+        {"LREAPARAMSTRACKMEMORIES", "LReaParams: Track Memories", L"Track Memories"},
+        {"LREAPARAMSNVDATITLE", "LReaParams: Accessibility Focus Window (toggle)", L"Accessibility Focus Window"},
         {"LREAPARAMSSTOPMIDIBACKGROUND", "LReaParams: Stop background MIDI", L"Stop background MIDI"}
     }};
 };

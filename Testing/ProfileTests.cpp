@@ -243,10 +243,10 @@ int main(int argc, char** argv) {
         check(f8.ccLinks.at(1)=="2\t74","MIDI CC mapping lost");
         check(f8.visibleOrder()==std::vector<int>({0,1,2,compareParamIndex,3}),
               "Hidden virtuals leaked into visible Custom Order");
-        // 0.0.49: TRACK preferences live in Track CC Map.tp. Preserve all
-        // historical Lua associations, unknown sections and CRLF formatting.
-        const auto trackRoot = root / L"track-memory49";
-        const auto trackFile = trackRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp";
+        // 0.0.54.1: all Track Params preferences, mappings and future F4
+        // share ONE project .tp; the previous global map is only a seed.
+        const auto trackRoot = root / L"track-memory54-project";
+        const auto globalTrackFile = trackRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp";
         const std::string oldTrackPayload =
             "# historical Track CC map\r\nVersion=2\r\nF4CCScope=ProjectTrack\r\n"
             "[Track]\r\nVolume=1,7\r\nPan=2,10\r\n"
@@ -254,11 +254,18 @@ int main(int argc, char** argv) {
             "[FXParams.Plugin]\r\nSynthetic|1:Parameter=1,25\r\n"
             "[CCSpeech.Track]\r\nVolume=1\r\n"
             "[UnknownFuture]\r\nopaque data\r\n";
-        overwrite(trackFile, serializeNative(parseLegacy(oldTrackPayload)));
+        const auto oldGlobalBytes = serializeNative(parseLegacy(oldTrackPayload));
+        overwrite(globalTrackFile, oldGlobalBytes);
+        const std::string savedProject = "C:\\Music\\Album\\Bass.rpp";
         TrackMemory tm;
-        tm.load(trackRoot);
-        check(tm.step("Track.Volume") == 0 && tm.valueSpeech("Track.Pan") &&
-              tm.ccSpeech("Track", "Volume"), "Track preference defaults incorrect");
+        tm.load(trackRoot, savedProject);
+        check(tm.fixedEnabled() && tm.ccLink("Track", "Volume") == "1,7",
+            "Imported Fixed CC is missing or disabled");
+        check(tm.step("Track.Volume") == 0 && tm.ccSpeech("Track", "Volume"),
+            "Imported memory preferences wrong");
+        const auto projectTp = tm.file();
+        check(projectTp != globalTrackFile && projectTp.extension() == L".tp" &&
+            projectTp.parent_path().filename() == L"Bass", "Expected project-specific .tp path");
         tm.setStep("Track.Volume", -4);
         tm.setStep("Track.Pan", 2);
         tm.setStep("Sends.Volume", -3);
@@ -266,66 +273,78 @@ int main(int argc, char** argv) {
         tm.setCcSpeech("Track", "Volume", false);
         tm.setCcSpeech("Sends", "Pan", true);
         tm.setPosition("F1.Parameter", "Track.Pan");
-        tm.setPosition("F2.Column", "3");
+        tm.setCcLink("Track", "Volume", "4,77");
+        tm.setFixedEnabled(true);
         tm.flush();
-        const auto trackEdited = parseNative(readFile(trackFile)).payload;
-        check(trackEdited.find("[Track]\r\nVolume=1,7\r\nPan=2,10\r\n") != std::string::npos &&
+        check(readFile(globalTrackFile) == oldGlobalBytes,
+            "Project profile accidentally modified the general legacy mapping");
+        const auto trackEdited = parseNative(readFile(projectTp)).payload;
+        check(trackEdited.find("[Track]\r\nVolume=4,77\r\nPan=2,10\r\n") != std::string::npos &&
               trackEdited.find("[Sends]\r\nVolume=3,11\r\n") != std::string::npos &&
               trackEdited.find("[UnknownFuture]\r\nopaque data\r\n") != std::string::npos &&
-              trackEdited.find("[CCSpeech.Track]\r\nVolume=\r\n") != std::string::npos,
-              "TEST49 modified unrelated fields or did not edit MIDI speech");
-        check(trackEdited.find("[LReaParams.StepScales]\r\n") != std::string::npos,
-              "TEST49 lost CRLF formatting");
+              trackEdited.find("[CCSpeech.Track]\r\nVolume=\r\n") != std::string::npos &&
+              trackEdited.find("[LReaParams.StepScales]\r\n") != std::string::npos &&
+              trackEdited.find("[FXParams.ProjectTrack]") != std::string::npos,
+              "Track project profile lost formatting, CC, F4 namespace or old sections");
         TrackMemory tmAgain;
-        tmAgain.load(trackRoot);
-        check(tmAgain.step("Track.Volume") == -4 && tmAgain.step("Track.Pan") == 2 &&
-              tmAgain.step("Sends.Volume") == -3 && tmAgain.step("Receives.Volume") == 0,
-              "Track steps were not independently saved");
-        check(!tmAgain.valueSpeech("Track.Pan") && tmAgain.valueSpeech("Track.Volume"),
-              "Independent automatic speech preferences lost");
-        check(!tmAgain.ccSpeech("Track", "Volume") && tmAgain.ccSpeech("Sends", "Pan") &&
-              tmAgain.position("F1.Parameter") == "Track.Pan" && tmAgain.position("F2.Column") == "3",
-              "MIDI speech or navigation memory lost");
-        tmAgain.setStep("Track.Volume", -8);
-        tmAgain.flush();
-        TrackMemory tmStale;
-        tmStale.load(trackRoot);
-        tmAgain.setStep("Track.Volume", -7);
-        tmAgain.flush();
-        const auto newerTrackBytes = readFile(trackFile);
-        tmStale.setStep("Track.Volume", 7);
-        rejected([&] { tmStale.flush(); });
-        check(readFile(trackFile) == newerTrackBytes, "Stale Track profile overwritten");
+        tmAgain.load(trackRoot, savedProject);
+        check(tmAgain.fixedEnabled() && tmAgain.ccLink("Track", "Volume") == "4,77" &&
+            tmAgain.step("Track.Volume") == -4 && tmAgain.step("Track.Pan") == 2 &&
+            tmAgain.step("Sends.Volume") == -3, "Project Fixed CC or Steps not restored");
+        check(!tmAgain.valueSpeech("Track.Pan") && tmAgain.valueSpeech("Track.Volume") &&
+              !tmAgain.ccSpeech("Track", "Volume") && tmAgain.ccSpeech("Sends", "Pan") &&
+              tmAgain.position("F1.Parameter") == "Track.Pan",
+              "Speech or navigation was not restored from the project .tp");
+        tmAgain.setFixedEnabled(false); tmAgain.flush();
+        TrackMemory off;
+        off.load(trackRoot, savedProject);
+        check(!off.fixedEnabled() && off.ccLink("Track", "Volume") == "4,77",
+              "Fixed CC Off must survive restart without removing the learned CC");
+        // Same project name but different full path must never share edits.
+        TrackMemory anotherProject;
+        anotherProject.load(trackRoot, "D:\\Other\\Bass.rpp");
+        check(anotherProject.file() != projectTp && anotherProject.ccLink("Track", "Volume") == "1,7" &&
+            anotherProject.step("Track.Volume") == 0,
+            "Unrelated projects with the same name shared MIDI or preferences");
+        // Stale sessions must not overwrite externally changed project .tp.
+        TrackMemory stale;
+        stale.load(trackRoot, savedProject);
+        off.setStep("Track.Volume", -8); off.flush();
+        const auto newerTrackBytes = readFile(projectTp);
+        stale.setStep("Track.Volume", 7);
+        rejected([&] { stale.flush(); });
+        check(readFile(projectTp) == newerTrackBytes,
+            "Stale project Track profile overwritten");
         const auto trackBackup = trackRoot / L"LReaParams" / L"Backups" / L"ProfileEdits";
-        check(fs::exists(trackBackup) && !fs::is_empty(trackBackup), "Track profile backup missing");
-        const auto newTrackRoot = root / L"track-memory49-new";
+        check(fs::exists(trackBackup) && !fs::is_empty(trackBackup), "Project profile backup missing");
+        const auto newTrackRoot = root / L"track-memory54-new";
         TrackMemory tmNew;
-        tmNew.load(newTrackRoot);
-        check(!fs::exists(newTrackRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp"),
-              "Unmodified new Track map should not be created");
+        tmNew.load(newTrackRoot, "E:\\Music\\Keys.rpp");
+        check(!fs::exists(tmNew.file()), "Unmodified project Track map should not be created");
         tmNew.setStep("Track.Width", 5);
         tmNew.flush();
-        check(parseNative(readFile(newTrackRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp")).kind == ProfileKind::track,
-              "New Track profile invalid");
-        // Import-worker race: a pending historical .txt must not be masked
-        // by an empty new .tp. Resume only after exact imported bytes exist.
-        const auto raceRoot = root / L"track-memory49-race";
+        check(parseNative(readFile(tmNew.file())).kind == ProfileKind::track &&
+              !fs::exists(newTrackRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp"),
+              "New project .tp invalid or global map created by mistake");
+        // Importer may still be converting the global .txt: the project uses
+        // the old source as seed without creating a competing global .tp.
+        const auto raceRoot = root / L"track-memory54-import-race";
         const auto raceLegacy = raceRoot / L"Scripts" / L"Lo-lo - Scripts" / L"Utility" /
             L"Scripts" / L"Tracks" / L"Track CC Map.txt";
         const auto raceNative = raceRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp";
         overwrite(raceLegacy, oldTrackPayload);
         TrackMemory tmRace;
-        tmRace.load(raceRoot);
+        tmRace.load(raceRoot, "C:\\Projects\\Race.rpp");
         tmRace.setStep("Track.Volume", -5);
-        rejected([&] { tmRace.flush(); });
-        check(!fs::exists(raceNative), "TEST49 stole historical CC map path before import");
-        overwrite(raceNative, serializeNative(parseLegacy(oldTrackPayload)));
         tmRace.flush();
-        check(parseNative(readFile(raceNative)).payload.find("Volume=1,7") != std::string::npos &&
-              parseNative(readFile(raceNative)).payload.find("Track.Volume=-5") != std::string::npos,
-              "Imported Track CC map was not safely rebased");
+        check(!fs::exists(raceNative) &&
+            parseNative(readFile(tmRace.file())).payload.find("Volume=1,7") != std::string::npos,
+            "Project save stole legacy import target or discarded its MIDI map");
         rejected([] { parseLegacy("Version=2\nF4CCScope=Plugin\n[Track]\n[Sends]\n[Receives]\n[FXParams.Plugin]\n[LReaParams.StepScales]\nTrack.Volume=11\n"); });
         rejected([] { parseLegacy("Version=2\nF4CCScope=Plugin\n[Track]\n[Sends]\n[Receives]\n[FXParams.Plugin]\n[LReaParams.ParameterSpeech]\nTrack.Pan=9\n"); });
+        rejected([] { parseLegacy(
+            "Version=2\nF4CCScope=ProjectTrack\n[Track]\n[Sends]\n[Receives]\n[FXParams.Plugin]\n"
+            "[LReaParams.MidiSettings]\nFixedEnabled=maybe\n"); });
         const auto collision = root / L"collision.txt";
         check(writeNewVerified(collision, "first"), "Create failed");
         check(!writeNewVerified(collision, "second") && readFile(collision) == "first", "Collision replaced bytes");

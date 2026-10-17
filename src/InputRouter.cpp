@@ -197,9 +197,8 @@ bool InputRouter::interceptTransport(MSG& message) noexcept {
         return route(message, true);
     }
 
-    // Native FX keyboard owner: do not intercept Ctrl+Space inside an actual
-    // Windows EDIT field (search, rename, numeric input). Keep Track Params,
-    // which has no Ctrl+Space gesture, unchanged.
+    // Native FX or Track keyboard owner: Ctrl+Space shares the REAPER
+    // Play/Pause action. Never intercept inside a Win32 EDIT field.
     if (message.hwnd != ownedWindow_ || GetFocus() != ownedWindow_ ||
         !environmentSafe()) return false;
     wchar_t cls[64]{};

@@ -12,7 +12,7 @@ assert version_at_least(root, (0, 0, 49))
 assert 'src/TrackMemory.cpp' in cmake
 assert 'setResourceRoot(resource_)' in ext
 assert 'TrackMemory memory_' in hdr
-assert 'memory_.load(resource_)' in cpp
+assert 'memory_.load(resource_, projectFilename)' in cpp
 assert 'memory_.setStep(parameterKey(), stepScale_)' in cpp
 assert 'memory_.setValueSpeech(id, on)' in cpp
 assert 'memory_.setCcSpeech(page, bare, on)' in cpp
@@ -25,5 +25,5 @@ assert 'MoveFileExW' in mem and 'writeNewVerified(backup, current)' in mem
 assert 'parseNative(readFile(temporary))' in mem
 assert 'name == "LReaParams.StepScales"' in parser
 assert 'name == "LReaParams.ParameterSpeech"' in parser
-assert 'Track CC Map.tp' in mem
+assert 'Track CC Map.tp' in mem and 'LReaParamsProjectID' in mem and 'L"Projects"' in mem
 print('TEST49 static contracts passed (NO compilation)')

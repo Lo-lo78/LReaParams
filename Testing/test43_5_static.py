@@ -35,6 +35,6 @@ assert 'else if (!self->ownedWindow_' in hook  # no double-dispatch to owned Win
 assert 'if (!k.repeat)' in fx[fx.index('void FxNavigator::handle('):]
 assert 'Main_OnCommand(40073, 0)' in fx and 'Main_OnCommand(40044, 0)' in fx
 assert 'if(k.shift&&!k.ctrl&&!k.alt&&k.vk==VK_SPACE)' in (root/'src/FxNavigatorOrder.cpp').read_text()
-assert 'Main_OnCommand(40073' not in track
+assert 'Main_OnCommand(40073, 0)' in track # TEST54.1 shares the native transport action
 assert 'Testing/test43_5_static.py' in workflow
 print('0.0.43.5 Ctrl+Space event routing audit PASS (no REAPER runtime exercised)')

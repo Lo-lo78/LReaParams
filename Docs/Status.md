@@ -1,3 +1,7 @@
+## 0.0.54.1 — Memorie Track per progetto
+
+Profilo `.tp` per progetto con importazione non distruttiva dei CC globali. Stato Fixed On/Off persistente; Step, parlato e navigazione nello stesso profilo. Spazio/Ctrl+Spazio come FX Params. [Dettagli](TEST54_1_PROJECT_TP_FIXED_CC.md). F4 futuro, non ancora migrato.
+
 ## 0.0.54 — TEST54 prima migrazione runtime MIDI Track e Ctrl+E
 
 MIDI CC F1/F2/F3 (Fixed, Floating, pickup, learn e parlato); Ctrl+E con campo nativo; Enter su intestazioni send/receive si sposta sul collegamento gemello, anche duplicato. Non ancora completato: Ctrl+Q Track background, automazioni Width/Send/Receive da creare, clear all, range volume e F4-F8. [Dettagli](TEST54_TRACK_CC_NUMERIC_ROUTING.md). Solo 49 suite statiche, nessuna compilazione o verifica NVDA.

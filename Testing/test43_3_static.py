@@ -30,7 +30,8 @@ assert 'TitleProxy::nativeEditProc' in proxy and 'CallWindowProcW(self->original
 # Both routes dispatch only accepted shortcuts, and REAPER must not get a second Space.
 assert 'if (!navigator_->accepts(key)) return true;' in router
 assert 'queue_[tail_] = key;' in router
-# Track Params has not received new transport shortcut hooks.
-assert 'OnPlayButton' not in track and 'OnPauseButton' not in track
+# TEST54.1: Track Params now shares FX transport semantics.
+assert 'if ((state & 2) && OnPlayButton)' in track and 'Main_OnCommand(40073, 0)' in track
+assert 'k.vk == VK_SPACE && !k.shift && !k.alt' in track
 assert 'Testing/test43_3_static.py' in workflow
 print('0.0.43.3 FX transport/static focus contracts PASS; C++/REAPER/NVDA NOT RUN')

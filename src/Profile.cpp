@@ -153,6 +153,12 @@ Profile parseLegacy(std::string bytes) {
                     const auto f = field(l);
                     require(f.key.size() <= 200 && !f.key.empty() && (f.value == "0" || f.value == "1"), "Invalid Track speech preference");
                 }
+            } else if (name == "LReaParams.MidiSettings") {
+                for (const auto& l : pair.second) {
+                    const auto f = field(l);
+                    require(f.key == "FixedEnabled" && (f.value == "0" || f.value == "1"),
+                        "Invalid project Track MIDI setting");
+                }
             } else if (name == "LReaParams.NavigationMemory") {
                 for (const auto& l : pair.second) {
                     const auto f = field(l);

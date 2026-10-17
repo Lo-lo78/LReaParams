@@ -1,3 +1,10 @@
+## 0.0.54.1 — Track Params shortcut changes
+
+- Spazio: Play/Stop come FX Params. Ctrl+Spazio: Play/Pause nativo REAPER. Maiusc+Spazio: selezione traccia in F1.
+- Ctrl+Canc: cancella CC corrente in F1/F2/F3. Ctrl+Maiusc+Canc in F1: deseleziona tutte le tracce. Canc resta deselezione traccia F1 / eliminazione routing F2/F3.
+- CC Fixed appresi e stato On/Off nel profilo `.tp` del progetto; Floating CC solo per la sessione.
+- NVDA+Su e navigazione: Parametro, valore, CC channel/CC, Auto. Tab legge contesto e Step.
+
 ## 0.0.53 — Track Params Ctrl+F (prevale sulle versioni precedenti)
 
 - **Ctrl+F** in F1/F2/F3: apre un campo EDIT di Windows se il filtro è spento; con filtro acceso lo elimina. **Invio** applica la ricerca, **Esc** (o Ctrl+F durante l’editazione) annulla. I campi testo hanno caret e clipboard nativi NVDA.

@@ -1,3 +1,5 @@
+> **TEST54.1 / LReaParams 0.0.54.1:** profilo Track Params per progetto, Fixed CC persistente, annunci CC prima di Auto, Ctrl+Canc e trasporto condiviso. [Guida](Docs/TEST54_1_PROJECT_TP_FIXED_CC.md). Nessuna build locale.
+
 > **TEST54 / LReaParams 0.0.54:** MIDI CC Fixed/Floating Track Params per F1-F3, Ctrl+E, Enter dal Send/Receive header verso il collegamento gemello. [Guida e limiti](Docs/TEST54_TRACK_CC_NUMERIC_ROUTING.md). Nessuna compilazione locale eseguita; test GitHub Actions obbligatorio.
 
 > **TEST53.2 / LReaParams 0.0.53:** F2/F3 ora distinguono annunci verticali brevi (parametro e valore) e annunci orizzontali con traccia + Send/Receive e numerazione duplicati, evitando la ripetizione del nome sulla stessa traccia collegata. [Guida e casi di prova](Docs/TEST53_2_DIRECTIONAL_ROUTING_SPEECH.md). Solo sorgente per GitHub Actions.
