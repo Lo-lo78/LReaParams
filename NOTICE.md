@@ -1,2 +1,2 @@
-LReaParams 0.0.54 — TEST54 F1/F2/F3 MIDI CC, numeric edit, linked send/receive.
+LReaParams 0.0.55 — TEST55 Track Memories e Volume range.
 Source-only. No local compilation. Build only with GitHub Actions. Parameter Library excluded.

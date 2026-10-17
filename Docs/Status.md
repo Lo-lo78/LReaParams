@@ -1,3 +1,7 @@
+## 0.0.55 — Track Memories e range Volume
+
+Track Memories autonomo o Alt+F8, cinque categorie, 12 slot di traccia persistenti per progetto, gestione MIDI CC Fixed e preferenze dei parametri, range volume per pagina con Ctrl+Maiusc+I. F4–F8 e automazioni globali restano incompleti. Solo sorgente e verifiche statiche. [Guida](TEST55_TRACK_MEMORIES.md).
+
 ## 0.0.54.4 — Sincronizzazione Track Params, FX Params e TCP
 
 La traccia proprietaria del navigatore corrente è la fonte autorevole. I movimenti normali in F1 e fra tracce con routing in F2/F3 modificano la reale selezione TCP. Ctrl+Tab passa il riferimento della traccia corrente in entrambe le direzioni, e l'apertura di FX Params da una catena/take seleziona la traccia proprietaria in REAPER. Le selezioni multiple create esplicitamente con Maiusc continuano a funzionare. Test nativi/GitHub Actions e REAPER/NVDA ancora da eseguire.

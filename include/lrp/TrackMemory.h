@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <map>
 #include <string>
+#include <utility>
 
 namespace lrp {
 // TEST54.1: one native Track Params profile per saved REAPER project.
@@ -26,6 +27,13 @@ public:
     std::string ccLink(const std::string& section, const std::string& key) const;
     void setCcLink(const std::string& section, const std::string& key, const std::string& link);
     std::map<std::string, std::string> ccLinks(const std::string& section) const;
+    // Read-only snapshots include unsaved in-memory edits. Empty entries are not memories.
+    std::map<std::string, std::string> entries(const std::string& section) const;
+    // A scoped REAPER dB range; absent preferences preserve the 0.0.54 behavior.
+    std::pair<double, double> volumeRange(const std::string& page) const;
+    void setVolumeRange(const std::string& page, double low, double high);
+    std::string trackSlot(int slot) const;
+    void setTrackSlot(int slot, const std::string& guid);
     std::string position(const std::string& key) const;
     void setPosition(const std::string& key, const std::string& value);
 private:

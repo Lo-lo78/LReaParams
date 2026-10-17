@@ -1,4 +1,6 @@
 #include "lrp/TrackNavigator.h"
+#include <sstream>
+#include <stdexcept>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -59,6 +61,21 @@ void TrackNavigator::jumpToLinkedRouting() {
     rememberPosition();
     speech_(trackName() + ". " + currentParameterSpeech());
 }
+void TrackNavigator::beginVolumeRangeEdit() {
+    const Entry* e = current();
+    if (!e || e->type != Entry::volume || !nativeFilterAvailable_ ||
+        filterEditing_ || numericEditing_ || pendingRouting_ != RoutingKind::none) {
+        speech_("Select a Volume parameter to edit its range"); return;
+    }
+    const auto limits = memory_.volumeRange(page_ == Page::tracks ? "Track" :
+        page_ == Page::sends ? "Sends" : "Receives");
+    std::ostringstream text;
+    text << limits.first << "," << std::min(limits.second, 12.0);
+    numericBuffer_ = text.str();
+    numericEditing_ = rangeEditing_ = true;
+    valueMode_ = false;
+    speech_("Volume range. Enter minimum and maximum dB separated by comma. Escape cancels");
+}
 void TrackNavigator::beginNumericEdit() {
     const Entry* e = current();
     if (!e || !nativeFilterAvailable_ || filterEditing_ || pendingRouting_ != RoutingKind::none) {
@@ -68,12 +85,32 @@ void TrackNavigator::beginNumericEdit() {
         e->type == Entry::receiveCount || e->type == Entry::fxCount ||
         e->type == Entry::midiMerge) { speech_("Read only"); return; }
     valueMode_ = false;
+    rangeEditing_ = false;
     numericEditing_ = true;
     numericBuffer_.clear();
     speech_("Parameter value. Enter a number, then Enter. Escape cancels");
 }
 void TrackNavigator::commitNumericEdit() {
     if (!numericEditing_) return;
+    if (rangeEditing_) {
+        try {
+            const auto comma = numericBuffer_.find(',');
+            if (comma == std::string::npos) throw std::invalid_argument("Missing comma");
+            std::size_t n = 0, m = 0;
+            const auto lhs = numericBuffer_.substr(0, comma);
+            const auto rhs = numericBuffer_.substr(comma + 1);
+            const double low = std::stod(lhs, &n), high = std::stod(rhs, &m);
+            if (lhs.substr(n).find_first_not_of(" \t") != std::string::npos ||
+                rhs.substr(m).find_first_not_of(" \t") != std::string::npos)
+                throw std::invalid_argument("Invalid characters");
+            memory_.setVolumeRange(page_ == Page::tracks ? "Track" :
+                page_ == Page::sends ? "Sends" : "Receives", low, high);
+            memory_.flush();
+            numericEditing_ = rangeEditing_ = false;
+            speech_("Volume range saved. Minimum " + lhs + ", maximum " + rhs + " dB");
+        } catch (...) { speech_("Invalid volume range. Enter two numbers from -150 to +12 dB, minimum below maximum"); }
+        return;
+    }
     const Entry* e = current();
     if (!e) { numericEditing_ = false; return; }
     std::string input = numericBuffer_;

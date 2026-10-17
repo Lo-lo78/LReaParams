@@ -1,3 +1,9 @@
+### 0.0.55 — Track Memories
+- Attivata l’azione Track Memories e Alt+F8 da Track Params. Cinque categorie navigabili da tastiera con lettura NVDA.
+- Persistenza delle dodici memorie traccia (GUID) e range Volume nel profilo `.tp` specifico del progetto.
+- Gestione/azzeramento delle associazioni Fixed CC, degli Step e degli annunci; F7/F8 normali conservati per il Lua.
+- Aggiunti controlli di regressione; nessuna build locale.
+
 ### 0.0.54.3 — Numeric Edit e FX vuoti
 
 - Track Params Ctrl+E: nessun annuncio secondario `Set.` dopo la conferma, lasciando l’aggiornamento accessibile del parametro.

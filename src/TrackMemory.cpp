@@ -3,6 +3,9 @@
 #include <windows.h>
 #include <algorithm>
 #include <cctype>
+#include <cmath>
+#include <sstream>
+#include <iomanip>
 #include <stdexcept>
 
 namespace lrp {
@@ -179,9 +182,11 @@ int TrackMemory::step(const std::string& id) const {
         return length == s.size() ? std::clamp(result, -10, 10) : 0;
     } catch (...) { return 0; }
 }
-void TrackMemory::setStep(const std::string& id, int value) { edit(stepsSection, id, std::to_string(std::clamp(value, -10, 10))); }
+void TrackMemory::setStep(const std::string& id, int value) {
+    edit(stepsSection, id, value == 0 ? "" : std::to_string(std::clamp(value, -10, 10)));
+}
 bool TrackMemory::valueSpeech(const std::string& id) const { return read(speechSection, id) != "0"; }
-void TrackMemory::setValueSpeech(const std::string& id, bool on) { edit(speechSection, id, on ? "1" : "0"); }
+void TrackMemory::setValueSpeech(const std::string& id, bool on) { edit(speechSection, id, on ? "" : "0"); }
 bool TrackMemory::ccSpeech(const std::string& page, const std::string& id) const {
     return read("CCSpeech." + page, ccKey(id)) == "1";
 }
@@ -222,6 +227,52 @@ bool TrackMemory::fixedEnabled() const {
     return false;
 }
 void TrackMemory::setFixedEnabled(bool on) { edit(midiSection, "FixedEnabled", on ? "1" : "0"); }
+std::map<std::string, std::string> TrackMemory::entries(const std::string& section) const {
+    std::map<std::string, std::string> found;
+    if (const auto it = profile_.sections.find(section); it != profile_.sections.end()) {
+        for (const std::string& line : it->second) {
+            const auto eq = line.find('=');
+            if (eq != std::string::npos && eq > 0) found[line.substr(0, eq)] = line.substr(eq + 1);
+        }
+    }
+    if (const auto it = edits_.find(section); it != edits_.end())
+        for (const auto& item : it->second) found[item.first] = item.second;
+    return found;
+}
+std::pair<double, double> TrackMemory::volumeRange(const std::string& page) const {
+    if (page != "Track" && page != "Sends" && page != "Receives") return {-150.0, 48.0};
+    const auto value = read("LReaParams.VolumeRanges", page);
+    if (value.empty()) return {-150.0, 48.0};
+    try {
+        const auto separator = value.find(',');
+        if (separator == std::string::npos) return {-150.0, 48.0};
+        std::size_t n = 0, m = 0;
+        const double low = std::stod(value.substr(0, separator), &n);
+        const auto end = value.substr(separator + 1);
+        const double high = std::stod(end, &m);
+        if (n != separator || m != end.size() || !std::isfinite(low) || !std::isfinite(high) ||
+            low < -150.0 || high > 12.0 || high - low < 0.01) return {-150.0, 48.0};
+        return {low, high};
+    } catch (...) { return {-150.0, 48.0}; }
+}
+void TrackMemory::setVolumeRange(const std::string& page, double low, double high) {
+    if ((page != "Track" && page != "Sends" && page != "Receives") ||
+        !std::isfinite(low) || !std::isfinite(high) || low < -150 || high > 12 || high - low < 0.01)
+        throw ProfileError("Volume range must be between -150 and +12 dB");
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(2) << low << ',' << high;
+    edit("LReaParams.VolumeRanges", page, out.str());
+}
+std::string TrackMemory::trackSlot(int slot) const {
+    if (slot < 1 || slot > 12) return {};
+    return read("LReaParams.TrackPositions", "Slot" + std::to_string(slot));
+}
+void TrackMemory::setTrackSlot(int slot, const std::string& guid) {
+    if (slot < 1 || slot > 12) throw ProfileError("Invalid Track memory slot");
+    if (!guid.empty() && (guid.size() != 38 || guid.front() != '{' || guid.back() != '}'))
+        throw ProfileError("Invalid Track memory GUID");
+    edit("LReaParams.TrackPositions", "Slot" + std::to_string(slot), guid);
+}
 std::string TrackMemory::position(const std::string& key) const { return read(navigationSection, key); }
 void TrackMemory::setPosition(const std::string& key, const std::string& value) { edit(navigationSection, key, value); }
 void TrackMemory::flush() {

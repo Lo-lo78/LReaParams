@@ -157,7 +157,7 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.54.4 - Track/FX/TCP synchronization\n\n"
+            ShowMessageBox("LReaParams 0.0.55 - Track Memories\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
@@ -181,7 +181,11 @@ public:
         }
         case trackMemories:
             exitNavigation(false);
-            speak("Track Memories manager is not yet implemented. Track settings are saved in the project TP profile.");
+            if (!speechAvailable() || !info_.GetFunc("osara_isShortcutHelpEnabled")) {
+                speak("Track Memories requires OSARA"); break;
+            }
+            if (trackNavigator_.begin() && trackNavigator_.openTrackMemories(true))
+                launchNavigator(&trackNavigator_);
             break;
         case stopBackgroundMidi:
             backgroundMidi_.end();
@@ -372,7 +376,7 @@ public:
             // originally entered LReaParams after navigating to another FX.
             if (key.ctrl && !key.alt && !key.shift && key.vk == VK_TAB && !key.repeat &&
                 !((current_ == &navigator_ && (navigator_.nativeTextField() || navigator_.isMemoryManager())) ||
-                  (current_ == &trackNavigator_ && trackNavigator_.nativeTextField()))) {
+                  (current_ == &trackNavigator_ && (trackNavigator_.nativeTextField() || trackNavigator_.isMemoryManager())))) {
                 const bool wasTrack = current_ == &trackNavigator_;
                 MediaTrack* preferred = wasTrack ? trackNavigator_.cursorTrack() : navigator_.cursorTrack();
                 // Ctrl+Tab is contextual. An empty FX chain must not close

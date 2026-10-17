@@ -1,3 +1,7 @@
+TEST55 source-only: Python audit PASS; 53/53 existing and TEST55 static suites PASS.
+No CMake, MSVC, local build or REAPER/NVDA runtime tests executed.
+GitHub Actions must compile and execute ProfileTests.cpp + ControlTests.cpp.
+
 LReaParams 0.0.54.4 TEST54.4: 53 Python source-only suites PASS (audit and regression contracts).
 Also checked routing-pending exception after the complete run.
 NO C++ compilation, local CMake, MSVC, REAPER, NVDA or hardware MIDI test performed. GitHub Actions and manual acceptance pending.

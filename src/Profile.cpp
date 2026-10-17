@@ -146,18 +146,45 @@ Profile parseLegacy(std::string bytes) {
                 for (const auto& l : pair.second) {
                     const auto f = field(l);
                     require(f.key.size() <= 200 && !f.key.empty(), "Invalid Track Step key");
-                    integer(f.value, -10, 10);
+                    if (!f.value.empty()) integer(f.value, -10, 10);
                 }
             } else if (name == "LReaParams.ParameterSpeech") {
                 for (const auto& l : pair.second) {
                     const auto f = field(l);
-                    require(f.key.size() <= 200 && !f.key.empty() && (f.value == "0" || f.value == "1"), "Invalid Track speech preference");
+                    require(f.key.size() <= 200 && !f.key.empty() &&
+                            (f.value.empty() || f.value == "0" || f.value == "1"), "Invalid Track speech preference");
                 }
             } else if (name == "LReaParams.MidiSettings") {
                 for (const auto& l : pair.second) {
                     const auto f = field(l);
                     require(f.key == "FixedEnabled" && (f.value == "0" || f.value == "1"),
                         "Invalid project Track MIDI setting");
+                }
+            } else if (name == "LReaParams.VolumeRanges") {
+                for (const auto& l : pair.second) {
+                    const auto f = field(l);
+                    require(f.key == "Track" || f.key == "Sends" || f.key == "Receives", "Invalid volume range scope");
+                    const auto comma = f.value.find(',');
+                    require(comma != std::string::npos, "Missing volume range separator");
+                    try {
+                        const auto loText = f.value.substr(0, comma);
+                        const auto hiText = f.value.substr(comma + 1);
+                        std::size_t n = 0, m = 0;
+                        const double low = std::stod(loText, &n);
+                        const double high = std::stod(hiText, &m);
+                        require(n == loText.size() && m == hiText.size() &&
+                                std::isfinite(low) && std::isfinite(high) && low >= -150.0 &&
+                                high <= 12.0 && high - low >= 0.01, "Invalid volume range limits");
+                    } catch (const std::exception&) { throw ProfileError("Invalid volume range limits"); }
+                }
+            } else if (name == "LReaParams.TrackPositions") {
+                static const std::regex trackGuid(R"(\{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\})");
+                for (const auto& l : pair.second) {
+                    const auto f = field(l);
+                    require(f.key.rfind("Slot", 0) == 0, "Invalid track memory key");
+                    const auto number = integer(f.key.substr(4), 1, 12);
+                    (void)number;
+                    require(f.value.empty() || std::regex_match(f.value, trackGuid), "Invalid saved track GUID");
                 }
             } else if (name == "LReaParams.NavigationMemory") {
                 for (const auto& l : pair.second) {

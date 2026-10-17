@@ -114,6 +114,8 @@ jobs:
         run: python Testing/test54_3_static.py
       - name: Verify TEST54.4 physical track synchronization (source only)
         run: python Testing/test54_4_static.py
+      - name: Verify TEST55 Track Memories and volume range (source only)
+        run: python Testing/test55_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

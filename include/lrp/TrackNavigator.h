@@ -27,6 +27,8 @@ public:
     void announce() override;
     void announceTitle() override;
     void tickMidi() { pollMidi(); }
+    bool openTrackMemories(bool standalone);
+    bool isMemoryManager() const noexcept { return memoryManager_; }
     // Ctrl+Tab targets the track under the logical F1/F2/F3 cursor, not
     // the first physical track selected in REAPER.
     MediaTrack* cursorTrack() const noexcept { return active_ ? track_ : nullptr; }
@@ -36,7 +38,8 @@ public:
     // The extension binds this to the existing accessible keyboard window.
     bool nativeTextField() const noexcept { return active_ && (filterEditing_ || numericEditing_); }
     std::string nativeTextValue() const { return numericEditing_ ? numericBuffer_ : filterBuffer_; }
-    std::string nativeTextLabel() const { if (numericEditing_) return "Parameter value"; return page_ == Page::tracks ? "Filter tracks" :
+    std::string nativeTextLabel() const { if (rangeEditing_) return "Volume range minimum and maximum dB";
+        if (numericEditing_) return "Parameter value"; return page_ == Page::tracks ? "Filter tracks" :
         page_ == Page::sends ? "Filter sends" : "Filter receives"; }
     void setNativeText(const std::string& text) { if (numericEditing_) numericBuffer_ = text; else if (filterEditing_) filterBuffer_ = text; }
     bool nativeValueSlider() const override;
@@ -56,6 +59,20 @@ private:
     enum class Page { tracks, sends, receives };
     static constexpr int detailHeight = 14;
     void buildEntries();
+    // TEST55: F8-like project TP memory manager, with no separate F7 editor.
+    struct MemoryItem { std::string key, label, value; int slot = 0; };
+    void rebuildMemoryList();
+    void speakMemory(const std::string& prefix = "") const;
+    void handleMemory(const Key&);
+    void memoryExit();
+    void memoryActivate();
+    void memoryDelete();
+    void memoryAdjustStep(int delta);
+    void saveTrackSlot(int slot);
+    void recallTrackSlot(int slot);
+    MediaTrack* findSavedTrack(const std::string& guid) const;
+    std::string trackGuidText(MediaTrack* track) const;
+    std::string savedTrackLabel(const std::string& guid) const;
     // Lua Ctrl+F: scoped logical filter, with no mutations to REAPER tracks.
     void toggleFilter();
     void applyFilter();
@@ -99,6 +116,7 @@ private:
     void deleteCurrentRouting();
     void jumpToLinkedRouting(); // Enter on F2/F3 header; retain Value for editable fields
     void beginNumericEdit();
+    void beginVolumeRangeEdit();
     void commitNumericEdit();
     // TEST54 CC map in the same main .tp as Lua, with pickup and no stale MIDI replay.
     void midiShortcut(const Key&);
@@ -152,12 +170,16 @@ private:
     void announceTrack();
     std::string valueText(const Entry&, double) const;
     const Entry* current() const;
+    bool memoryManager_ = false, memoryStandalone_ = false;
+    int memoryColumn_ = 0, memoryRow_ = 0;
+    std::vector<MemoryItem> memoryItems_;
     std::vector<TrackRow> rows_;
     std::vector<Entry> entries_;
     std::string filterQuery_; // scoped to this Track Params session (Lua runtime state)
     std::string filterBuffer_;
     std::string numericBuffer_;
     bool numericEditing_ = false;
+    bool rangeEditing_ = false;
     bool learnCc_ = false, fixedCc_ = false, floatingCc_ = false, floatingWaiting_ = false;
     std::string learnSection_, learnKey_;
     int midiSequence_ = 0, floatingChannel_ = -1, floatingNumber_ = -1;

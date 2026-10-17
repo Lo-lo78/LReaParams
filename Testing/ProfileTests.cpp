@@ -275,6 +275,16 @@ int main(int argc, char** argv) {
         tm.setPosition("F1.Parameter", "Track.Pan");
         tm.setCcLink("Track", "Volume", "4,77");
         tm.setFixedEnabled(true);
+        tm.setVolumeRange("Track", -60.0, 12.0);
+        check(tm.volumeRange("Track").first == -60.0 && tm.volumeRange("Track").second == 12.0,
+              "Track volume range not set before flush");
+        const std::string trackSlotGuid = "{12345678-1234-1234-1234-1234567890AB}";
+        check(tm.trackSlot(2).empty() && tm.entries("LReaParams.TrackPositions").empty(),
+              "Track slots should start empty");
+        tm.setTrackSlot(2, trackSlotGuid);
+        check(tm.trackSlot(2) == trackSlotGuid &&
+              tm.entries("LReaParams.TrackPositions").at("Slot2") == trackSlotGuid,
+              "Track position not visible before flush");
         tm.flush();
         check(readFile(globalTrackFile) == oldGlobalBytes,
             "Project profile accidentally modified the general legacy mapping");
@@ -288,6 +298,11 @@ int main(int argc, char** argv) {
               "Track project profile lost formatting, CC, F4 namespace or old sections");
         TrackMemory tmAgain;
         tmAgain.load(trackRoot, savedProject);
+        check(tmAgain.volumeRange("Track").first == -60.0 && tmAgain.volumeRange("Track").second == 12.0,
+              "Project volume range not persisted");
+        check(tmAgain.trackSlot(2) == trackSlotGuid &&
+              tmAgain.entries("LReaParams.TrackPositions").at("Slot2") == trackSlotGuid,
+              "Track position not persisted in project TP");
         check(tmAgain.fixedEnabled() && tmAgain.ccLink("Track", "Volume") == "4,77" &&
             tmAgain.step("Track.Volume") == -4 && tmAgain.step("Track.Pan") == 2 &&
             tmAgain.step("Sends.Volume") == -3, "Project Fixed CC or Steps not restored");
@@ -296,6 +311,10 @@ int main(int argc, char** argv) {
               tmAgain.position("F1.Parameter") == "Track.Pan",
               "Speech or navigation was not restored from the project .tp");
         tmAgain.setFixedEnabled(false); tmAgain.flush();
+        tmAgain.setTrackSlot(2, ""); tmAgain.flush();
+        TrackMemory afterDeletion;
+        afterDeletion.load(trackRoot, savedProject);
+        check(afterDeletion.trackSlot(2).empty(), "Track position deletion did not persist");
         TrackMemory off;
         off.load(trackRoot, savedProject);
         check(!off.fixedEnabled() && off.ccLink("Track", "Volume") == "4,77",

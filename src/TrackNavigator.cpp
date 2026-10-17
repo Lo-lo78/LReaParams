@@ -37,7 +37,9 @@ void TrackNavigator::end() noexcept {
             try { speech_("Track Params: project memory not saved. Check the project .tp"); } catch (...) {}
         }
     }
-    active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false; resetMidiState();
+    memoryManager_ = memoryStandalone_ = false; memoryItems_.clear();
+    active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false;
+    rangeEditing_ = false; resetMidiState();
     filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear();
 }
 
@@ -111,6 +113,16 @@ bool TrackNavigator::contextUnchanged() const {
 
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.altGr) return false;
+    if (memoryManager_) {
+        if (k.ctrl || k.shift) return false;
+        if (k.alt) return k.vk == VK_F8 || k.vk == VK_LEFT || k.vk == VK_RIGHT;
+        switch (k.vk) {
+            case VK_ESCAPE: case VK_F8: case VK_TAB: case VK_RETURN: case VK_DELETE:
+            case VK_UP: case VK_DOWN: case VK_LEFT: case VK_RIGHT:
+            case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT: return true;
+            default: return false;
+        }
+    }
     if (filterEditing_ || numericEditing_) {
         // The standard EDIT handles actual typing, selection and clipboard.
         // Only accept navigation-ending keys; other keys must never reach
@@ -118,6 +130,9 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
         return k.vk == VK_RETURN || k.vk == VK_ESCAPE ||
             (k.ctrl && !k.alt && !k.shift && k.vk == 'F');
     }
+    if (k.alt && !k.ctrl && !k.shift && k.vk == VK_F8) return true;
+    if (page_ == Page::tracks && !k.alt && k.ctrl &&
+        k.vk >= VK_F1 && k.vk <= VK_F12) return true;
     const bool f1 = page_ == Page::tracks;
     // Ctrl+R and Ctrl+Shift+V are intentionally free.  Tab provides info,
     // Enter toggles Grid/Value, and Ctrl+Alt+Up/Down moves among folders.
@@ -127,7 +142,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (k.ctrl && k.alt) return !k.shift && (k.vk == 'C' || (f1 && (k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.alt && k.shift) return f1 && !k.ctrl && (k.vk == VK_UP || k.vk == VK_DOWN);
     if (k.ctrl && k.shift) return !k.alt && (k.vk == 'C' || k.vk == 'T' ||
-        (k.vk == 'S' || k.vk == 'R' || k.vk == 'A') || (f1 && k.vk == VK_DELETE) ||
+        (k.vk == 'S' || k.vk == 'R' || k.vk == 'A' || k.vk == 'I') || (f1 && k.vk == VK_DELETE) ||
         (f1 && (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.shift) return !k.alt && !k.ctrl && (k.vk == 'C' || (f1 &&
         (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN ||
@@ -630,11 +645,16 @@ std::string TrackNavigator::detailColumnSpeech(int previousColumn) const {
 }
 std::string TrackNavigator::reviewLine() const {
     if (!active_) return "";
+    if (memoryManager_) {
+        if (memoryItems_.empty()) return "Track Memories. No entries";
+        const auto& item = memoryItems_[static_cast<size_t>(memoryRow_)];
+        return item.label;
+    }
     // NVDA+Up in Grid reviews only the parameter and value, like FX Params.
     // Track/page names remain available via NVDA+T. Moving between tracks
     // announces the track name; Tab provides the full context.
     if (filterEditing_) return nativeTextLabel() + ", " + filterBuffer_;
-    if (numericEditing_) return "Parameter value, " + numericBuffer_;
+    if (numericEditing_) return (rangeEditing_ ? "Volume range, " : "Parameter value, ") + numericBuffer_;
     if (!valueMode_) return parameterValueSpeech();
     const auto* e = current();
     return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
@@ -648,7 +668,11 @@ double TrackNavigator::valueFraction() const {
     const auto* e = current();
     if (!e || !nativeValueSlider()) return 0.0;
     const double value = get(*e);
-    if (e->type == Entry::volume) return std::clamp((db(value) - minDb) / (maxDb - minDb), 0.0, 1.0);
+    if (e->type == Entry::volume) {
+        const auto range = memory_.volumeRange(page_ == Page::tracks ? "Track" :
+            page_ == Page::sends ? "Sends" : "Receives");
+        return std::clamp((db(value) - range.first) / (range.second - range.first), 0.0, 1.0);
+    }
     return std::clamp((value + 1.0) / 2.0, 0.0, 1.0);
 }
 std::string TrackNavigator::sliderLabel() const {
@@ -672,6 +696,7 @@ void TrackNavigator::announce() { speech_(parameterValueSpeech()); }
 void TrackNavigator::announceTrack() { speech_(currentParameterSpeech()); }
 void TrackNavigator::announceTitle() {
     if (!active_) return;
+    if (memoryManager_) { speakMemory("Track Memories"); return; }
     const std::string pageSuffix = page_ == Page::tracks ? "" :
                                    page_ == Page::sends ? " - Sends" : " - Receives";
     speech_("Track Params - " + trackName() + pageSuffix +
@@ -679,6 +704,10 @@ void TrackNavigator::announceTitle() {
 }
 std::wstring TrackNavigator::windowTitle() const {
     if (!active_) return L"Track Params";
+    if (memoryManager_) {
+        static constexpr const wchar_t* titles[] = {L"MIDI CC", L"Parameter Steps", L"Parameter Speech", L"Track Positions", L"Navigation Memory"};
+        return std::wstring(L"Track Memories - ") + titles[static_cast<size_t>(std::clamp(memoryColumn_, 0, 4))];
+    }
     const wchar_t* pageSuffix = page_ == Page::tracks ? L"" :
                                 page_ == Page::sends ? L" - Sends" : L" - Receives";
     return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + pageSuffix +
@@ -870,7 +899,12 @@ void TrackNavigator::nudge(int direction, bool coarse) {
     const double factor = std::pow(2.0, memory_.step(parameterKey()));
     double next = old;
     switch (e->type) {
-        case Entry::volume: next = amp(std::clamp(db(old) + (coarse ? 3.0 : 0.5) * factor * direction, minDb, maxDb)); break;
+        case Entry::volume: {
+            const auto range = memory_.volumeRange(page_ == Page::tracks ? "Track" :
+                page_ == Page::sends ? "Sends" : "Receives");
+            next = amp(std::clamp(db(old) + (coarse ? 3.0 : 0.5) * factor * direction, range.first, range.second));
+            break;
+        }
         case Entry::pan: case Entry::width: next = std::clamp(old + direction * (coarse ? 0.1 : 0.01) * factor, -1.0, 1.0); break;
         case Entry::flag: case Entry::solo: case Entry::midiFollowsFader: next = direction > 0 ? 1.0 : 0.0; break;
         case Entry::audioSourceMode: next = std::clamp(old + direction, 0.0, 8.0); break;
@@ -893,6 +927,20 @@ void TrackNavigator::nudge(int direction, bool coarse) {
 }
 void TrackNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
+    if (memoryManager_) { handleMemory(k); return; }
+    if (k.alt && !k.ctrl && !k.shift && k.vk == VK_F8) {
+        if (!k.repeat) openTrackMemories(false);
+        return;
+    }
+    if (page_ == Page::tracks && k.ctrl && !k.alt &&
+        k.vk >= VK_F1 && k.vk <= VK_F12) {
+        if (!k.repeat) {
+            const int slot = static_cast<int>(k.vk - VK_F1) + 1;
+            if (k.shift) saveTrackSlot(slot);
+            else recallTrackSlot(slot);
+        }
+        return;
+    }
     if (!k.ctrl && !k.alt && !k.shift && k.vk == VK_TAB) {
         if (!k.repeat && pendingRouting_ != RoutingKind::none) {
             speech_(pendingRoutingStatus());
@@ -930,7 +978,10 @@ void TrackNavigator::handle(const Key& k) {
     }
     if (numericEditing_) {
         if (k.vk == VK_RETURN) commitNumericEdit();
-        else if (k.vk == VK_ESCAPE) { numericEditing_ = false; speech_("Edit cancelled. " + parameterValueSpeech()); }
+        else if (k.vk == VK_ESCAPE) {
+            numericEditing_ = rangeEditing_ = false;
+            speech_("Edit cancelled. " + parameterValueSpeech());
+        }
         return;
     }
     if ((k.ctrl && k.alt && !k.shift && k.vk == 'C') ||
@@ -941,6 +992,10 @@ void TrackNavigator::handle(const Key& k) {
         return;
     }
     if (k.vk == VK_ESCAPE && learnCc_) { learnCc_ = false; learnSection_.clear(); learnKey_.clear(); speech_("CC learn cancelled"); return; }
+    if (k.ctrl && k.shift && !k.alt && k.vk == 'I') {
+        if (!k.repeat) beginVolumeRangeEdit();
+        return;
+    }
     if (k.ctrl && !k.shift && !k.alt && k.vk == 'E') {
         if (!k.repeat) beginNumericEdit();
         return;
@@ -1111,7 +1166,11 @@ void TrackNavigator::handle(const Key& k) {
             if (!e) return;
             const bool high = k.vk == VK_HOME; // Lua: Home maximum, End minimum
             switch (e->type) {
-                case Entry::volume: put(*e, high ? amp(maxDb) : 0.0); break;
+                case Entry::volume: {
+                    const auto range = memory_.volumeRange(page_ == Page::tracks ? "Track" :
+                        page_ == Page::sends ? "Sends" : "Receives");
+                    put(*e, amp(high ? range.second : range.first)); break;
+                }
                 case Entry::pan: case Entry::width: put(*e, high ? 1.0 : -1.0); break;
                 case Entry::flag: case Entry::solo: case Entry::midiFollowsFader: put(*e, high ? 1.0 : 0.0); break;
                 case Entry::audioSourceMode: put(*e, high ? 8.0 : 0.0); break;

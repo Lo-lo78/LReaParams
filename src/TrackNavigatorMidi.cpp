@@ -144,7 +144,7 @@ void TrackNavigator::applyMidi(const std::string& section, const std::string& ke
 }
 
 void TrackNavigator::pollMidi() {
-    if (!active_ || !contextUnchanged()) return;
+    if (!active_ || memoryManager_ || !contextUnchanged()) return;
     const bool running = learnCc_ || fixedCc_ || floatingCc_ || floatingWaiting_;
     if (!running) return;
     if (filterEditing_ || numericEditing_) {
