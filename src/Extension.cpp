@@ -157,7 +157,7 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.54.2 - Project Track Params persistence\n\n"
+            ShowMessageBox("LReaParams 0.0.54.3 - Track numeric and empty FX fixes\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
@@ -362,6 +362,21 @@ public:
                   (current_ == &trackNavigator_ && trackNavigator_.nativeTextField()))) {
                 const bool wasTrack = current_ == &trackNavigator_;
                 MediaTrack* preferred = wasTrack ? trackNavigator_.cursorTrack() : nullptr;
+                // Ctrl+Tab is contextual. An empty FX chain must not close
+                // Track Params, move to another track, or speak two messages
+                // while restoring its focus. The Master Monitor chain is a
+                // real FX context and must remain reachable.
+                if (wasTrack) {
+                    ReaProject* project = EnumProjects(-1, nullptr, 0);
+                    if (!project || !preferred || !ValidatePtr2(project, preferred, "MediaTrack*")) {
+                        speak("No track FX"); return;
+                    }
+                    const bool monitorFx = preferred == GetMasterTrack(project) &&
+                        TrackFX_GetRecCount(preferred) > 0;
+                    if (TrackFX_GetCount(preferred) <= 0 && !monitorFx) {
+                        speak("No track FX"); return;
+                    }
+                }
                 // A native FX owner is already a valid context for returning
                 // to REAPER's track selection; do not fabricate a track.
                 exitNavigation(false);

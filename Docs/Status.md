@@ -1,3 +1,7 @@
+## 0.0.54.3 — Annunci Ctrl+E e catene FX vuote
+
+Tolto il doppio `Set.` dopo la conferma numerica; contesti Track/Take senza FX segnalati senza selezioni implicite di altre catene. Ctrl+Tab da Track Params su traccia priva di FX resta in Track Params. [Dettagli](TEST54_3_NUMERIC_SPEECH_EMPTY_FX.md). Solo sorgente.
+
 ## 0.0.54.2 — Automazioni Track e Ctrl+Tab
 
 Ctrl+Maiusc+A senza Auto duplicato. Automazioni Volume/Pan/Mute di send e receive: stato ACT/VIS/ARM sul relativo AUXRECV, con riconoscimento di routing duplicati; creazione via SWS/BR quando mancante, con verifica. Ctrl+Tab alterna i navigatori FX e Track. [Guida e limiti](TEST54_2_AUTOMATION_CTRL_TAB.md). Solo sorgente, da compilare su GitHub Actions.

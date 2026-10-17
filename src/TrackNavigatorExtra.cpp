@@ -121,7 +121,9 @@ void TrackNavigator::commitNumericEdit() {
         suppressPutSpeech_ = true;
         try { put(*e, raw); } catch (...) { suppressPutSpeech_ = false; throw; }
         suppressPutSpeech_ = false;
-        speech_("Set. " + parameterValueSpeech());
+        // Match FX Params: the native EDIT has already accepted the value.
+        // Closing it updates the accessible Grid/Value review line; a second
+        // OSARA message here repeats parameter, CC and Auto unnecessarily.
     } catch (const std::exception&) { speech_("Invalid numeric value"); }
 }
 } // namespace lrp

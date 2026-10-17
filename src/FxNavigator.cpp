@@ -107,6 +107,12 @@ bool FxNavigator::begin() {
     track_ = nullptr; take_ = nullptr;
     if (explicitTrack && ValidatePtr2(project_, explicitTrack, "MediaTrack*"))
         track_ = explicitTrack;
+    // A specifically requested track is never replaced with another track
+    // just because its FX chain is empty (Ctrl+Tab from Track Params).
+    if (track_ && TrackFX_GetCount(track_) <= 0 &&
+        !(track_ == GetMasterTrack(project_) && TrackFX_GetRecCount(track_) > 0)) {
+        speech_("No track FX"); return false;
+    }
     // When invoked from a native FX Chain list, its focused FX determines
     // whether we entered Master FX or Monitor FX. A simultaneously visible
     // Monitor window must not override an explicitly focused Master FX.
@@ -134,6 +140,39 @@ bool FxNavigator::begin() {
     }
     MediaTrack* master = GetMasterTrack(project_);
     const bool masterSelected = master && GetMediaTrackInfo_Value(master, "I_SELECTED") > 0.5;
+    // With an explicit track/item selection, never fall back to an unrelated
+    // open FX chain. The focused native FX list above is the one exception:
+    // its own highlighted FX is an explicit host selection.
+    if (!track_ && GetDlgCtrlID(GetFocus()) != 1076) {
+        const int itemCount = CountSelectedMediaItems(project_);
+        const bool itemContext = GetCursorContext2(true) == 1 && itemCount > 0;
+        if (itemContext) {
+            bool hasTakeFx = false;
+            for (int i = 0; i < itemCount; ++i) {
+                MediaItem* item = GetSelectedMediaItem(project_, i);
+                MediaItem_Take* take = item ? GetActiveTake(item) : nullptr;
+                if (take && TakeFX_GetCount(take) > 0) {hasTakeFx = true; break;}
+            }
+            if (!hasTakeFx) {speech_("No take FX"); return false;}
+        } else if (masterSelected) {
+            if (TrackFX_GetCount(master) <= 0 && TrackFX_GetRecCount(master) <= 0) {
+                speech_("No track FX"); return false;
+            }
+        } else if (CountSelectedTracks(project_) > 0) {
+            MediaTrack* selected = GetSelectedTrack(project_, 0);
+            if (selected && TrackFX_GetCount(selected) <= 0) {
+                speech_("No track FX"); return false;
+            }
+        } else if (itemCount > 0) {
+            bool hasTakeFx = false;
+            for (int i = 0; i < itemCount; ++i) {
+                MediaItem* item = GetSelectedMediaItem(project_, i);
+                MediaItem_Take* take = item ? GetActiveTake(item) : nullptr;
+                if (take && TakeFX_GetCount(take) > 0) {hasTakeFx = true; break;}
+            }
+            if (!hasTakeFx) {speech_("No take FX"); return false;}
+        }
+    }
     // An already visible FX chain wins over cursor context (as in the Lua).
     if (!track_ && masterSelected && (TrackFX_GetChainVisible(master) >= 0 || TrackFX_GetRecChainVisible(master) >= 0)) {
         track_ = master;
@@ -167,7 +206,7 @@ bool FxNavigator::begin() {
                     take_ = candidate; track_ = GetMediaItemTrack(item); break;
                 }
             }
-            if (!take_) { speech_("No take FX on selected item"); return false; }
+            if (!take_) { speech_("No take FX"); return false; }
         } else if (CountSelectedTracks(project_) > 0) {
             track_ = GetSelectedTrack(project_, 0);
         } else if (CountSelectedMediaItems(project_) > 0) {
@@ -178,7 +217,7 @@ bool FxNavigator::begin() {
                     take_ = candidate; track_ = GetMediaItemTrack(item); break;
                 }
             }
-            if (!track_) { speech_("No take FX on selected item"); return false; }
+            if (!track_) { speech_("No take FX"); return false; }
         } else {
             // Lua's last-resort behavior when no track or item is selected.
             auto* last = GetLastTouchedTrack();
@@ -198,8 +237,7 @@ bool FxNavigator::begin() {
     trackGuid_ = *trackGuid;
 
     if (!rebuildEntries()) {
-        speech_(take_ ? "No FX on selected take" :
-                anyNormalTrackFx(project_) ? "No FX on selected track" : "No FX in tracks");
+        speech_(take_ ? "No take FX" : "No track FX");
         return false;
     }
 

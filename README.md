@@ -1,3 +1,5 @@
+> **TEST54.3 / LReaParams 0.0.54.3:** Ctrl+E conferma senza il doppio annuncio `Set.`; FX Params rifiuta tracce e take privi di effetti con `No track FX` / `No take FX`. Ctrl+Tab su traccia vuota non lascia Track Params. [Guida](Docs/TEST54_3_NUMERIC_SPEECH_EMPTY_FX.md). Nessuna compilazione locale.
+
 > **TEST54.2 / LReaParams 0.0.54.2:** Ctrl+Maiusc+A senza doppio Auto; envelope reali Send/Receive (AUXRECV, SWS/BR per creazione); Ctrl+Tab tra Track Params e FX Params. [Guida](Docs/TEST54_2_AUTOMATION_CTRL_TAB.md). Nessuna compilazione locale.
 
 > **TEST54.1 / LReaParams 0.0.54.1:** profilo Track Params per progetto, Fixed CC persistente, annunci CC prima di Auto, Ctrl+Canc e trasporto condiviso. [Guida](Docs/TEST54_1_PROJECT_TP_FIXED_CC.md). Nessuna build locale.

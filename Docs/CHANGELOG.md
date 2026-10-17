@@ -1,3 +1,10 @@
+### 0.0.54.3 — Numeric Edit e FX vuoti
+
+- Track Params Ctrl+E: nessun annuncio secondario `Set.` dopo la conferma, lasciando l’aggiornamento accessibile del parametro.
+- FX Params: `No track FX` o `No take FX` nel contesto esplicitamente selezionato; non apre FX estranei se la selezione è vuota.
+- Ctrl+Tab su una traccia senza FX conserva Track Params e il suo focus; Master/Monitor FX invariati.
+- Solo test statici: compilazione e prove NVDA/REAPER demandate a GitHub Actions.
+
 ### 0.0.54.2 — Track automation e Ctrl+Tab
 
 - Ctrl+Maiusc+A: elimina l’annuncio duplicato `Auto`, mantenendo il CC nella posizione corretta.

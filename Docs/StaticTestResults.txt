@@ -1,3 +1,8 @@
+TEST54.3 (source only): Tools/audit.py PASS; TEST54.3, TEST54.2 and TEST54 individual static contracts PASS.
+Earlier suites passed individually in the aggregate source-only runner; the aggregate invocation
+was interrupted by the tool time limit near its end. No Windows native build was attempted.
+Required next steps: GitHub Actions MSVC/CTest, then REAPER + NVDA Ctrl+E and empty FX tests.
+
 TEST54.2 (source-only): 50 Python static suites PASS; Tools/audit.py PASS.
 TEST54.2 adds nonduplicated Auto speech, send/receive envelope chunk+SWS/BR source verification and shared Ctrl+Tab source tests.
 No C++ compiler, CMake, MSBuild, native CTest, REAPER, NVDA or MIDI hardware was run locally.

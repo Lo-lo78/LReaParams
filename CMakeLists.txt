@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(LReaParams VERSION 0.0.54.2 LANGUAGES CXX)
+project(LReaParams VERSION 0.0.54.3 LANGUAGES CXX)
 if(NOT WIN32 OR NOT MSVC OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
   message(FATAL_ERROR "LReaParams requires Windows x64 and the MSVC ABI")
 endif()

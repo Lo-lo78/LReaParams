@@ -1,3 +1,10 @@
+## TEST54.3 — Ctrl+E e FX assenti
+
+- Ctrl+E / Invio in Track Params: conferma senza il secondo messaggio `Set.`; il controllo NVDA riporta il parametro aggiornato.
+- FX Params su traccia senza effetti: `No track FX` e nessuna navigazione FX.
+- FX Params su item senza take FX: `No take FX` e nessuna navigazione FX.
+- Ctrl+Tab da Track Params senza FX: rimane nel navigatore Track Params.
+
 ## 0.0.54.2 — Scorciatoia comune e automazioni Track
 
 - **Ctrl+Tab**: passa fra Track Params e FX Params (non nei campi EDIT o in FX Memories).
