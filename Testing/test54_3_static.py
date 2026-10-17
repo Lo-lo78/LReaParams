@@ -23,7 +23,7 @@ assert 'GetSelectedTrack(project_, 0)' in fx
 assert 'GetSelectedMediaItem(project_, i)' in fx
 # Ctrl+Tab with an empty track FX chain stays in Track Params without
 # closing and reopening its owned focus window or saying anything twice.
-pos = ext.index('MediaTrack* preferred = wasTrack ? trackNavigator_.cursorTrack() : nullptr;')
+pos = ext.index('MediaTrack* preferred = wasTrack ? trackNavigator_.cursorTrack() : navigator_.cursorTrack();')
 shortcircuit = ext.index('if (TrackFX_GetCount(preferred) <= 0 && !monitorFx)', pos)
 exit_nav = ext.index('exitNavigation(false);', pos)
 assert pos < shortcircuit < exit_nav

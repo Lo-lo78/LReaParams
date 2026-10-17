@@ -44,6 +44,7 @@ void TrackNavigator::jumpToLinkedRouting() {
     rememberPosition();
     row_ = destinationRow;
     track_ = peer;
+    syncCursorToReaper();
     page_ = fromSend ? Page::receives : Page::sends;
     detailIndex_ = parameter_ = 0;
     midiPickup_.clear();

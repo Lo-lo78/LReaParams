@@ -124,6 +124,7 @@ void TrackNavigator::toggleCurrentFolder() {
     }
     valueMode_ = false;
     resetSelectionStroke();
+    syncCursorToReaper();
     rememberPosition();
     announceTrack();
 }

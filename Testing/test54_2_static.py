@@ -31,7 +31,8 @@ assert 'REAPERAPI_WANT_GetTrackStateChunk' in api and 'REAPERAPI_WANT_SetTrackSt
 assert 'if (k.ctrl && !k.alt && !k.shift && k.vk == VK_TAB) return true;' in track
 assert 'k.vk == VK_TAB &&' in fx and 'nextStartTrack_' in fx
 assert 'navigator_.setNextStartTrack(preferred)' in app
-assert 'MediaTrack* preferred = wasTrack ? trackNavigator_.cursorTrack() : nullptr' in app
+assert 'MediaTrack* preferred = wasTrack ? trackNavigator_.cursorTrack() : navigator_.cursorTrack()' in app
+assert 'trackNavigator_.setNextStartTrack(preferred)' in app
 assert 'if (target->begin()) {' in app and 'launchNavigator(target);' in app and 'if (previous->begin()) launchNavigator(previous);' in app
 assert 'exitNavigation(false);' in app
 # Duplicate sends must resolve by occurrence against the SAME destination.

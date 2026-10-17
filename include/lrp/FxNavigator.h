@@ -19,6 +19,8 @@ public:
     bool begin() override;
     // One-shot explicit target for shared Ctrl+Tab. No REAPER selection mutation.
     void setNextStartTrack(MediaTrack* track) noexcept { nextStartTrack_ = track; }
+    // The FX/take context is authoritative for Ctrl+Tab and the TCP selection.
+    MediaTrack* cursorTrack() const noexcept { return active_ ? track_ : nullptr; }
     void pollMidi();
     // A parked navigator is an independent MIDI-only snapshot. No keyboard
     // focus or native window is retained while REAPER's main timer polls it.

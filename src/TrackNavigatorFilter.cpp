@@ -172,6 +172,7 @@ bool TrackNavigator::rebuildForFilter(bool keepCurrentTrack) {
             }
     stepScale_ = memory_.step(parameterKey());
     resetSelectionStroke();
+    syncCursorToReaper();
     rememberPosition();
     return true;
 }

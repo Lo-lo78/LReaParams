@@ -16,6 +16,9 @@ public:
     void setResourceRoot(const std::filesystem::path& root) { resource_ = root; }
     void setNativeFilterAvailable(bool enabled) noexcept { nativeFilterAvailable_ = enabled; }
     bool begin() override;
+    // One-shot target when returning from FX Params, including Take FX.
+    // Do not reopen from a stale TCP selection.
+    void setNextStartTrack(MediaTrack* track) noexcept { nextStartTrack_ = track; }
     void end() noexcept override;
     bool active() const noexcept override { return active_; }
     bool contextUnchanged() const override;
@@ -81,6 +84,9 @@ private:
     void extendTrackSelectionToEdge(int direction);
     void announceSelection() const;
     void refreshTrackSelection();
+    // Plain navigation follows the real TCP selected track. Explicit F1
+    // multi-selection commands remain in charge of their own selection.
+    void syncCursorToReaper();
     void moveToFolder(int direction);
     // Folder hierarchy mirrors the Lua stack: a track may close several
     // nested folders and each of their names must be spoken in order.
@@ -164,6 +170,7 @@ private:
     bool nativeFilterAvailable_ = false;
     ReaProject* project_{};
     MediaTrack* track_{};
+    MediaTrack* nextStartTrack_{};
     MediaTrack* initialSelection_{};
     int trackCount_{};
     int row_{};

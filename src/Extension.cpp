@@ -157,7 +157,7 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.54.3 - Track numeric and empty FX fixes\n\n"
+            ShowMessageBox("LReaParams 0.0.54.4 - Track/FX/TCP synchronization\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
@@ -273,6 +273,19 @@ public:
                 if (desired == &navigator_ && backgroundMidi_.sameMidiFx(navigator_))
                     backgroundMidi_.end();
                 current_ = desired;
+                // The track owning an FX (also a Take FX) must be the real
+                // TCP selection when opening FX Params. Otherwise Escape can
+                // return to the track that was selected BEFORE the FX switch.
+                if (desired == &navigator_ && !navigator_.isMemoryManager()) {
+                    MediaTrack* fxTrack = navigator_.cursorTrack();
+                    ReaProject* project = EnumProjects(-1, nullptr, 0);
+                    if (project && fxTrack && ValidatePtr2(project, fxTrack, "MediaTrack*") &&
+                        (CountSelectedTracks(project) != 1 || !IsTrackSelected(fxTrack))) {
+                        SetOnlyTrackSelected(fxTrack);
+                        TrackList_AdjustWindows(false);
+                        UpdateArrange();
+                    }
+                }
                 input_.select(*desired);
                 // Lua gfx.init-style focus owner: keys go straight from its
                 // Win32 window procedure into the navigator queue, without a
@@ -354,14 +367,14 @@ public:
                 navigator_.setNativeText(titleProxy_.textValue());
             else if (titleProxyActive_ && current_==&trackNavigator_ && trackNavigator_.nativeTextField())
                 trackNavigator_.setNativeText(titleProxy_.textValue());
-            // Shared Ctrl+Tab moves between FX and Track Params using the SAME
-            // normal launch path. Preserve the cursor track without changing
-            // REAPER's physical selection, and never intercept Win32 text EDIT.
+            // Ctrl+Tab uses the current REAL FX/Track owner in both directions.
+            // The TCP is synchronized; never resume the track where the user
+            // originally entered LReaParams after navigating to another FX.
             if (key.ctrl && !key.alt && !key.shift && key.vk == VK_TAB && !key.repeat &&
                 !((current_ == &navigator_ && (navigator_.nativeTextField() || navigator_.isMemoryManager())) ||
                   (current_ == &trackNavigator_ && trackNavigator_.nativeTextField()))) {
                 const bool wasTrack = current_ == &trackNavigator_;
-                MediaTrack* preferred = wasTrack ? trackNavigator_.cursorTrack() : nullptr;
+                MediaTrack* preferred = wasTrack ? trackNavigator_.cursorTrack() : navigator_.cursorTrack();
                 // Ctrl+Tab is contextual. An empty FX chain must not close
                 // Track Params, move to another track, or speak two messages
                 // while restoring its focus. The Master Monitor chain is a
@@ -377,10 +390,12 @@ public:
                         speak("No track FX"); return;
                     }
                 }
-                // A native FX owner is already a valid context for returning
-                // to REAPER's track selection; do not fabricate a track.
+                // Preserve the chosen track through end(), which clears the
+                // old navigator's active state. Track Params explicitly takes
+                // the FX owner rather than the stale selected TCP track.
                 exitNavigation(false);
                 if (wasTrack) navigator_.setNextStartTrack(preferred);
+                else trackNavigator_.setNextStartTrack(preferred);
                 Navigator* target = wasTrack ? static_cast<Navigator*>(&navigator_) :
                     static_cast<Navigator*>(&trackNavigator_);
                 if (target->begin()) {
@@ -390,6 +405,10 @@ public:
                     // Restore the previous navigator and its persisted position.
                     Navigator* previous = wasTrack ? static_cast<Navigator*>(&trackNavigator_) :
                         static_cast<Navigator*>(&navigator_);
+                    // Failed transfers restore the same track, not the one
+                    // that happened to be selected on initial entry.
+                    if (wasTrack) trackNavigator_.setNextStartTrack(preferred);
+                    else navigator_.setNextStartTrack(preferred);
                     if (previous->begin()) launchNavigator(previous);
                     else speak(wasTrack ? "FX Params unavailable" : "Track Params unavailable");
                 }

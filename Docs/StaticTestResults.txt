@@ -1,3 +1,7 @@
+LReaParams 0.0.54.4 TEST54.4: 53 Python source-only suites PASS (audit and regression contracts).
+Also checked routing-pending exception after the complete run.
+NO C++ compilation, local CMake, MSVC, REAPER, NVDA or hardware MIDI test performed. GitHub Actions and manual acceptance pending.
+
 TEST54.3 (source only): Tools/audit.py PASS; TEST54.3, TEST54.2 and TEST54 individual static contracts PASS.
 Earlier suites passed individually in the aggregate source-only runner; the aggregate invocation
 was interrupted by the tool time limit near its end. No Windows native build was attempted.

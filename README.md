@@ -1,3 +1,5 @@
+> **TEST54.4 / LReaParams 0.0.54.4:** La traccia corrente è sincronizzata tra navigazione F1/F2/F3, FX Params e selezione reale del TCP. Ctrl+Tab da FX Params ritorna sulla traccia proprietaria dell'FX/take effettivamente aperto; Esc non riporta alla traccia iniziale. La selezione multipla resta disponibile con Maiusc e gli appositi comandi. [Guida TEST54.4](Docs/TEST54_4_TRACK_FX_TCP_SYNC.md). Sorgente, nessuna compilazione locale.
+
 > **TEST54.3 / LReaParams 0.0.54.3:** Ctrl+E conferma senza il doppio annuncio `Set.`; FX Params rifiuta tracce e take privi di effetti con `No track FX` / `No take FX`. Ctrl+Tab su traccia vuota non lascia Track Params. [Guida](Docs/TEST54_3_NUMERIC_SPEECH_EMPTY_FX.md). Nessuna compilazione locale.
 
 > **TEST54.2 / LReaParams 0.0.54.2:** Ctrl+Maiusc+A senza doppio Auto; envelope reali Send/Receive (AUXRECV, SWS/BR per creazione); Ctrl+Tab tra Track Params e FX Params. [Guida](Docs/TEST54_2_AUTOMATION_CTRL_TAB.md). Nessuna compilazione locale.

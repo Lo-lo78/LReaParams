@@ -42,6 +42,9 @@ void TrackNavigator::end() noexcept {
 }
 
 bool TrackNavigator::begin() {
+    // Consume the FX owner's real track BEFORE clearing our navigation state.
+    MediaTrack* explicitTrack = nextStartTrack_;
+    nextStartTrack_ = nullptr;
     end();
     project_ = EnumProjects(-1, nullptr, 0);
     if (!project_) { speech_("Track Params: no project"); return false; }
@@ -49,6 +52,18 @@ bool TrackNavigator::begin() {
     initialSelection_ = GetSelectedTrack2(project_, 0, true);
     rebuildVisibleRows();
     if (rows_.empty()) { speech_("Track Params: no visible tracks"); return false; }
+    if (explicitTrack) {
+        if (!ValidatePtr2(project_, explicitTrack, "MediaTrack*")) {
+            speech_("Track no longer available"); return false;
+        }
+        const auto entry = std::find_if(rows_.begin(), rows_.end(),
+            [explicitTrack](const TrackRow& row) { return row.track == explicitTrack; });
+        if (entry == rows_.end()) {
+            speech_("Track is hidden in the TCP"); return false;
+        }
+        // No stale row or previous F1 cursor may override the FX context.
+        initialSelection_ = explicitTrack;
+    }
     char projectFilename[4096]{};
     EnumProjects(-1, projectFilename, static_cast<int>(sizeof(projectFilename)));
     memory_.load(resource_, projectFilename);
@@ -72,6 +87,9 @@ bool TrackNavigator::begin() {
     restorePosition();
     midiSequence_ = 0; // populated by pollMidi before consuming subsequent controller input
     active_ = true;
+    // Synchronize an explicitly transferred FX track only after the navigator
+    // has initialized successfully. Normal entry preserves F1 multi-selection.
+    if (explicitTrack) syncCursorToReaper();
     return true;
 }
 
@@ -689,6 +707,19 @@ void TrackNavigator::refreshTrackSelection() {
     // external selection changes still terminate the navigator safely.
     initialSelection_ = GetSelectedTrack2(project_, 0, true);
 }
+void TrackNavigator::syncCursorToReaper() {
+    if (!project_ || !track_ || !ValidatePtr2(project_, track_, "MediaTrack*")) return;
+    // During two-pass Add Send/Receive the Lua deliberately clears selection
+    // after storing the sources/destinations. Do not implicitly reselect a
+    // track while the user is picking the opposite side of the routing.
+    if (pendingRouting_ != RoutingKind::none) return;
+    // A normal cursor move is an actual TCP track move, not merely a spoken
+    // pointer. Collapse any older selection; Shift-selection gestures use
+    // applyRangeSelection instead and remain fully multi-track capable.
+    if (CountSelectedTracks(project_) != 1 || !IsTrackSelected(track_))
+        SetOnlyTrackSelected(track_);
+    refreshTrackSelection();
+}
 void TrackNavigator::announceSelection() const {
     if (page_ != Page::tracks) return;
     speech_(std::to_string(CountSelectedTracks(project_)) + " Selected. " + currentParameterSpeech());
@@ -767,6 +798,7 @@ void TrackNavigator::moveToFolder(int direction) {
         if (GetMediaTrackInfo_Value(rows_[i].track, "I_FOLDERDEPTH") > 0.5) {
             row_ = i;
             track_ = rows_[row_].track;
+            syncCursorToReaper();
             rememberPosition();
             announceTrack();
             return;
@@ -778,7 +810,11 @@ void TrackNavigator::moveTrack(int delta) {
     if (page_ != Page::tracks) return;
     resetSelectionStroke();
     const int next = std::clamp(row_ + delta, 0, static_cast<int>(rows_.size()) - 1);
-    if (next != row_) { row_ = next; track_ = rows_[row_].track; midiPickup_.clear(); rememberPosition(); announceTrack(); }
+    if (next != row_) {
+        row_ = next; track_ = rows_[row_].track;
+        syncCursorToReaper();
+        midiPickup_.clear(); rememberPosition(); announceTrack();
+    }
 }
 void TrackNavigator::moveParameter(int delta) {
     if (entries_.empty()) return;
@@ -809,6 +845,7 @@ void TrackNavigator::switchDetailTrack(int direction) {
         rememberPosition();
         row_ = candidate;
         track_ = nextTrack;
+        syncCursorToReaper();
         detailIndex_ = 0;
         midiPickup_.clear();
         buildEntries();
