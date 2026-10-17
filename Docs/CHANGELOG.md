@@ -1,3 +1,10 @@
+## 0.0.51 — estensione folder annidate e Canc F2/F3
+
+- F1 parla `end folder Nome` sulle righe che chiudono una o più folder; Ctrl+Invio toggla la folder e ricostruisce il cursore sulle sole tracce visibili.
+- F2/F3 Canc elimina il send/receive corrente in Undo, risolvendo il vero indice della sorgente nei receive duplicati.
+- MIDI Merge resta stato derivato, read-only come nel Lua.
+- Nessuna compilazione locale. [Guida](TEST51_FOLDERS_AND_DELETE.md).
+
 # 0.0.51 — aggiornamento F1: Add Send / Add Receive (senza cambiare versione)
 
 - **Ctrl+Maiusc+S** in F1: memorizza tutte le tracce sorgenti selezionate e deseleziona le tracce. Dopo aver selezionato le destinazioni, la seconda pressione crea tutte le coppie di send (escluse le autoconnessioni).

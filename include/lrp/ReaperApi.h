@@ -96,6 +96,7 @@
 #define REAPERAPI_WANT_GetTrackSendName
 #define REAPERAPI_WANT_GetTrackReceiveName
 #define REAPERAPI_WANT_CreateTrackSend
+#define REAPERAPI_WANT_RemoveTrackSend
 #define REAPERAPI_WANT_GetTrackNumSends
 #define REAPERAPI_WANT_GetTrackSendInfo_Value
 #define REAPERAPI_WANT_GetSetTrackSendInfo

@@ -58,6 +58,15 @@ private:
     void announceSelection() const;
     void refreshTrackSelection();
     void moveToFolder(int direction);
+    // Folder hierarchy mirrors the Lua stack: a track may close several
+    // nested folders and each of their names must be spoken in order.
+    void rebuildVisibleRows();
+    std::vector<MediaTrack*> endingFolders(MediaTrack* track) const;
+    std::string folderAwareTrackLabel() const;
+    void toggleCurrentFolder();
+    // F2/F3 Delete: remove the exact routing instance, including duplicate
+    // receives coming from the same source track.
+    void deleteCurrentRouting();
     // TEST51.1: Lua-compatible, two-pass F1 sends and receives. Stored GUIDs
     // are re-resolved at commit time; no dangling MediaTrack* is retained.
     enum class RoutingKind { none, send, receive };
@@ -96,6 +105,8 @@ private:
     int detailIndex_{};     // F2/F3 send/receive column
     int stepScale_{};       // TEST49: restored from the current parameter's .tp preference
     int sends_{}, receives_{};
+    int lastEndFolderTrackIndex_ = -1;
+    std::size_t nextEndFolderIndex_ = 0;
     Page page_ = Page::tracks;
     bool active_ = false, valueMode_ = false;
     bool selectionStroke_ = false;

@@ -1,1 +1,1 @@
-TEST51 (0.0.51): source only. Tools/run_static.py PASS 42 suites (incl. TEST51 routing models). No native C++ compilation, CMake, MSVC, CTest, REAPER, NVDA/OSARA run locally. GitHub Actions is required for native validation.
+TEST51 estesa (0.0.51): source-only, Tools/run_static.py PASS 44 suites incl. TEST51 folder/end-folder and duplicate receive instance resolution. No local C++ build/CMake/MSVC/CTest or REAPER/NVDA/OSARA runtime testing. GitHub Actions required.

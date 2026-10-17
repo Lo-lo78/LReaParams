@@ -46,22 +46,7 @@ bool TrackNavigator::begin() {
     if (!project_) { speech_("Track Params: no project"); return false; }
     trackCount_ = CountTracks(project_);
     initialSelection_ = GetSelectedTrack2(project_, 0, true);
-    int nesting = 0;
-    int hiddenLevel = -1;
-    for (int i = 0; i < trackCount_; ++i) {
-        auto* track = GetTrack(project_, i);
-        if (!track) continue;
-        const int depth = static_cast<int>(GetMediaTrackInfo_Value(track, "I_FOLDERDEPTH"));
-        const bool underCollapsedFolder = hiddenLevel >= 0 && nesting > hiddenLevel;
-        const bool visible = GetMediaTrackInfo_Value(track, "B_SHOWINTCP") > 0.5;
-        if (visible && !underCollapsedFolder) {
-            if (const GUID* guid = GetTrackGUID(track)) rows_.push_back({track, *guid, i});
-        }
-        if (!underCollapsedFolder && GetMediaTrackInfo_Value(track, "I_FOLDERCOMPACT") >= 2.0 && depth > 0)
-            hiddenLevel = nesting;
-        nesting = std::max(0, nesting + depth);
-        if (hiddenLevel >= 0 && nesting <= hiddenLevel) hiddenLevel = -1;
-    }
+    rebuildVisibleRows();
     if (rows_.empty()) { speech_("Track Params: no visible tracks"); return false; }
     memory_.load(resource_);
     row_ = 0;
@@ -74,6 +59,8 @@ bool TrackNavigator::begin() {
     valueMode_ = false;
     resetSelectionStroke();
     resetPendingRouting();
+    lastEndFolderTrackIndex_ = -1;
+    nextEndFolderIndex_ = 0;
     stepScale_ = 0;
     // Opening a different selected track must never unexpectedly jump to a
     // previously remembered track.  The current selection remains authoritative.
@@ -113,7 +100,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
         (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN ||
          k.vk == VK_PRIOR || k.vk == VK_NEXT);
     if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END ||
-        k.vk == 'T' || k.vk == VK_BACK || (f1 && (k.vk == 'A' || k.vk == VK_DELETE)));
+        k.vk == 'T' || k.vk == VK_BACK || (f1 && (k.vk == VK_RETURN || k.vk == 'A' || k.vk == VK_DELETE)));
     if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
         k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END ||
         k.vk == VK_LEFT || k.vk == VK_RIGHT;
@@ -122,7 +109,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
         case VK_LEFT: case VK_RIGHT: case VK_UP: case VK_DOWN:
         case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT:
         case VK_F1: case VK_F2: case VK_F3: return true;
-        case VK_DELETE: return f1;
+        case VK_DELETE: return true; // F1 deselect; F2/F3 remove current routing
         default: return false;
     }
 }
@@ -485,10 +472,9 @@ std::string TrackNavigator::currentParameterSpeech() const {
     if (!e) return trackName() + (page_ == Page::sends ? ", no sends" : page_ == Page::receives ? ", no receives" : ", no parameters");
     if (page_ == Page::tracks) {
         const std::string selected = IsTrackSelected(track_) ? "Selected. " : "";
-        const bool folder = GetMediaTrackInfo_Value(track_, "I_FOLDERDEPTH") > 0.5;
-        const std::string folderState = folder ?
-            (GetMediaTrackInfo_Value(track_, "I_FOLDERCOMPACT") >= 1.0 ? ", folder closed" : ", folder open") : "";
-        return selected + trackName() + folderState + ", " + e->title + ", " + valueText(*e, get(*e));
+        // The folder-aware label contains open/closed and all ending folders.
+        // Its suffix is critical when one track closes nested folders.
+        return selected + folderAwareTrackLabel() + ", " + e->title + ", " + valueText(*e, get(*e));
     }
     const char* label = page_ == Page::sends ? "Send " : "Receive ";
     return trackName() + ", " + label + std::to_string(e->index + 1) +
@@ -777,6 +763,18 @@ void TrackNavigator::handle(const Key& k) {
         memory_.setStep(parameterKey(), 0); stepScale_ = 0; memory_.flush();
         speech_("Step 0"); return;
     }
+    // Ctrl+Enter toggles the folder without stealing plain Enter from Value.
+    // On an end-folder row it targets the innermost closing folder, then
+    // cycles across any outer folders closed by the same row.
+    if (page_ == Page::tracks && k.ctrl && !k.alt && !k.shift && k.vk == VK_RETURN) {
+        if (!k.repeat) toggleCurrentFolder();
+        return;
+    }
+    // Lua: unmodified Delete removes the current F2/F3 routing instance.
+    if (page_ != Page::tracks && !k.ctrl && !k.alt && !k.shift && k.vk == VK_DELETE) {
+        if (!k.repeat) deleteCurrentRouting();
+        return;
+    }
     if (k.vk == VK_ESCAPE) {
         if (pendingRouting_ != RoutingKind::none) { cancelTrackRouting(); return; }
         if (valueMode_) { valueMode_ = false; announceTitle(); }
@@ -800,7 +798,12 @@ void TrackNavigator::handle(const Key& k) {
             if (e->type == Entry::fxCount) { speech_("Track FX page not yet migrated. Use FX Params."); return; }
         }
         // Detail headers and other read-only entries do not open an empty Value mode.
-        if (!e || e->type == Entry::header || e->type == Entry::midiMerge) {
+        if (e && e->type == Entry::midiMerge) {
+            speech_("MIDI merge " + valueText(*e, get(*e)) +
+                ". Routing status: set MIDI source to None for off, or All / a channel for on.");
+            return;
+        }
+        if (!e || e->type == Entry::header) {
             announce(); return;
         }
         valueMode_ = !valueMode_;

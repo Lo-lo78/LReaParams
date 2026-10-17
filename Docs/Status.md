@@ -1,3 +1,7 @@
+# 0.0.51 — estesa prima di F4
+
+F1: folder aperte/chiuse e suffisso `end folder Nome` per folder annidate; Ctrl+Invio toggla. F2/F3: Canc elimina il singolo send/receive (anche istanze duplicate); MIDI Merge è stato derivato da MIDI source, non un parametro con bit autonomo. [Verifiche](TEST51_FOLDERS_AND_DELETE.md). Non è completa la migrazione di F1/F2/F3. Solo sorgente, nessuna build locale.
+
 # 0.0.51 (TEST51 aggiornata): Track Params — F1 creazione send/receive, F2/F3 routing
 
 **F1 crea send e receive tramite Ctrl+Maiusc+S e Ctrl+Maiusc+R in due passaggi**, mantenendo la selezione multipla originale del Lua. Esc cancella la procedura in sospeso, Tab ne legge lo stato. I collegamenti sono raggruppati in una sola operazione Undo e le tracce memorizzate vengono riconsultate per GUID. [Guida TEST51 add routing](TEST51_F1_ADD_SEND_RECEIVE.md).

@@ -1,3 +1,11 @@
+# LReaParams 0.0.51 — TEST51 estesa: folder annidate + cancellazione F2/F3
+
+L'ultima traccia di ogni folder annuncia anche `end folder Nome`, anche per folder annidate. In F1 **Ctrl+Invio** apre e chiude le folder, mantenendo **Invio** per Value. In F2/F3 **Canc** elimina il collegamento corrente con risoluzione dell'istanza reale anche per receive duplicati. `MIDI merge` è uno stato di sola lettura derivato dalla sorgente MIDI, come nel Lua; Invio ne spiega la semantica.
+
+La TEST51 precedente con Add Send/Receive, routing audio/MIDI, Tab e memoria `.tp` rimane presente. **NESSUNA build locale**. Prova MSVC e test runtime esclusivamente in GitHub Actions e REAPER/NVDA. [Guida TEST51 estesa](Docs/TEST51_FOLDERS_AND_DELETE.md).
+
+---
+
 # LReaParams 0.0.51 — aggiornamento F1 Add Send / Add Receive
 
 Questa revisione della **stessa TEST51** introduce la creazione di send e receive in F1 secondo la procedura a due passaggi del Lua originale: Ctrl+Maiusc+S memorizza le sorgenti e Ctrl+Maiusc+R memorizza le destinazioni. Ripeti la stessa combinazione dopo aver selezionato il secondo gruppo. Esc annulla l'operazione in sospeso, Tab ne legge lo stato. Selezioni multiple e controllo delle autoconnessioni inclusi; le route sono annullabili tramite Undo di REAPER.

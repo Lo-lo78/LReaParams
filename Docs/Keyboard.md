@@ -1,3 +1,9 @@
+## TEST51 estesa — folder e cancellazione routing
+
+- F1: `Ctrl+Invio` = toggle folder, conservando `Invio` per Value. Su traccia finale, prima la folder più interna.
+- F2/F3: `Canc` = elimina esattamente il send/receive corrente (senza conferma, come nel Lua).
+- F2/F3 su `MIDI merge`: Invio spiega che il valore dipende da MIDI source; non è un toggle indipendente.
+
 ## Aggiornamento TEST51 — Crea send e receive in F1
 
 - **Ctrl+Maiusc+S**: seleziona tracce sorgenti, premi una volta per memorizzarle, poi seleziona destinazioni e ripremi: crea i send.

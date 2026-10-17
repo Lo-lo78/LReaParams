@@ -1,2 +1,2 @@
-TEST51 0.0.51 — Tools/run_static.py: 42 suite Python source-only PASS, inclusi test sintetici di routing.
-NOT RUN: compilazione C++/MSVC, CMake, CTest, REAPER, NVDA, OSARA. Solo GitHub Actions compilerà.
+TEST51 estesa, 0.0.51 — Tools/run_static.py: 44 suite Python source-only PASS, compresi test sintetici folder annidate, MIDI merge derivato e risoluzione del receive da cancellare.
+NOT RUN: compilazione C++/MSVC, CMake, CTest, REAPER, NVDA, OSARA. Solo GitHub Actions compila.
