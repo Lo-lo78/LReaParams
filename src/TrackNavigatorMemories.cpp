@@ -207,7 +207,8 @@ void TrackNavigator::memoryDelete() {
         // Restore the default behavior (value speech on, CC speech off).
         if (item.key.rfind("V:", 0) == 0) memory_.setValueSpeech(item.key.substr(2), true);
         else if (item.key.rfind("C:", 0) == 0) {
-            const auto key = item.key.substr(2), dot = key.find('.');
+            const auto key = item.key.substr(2);
+            const auto dot = key.find('.');
             if (dot != std::string::npos) memory_.setCcSpeech(key.substr(0, dot), key.substr(dot + 1), false);
         }
     } else if (memoryColumn_ == 3) {
@@ -231,7 +232,8 @@ void TrackNavigator::memoryActivate() {
             const auto id = item.key.substr(2);
             memory_.setValueSpeech(id, !memory_.valueSpeech(id));
         } else if (item.key.rfind("C:", 0) == 0) {
-            const auto id = item.key.substr(2), dot = id.find('.');
+            const auto id = item.key.substr(2);
+            const auto dot = id.find('.');
             if (dot == std::string::npos) return;
             const auto page = id.substr(0, dot), key = id.substr(dot + 1);
             memory_.setCcSpeech(page, key, !memory_.ccSpeech(page, key));

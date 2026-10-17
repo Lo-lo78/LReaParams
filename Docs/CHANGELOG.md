@@ -1,3 +1,9 @@
+## TEST55.1 — MSVC compile fix (GitHub Actions)
+
+- `src/TrackNavigatorMemories.cpp`: separate the `std::string` and `size_t` local `auto` declarations at the two Track Memories speech/CC handlers (C3538).
+- Added source-only TEST55 regression assertions; no behavior, MIDI CC, shortcuts, or `.tp` format changes.
+- No local build performed. MSVC and native tests pending GitHub Actions.
+
 ### 0.0.55 — Track Memories
 - Attivata l’azione Track Memories e Alt+F8 da Track Params. Cinque categorie navigabili da tastiera con lettura NVDA.
 - Persistenza delle dodici memorie traccia (GUID) e range Volume nel profilo `.tp` specifico del progetto.

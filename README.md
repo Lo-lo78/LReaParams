@@ -1,3 +1,5 @@
+> **TEST55.1:** risolti due errori di compilazione MSVC C3538 in `src/TrackNavigatorMemories.cpp` (dichiarazioni `auto` con tipi diversi). Nessuna modifica funzionale rispetto alla TEST55; compilazione esclusivamente via GitHub Actions.
+
 > **TEST55 / LReaParams 0.0.55:** Track Memories operativo con Alt+F8 e azione REAPER, CC Fixed/Step/parlato/12 posizioni/posizioni F1-F3 nel `.tp` del progetto; Ctrl+Maiusc+I range Volume. Non compila localmente; [guida](Docs/TEST55_TRACK_MEMORIES.md).
 
 > **TEST54.4 / LReaParams 0.0.54.4:** La traccia corrente è sincronizzata tra navigazione F1/F2/F3, FX Params e selezione reale del TCP. Ctrl+Tab da FX Params ritorna sulla traccia proprietaria dell'FX/take effettivamente aperto; Esc non riporta alla traccia iniziale. La selezione multipla resta disponibile con Maiusc e gli appositi comandi. [Guida TEST54.4](Docs/TEST54_4_TRACK_FX_TCP_SYNC.md). Sorgente, nessuna compilazione locale.
