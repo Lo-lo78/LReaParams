@@ -13,3 +13,5 @@ PASS Testing/test55_8_static.py
 No local compilation. Full historical static suite not claimed. MSVC and native C++ tests will run in GitHub Actions.
 
 TEST55.12: targeted source checks PASS (test55_12_static, test55_10_static, test52_static). Full historical suite not completed locally; MSVC and CTest via GitHub Actions.
+
+TEST56.4: TEST55.10/12/13, TEST56.1/2/3/4 and Tools/audit.py PASS (source only); no local build.

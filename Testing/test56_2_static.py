@@ -27,7 +27,7 @@ assert 'const int start = (fxTcpListPosition_ / height) * height;' in grid
 assert 'case VK_LEFT: if (next - height >= 0)' in grid
 assert 'case VK_RIGHT: if (next + height < size)' in grid
 assert 'if (next != fxTcpListPosition_)' in grid  # silent borders
-assert 'if (!details) return e.name;' in grid  # normal navigation: names ONLY
+assert 'if (!details) return e.parameterName;' in grid  # normal navigation: names ONLY
 assert 'e.visible ? ", visible in TCP" : ", not in TCP"' in grid  # Tab detail
 assert 'commitFxTcpParameterGrid(k.ctrl)' in grid
 assert 'keepOpen ? !e.visible : true' in grid

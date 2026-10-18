@@ -161,12 +161,10 @@ void TrackNavigator::rebuildFxTcpParameterGrid(int preferFx, int preferParam) {
             char name[1024]{};
             TrackFX_GetParamName(track_, fx, param, name, sizeof(name));
             const std::string paramName = name[0] ? name : "Parameter " + std::to_string(param + 1);
+            if (!fxTcpMatchesSearch(paramName, fxTcpGridFilter_)) continue;
             std::string label = paramName;
-            if (fxTcpListFxIndex_ < 0) {
-                char fxName[1024]{};
-                if (TrackFX_GetFXName) TrackFX_GetFXName(track_, fx, fxName, sizeof(fxName));
-                label = std::string(fxName[0] ? fxName : "FX " + std::to_string(fx + 1)) + ", " + label;
-            }
+            // The visible-grid column conveys the FX; vertical rows speak
+            // ONLY the parameter name, as in the main F4 grid.
             const GUID* guid = TrackFX_GetFXGUID ? TrackFX_GetFXGUID(track_, fx) : nullptr;
             if (!guid) continue;
             fxTcpListEntries_.push_back({fx, param, *guid, std::move(label), paramName, visible});
@@ -180,15 +178,89 @@ void TrackNavigator::rebuildFxTcpParameterGrid(int preferFx, int preferParam) {
             if (e.fxIndex == preferFx && e.paramIndex == preferParam) { fxTcpListPosition_ = i; break; }
         }
     }
+    if (fxTcpListVisibleOnly_) rebuildFxTcpVisibleColumns(preferFx, preferParam);
 }
+// Alt+Enter uses the same FX-column topology as F4, not the flat
+// FX Params-style selection grid used for ALL parameters on one FX.
+void TrackNavigator::rebuildFxTcpVisibleColumns(int preferFx, int preferParam) {
+    // FX indices are stable for this refresh. Do not dereference old
+    // flat-entry indices after the filter has rebuilt the entry list.
+    const int previousFx = fxTcpListColumn_;
+    if (preferFx < 0) preferFx = previousFx;
+    if (preferParam < 0 && fxTcpListPosition_ >= 0 &&
+        fxTcpListPosition_ < static_cast<int>(fxTcpListEntries_.size()))
+        preferParam = fxTcpListEntries_[static_cast<size_t>(fxTcpListPosition_)].paramIndex;
+    fxTcpVisibleColumns_.clear();
+    const int fxCount = TrackFX_GetCount ? std::clamp(TrackFX_GetCount(track_), 0, 1024) : 0;
+    // Keep FX headers (including ones without a visible TCP parameter),
+    // just like the primary F4 columns.
+    fxTcpVisibleColumns_.resize(static_cast<size_t>(fxCount));
+    for (int i = 0; i < static_cast<int>(fxTcpListEntries_.size()); ++i) {
+        const int fx = fxTcpListEntries_[static_cast<size_t>(i)].fxIndex;
+        if (fx >= 0 && fx < fxCount) fxTcpVisibleColumns_[static_cast<size_t>(fx)].push_back(i);
+    }
+    if (fxTcpVisibleColumns_.empty()) { fxTcpListColumn_ = fxTcpListRow_ = fxTcpListPosition_ = 0; return; }
+    fxTcpListColumn_ = std::clamp(preferFx, 0, fxCount - 1);
+    const auto& rows = fxTcpVisibleColumns_[static_cast<size_t>(fxTcpListColumn_)];
+    fxTcpListRow_ = 0;
+    if (preferParam >= 0) {
+        for (int i = 0; i < static_cast<int>(rows.size()); ++i)
+            if (fxTcpListEntries_[static_cast<size_t>(rows[static_cast<size_t>(i)])].paramIndex == preferParam) {
+                fxTcpListRow_ = i + 1; break;
+            }
+    }
+    syncFxTcpVisibleSelection();
+}
+void TrackNavigator::syncFxTcpVisibleSelection() {
+    if (fxTcpListColumn_ < 0 || fxTcpListColumn_ >= static_cast<int>(fxTcpVisibleColumns_.size())) return;
+    const auto& rows = fxTcpVisibleColumns_[static_cast<size_t>(fxTcpListColumn_)];
+    fxTcpListRow_ = std::clamp(fxTcpListRow_, 0, static_cast<int>(rows.size()));
+    if (fxTcpListRow_ > 0) fxTcpListPosition_ = rows[static_cast<size_t>(fxTcpListRow_ - 1)];
+}
+void TrackNavigator::moveFxTcpVisibleColumn(int delta) {
+    const int count = static_cast<int>(fxTcpVisibleColumns_.size());
+    if (!count) return;
+    const int next = std::clamp(fxTcpListColumn_ + delta, 0, count - 1);
+    if (next == fxTcpListColumn_) return;
+    fxTcpListColumn_ = next;
+    fxTcpListRow_ = std::min(fxTcpListRow_, static_cast<int>(fxTcpVisibleColumns_[static_cast<size_t>(next)].size()));
+    syncFxTcpVisibleSelection();
+    speech_(fxTcpParameterGridReview(true)); // Announce the NEW FX once on horizontal movement.
+}
+void TrackNavigator::moveFxTcpVisibleRow(int delta) {
+    if (fxTcpListColumn_ < 0 || fxTcpListColumn_ >= static_cast<int>(fxTcpVisibleColumns_.size())) return;
+    const int next = std::clamp(fxTcpListRow_ + delta, 0,
+        static_cast<int>(fxTcpVisibleColumns_[static_cast<size_t>(fxTcpListColumn_)].size()));
+    if (next == fxTcpListRow_) return;
+    fxTcpListRow_ = next;
+    syncFxTcpVisibleSelection();
+    speech_(fxTcpParameterGridReview(false)); // No FX name in vertical announcements.
+}
+
 std::string TrackNavigator::fxTcpParameterGridReview(bool details) const {
+    if (fxTcpListVisibleOnly_) {
+        if (fxTcpVisibleColumns_.empty() || fxTcpListColumn_ < 0 ||
+            fxTcpListColumn_ >= static_cast<int>(fxTcpVisibleColumns_.size())) return "No visible TCP parameters";
+        const int fx = fxTcpListColumn_;
+        char name[1024]{};
+        if (TrackFX_GetFXName) TrackFX_GetFXName(track_, fx, name, sizeof(name));
+        const std::string fxName = name[0] ? name : "FX " + std::to_string(fx + 1);
+        const auto& rows = fxTcpVisibleColumns_[static_cast<size_t>(fx)];
+        if (fxTcpListRow_ <= 0) return "FX " + std::to_string(fx + 1) + ", " + fxName +
+            (details && rows.empty() ? ", no visible TCP parameters" : "");
+        const int pos = rows[static_cast<size_t>(fxTcpListRow_ - 1)];
+        const auto& entry = fxTcpListEntries_[static_cast<size_t>(pos)];
+        if (!details) return entry.parameterName;
+        return fxName + ", " + entry.parameterName + ", visible in TCP. Parameter " +
+            std::to_string(fxTcpListRow_) + " of " + std::to_string(rows.size()) +
+            ". FX " + std::to_string(fx + 1) + " of " + std::to_string(fxTcpVisibleColumns_.size());
+    }
     if (fxTcpListEntries_.empty()) return "No parameters";
     const auto& e = fxTcpListEntries_[static_cast<size_t>(fxTcpListPosition_)];
-    // Normal arrow navigation contains ONLY the parameter name, no values.
-    if (!details) return e.name;
-    return std::string(fxTcpListVisibleOnly_ ? "Visible TCP parameters. " : "FX parameter grid. ") +
-        e.name + (e.visible ? ", visible in TCP" : ", not in TCP") +
-        ". " + std::to_string(fxTcpListPosition_ + 1) + " of " +
+    if (!details) return e.parameterName;
+    return std::string("FX parameter selection. ") + e.parameterName +
+        (e.visible ? ", visible in TCP" : ", not in TCP") + ". " +
+        std::to_string(fxTcpListPosition_ + 1) + " of " +
         std::to_string(fxTcpListEntries_.size()) + ". Grid " + std::to_string(fxTcpListGridHeight_);
 }
 void TrackNavigator::openFxTcpParameterGrid(bool visibleOnly) {
@@ -202,15 +274,22 @@ void TrackNavigator::openFxTcpParameterGrid(bool visibleOnly) {
         if (id) fxTcpListFxGuid_ = *id;
     }
     fxTcpListPosition_ = 0;
+    fxTcpGridFilter_.clear();
+    fxTcpListColumn_ = fxTcpColumn_; fxTcpListRow_ = fxTcpRow_;
     fxTcpListGridHeight_ = std::clamp(fxTcpListGridHeight_, 1, 200);
     rebuildFxTcpParameterGrid();
-    speech_(std::string(visibleOnly ? "Visible TCP parameter grid. " : "FX parameter grid. ") +
+    if (visibleOnly && currentFxTcpParameter()) {
+        const auto* param = currentFxTcpParameter();
+        rebuildFxTcpVisibleColumns(fxTcpColumn_, param->index);
+    }
+    speech_(std::string(visibleOnly ? "Visible TCP parameters, remove. " : "FX parameter selection. ") +
         std::to_string(fxTcpListEntries_.size()) + " parameters. " + fxTcpParameterGridReview(false));
 }
 void TrackNavigator::closeFxTcpParameterGrid(bool announceCurrent) {
     const bool wasOpen = fxTcpListOpen_;
     fxTcpListOpen_ = false;
     fxTcpListEntries_.clear();
+    fxTcpVisibleColumns_.clear(); fxTcpGridFilter_.clear(); filterEditing_ = false; filterBuffer_.clear();
     rebuildFxTcp(true);
     rememberFxTcpPosition();
     if (announceCurrent && wasOpen) speech_(fxTcpReview(true));
@@ -252,6 +331,7 @@ bool TrackNavigator::setFxTcpParameterVisible(int fxIndex, int paramIndex, bool 
     return ok;
 }
 void TrackNavigator::commitFxTcpParameterGrid(bool keepOpen) {
+    if (fxTcpListVisibleOnly_ && fxTcpListRow_ == 0) return; // FX header cannot be removed.
     if (fxTcpListEntries_.empty()) { if (!keepOpen) closeFxTcpParameterGrid(); return; }
     const FxTcpListEntry e = fxTcpListEntries_[static_cast<size_t>(fxTcpListPosition_)];
     // Never act on an index that now belongs to another FX instance.
@@ -296,7 +376,7 @@ void TrackNavigator::commitFxTcpParameterGrid(bool keepOpen) {
             fxTcpRow_ = std::min(oldVisibleRow, count);
         }
         fxTcpListOpen_ = false;
-        fxTcpListEntries_.clear();
+        fxTcpListEntries_.clear(); fxTcpVisibleColumns_.clear(); fxTcpGridFilter_.clear();
         rememberFxTcpPosition();
         speech_(std::string(desired ? (e.visible ? "Selected. " : "Added. ") : "Removed. ") +
                 fxTcpReview(false));
@@ -306,14 +386,28 @@ void TrackNavigator::commitFxTcpParameterGrid(bool keepOpen) {
     speech_(std::string(desired ? "Added. " : "Removed. ") + fxTcpParameterGridReview(false));
 }
 void TrackNavigator::jumpFxTcpGridByInitial(wchar_t letter, bool backwards) {
+    if (fxTcpListVisibleOnly_) {
+        if (fxTcpVisibleColumns_.empty()) return;
+        const auto& rows = fxTcpVisibleColumns_[static_cast<size_t>(fxTcpListColumn_)];
+        const int count = static_cast<int>(rows.size());
+        if (!count) return;
+        const int start = fxTcpListRow_ <= 0 ? (backwards ? 0 : -1) : fxTcpListRow_ - 1;
+        for (int i = 1; i <= count; ++i) {
+            const int idx = (start + (backwards ? -i : i) % count + 2 * count) % count;
+            const auto& e = fxTcpListEntries_[static_cast<size_t>(rows[static_cast<size_t>(idx)])];
+            if (!fxTcpInitialMatch(e.parameterName, letter)) continue;
+            fxTcpListRow_ = idx + 1; syncFxTcpVisibleSelection();
+            speech_(fxTcpParameterGridReview(false)); return;
+        }
+        return;
+    }
     const int count = static_cast<int>(fxTcpListEntries_.size());
     if (!letter || !count) return;
     for (int offset = 1; offset <= count; ++offset) {
         const int index = backwards
             ? (fxTcpListPosition_ + count - offset) % count
             : (fxTcpListPosition_ + offset) % count;
-        // Visible global grid prefixes the FX name for context; search only
-        // the real parameter name, exactly like FX Params' cycling.
+        // Search only the parameter name, independently of FX/column metadata.
         if (!fxTcpInitialMatch(fxTcpListEntries_[static_cast<size_t>(index)].parameterName, letter)) continue;
         fxTcpListPosition_ = index;
         speech_(fxTcpParameterGridReview(false));
@@ -323,15 +417,22 @@ void TrackNavigator::jumpFxTcpGridByInitial(wchar_t letter, bool backwards) {
 }
 
 void TrackNavigator::handleFxTcpParameterGridKey(const Key& k) {
+    if (k.ctrl && !k.shift && !k.alt && k.vk == 'F') {
+        if (!k.repeat) toggleFxTcpFilter();
+        return;
+    }
     if (k.ctrl && k.shift && !k.alt && k.vk == 'M') {
         if (!k.repeat) openTrackMemories(false);
         return;
     }
     if (k.vk == VK_ESCAPE || (k.vk == VK_F4 && !k.ctrl && !k.alt && !k.shift)) {
-        if (!k.repeat) closeFxTcpParameterGrid();
+        if (!k.repeat) {
+            if (!fxTcpGridFilter_.empty()) clearFxTcpFilter();
+            else closeFxTcpParameterGrid();
+        }
         return;
     }
-    if ((k.vk == VK_F1 || k.vk == VK_F2) && !k.ctrl && !k.alt && !k.shift) {
+    if ((k.vk == VK_F1 || k.vk == VK_F2) && !fxTcpListVisibleOnly_ && !k.ctrl && !k.alt && !k.shift) {
         const int next = std::clamp(fxTcpListGridHeight_ + (k.vk == VK_F1 ? -1 : 1), 1, 200);
         if (next != fxTcpListGridHeight_) {
             fxTcpListGridHeight_ = next;
@@ -351,6 +452,39 @@ void TrackNavigator::handleFxTcpParameterGridKey(const Key& k) {
     }
     if (fxTcpSearchCharacter(k)) {
         if (!k.repeat) jumpFxTcpGridByInitial(fxTcpSearchCharacter(k), k.shift);
+        return;
+    }
+    if (fxTcpListVisibleOnly_) {
+        if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_HOME || k.vk == VK_END)) {
+            moveFxTcpVisibleColumn((k.vk == VK_HOME ? 0 : static_cast<int>(fxTcpVisibleColumns_.size()) - 1) - fxTcpListColumn_);
+            return;
+        }
+        if (k.alt && !k.ctrl && !k.shift && (k.vk == VK_HOME || k.vk == VK_END)) {
+            if (!fxTcpVisibleColumns_.empty())
+                moveFxTcpVisibleRow((k.vk == VK_HOME ? 1 : static_cast<int>(fxTcpVisibleColumns_[static_cast<size_t>(fxTcpListColumn_)].size())) - fxTcpListRow_);
+            return;
+        }
+        if (k.ctrl || k.alt || k.shift) return;
+        switch (k.vk) {
+            case VK_LEFT: moveFxTcpVisibleColumn(-1); return;
+            case VK_RIGHT: moveFxTcpVisibleColumn(1); return;
+            case VK_UP: moveFxTcpVisibleRow(-1); return;
+            case VK_DOWN: moveFxTcpVisibleRow(1); return;
+            case VK_PRIOR: moveFxTcpVisibleRow(-5); return;
+            case VK_NEXT: moveFxTcpVisibleRow(5); return;
+            case VK_HOME: moveFxTcpVisibleRow(-fxTcpListRow_); return;
+            case VK_END:
+                if (!fxTcpVisibleColumns_.empty())
+                    moveFxTcpVisibleRow(static_cast<int>(fxTcpVisibleColumns_[static_cast<size_t>(fxTcpListColumn_)].size()) - fxTcpListRow_);
+                return;
+            default: return;
+        }
+    }
+    if (k.alt && !k.ctrl && !k.shift && (k.vk == VK_HOME || k.vk == VK_END)) {
+        const int index = k.vk == VK_HOME ? 0 : static_cast<int>(fxTcpListEntries_.size()) - 1;
+        if (!fxTcpListEntries_.empty() && index != fxTcpListPosition_) {
+            fxTcpListPosition_ = index; speech_(fxTcpParameterGridReview(false));
+        }
         return;
     }
     if (fxTcpListEntries_.empty() || k.alt || k.shift) return;

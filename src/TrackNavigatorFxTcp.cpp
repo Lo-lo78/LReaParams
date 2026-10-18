@@ -4,6 +4,9 @@
 #include <cwctype>
 #include <cstdio>
 #include <cstring>
+#include <cctype>
+#include <string_view>
+#include <vector>
 
 namespace lrp {
 namespace {
@@ -15,6 +18,125 @@ std::string guidLabel(const GUID& g) {
         g.Data4[4], g.Data4[5], g.Data4[6], g.Data4[7]);
     return text;
 }
+// Match FX Params' Ctrl+F contract: unquoted case-insensitive substring,
+// quoted exact whole word or phrase; in multiword quotes the final word
+// may be a prefix. Filter only names, never formatted values or FX IDs.
+std::string lowerSearch(std::string value) {
+    for (char& c : value) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return value;
+}
+std::vector<std::string> searchWords(const std::string& text) {
+    std::vector<std::string> result;
+    std::string word;
+    for (unsigned char c : text) {
+        if (std::isalnum(c) || c >= 128 || c == '_') word.push_back(static_cast<char>(std::tolower(c)));
+        else if (!word.empty()) { result.push_back(std::move(word)); word.clear(); }
+    }
+    if (!word.empty()) result.push_back(std::move(word));
+    return result;
+}
+}
+
+bool TrackNavigator::fxTcpMatchesSearch(const std::string& label, const std::string& query) {
+    if (query.empty()) return true;
+    if (query.size() < 2 || query.front() != '"' || query.back() != '"')
+        return lowerSearch(label).find(lowerSearch(query)) != std::string::npos;
+    const auto sought = searchWords(query.substr(1, query.size() - 2));
+    const auto available = searchWords(label);
+    if (sought.empty() || sought.size() > available.size()) return false;
+    for (size_t pos = 0; pos + sought.size() <= available.size(); ++pos) {
+        bool ok = true;
+        for (size_t i = 0; i < sought.size(); ++i) {
+            const bool lastPrefix = i + 1 == sought.size() && sought.size() > 1;
+            if (lastPrefix ? available[pos + i].compare(0, sought[i].size(), sought[i]) != 0
+                           : available[pos + i] != sought[i]) { ok = false; break; }
+        }
+        if (ok) return true;
+    }
+    return false;
+}
+
+std::string TrackNavigator::fxTcpActiveFilter() const {
+    return fxTcpListOpen_ ? fxTcpGridFilter_ : fxTcpMainFilter_;
+}
+bool TrackNavigator::fxTcpHasMatches(const std::string& query) const {
+    if (!track_ || !TrackFX_GetCount || !TrackFX_GetNumParams || !TrackFX_GetParamName) return false;
+    const int count = std::clamp(TrackFX_GetCount(track_), 0, 1024);
+    const int first = fxTcpListOpen_ && !fxTcpListVisibleOnly_ ? fxTcpListFxIndex_ : 0;
+    const int last = fxTcpListOpen_ && !fxTcpListVisibleOnly_ ? first + 1 : count;
+    for (int fx = std::max(0, first); fx < std::min(count, last); ++fx) {
+        const int params = std::clamp(TrackFX_GetNumParams(track_, fx), 0, 32768);
+        for (int p = 0; p < params; ++p) {
+            if (fxTcpListOpen_ && fxTcpListVisibleOnly_ && !fxTcpParameterVisible(fx, p)) continue;
+            if (!fxTcpListOpen_ && !fxTcpParameterVisible(fx, p)) continue;
+            char name[1024]{};
+            TrackFX_GetParamName(track_, fx, p, name, sizeof(name));
+            if (fxTcpMatchesSearch(name[0] ? name : "Parameter " + std::to_string(p + 1), query)) return true;
+        }
+    }
+    return false;
+}
+void TrackNavigator::toggleFxTcpFilter() {
+    if (!fxTcpActiveFilter().empty()) { clearFxTcpFilter(); return; }
+    if (!nativeFilterAvailable_) { speech_("Enable the native keyboard window to edit a filter"); return; }
+    valueMode_ = false;
+    filterBuffer_.clear();
+    filterEditing_ = true;
+    speech_(nativeTextLabel() + ". Type text and press Enter; Escape cancels.");
+}
+void TrackNavigator::applyFxTcpFilter() {
+    // Keep the native edit and caret available if nothing matches.
+    std::string query = filterBuffer_;
+    const size_t start = query.find_first_not_of(" \r\n\t");
+    if (start == std::string::npos) { clearFxTcpFilter(); return; }
+    const size_t end = query.find_last_not_of(" \r\n\t");
+    query = query.substr(start, end - start + 1);
+    if (!fxTcpHasMatches(query)) { speech_("No results for " + query + ". Edit the filter or press Escape"); return; }
+    filterEditing_ = false; filterBuffer_.clear();
+    if (fxTcpListOpen_) {
+        fxTcpGridFilter_ = query;
+        rebuildFxTcpParameterGrid();
+        if (fxTcpListVisibleOnly_ && !fxTcpVisibleColumns_.empty() &&
+            fxTcpVisibleColumns_[static_cast<size_t>(fxTcpListColumn_)].empty()) {
+            // A filter must land on a MATCH, not on an empty FX header.
+            for (int fx = 0; fx < static_cast<int>(fxTcpVisibleColumns_.size()); ++fx) {
+                if (fxTcpVisibleColumns_[static_cast<size_t>(fx)].empty()) continue;
+                fxTcpListColumn_ = fx;
+                fxTcpListRow_ = 1;
+                syncFxTcpVisibleSelection();
+                break;
+            }
+        }
+    } else {
+        fxTcpMainFilter_ = query;
+        rebuildFxTcp(true);
+        // Select the first matching parameter, keeping its actual FX column.
+        bool selected = false;
+        if (fxTcpColumns_.empty()) { fxTcpMainFilter_.clear(); speech_("No track FX"); return; }
+        for (int offset = 0, count = static_cast<int>(fxTcpColumns_.size()); offset < count; ++offset) {
+            const int c = (fxTcpColumn_ + offset) % count;
+            if (!fxTcpColumns_[static_cast<size_t>(c)].parameters.empty()) {
+                fxTcpColumn_ = c; fxTcpRow_ = 1; selected = true; break;
+            }
+        }
+        if (!selected) { fxTcpMainFilter_.clear(); rebuildFxTcp(true); speech_("No results"); return; }
+        rememberFxTcpPosition();
+    }
+    const int count = fxTcpListOpen_ ? static_cast<int>(fxTcpListEntries_.size()) : [&] {
+        int n = 0; for (const auto& col : fxTcpColumns_) n += static_cast<int>(col.parameters.size()); return n;
+    }();
+    speech_("Search results. " + std::to_string(count) + " results. " + fxTcpReview(false));
+}
+void TrackNavigator::cancelFxTcpFilter() {
+    filterEditing_ = false;
+    filterBuffer_.clear();
+    speech_("Search cleared. " + fxTcpReview(false));
+}
+void TrackNavigator::clearFxTcpFilter() {
+    filterEditing_ = false; filterBuffer_.clear();
+    if (fxTcpListOpen_) { fxTcpGridFilter_.clear(); rebuildFxTcpParameterGrid(); }
+    else { fxTcpMainFilter_.clear(); rebuildFxTcp(true); }
+    speech_("Search cleared. " + fxTcpReview(false));
 }
 
 const TrackNavigator::FxTcpColumn* TrackNavigator::currentFxTcpColumn() const {
@@ -71,6 +193,7 @@ void TrackNavigator::rebuildFxTcp(bool preserveSelection) {
         if (param < 0 || param >= TrackFX_GetNumParams(track_, fx)) continue;
         char name[1024]{};
         if (TrackFX_GetParamName) TrackFX_GetParamName(track_, fx, param, name, sizeof(name));
+        if (!fxTcpMatchesSearch(name[0] ? name : "Parameter " + std::to_string(param + 1), fxTcpMainFilter_)) continue;
         fxTcpColumns_[static_cast<size_t>(fx)].parameters.push_back(
             {param, name[0] ? name : "Parameter " + std::to_string(param + 1)});
     }
@@ -92,6 +215,16 @@ void TrackNavigator::rebuildFxTcp(bool preserveSelection) {
                 if (params[static_cast<size_t>(i)].index == oldParam) { fxTcpRow_ = i + 1; break; }
         }
     }
+}
+
+std::string TrackNavigator::fxTcpValueSpeech() const {
+    const auto* column = currentFxTcpColumn();
+    const auto* parameter = currentFxTcpParameter();
+    if (!column || !parameter) return {};
+    char formatted[512]{};
+    if (TrackFX_GetFormattedParamValue)
+        TrackFX_GetFormattedParamValue(track_, column->fxIndex, parameter->index, formatted, sizeof(formatted));
+    return formatted[0] ? std::string(formatted) : "value unavailable";
 }
 
 std::string TrackNavigator::fxTcpReview(bool includeContext) const {
@@ -138,7 +271,7 @@ bool TrackNavigator::selectFxTcpPage() {
     page_ = Page::fxTcp;
     entries_.clear(); // F4 owns separate FX TCP value targets; discard stale F1/F2/F3 entries.
     valueMode_ = false;
-    fxTcpListOpen_ = false; fxTcpListEntries_.clear();
+    fxTcpListOpen_ = false; fxTcpListEntries_.clear(); fxTcpMainFilter_.clear(); fxTcpGridFilter_.clear();
     resetSelectionStroke();
     rebuildFxTcp(false);
     if (fxTcpColumns_.empty()) { page_ = Page::tracks; buildEntries(); speech_("No track FX"); return false; }
@@ -248,7 +381,7 @@ bool TrackNavigator::writeFxTcpValue(double normalized) {
     if (TrackFX_EndParamEdit) TrackFX_EndParamEdit(track_, column->fxIndex, param->index);
     Undo_EndBlock2(project_, "LReaParams: Track F4 FX TCP parameter", UNDO_STATE_FX);
     if (!ok) { speech_("FX parameter change refused"); return false; }
-    speech_(fxTcpReview(false));
+    speech_(fxTcpValueSpeech()); // FX Params: changes read only the new value.
     return true;
 }
 
@@ -271,8 +404,18 @@ void TrackNavigator::nudgeFxTcpValue(int direction, bool coarse) {
 }
 
 void TrackNavigator::handleFxTcpKey(const Key& k) {
+    if (filterEditing_) {
+        if (k.repeat) return;
+        if (k.vk == VK_RETURN) applyFxTcpFilter();
+        else if (k.vk == VK_ESCAPE || (k.ctrl && !k.shift && !k.alt && k.vk == 'F')) cancelFxTcpFilter();
+        return;
+    }
     // The parameter-selection grid owns its own keys, including F1/F2 grid size.
     if (fxTcpListOpen_) { handleFxTcpParameterGridKey(k); return; }
+    if (k.ctrl && !k.shift && !k.alt && k.vk == 'F') {
+        if (!k.repeat) toggleFxTcpFilter();
+        return;
+    }
     if (k.ctrl && k.shift && !k.alt && k.vk == 'M') {
         if (!k.repeat) openTrackMemories(false);
         return;
@@ -315,6 +458,7 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
     if (k.vk == VK_F3) { valueMode_ = false; selectPage(Page::receives); return; }
     if (k.vk == VK_ESCAPE) {
         if (valueMode_) { valueMode_ = false; speech_("Grid, " + fxTcpReview(false)); }
+        else if (!fxTcpMainFilter_.empty()) clearFxTcpFilter();
         else selectPage(Page::tracks);
         return;
     }
@@ -375,6 +519,12 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
         return;
     }
     if (valueMode_) return; // ordinary arrows do not navigate the active Value slider
+    if (!k.ctrl && !k.shift && k.alt && (k.vk == VK_HOME || k.vk == VK_END)) {
+        rebuildFxTcp(true);
+        const int height = fxTcpHeight();
+        if (height > 1) moveFxTcpRow((k.vk == VK_HOME ? 1 : height - 1) - fxTcpRow_);
+        return;
+    }
 
     // Re-query the TCP API after external FX / TCP configuration edits.
     // Reattach to the GUID and parameter ID, not a now-stale column index.

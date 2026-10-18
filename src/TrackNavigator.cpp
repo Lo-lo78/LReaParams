@@ -42,7 +42,7 @@ void TrackNavigator::end() noexcept {
     active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false;
     rangeEditing_ = false; resetMidiState();
     backgroundMode_ = false; clearAutomationConfirm_ = false; clearAutomationYes_ = false;
-    filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear(); fxTcpColumns_.clear(); fxTcpColumn_ = fxTcpRow_ = 0; fxTcpListOpen_ = false; fxTcpListEntries_.clear();
+    filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear(); fxTcpColumns_.clear(); fxTcpColumn_ = fxTcpRow_ = 0; fxTcpListOpen_ = false; fxTcpListEntries_.clear(); fxTcpVisibleColumns_.clear(); fxTcpMainFilter_.clear(); fxTcpGridFilter_.clear(); fxTcpListColumn_ = fxTcpListRow_ = 0;
 }
 
 bool TrackNavigator::begin() {
@@ -146,7 +146,8 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
             if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
             if (fxTcpSearchCharacter(k)) return true;
             if (k.ctrl && !k.shift && !k.alt &&
-                (k.vk == VK_RETURN || k.vk == VK_HOME || k.vk == VK_END)) return true;
+                (k.vk == VK_RETURN || k.vk == VK_HOME || k.vk == VK_END || k.vk == 'F')) return true;
+            if (!k.ctrl && k.alt && !k.shift && (k.vk == VK_HOME || k.vk == VK_END)) return true;
             if (k.ctrl || k.alt || k.shift) return false;
             switch (k.vk) {
                 case VK_F1: case VK_F2: case VK_F6: case VK_F4:
@@ -157,10 +158,12 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
             }
         }
         if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
+        if (k.ctrl && !k.shift && !k.alt && k.vk == 'F') return true;
         if (!valueMode_ && fxTcpSearchCharacter(k)) return true;
         if (!k.ctrl && k.alt && !k.shift &&
             (k.vk == VK_RETURN || k.vk == VK_LEFT || k.vk == VK_RIGHT ||
-             k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT)) return true;
+             k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT ||
+             k.vk == VK_HOME || k.vk == VK_END)) return true;
         if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_UP || k.vk == VK_DOWN)) return true;
         if (k.ctrl && !k.alt && !k.shift &&
             (k.vk == VK_TAB || k.vk == 'Q' || k.vk == VK_SPACE ||
@@ -742,7 +745,10 @@ std::string TrackNavigator::reviewLine() const {
             "Track Positions", "Volume Ranges"};
         return std::string(labels[col]) + ". " + item.label;
     }
-    if (page_ == Page::fxTcp) return (valueMode_ && !fxTcpListOpen_ ? "Value, " : "") + fxTcpReview(false);
+    if (page_ == Page::fxTcp) {
+        if (filterEditing_) return nativeTextLabel() + ", " + filterBuffer_;
+        return (valueMode_ && !fxTcpListOpen_ ? "Value, " : "") + fxTcpReview(false);
+    }
     // NVDA+Up in Grid reviews only the parameter and value, like FX Params.
     // Track/page names remain available via NVDA+T. Moving between tracks
     // announces the track name; Tab provides the full context.
@@ -817,7 +823,8 @@ std::wstring TrackNavigator::windowTitle() const {
     if (!active_) return L"Track Params";
     if (page_ == Page::fxTcp && !memoryManager_)
         return std::wstring(L"Track Params - ") + wideUtf8(trackName()) +
-            (fxTcpListOpen_ ? L" - FX parameter grid" : L" - FX TCP");
+            (fxTcpListOpen_ ? (fxTcpListVisibleOnly_ ? L" - Visible TCP parameters - Remove" : L" - FX parameter selection") : L" - FX TCP") +
+            (filterEditing_ ? L" - Filter" : !(fxTcpListOpen_ ? fxTcpGridFilter_ : fxTcpMainFilter_).empty() ? L" - Filter active" : L"");
     if (memoryManager_) {
         static constexpr const wchar_t* titles[] = {L"MIDI CC", L"Parameter Steps", L"Parameter Speech", L"Track Positions", L"Volume Ranges"};
         return std::wstring(L"Track Memories - ") + titles[static_cast<size_t>(std::clamp(memoryColumn_, 0, 4))];

@@ -40,7 +40,7 @@ public:
     // The extension binds this to the existing accessible keyboard window.
     bool nativeTextField() const noexcept { return active_ && (filterEditing_ || numericEditing_); }
     std::string nativeTextValue() const { return numericEditing_ ? numericBuffer_ : filterBuffer_; }
-    std::string nativeTextLabel() const { if (rangeEditing_) return "Volume range minimum and maximum dB";
+    std::string nativeTextLabel() const { if (page_ == Page::fxTcp && filterEditing_) return fxTcpListOpen_ ? "Filter FX parameter grid" : "Filter TCP FX parameters"; if (rangeEditing_) return "Volume range minimum and maximum dB";
         if (numericEditing_) return "Parameter value"; return page_ == Page::tracks ? "Filter tracks" :
         page_ == Page::sends ? "Filter sends" : "Filter receives"; }
     void setNativeText(const std::string& text) { if (numericEditing_) numericBuffer_ = text; else if (filterEditing_) filterBuffer_ = text; }
@@ -81,6 +81,14 @@ private:
     std::string fxTcpStepKey() const;
     bool writeFxTcpValue(double normalized);
     void nudgeFxTcpValue(int direction, bool coarse);
+    std::string fxTcpValueSpeech() const;
+    static bool fxTcpMatchesSearch(const std::string& label, const std::string& query);
+    void toggleFxTcpFilter();
+    void applyFxTcpFilter();
+    void cancelFxTcpFilter();
+    void clearFxTcpFilter();
+    std::string fxTcpActiveFilter() const;
+    bool fxTcpHasMatches(const std::string& query) const;
     // TEST56.2: names-only, FX Params-style grid for choosing TCP controls.
     struct FxTcpListEntry { int fxIndex = -1; int paramIndex = -1; GUID fxGuid{};
         std::string name; std::string parameterName; bool visible = false; };
@@ -91,10 +99,18 @@ private:
     void handleFxTcpParameterGridKey(const Key&);
     bool setFxTcpParameterVisible(int fxIndex, int paramIndex, bool visible);
     void commitFxTcpParameterGrid(bool keepOpen);
+    void rebuildFxTcpVisibleColumns(int preferFx = -1, int preferParam = -1);
+    void moveFxTcpVisibleColumn(int delta);
+    void moveFxTcpVisibleRow(int delta);
+    void syncFxTcpVisibleSelection();
     bool fxTcpParameterVisible(int fxIndex, int paramIndex) const;
     bool fxTcpListOpen_ = false, fxTcpListVisibleOnly_ = false;
     int fxTcpListFxIndex_ = -1, fxTcpListPosition_ = 0, fxTcpListGridHeight_ = 10;
     GUID fxTcpListFxGuid_{};
+    // In the Alt+Enter view one column belongs to each FX, as in F4.
+    std::vector<std::vector<int>> fxTcpVisibleColumns_;
+    int fxTcpListColumn_ = 0, fxTcpListRow_ = 0; // row zero is the FX header
+    std::string fxTcpMainFilter_, fxTcpGridFilter_;
     std::vector<FxTcpListEntry> fxTcpListEntries_;
     std::vector<FxTcpColumn> fxTcpColumns_;
     int fxTcpColumn_ = 0, fxTcpRow_ = 0;

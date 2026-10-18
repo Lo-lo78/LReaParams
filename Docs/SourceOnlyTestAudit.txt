@@ -1,1 +1,3 @@
 TEST56.3: source-only F4 key/edit contracts, legacy TEST56.1/56.2 and TEST55.10/12/13 plus Tools/audit.py passed. Full historical suite not completed (timeout); MSVC/CTest and REAPER/NVDA NOT RUN locally. GitHub Actions required.
+
+TEST56.4: targeted source checks TEST55.10/12/13 and TEST56.1/2/3/4 plus Tools/audit.py PASS; native C++/CTest/REAPER/NVDA NOT RUN. GitHub Actions required.

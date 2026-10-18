@@ -1,3 +1,9 @@
+## TEST56.4 — F4: concise Value speech, Ctrl+F, visible FX columns (source only)
+
+- Value speech only on change; Ctrl+F FX Params-compatible search; Alt+Home/End.
+- Alt+Enter visible grid mirrors the F4 FX columns; names-only parameter review; specific window title.
+- Historical F1/F2/F3, FX Params and .tp formats unchanged. Native validation through GitHub Actions only.
+
 ## TEST56.3 — F4 TCP keyboard and Value (source only)
 - F6 now reserved; visible TCP selection moved to Alt+Enter.
 - Cyclic letter/number search in F4 and selector; Shift reverses direction.
