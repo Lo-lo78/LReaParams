@@ -93,6 +93,9 @@
 // Native REAPER Track Controls enumeration (no chunk parsing).
 #define REAPERAPI_WANT_CountTCPFXParms
 #define REAPERAPI_WANT_GetTCPFXParm
+#define REAPERAPI_WANT_TrackFX_GetIOSize
+#define REAPERAPI_WANT_TrackFX_GetPinMappings
+#define REAPERAPI_WANT_TrackFX_SetPinMappings
 #define REAPERAPI_WANT_TrackFX_GetCount
 #define REAPERAPI_WANT_TrackFX_GetRecCount
 #define REAPERAPI_WANT_TakeFX_GetCount

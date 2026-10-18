@@ -1,0 +1,5 @@
+TEST56.10 source-only validation
+- 15/15 F5 static source contracts: PASS
+- TEST56.7, TEST56.8, TEST56.9, TEST56.9.1, TEST55.13: PASS
+- Tools/audit.py: PASS
+- C++ build, CTest and REAPER/NVDA runtime: NOT RUN (GitHub Actions only)

@@ -1,0 +1,8 @@
+TEST56.10.1 source-only validation
+- Ctrl+S / two-stage F5 routing removed: PASS
+- F5 direct Enter/Space and Delete routing contract: PASS
+- TEST56.10 F5 pin mapping contracts: PASS
+- TEST56.1-TEST56.9.1 F4 selected source regressions: PASS
+- TEST55.13 Track behavior contract: PASS
+- Tools/audit.py synthetic profile oracle / project audit: PASS
+- MSVC build, CTest, and REAPER/NVDA runtime: NOT RUN (GitHub Actions only)

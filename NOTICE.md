@@ -1,3 +1,5 @@
+TEST56.10.1: Removed redundant Ctrl+S two-stage Audio Pin Connector routing, including pending origin state, its helper and announcements. Enter/Space and Delete continue to edit the actual selected matrix cell with REAPER API readback and Undo. No local compilation; GitHub Actions only.
+
 TEST56.9.1: Correct F4 Fixed MIDI CC persistence. The TrackMemory writer AND native .tp parser now recognize scoped FxTcp identities; this fixes exceptions on first learn that closed the navigator and returned focus to REAPER TCP. Added focused error handling, native regression tests and GitHub Actions source check. Floating MIDI unchanged. No local compilation; MSVC and CTest run through GitHub Actions.
 
 TEST56.9: Final F4 cleanup. Ctrl+E accessible numeric editor with formatted host values when monotonic, raw host units fallback, FX GUID checks, no duplicated confirmation speech. Ctrl+Shift+T now controls F4 keyboard value announcements; discrete host step alignment and conservative JSFX integer fallback. F4 aliases and manual order intentionally excluded. Builds only through GitHub Actions; no local C++ compilation.

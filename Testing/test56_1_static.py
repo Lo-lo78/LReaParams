@@ -9,7 +9,7 @@ cmake = (root / 'CMakeLists.txt').read_text(encoding='utf-8')
 workflow = (root / '.github/workflows/build-windows.yml').read_text(encoding='utf-8')
 assert '#define REAPERAPI_WANT_CountTCPFXParms' in api
 assert '#define REAPERAPI_WANT_GetTCPFXParm' in api
-assert 'enum class Page { tracks, sends, receives, fxTcp }' in header
+assert 'enum class Page { tracks, sends, receives, fxTcp, pinAudio }' in header
 assert 'src/TrackNavigatorFxTcp.cpp' in cmake
 assert 'CountTCPFXParms(project_, track_)' in fx
 assert 'GetTCPFXParm(project_, track_, i, &fx, &param)' in fx

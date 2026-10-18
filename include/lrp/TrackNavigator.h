@@ -58,12 +58,24 @@ private:
             midiFollowsFader, midiMerge } type{};
     };
     struct TrackRow { MediaTrack* track{}; GUID guid{}; int projectIndex{}; };
-    enum class Page { tracks, sends, receives, fxTcp };
+    enum class Page { tracks, sends, receives, fxTcp, pinAudio };
     // TEST56.1: F4 is a view of native REAPER TCP parameters, not a copy of
     // the full FX parameter list. Each FX has a header, including empty FXs.
     struct FxTcpParameter { int index = -1; std::string name; };
     struct FxTcpColumn { int fxIndex = -1; GUID guid{}; std::string name;
         std::vector<FxTcpParameter> parameters; };
+    // TEST56.10: F5 Audio Pin Connector. The selected FX is resolved by GUID
+    // before every read/write; never trust an old chain index.
+    bool enterPinAudio();
+    void leavePinAudio();
+    void handlePinAudioKey(const Key&);
+    int pinAudioResolvedFx() const;
+    int pinAudioColumnCount() const noexcept { return pinAudioInputs_ + pinAudioOutputs_; }
+    std::string pinAudioReview(bool context) const;
+    bool pinAudioSelected(int column, int channel) const;
+    bool pinAudioSet(int column, int channel, bool selected);
+    void pinAudioMove(int column, int channel);
+    void pinAudioJumpSelected(int direction, int axis);
     void rebuildFxTcp(bool preserveSelection);
     bool selectFxTcpPage();
     void handleFxTcpKey(const Key& key);
@@ -121,6 +133,9 @@ private:
     int fxTcpListColumn_ = 0, fxTcpListRow_ = 0; // row zero is the FX header
     std::string fxTcpMainFilter_, fxTcpGridFilter_;
     std::vector<FxTcpListEntry> fxTcpListEntries_;
+    GUID pinAudioGuid_{};
+    int pinAudioInputs_ = 0, pinAudioOutputs_ = 0, pinAudioChannels_ = 2;
+    int pinAudioColumn_ = 0, pinAudioChannel_ = 0;
     std::vector<FxTcpColumn> fxTcpColumns_;
     int fxTcpColumn_ = 0, fxTcpRow_ = 0;
     static constexpr int detailHeight = 14;

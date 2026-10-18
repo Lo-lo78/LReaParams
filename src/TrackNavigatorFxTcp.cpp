@@ -827,6 +827,10 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
         }
         return;
     }
+    if (!k.ctrl && !k.alt && !k.shift && k.vk == VK_F5) {
+        if (!k.repeat) enterPinAudio();
+        return;
+    }
     if (k.vk == VK_F4) return;
     if (k.vk == VK_F1) { valueMode_ = false; selectPage(Page::tracks); return; }
     if (k.vk == VK_F2) { valueMode_ = false; selectPage(Page::sends); return; }

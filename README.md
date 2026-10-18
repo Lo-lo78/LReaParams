@@ -1,3 +1,7 @@
+> **TEST56.10.1 — F5 semplificato:** rimosso Ctrl+S e tutto lo stato per il collegamento in due passaggi. Invio/Spazio collega o scollega la cella corrente; Canc la scollega. Nessun cambiamento alle API audio, al focus, all’Undo o alle altre sezioni. Compilazione esclusivamente tramite GitHub Actions.
+
+> **TEST56.10 — F5 Audio Pin Connector (prima fase):** griglia di routing dei pin audio per FX selezionato in F4, con lettura e modifica per canale, Undo, ricerca dei collegamenti attivi e ritorno a F4. L'FX è risolto tramite GUID prima delle operazioni. F6 resta riservato. [Guida](Docs/TEST56_10_F5_AUDIO_PIN_CONNECTOR.md). **Nessuna compilazione locale; soltanto GitHub Actions.**
+
 > **TEST56.9.1 — F4 Fixed CC repair:** corrected the project `.tp` writer to accept
 > `FxTcp|{trackGUID}|{fxGUID}|parameter` identities for both MIDI mapping and
 > Ctrl+T speech. The previous writer threw during learn and stopped Track
