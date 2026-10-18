@@ -842,7 +842,10 @@ void FxNavigator::resetCurrentToDefault() {
         }catch(const std::exception&) {speech_("Structural default invalid. No changes");return;}
         speech_("No default for this parameter");return;
     }
-    const auto defaults=fxOrder_.defaultValues();
+    auto defaults=fxOrder_.defaultValues();
+    // Legacy names may change with a synthesizer preset. Only use ordinal
+    // recovery when every physical parameter has been validated together.
+    if(defaults.size()!=static_cast<size_t>(count_))defaults=fxOrder_.defaultValuesByIndex();
     const auto it=defaults.find(parameter_);
     if(it==defaults.end()) {speech_("No default for this parameter");return;}
     Undo_BeginBlock2(project_);
@@ -860,13 +863,18 @@ bool FxNavigator::resetAllToDefault(bool announceResult) {
         if(ok) {auto& compare=compareState();compare.armed=false;if(announceResult)speech_("Default restored. "+currentParameterSpeech());}
         return ok;
     }
-    const auto values=fxOrder_.defaultValues();
-    if(values.empty()){speech_("No default snapshot");return false;}
-    // A default is only safe when it exactly describes the current set of
-    // native parameters. Reject missing/changed IDs BEFORE any audio write.
-    if(static_cast<int>(values.size())!=count_ ||
-       static_cast<int>(values.size())!=fxOrder_.defaultValueCount() ||
-       (take_?TakeFX_GetNumParams(take_,fx_):TrackFX_GetNumParams(track_,fx_))!=count_) {
+    auto values=fxOrder_.defaultValues();
+    const int liveCount=take_?TakeFX_GetNumParams(take_,fx_):TrackFX_GetNumParams(track_,fx_);
+    if(!fxOrder_.hasDefaultValues()){speech_("No default snapshot");return false;}
+    // A plugin can expose preset-dependent parameter *labels*. The saved
+    // .fx is already tied to the plugin identity: on a complete, unchanged
+    // physical layout, recover the values using the native parameter IDs.
+    // Never accept a partial, duplicate, reordered or changed-count layout.
+    if(liveCount!=count_ || fxOrder_.defaultValueCount()!=count_) {
+        speech_("Default parameter count changed. No changes");return false;
+    }
+    if(static_cast<int>(values.size())!=count_)values=fxOrder_.defaultValuesByIndex();
+    if(static_cast<int>(values.size())!=count_) {
         speech_("Default parameter identities changed. No changes");return false;
     }
     std::vector<double> previous(static_cast<size_t>(count_));

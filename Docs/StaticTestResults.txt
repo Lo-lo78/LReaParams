@@ -1,6 +1,13 @@
-TEST55.7 source verification
-PASS Testing/test55_7_static.py
-PASS Testing/test55_6_static.py
-PASS Testing/test55_5_static.py
+TEST55.8 source verification
 PASS Tools/audit.py
-No native compilation. Complete historical static suite NOT claimed.
+PASS Testing/test18_static.py
+PASS Testing/test23_static.py
+PASS Testing/test25_static.py
+PASS Testing/test45_static.py
+PASS Testing/test47_static.py
+PASS Testing/test55_4_static.py
+PASS Testing/test55_5_static.py
+PASS Testing/test55_6_static.py
+PASS Testing/test55_7_static.py
+PASS Testing/test55_8_static.py
+No local compilation. Full historical static suite not claimed. MSVC and native C++ tests will run in GitHub Actions.

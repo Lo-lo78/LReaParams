@@ -1,3 +1,11 @@
+## TEST55.8 — FX Default restoration (source only)
+
+- Fixed legacy saved Default values being incorrectly rejected when synth presets change parameter names without changing native parameter IDs and count. Complete/safe index fallback; reject actual reorders and changed counts.
+- Enter on Default in FX Memories restores sound and returns to normal FX grid without erasing other FX memories.
+- Delete on Default still requires a Yes/No confirmation for restore + clear.
+- Original/Compare F8, Track Params, all .fx/.tp mappings and accessibility shortcuts remain unchanged.
+- Native MSVC compilation and REAPER/NVDA audible test not performed locally. GitHub Actions must verify.
+
 ## TEST55.7 — F8 Original al primo ingresso (source only)
 - L’ingresso cattura l’attuale stato dell’FX senza applicarlo. Original/Compare sopravvivono a uscita e rientro nello stesso FX durante la sessione e sono separati per istanza. F8 doppio continua a essere l’unico aggiornamento esplicito del riferimento. Le cache dei progetti chiusi vengono scartate. [Guida](TEST55_7_FIRST_ENTRY_ORIGINAL.md). Build e runtime da verificare.
 

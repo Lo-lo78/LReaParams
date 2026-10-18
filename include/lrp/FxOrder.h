@@ -39,6 +39,11 @@ public:
     bool hasDefaultValues() const noexcept;
     int defaultValueCount() const noexcept;
     std::map<int,double> defaultValues() const;
+    // Legacy FX profiles store a display name alongside each physical index.
+    // Some synths change these labels with presets. For a complete snapshot
+    // with unchanged parameter count, recover by original native index;
+    // reject malformed/duplicate IDs and recognizable reorders.
+    std::map<int,double> defaultValuesByIndex() const;
     bool hasStructuralDefault() const noexcept;
     bool saveDefaultValues(const std::map<int,double>& values);
     std::map<int, std::string> ccLinks; // Lua cc_link_v1::param::n entries

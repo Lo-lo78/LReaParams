@@ -126,6 +126,8 @@ jobs:
         run: python Testing/test55_6_static.py
       - name: TEST55.7 initial Original snapshot and per-instance re-entry (source only)
         run: python Testing/test55_7_static.py
+      - name: TEST55.8 FX Default recovery and memory return (source only)
+        run: python Testing/test55_8_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

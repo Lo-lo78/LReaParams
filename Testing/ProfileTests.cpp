@@ -132,6 +132,45 @@ int main(int argc, char** argv) {
         FxOrder cleared;
         cleared.load(profileRoot,"Synthetic edit test",4,[](int id){return id==compareParamIndex?std::string("Compare"):"Parameter "+std::to_string(id);});
         check(!cleared.ccLinks.count(1),"Deleted hidden CC reappeared");
+        // TEST55.8: a legacy Default stores native parameter IDs and names.
+        // Synth patches can change displayed names while keeping all physical
+        // controls unchanged. The strict reader must not silently pretend the
+        // snapshot disappeared, and the ordinal fallback must validate every ID.
+        const auto defaultRoot = root / L"dynamic-defaults";
+        const auto labelsOriginal=[](int id){return std::string("Parameter ")+std::to_string(id);};
+        const auto labelsDynamic=[](int id){return id==1?std::string("Cutoff (Patch B)"):
+                                               std::string("Parameter ")+std::to_string(id);};
+        FxOrder savedDefault;
+        savedDefault.load(defaultRoot,"Dynamic Synth VST3",3,labelsOriginal);
+        check(savedDefault.saveDefaultValues({{0,0.1},{1,0.25},{2,0.75}}),"Could not save FX Default fixture");
+        FxOrder renamedDefault;
+        renamedDefault.load(defaultRoot,"Dynamic Synth VST3",3,labelsDynamic);
+        check(renamedDefault.defaultValues().size()==2,
+              "Strict FX Default reader failed to detect label drift");
+        const auto ordinalDefault=renamedDefault.defaultValuesByIndex();
+        check(ordinalDefault.size()==3 && ordinalDefault.at(1)==0.25 && ordinalDefault.at(2)==0.75,
+              "Changed synth labels lost a complete Default snapshot");
+        FxOrder changedCount;
+        changedCount.load(defaultRoot,"Dynamic Synth VST3",4,labelsDynamic);
+        check(changedCount.defaultValuesByIndex().empty(),"Changed FX parameter count accepted old Default");
+        FxOrder reordered;
+        reordered.load(defaultRoot,"Dynamic Synth VST3",3,[](int id){
+            return std::string("Parameter ")+std::to_string(id==0?1:id==1?0:id);
+        });
+        check(reordered.defaultValuesByIndex().empty(),"Reordered parameter labels accepted old Default");
+        // Old profile rows can be malformed or duplicated: never apply only
+        // the valid subset, since the setter sequence must be all-or-nothing.
+        FxOrder malformed;
+        malformed.load(root/L"invalid-defaults","Invalid Defaults",3,labelsOriginal);
+        check(malformed.saveDefaultRows({"0\tParameter 0\t0.1","0\tParameter 0\t0.2","2\tParameter 2\t0.3"}),
+              "Failed preparing malformed Default rows");
+        check(malformed.defaultValuesByIndex().empty(),"Duplicate Default native parameter ID accepted");
+        // The ordinal-recovery reader is passive; opening a saved Default
+        // must not rewrite or regenerate the original profile.
+        FxOrder reopenedDefault;
+        reopenedDefault.load(defaultRoot,"Dynamic Synth VST3",3,labelsDynamic);
+        check(reopenedDefault.defaultValuesByIndex()==ordinalDefault,
+              "Default restoration eligibility changed after reload");
         // Real FxOrder profile migration regression: a saved 0.0.43 profile
         // may append every ReaEQ virtual after the Global Gain. Loading it
         // MUST restore the Lua per-band layout WITHOUT rewriting user data.

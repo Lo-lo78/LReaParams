@@ -1,3 +1,5 @@
+> **TEST55.8 / LReaParams 0.0.55:** risolto il ripristino dei Default FX con nomi dei parametri variabili; Invio su Default ripristina il suono e ritorna alla griglia senza cancellare le altre memorie. Canc continua a richiedere conferma per il reset completo. [Guida](Docs/TEST55_8_FX_DEFAULT_RESTORE.md). Nessuna compilazione locale.
+
 > **TEST55.7 / LReaParams 0.0.55:** Original catturato al **primo ingresso** nell’istanza FX, senza cambiare il suono; sopravvive a Esc/Ctrl+Tab e al ritorno nello stesso FX durante la sessione. F8 singolo confronta, doppio aggiorna Original. [Guida e collaudo](Docs/TEST55_7_FIRST_ENTRY_ORIGINAL.md). Nessuna compilazione locale.
 
 > **TEST55.6 / LReaParams 0.0.55:** F8 in FX Params è Compare A/B. Singolo alterna Original e Compare; doppio conferma il suono attuale come nuovo Original senza cambiare lato. L'ingresso nell'FX non applica snapshot e mantiene il suono reale del progetto. Compare non è più un parametro; Ctrl+Maiusc+M conserva i gestori memorie. [Guida e collaudo](Docs/TEST55_6_F8_COMPARE_AB.md). Nessuna compilazione locale.

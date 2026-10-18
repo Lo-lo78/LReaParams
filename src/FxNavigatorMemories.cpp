@@ -165,11 +165,25 @@ void FxNavigator::memoryLoad(bool toEdit) {
     if(memoryCol_==6) {
         if(toEdit) {speech_("Default has no F7 editor. Press Enter to restore");return;}
         if(!defaultConfirm_) {
-            defaultConfirm_=true;defaultYes_=false;speakMemory();return;
+            // Enter on Default means LOAD the stored sound, not DELETE all
+            // other memories. Always return to the normal FX parameter grid.
+            if(!resetAllToDefault(false))return;
+            memoryReturnF7_=false;
+            memoryReturnF7Filter_.clear();
+            memoryReturnGroup_=0;
+            memoryReturnParam_=parameter_;
+            memoryReturnPosition_=-1;
+            fxOrder_.custom=false;
+            // Also enter the FX grid when invoked via the standalone
+            // REAPER "FX Memories" action.
+            memoryStandalone_=false;
+            memoryExit(false);
+            speech_("Default restored. "+currentParameterSpeech());
+            return;
         }
         defaultConfirm_=false;
-        // Same reset engine as Ctrl+Shift+Backspace. If it cannot restore
-        // (notably structural ReaEQ), remain in F8 with all data intact.
+        // Delete on Default retains the explicit Yes/No confirmation and
+        // clears the other FX memories only after a successful restore.
         if(!resetAllToDefault(false))return;
         fxOrder_.paramSlots.clear();fxOrder_.groups.clear();fxOrder_.groupNames.clear();fxOrder_.ccLinks.clear();
         fxOrder_.setExtraValue("cc_runtime_fixed_map_enabled_v1","");

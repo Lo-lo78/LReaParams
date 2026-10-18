@@ -502,10 +502,44 @@ std::map<int,double> FxOrder::defaultValues() const {
             if(offset!=parts[0].size()||id<0||id>=count_)continue;
             offset=0;const double norm=std::stod(parts[2],&offset);
             if(offset!=parts[2].size()||!std::isfinite(norm)||norm<0||norm>1)continue;
-            if(paramName_(id)!=parts[1])continue;
+            // The writer normalizes control labels to a single line. Match
+            // that same representation here, not the host's raw whitespace.
+            if(oneLine(paramName_(id))!=parts[1])continue;
             values[id]=norm;
         } catch(...) {}
     }
+    return values;
+}
+std::map<int,double> FxOrder::defaultValuesByIndex() const {
+    std::map<int,double> values;
+    const auto it=profile_.sections.find("DefaultValues");
+    if(it==profile_.sections.end() || count_<=0)return {};
+    std::multiset<std::string> savedNames, currentNames;
+    bool namesChanged=false;
+    for(const auto& row:it->second) {
+        const auto parts=split(row,'\t');
+        // Structural ReaEQ defaults and incomplete/unsupported legacy rows
+        // cannot be safely restored using physical parameter indices.
+        if(parts.size()!=3 || parts[0]=="META")return {};
+        try {
+            size_t end=0;
+            const int id=std::stoi(parts[0],&end,10);
+            if(end!=parts[0].size() || id<0 || id>=count_ || values.count(id))return {};
+            end=0;
+            const double value=std::stod(parts[2],&end);
+            if(end!=parts[2].size() || !std::isfinite(value) || value<0 || value>1)return {};
+            values.emplace(id,value);
+            const auto current=oneLine(paramName_(id));
+            const auto stored=oneLine(parts[1]);
+            namesChanged |= stored!=current;
+            savedNames.insert(stored);
+            currentNames.insert(current);
+        }catch(const std::exception&) {return {};}
+    }
+    if(values.size()!=static_cast<size_t>(count_))return {};
+    // If all labels are still present but attached to other IDs, the synth
+    // reordered its parameters. Do not silently apply the old audio values.
+    if(namesChanged && savedNames==currentNames)return {};
     return values;
 }
 bool FxOrder::hasStructuralDefault() const noexcept {

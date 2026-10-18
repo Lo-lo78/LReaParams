@@ -1,3 +1,9 @@
+## TEST55.8 — FX Default restoration
+- Complete index-verified fallback for preset-dependent parameter names; no snapshot overwrites.
+- Enter on FX Memories > Default restores and returns to Plugin Order without clearing unrelated memories.
+- Delete remains the guarded clear/reset path; structural ReaEQ default unchanged.
+- Source-only; GitHub Actions required.
+
 ## 0.0.55 — TEST55.7
 - Acquisizione A/B alla prima selezione dell’istanza FX, con conservazione per la sessione anche dopo Esc/Ctrl+Tab. Evitata la ricattura involontaria su rientro; cleanup dei progetti chiusi. F8 invariato (singolo A/B, doppio aggiorna Original). Nessuna modifica ai profili.
 

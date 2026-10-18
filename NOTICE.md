@@ -1,2 +1,1 @@
-LReaParams 0.0.55 — TEST55.6: FX F8 Compare A/B, double-F8 Original commit, no virtual Compare parameter.
-Source-only for GitHub Actions; no local C++ compilation. Parameter Library excluded.
+LReaParams 0.0.55 — TEST55.8: repair Default FX restoration for synths with preset-dependent parameter labels and return from memory manager to the FX grid on Enter. Source only. Compile exclusively in GitHub Actions. Parameter Library remains excluded.
