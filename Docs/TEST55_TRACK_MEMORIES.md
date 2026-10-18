@@ -25,7 +25,7 @@ In F1, **Ctrl+Maiusc+F1…F12** salva la traccia nello slot scelto, se vuoto. **
 
 ## Range Volume
 
-Su Volume in F1, F2 o F3 **Ctrl+Maiusc+I** apre un campo di testo NVDA. Inserire due dB separati da virgola, ad esempio `-60,12`, e confermare con Invio. Limiti consentiti da -150 a +12 dB, con minimo inferiore al massimo. Esc annulla. Il range influenza i passi di Volume e gli estremi Home/End, senza modificare automaticamente il volume della traccia. Una preferenza non definita mantiene il comportamento precedente della 0.0.54.4.
+Su Volume in F1, F2 o F3 **Ctrl+Maiusc+I** apre un campo di testo NVDA. Inserire due dB separati da virgola, ad esempio `-60,12`, e confermare con Invio. Limiti consentiti da -150 a +12 dB, con minimo inferiore al massimo. Esc annulla. Il range limita tutte le modifiche Volume effettuate da LReaParams (tastiera, modalità Value, Ctrl+E, MIDI Fixed/Floating), senza modificare automaticamente il volume della traccia. Tab sul Volume legge anche il range memorizzato. Vedere TEST55_2_F8_VOLUME_RANGE.md. Una preferenza non definita mantiene il comportamento precedente della 0.0.54.4.
 
 ## Verifiche prioritarie in REAPER
 

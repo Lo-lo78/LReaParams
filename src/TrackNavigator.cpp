@@ -114,7 +114,8 @@ bool TrackNavigator::contextUnchanged() const {
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.altGr) return false;
     if (memoryManager_) {
-        if (k.ctrl || k.shift) return false;
+        if (k.shift) return false;
+        if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END);
         if (k.alt) return k.vk == VK_F8 || k.vk == VK_LEFT || k.vk == VK_RIGHT;
         switch (k.vk) {
             case VK_ESCAPE: case VK_F8: case VK_TAB: case VK_RETURN: case VK_DELETE:
@@ -434,6 +435,14 @@ void TrackNavigator::put(const Entry& e, double value) {
         e.type == Entry::receiveCount || e.type == Entry::fxCount || e.type == Entry::midiMerge) {
         speech_("Read only"); return;
     }
+    if (e.type == Entry::volume) {
+        // The project's Ctrl+Shift+I range is authoritative for every write
+        // path, not just arrow nudges and Home/End: MIDI, numeric edits and
+        // Value must never circumvent the configured limits.
+        const auto range = memory_.volumeRange(page_ == Page::tracks ? "Track" :
+            page_ == Page::sends ? "Sends" : "Receives");
+        value = amp(std::clamp(db(value), range.first, range.second));
+    }
     if (get(e) == value) return; // silent boundary: no change
     std::string parm = e.parm;
     double raw = value;
@@ -648,7 +657,10 @@ std::string TrackNavigator::reviewLine() const {
     if (memoryManager_) {
         if (memoryItems_.empty()) return "Track Memories. No entries";
         const auto& item = memoryItems_[static_cast<size_t>(memoryRow_)];
-        return item.label;
+        const int col = std::clamp(memoryColumn_, 0, 4);
+        static constexpr const char* labels[] = {"MIDI CC", "Parameter Steps", "Parameter Speech",
+            "Track Positions", "Navigation Memory"};
+        return std::string(labels[col]) + ". " + item.label;
     }
     // NVDA+Up in Grid reviews only the parameter and value, like FX Params.
     // Track/page names remain available via NVDA+T. Moving between tracks
@@ -951,7 +963,13 @@ void TrackNavigator::handle(const Key& k) {
             const std::string page = page_ == Page::tracks ? "Track" : page_ == Page::sends ? "Sends" : "Receives";
             const auto dot = id.find('.');
             const std::string bare = dot == std::string::npos ? id : id.substr(dot + 1);
-            std::string info = currentParameterSpeech() + ". Step " + std::to_string(memory_.step(id)) +
+            std::string info = currentParameterSpeech();
+            if (const Entry* entry = current(); entry && entry->type == Entry::volume) {
+                const auto limits = memory_.volumeRange(page);
+                info += ". Volume range " + num(limits.first) + " to " +
+                    num(limits.second) + " dB";
+            }
+            info += ". Step " + std::to_string(memory_.step(id)) +
                 (memory_.valueSpeech(id) ? ". Value speech on" : ". Value speech off");
             if (ccSpeechSupported()) {
                 info += memory_.ccSpeech(page, bare) ? ". MIDI speech on" : ". MIDI speech off";

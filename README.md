@@ -1,3 +1,5 @@
+> **TEST55.2 / LReaParams 0.0.55:** Track Memories ora annuncia la prima voce, salta le categorie vuote e mantiene silenziosi i bordi come FX Memories. Ctrl+Maiusc+I applica il Volume range del `.tp` a tastiera, Value, Ctrl+E e MIDI CC/pickup; Tab comunica i limiti. [Guida TEST55.2](Docs/TEST55_2_F8_VOLUME_RANGE.md). Nessuna compilazione locale.
+
 > **TEST55.1:** risolti due errori di compilazione MSVC C3538 in `src/TrackNavigatorMemories.cpp` (dichiarazioni `auto` con tipi diversi). Nessuna modifica funzionale rispetto alla TEST55; compilazione esclusivamente via GitHub Actions.
 
 > **TEST55 / LReaParams 0.0.55:** Track Memories operativo con Alt+F8 e azione REAPER, CC Fixed/Step/parlato/12 posizioni/posizioni F1-F3 nel `.tp` del progetto; Ctrl+Maiusc+I range Volume. Non compila localmente; [guida](Docs/TEST55_TRACK_MEMORIES.md).

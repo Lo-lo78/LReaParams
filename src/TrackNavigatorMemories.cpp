@@ -114,6 +114,15 @@ bool TrackNavigator::openTrackMemories(bool standalone) {
     memoryManager_ = true;
     memoryColumn_ = memoryRow_ = 0;
     rebuildMemoryList();
+    // Mirror FX Memories: open on the first populated column rather than
+    // silently landing on an empty MIDI list. Announce the first item once.
+    while (memoryColumn_ < 4 && memoryItems_.empty()) {
+        ++memoryColumn_;
+        rebuildMemoryList();
+    }
+    if (!standalone) speakMemory("Track Memories");
+    // The standalone action gets its single initial announcement from
+    // Extension::launchNavigator -> announceTitle(), as FX Memories does.
     return true;
 }
 void TrackNavigator::rebuildMemoryList() {
@@ -122,8 +131,11 @@ void TrackNavigator::rebuildMemoryList() {
         for (const auto* group : trackPages) {
             for (const auto& entry : memory_.ccLinks(group)) {
                 if (entry.second.empty()) continue;
+                const auto comma = entry.second.find(',');
+                const std::string controller = comma == std::string::npos ? "CC " + entry.second :
+                    "Channel " + entry.second.substr(0, comma) + ", CC " + entry.second.substr(comma + 1);
                 memoryItems_.push_back({std::string(group) + "." + entry.first,
-                    std::string(group) + ", " + entry.first + ", CC " + entry.second,
+                    std::string(group) + ", " + entry.first + ", " + controller,
                     entry.second, 0});
             }
         }
@@ -186,7 +198,10 @@ void TrackNavigator::memoryExit() {
 void TrackNavigator::memoryAdjustStep(int delta) {
     if (memoryItems_.empty() || memoryColumn_ != 1) return;
     const auto id = memoryItems_[static_cast<size_t>(memoryRow_)].key;
-    memory_.setStep(id, std::clamp(memory_.step(id) + delta, -10, 10));
+    const int before = memory_.step(id);
+    const int next = std::clamp(before + delta, -10, 10);
+    if (next == before) return; // Silent step limit, like FX Params.
+    memory_.setStep(id, next);
     memory_.flush();
     stepScale_ = memory_.step(parameterKey());
     rebuildMemoryList();
@@ -195,6 +210,7 @@ void TrackNavigator::memoryAdjustStep(int delta) {
 void TrackNavigator::memoryDelete() {
     if (memoryItems_.empty()) { speakMemory(); return; }
     const auto item = memoryItems_[static_cast<size_t>(memoryRow_)];
+    const int removedColumn = memoryColumn_;
     if (memoryColumn_ == 0) {
         const auto dot = item.key.find('.');
         if (dot == std::string::npos) return;
@@ -220,7 +236,25 @@ void TrackNavigator::memoryDelete() {
     memory_.flush();
     const auto label = item.label;
     rebuildMemoryList();
-    speech_((memoryColumn_ == 0 || memoryColumn_ == 3 ? "Deleted. " : "Reset. ") + label);
+    if (memoryItems_.empty()) {
+        const int oldColumn = memoryColumn_;
+        bool moved = false;
+        for (int c = oldColumn + 1; c < 5; ++c) {
+            memoryColumn_ = c; memoryRow_ = 0; rebuildMemoryList();
+            if (!memoryItems_.empty()) { moved = true; break; }
+        }
+        if (!moved) {
+            for (int c = oldColumn - 1; c >= 0; --c) {
+                memoryColumn_ = c; memoryRow_ = 0; rebuildMemoryList();
+                if (!memoryItems_.empty()) { moved = true; break; }
+            }
+        }
+        if (!moved) { memoryColumn_ = oldColumn; memoryRow_ = 0; rebuildMemoryList(); }
+    }
+    speech_((removedColumn == 0 || removedColumn == 3 ? "Deleted. " : "Reset. ") +
+        label + ". " + (memoryItems_.empty() ? "No memories" :
+        std::string(columnNames[static_cast<size_t>(memoryColumn_)]) + ". " +
+        memoryItems_[static_cast<size_t>(memoryRow_)].label));
 }
 void TrackNavigator::memoryActivate() {
     if (memoryItems_.empty()) { speakMemory(); return; }
@@ -264,25 +298,54 @@ void TrackNavigator::handleMemory(const Key& k) {
     if (k.repeat && (k.vk == VK_RETURN || k.vk == VK_DELETE || k.vk == VK_F8 || k.vk == VK_ESCAPE)) return;
     if (k.vk == VK_ESCAPE || k.vk == VK_F8) { memoryExit(); return; }
     if (k.vk == VK_TAB) { speakMemory(); return; }
+    if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_HOME || k.vk == VK_END)) {
+        const int step = k.vk == VK_HOME ? 1 : -1;
+        for (int c = step > 0 ? 0 : 4; c >= 0 && c < 5; c += step) {
+            const int savedColumn = memoryColumn_, savedRow = memoryRow_;
+            memoryColumn_ = c;
+            memoryRow_ = step > 0 ? 0 : 1000000;
+            rebuildMemoryList();
+            if (!memoryItems_.empty()) {
+                if (savedColumn != memoryColumn_ || savedRow != memoryRow_) speakMemory();
+                return;
+            }
+            memoryColumn_ = savedColumn; memoryRow_ = savedRow;
+        }
+        return;
+    }
     if (k.vk == VK_RETURN) { memoryActivate(); return; }
     if (k.vk == VK_DELETE) { memoryDelete(); return; }
     if (k.alt && (k.vk == VK_LEFT || k.vk == VK_RIGHT)) {
         memoryAdjustStep(k.vk == VK_LEFT ? -1 : 1); return;
     }
     if (k.vk == VK_LEFT || k.vk == VK_RIGHT) {
-        memoryColumn_ = std::clamp(memoryColumn_ + (k.vk == VK_LEFT ? -1 : 1), 0, 4);
-        memoryRow_ = 0;
-        rebuildMemoryList(); speakMemory(); return;
+        // Same silent boundaries and empty-column skipping as FX Memories F8.
+        // Preserve the current row where possible when changing categories.
+        const int step = k.vk == VK_LEFT ? -1 : 1;
+        const int previousColumn = memoryColumn_;
+        const int previousRow = memoryRow_;
+        for (int next = previousColumn + step; next >= 0 && next < 5; next += step) {
+            memoryColumn_ = next;
+            memoryRow_ = previousRow;
+            rebuildMemoryList();
+            if (!memoryItems_.empty()) { speakMemory(); return; }
+        }
+        memoryColumn_ = previousColumn;
+        memoryRow_ = previousRow;
+        rebuildMemoryList();
+        return; // Silent at the first/last populated column.
     }
     if (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT ||
         k.vk == VK_HOME || k.vk == VK_END) {
-        if (memoryItems_.empty()) { speakMemory(); return; }
+        if (memoryItems_.empty()) return;
         const int last = static_cast<int>(memoryItems_.size()) - 1;
+        const int previous = memoryRow_;
         if (k.vk == VK_HOME) memoryRow_ = 0;
         else if (k.vk == VK_END) memoryRow_ = last;
         else memoryRow_ = std::clamp(memoryRow_ + (k.vk == VK_UP ? -1 :
             k.vk == VK_DOWN ? 1 : k.vk == VK_PRIOR ? -5 : 5), 0, last);
-        speakMemory();
+        if (memoryRow_ != previous) speakMemory(); // Silent on a boundary.
+        return;
     }
 }
 } // namespace lrp

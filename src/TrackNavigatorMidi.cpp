@@ -119,11 +119,13 @@ void TrackNavigator::applyMidi(const std::string& section, const std::string& ke
     if (!target) return;
     const bool binary = target->type == Entry::flag || target->type == Entry::solo;
     const double before = get(*target);
-    // The same 0..1 pickup range is used for Fixed and Floating controllers.
-    // Volumes are in decibels (-60..+12); mute/solo/phase are switches.
-    const auto norm = [target](double v) {
+    // Fixed and Floating CC share the project's real Volume range. The
+    // normalized pickup must use precisely the same span as the CC mapping.
+    const auto volumeLimits = memory_.volumeRange(section);
+    const auto norm = [target, volumeLimits](double v) {
         if (target->type == Entry::volume)
-            return std::clamp((v <= 0 ? -60.0 : 20.0 * std::log10(v)) / 72.0 + 60.0 / 72.0, 0.0, 1.0);
+            return std::clamp(((v <= 0 ? -150.0 : 20.0 * std::log10(v)) - volumeLimits.first) /
+                (volumeLimits.second - volumeLimits.first), 0.0, 1.0);
         if (target->type == Entry::pan || target->type == Entry::width)
             return std::clamp((v + 1.0) / 2.0, 0.0, 1.0);
         return std::clamp(v, 0.0, 1.0);
@@ -133,8 +135,11 @@ void TrackNavigator::applyMidi(const std::string& section, const std::string& ke
     if (!binary && !pickup.allows(value, norm(before))) return;
     const double fraction = value / 127.0;
     const double next = binary ? (value >= 64 ? 1.0 : 0.0) :
-        target->type == Entry::volume ? (fraction <= 0.0 ? 0.0 :
-            std::pow(10.0, (-60.0 + 72.0 * fraction) / 20.0)) : fraction * 2.0 - 1.0;
+        target->type == Entry::volume ?
+            (fraction <= 0.0 && volumeLimits.first <= -150.0 ? 0.0 :
+                std::pow(10.0, (volumeLimits.first +
+                    (volumeLimits.second - volumeLimits.first) * fraction) / 20.0)) :
+            fraction * 2.0 - 1.0;
     if (std::abs(next - before) < 0.000001) return;
     suppressPutSpeech_ = true;
     try { put(*target, next); } catch (...) { suppressPutSpeech_ = false; throw; }

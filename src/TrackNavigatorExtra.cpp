@@ -135,6 +135,16 @@ void TrackNavigator::commitNumericEdit() {
         switch (e->type) {
             case Entry::volume:
                 if (typed < -150.0 || typed > 48.0 || unit == "%") { speech_("Volume range -150 to 48 dB"); return; }
+                {
+                    const auto limits = memory_.volumeRange(page_ == Page::tracks ? "Track" :
+                        page_ == Page::sends ? "Sends" : "Receives");
+                    if (typed < limits.first || typed > limits.second) {
+                        speech_("Volume outside configured range. Minimum " +
+                            std::to_string(limits.first) + " dB, maximum " +
+                            std::to_string(limits.second) + " dB");
+                        return;
+                    }
+                }
                 raw = typed <= -150 ? 0.0 : std::pow(10.0, typed / 20.0); break;
             case Entry::pan: case Entry::width:
                 if (typed < -100 || typed > 100) { speech_("Range -100 to 100 percent"); return; }
