@@ -1,3 +1,11 @@
+## TEST55.9 + TEST55.10 — final pass on Track Params F1/F2/F3 (source-only)
+
+- Ctrl+Q now parks **Track Params MIDI** in a separate background-only navigator and restores ordinary TCP focus. Fixed CC maps continue to target exact saved track GUIDs and outgoing routes; Floating CC keeps the current parameter context from before Ctrl+Q. A fresh sequence baseline blocks stale events. Both FX and Track background MIDI are stopped by the existing stop-background-MIDI REAPER action; no two active navigators share a controller event.
+- **Ctrl+Maiusc+Alt+A** is unified in FX and Track Params. Both require Y/Enter confirmation (N/Esc cancels). FX scope: all envelopes belonging to the current FX (track FX or Take FX). Track scope: current track envelopes including FX, plus outgoing send envelopes resolved in destination AUXRECV. Points and automation items are preserved; ACT/VIS are disabled, no envelope is deleted. A single REAPER Undo block covers each operation.
+- **Ctrl+Maiusc+A on F1 Width** can now create a standard WIDTHENV2 using an inspected, complete track chunk if the envelope is missing. Native name/chunk lookup is validated, the resulting envelope is checked, and unsuccessful creation is rolled back. No guessed native action IDs and no changes to other track chunks. It may fail safely when REAPER rejects the inserted envelope.
+- Other F1/F2/F3 behavior, navigation, memory per-project `.tp`, FX Compare F8 and FX Default recovery remain unchanged. Test snapshots, target scope, REAPER actions, NVDA prompts and SWS routing should be checked on GitHub/REAPER before moving to F4.
+- Validation: all source-only Python tests + Tools/audit.py; NO native build, MSVC/CTest execution or REAPER test was run here. GitHub Actions will compile and execute C++ tests; runtime checks remain necessary for Width and parked MIDI.
+
 ## TEST55.8 — FX Default restoration (source only)
 
 - Fixed legacy saved Default values being incorrectly rejected when synth presets change parameter names without changing native parameter IDs and count. Complete/safe index fallback; reject actual reorders and changed counts.

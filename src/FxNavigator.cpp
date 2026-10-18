@@ -43,6 +43,7 @@ void FxNavigator::end() noexcept {
         flushPersistentPosition();
     }
     pendingF8At_ = 0;
+    clearAutomationConfirm_ = false;
     // Keep per-instance Original/Compare snapshots across navigator exits and
     // Ctrl+Tab. Original is captured only on first entry to the FX; a double
     // F8 is the sole user command which updates that reference.
@@ -998,6 +999,7 @@ bool FxNavigator::uiStillOpen() const {
     return !hadUi_ || (take_ ? TakeFX_GetOpen(take_, fx_) : TrackFX_GetOpen(track_, fx_));
 }
 bool FxNavigator::accepts(const Key& k) const noexcept {
+    if (clearAutomationConfirm_) return true;
     if (!active_) return false;
     // The Lua transport gestures belong to FX Params in Grid, Value, F7 and Memories.
     // Native search/rename/numeric EDIT controls must retain their space key.
@@ -1363,6 +1365,17 @@ void FxNavigator::searchPreview() {
 }
 void FxNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
+    if (clearAutomationConfirm_) {
+        if (k.repeat) return;
+        if (k.vk == 'Y' || k.vk == VK_RETURN) {
+            clearAutomationConfirm_ = false;
+            toggleEnvelope(true);
+        } else if (k.vk == 'N' || k.vk == VK_ESCAPE) {
+            clearAutomationConfirm_ = false;
+            speech_("Automation clear cancelled");
+        } else speech_("Press Y to confirm, N or Escape to cancel");
+        return;
+    }
     // Memory management or a filtered search may select a parameter without a position save.
     // Before using its step for a value change, load that parameter's setting.
     if (!fxBrowserMode_) syncParameterStep();

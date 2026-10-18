@@ -30,7 +30,7 @@ std::wstring wideUtf8(const std::string& text) {
 // TEST49: preserve preferences even on an external REAPER action that closes
 // navigation. All IO errors are reported without escaping a noexcept callback.
 void TrackNavigator::end() noexcept {
-    if (active_) {
+    if (active_ && !backgroundMode_) {
         try { rememberPosition(); memory_.flush(); }
         catch (...) {
             OutputDebugStringW(L"LReaParams: Track Params memory could not be saved.\n");
@@ -40,6 +40,7 @@ void TrackNavigator::end() noexcept {
     memoryManager_ = memoryStandalone_ = false; memoryItems_.clear();
     active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false;
     rangeEditing_ = false; resetMidiState();
+    backgroundMode_ = false; clearAutomationConfirm_ = false;
     filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear();
 }
 
@@ -96,6 +97,11 @@ bool TrackNavigator::begin() {
 }
 
 bool TrackNavigator::contextUnchanged() const {
+    // A parked Ctrl+Q context must survive ordinary TCP selection changes.
+    // All fixed targets are resolved again by GUID on every MIDI event.
+    if (backgroundMode_) return active_ && project_ &&
+        EnumProjects(-1, nullptr, 0) == project_ &&
+        track_ && ValidatePtr2(project_, track_, "MediaTrack*");
     if (!active_ || EnumProjects(-1, nullptr, 0) != project_ || CountTracks(project_) != trackCount_ ||
         row_ < 0 || row_ >= static_cast<int>(rows_.size())) return false;
     // An externally changed selection ends the session; moving between our
@@ -140,7 +146,9 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     // Enter toggles Grid/Value, and Ctrl+Alt+Up/Down moves among folders.
     // Never swallow unknown shortcuts from REAPER, and do not leak selection
     // gestures to the TCP while this owned keyboard window is active.
-    if (k.ctrl && !k.alt && !k.shift && k.vk == VK_TAB) return true;
+    if (k.ctrl && !k.alt && !k.shift && (k.vk == VK_TAB || k.vk == 'Q')) return true;
+    if (k.ctrl && k.shift && k.alt && !k.altGr && k.vk == 'A') return true;
+    if (clearAutomationConfirm_) return true;
     if (k.ctrl && k.alt) return !k.shift && (k.vk == 'C' || (f1 && (k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.alt && k.shift) return f1 && !k.ctrl && (k.vk == VK_UP || k.vk == VK_DOWN);
     if (k.ctrl && k.shift) return !k.alt && (k.vk == 'C' || k.vk == 'T' ||
@@ -1004,6 +1012,25 @@ void TrackNavigator::handle(const Key& k) {
         else if (k.vk == VK_ESCAPE) {
             numericEditing_ = rangeEditing_ = false;
             speech_("Edit cancelled. " + parameterValueSpeech());
+        }
+        return;
+    }
+    // Same spoken confirmation as FX Params. Never delete automation points.
+    if (clearAutomationConfirm_) {
+        if (k.repeat) return;
+        if (k.vk == 'Y' || k.vk == VK_RETURN) {
+            clearAutomationConfirm_ = false;
+            clearTrackAutomations();
+        } else if (k.vk == 'N' || k.vk == VK_ESCAPE) {
+            clearAutomationConfirm_ = false;
+            speech_("Automation clear cancelled");
+        } else speech_("Press Y to confirm, N or Escape to cancel");
+        return;
+    }
+    if (k.ctrl && k.shift && k.alt && !k.altGr && k.vk == 'A') {
+        if (!k.repeat) {
+            clearAutomationConfirm_ = true;
+            speech_("Disable all automation on current track, including send envelopes and FX? Press Y to confirm, N or Escape to cancel");
         }
         return;
     }

@@ -1,1 +1,1 @@
-LReaParams 0.0.55 — TEST55.8: repair Default FX restoration for synths with preset-dependent parameter labels and return from memory manager to the FX grid on Enter. Source only. Compile exclusively in GitHub Actions. Parameter Library remains excluded.
+LReaParams 0.0.55 — TEST55.10 (includes TEST55.9): Track background MIDI Ctrl+Q; FX/Track confirmation before disabling automation; Width automation creation in F1. Source only, GitHub Actions build required. Parameter Library excluded.

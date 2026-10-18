@@ -41,7 +41,7 @@ assert 'resolveTarget(project_, track_, e->category, e->index)' in auto
 assert 'routingEnvelopeBlock(oldChunk, route.receive, tag)' in auto
 assert 'SetTrackStateChunk(route.destination, chunk.c_str(), true)' in auto
 assert 'Main_OnCommand(action, 0)' in auto
-assert 'Creation for this field is not yet migrated' in auto
+assert 'createWidthEnvelope(track_, project_)' in auto  # TEST55.10 completes Width creation
 assert 'Main_OnCommand(nativeAction, 0)' in auto
 assert 'const auto selected = selectedTrackGuids();' in auto
 assert 'thread_local std::vector<char>' in auto

@@ -5,6 +5,9 @@
 #define REAPERAPI_WANT_NamedCommandLookup
 #define REAPERAPI_WANT_ReorderSelectedTracks
 #define REAPERAPI_WANT_GetTrackEnvelopeByName
+#define REAPERAPI_WANT_GetTrackEnvelopeByChunkName
+#define REAPERAPI_WANT_CountTrackEnvelopes
+#define REAPERAPI_WANT_GetTrackEnvelope
 #define REAPERAPI_WANT_GetPlayState
 #define REAPERAPI_WANT_OnPlayButton
 #define REAPERAPI_WANT_OnPauseButton

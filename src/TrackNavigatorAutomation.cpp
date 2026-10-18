@@ -216,6 +216,37 @@ bool setRoutingShown(const RouteTarget& route, const char* tag, bool on) {
     const auto checked = readTrackChunk(route.destination);
     return !checked.empty() && armIsOn(routingEnvelopeBlock(checked, route.receive, tag));
 }
+// Only a standard REAPER envelope header is added, leaving every existing
+// track chunk byte intact. There is no guessed action ID or accidental default
+// envelope rewrite. Incompatible chunks fail without changing the project.
+TrackEnvelope* trackWidthEnvelope(MediaTrack* track) {
+    TrackEnvelope* env = GetTrackEnvelopeByChunkName ?
+        GetTrackEnvelopeByChunkName(track, "<WIDTHENV2") : nullptr;
+    return env ? env : (GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track, "Width") : nullptr);
+}
+bool createWidthEnvelope(MediaTrack* track, ReaProject* project) {
+    if (!track || !project || !SetTrackStateChunk) return false;
+    if (auto* existing = trackWidthEnvelope(track))
+        return ValidatePtr2(project, existing, "TrackEnvelope*") && setShown(existing, true);
+    std::string oldChunk = readTrackChunk(track);
+    if (oldChunk.empty()) return false;
+    // If an envelope already exists under the native chunk tag, do not add a
+    // duplicate. The caller should instead resolve it through REAPER's API.
+    if (oldChunk.find("<WIDTHENV2\n") != std::string::npos ||
+        oldChunk.find("<WIDTHENV2\r\n") != std::string::npos) return false;
+    const auto close = oldChunk.rfind("\n>");
+    if (close == std::string::npos || close + 2 >= oldChunk.size() + 1) return false;
+    // Insert directly before the track's final '>'; no FX chain/AUXRECV edits.
+    std::string newChunk = oldChunk;
+    newChunk.insert(close + 1, "<WIDTHENV2\nACT 1\nVIS 1 1 1\nLANEHEIGHT 0 0\nARM 1\nDEFSHAPE 0 -1 -1\n>\n");
+    if (!SetTrackStateChunk(track, newChunk.c_str(), true)) return false;
+    auto* env = trackWidthEnvelope(track);
+    if (env && ValidatePtr2(project, env, "TrackEnvelope*") && isShown(envelopeChunk(env))) return true;
+    // Undo an unsupported or ignored chunk structure immediately.
+    SetTrackStateChunk(track, oldChunk.c_str(), true);
+    return false;
+}
+
 } // namespace
 
 bool TrackNavigator::currentEnvelopeActive() const {
@@ -230,7 +261,8 @@ bool TrackNavigator::currentEnvelopeActive() const {
     if (page_ != Page::tracks) {
         return routingShown(resolveTarget(project_, track_, e->category, e->index), routingTag(name));
     }
-    TrackEnvelope* env = GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track_, name) : nullptr;
+    TrackEnvelope* env = (page_ == Page::tracks && e->type == Entry::width) ?
+        trackWidthEnvelope(track_) : (GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track_, name) : nullptr);
     return env && ValidatePtr2(project_, env, "TrackEnvelope*") && isShown(envelopeChunk(env));
 }
 
@@ -300,7 +332,8 @@ void TrackNavigator::toggleCurrentAutomation() {
         speech_(created ? feedback(true) : "Send/receive automation not created");
         return;
     }
-    TrackEnvelope* env = GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track_, name) : nullptr;
+    TrackEnvelope* env = (page_ == Page::tracks && e->type == Entry::width) ?
+        trackWidthEnvelope(track_) : (GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track_, name) : nullptr);
     if (env && ValidatePtr2(project_, env, "TrackEnvelope*")) {
         const bool enable = !currentEnvelopeActive();
         Undo_BeginBlock2(project_);
@@ -310,8 +343,18 @@ void TrackNavigator::toggleCurrentAutomation() {
         else speech_("Automation change not confirmed");
         return;
     }
+    if (e->type == Entry::width && page_ == Page::tracks) {
+        Undo_BeginBlock2(project_);
+        const bool created = createWidthEnvelope(track_, project_);
+        Undo_EndBlock2(project_, "LReaParams: create track Width automation", UNDO_STATE_TRACKCFG);
+        if (TrackList_AdjustWindows) TrackList_AdjustWindows(false);
+        UpdateArrange();
+        speech_(created && currentEnvelopeActive() ? feedback(true) :
+            "Width automation could not be created. No changes");
+        return;
+    }
     if (!nativeAction || !Main_OnCommand) {
-        speech_("Automation envelope not present. Creation for this field is not yet migrated");
+        speech_("Automation envelope unavailable");
         return;
     }
     const auto selected = selectedTrackGuids();
@@ -333,4 +376,49 @@ void TrackNavigator::toggleCurrentAutomation() {
     if (currentEnvelopeActive()) speech_(feedback(true));
     else speech_("Automation change not confirmed");
 }
+void TrackNavigator::clearTrackAutomations() {
+    if (!active_ || !track_ || !project_ || !ValidatePtr2(project_, track_, "MediaTrack*")) {
+        speech_("Track unavailable. No changes"); return;
+    }
+    if (!CountTrackEnvelopes || !GetTrackEnvelope) {
+        speech_("Automation API unavailable. No changes"); return;
+    }
+    int changed = 0, failed = 0;
+    Undo_BeginBlock2(project_);
+    // GetTrackEnvelope enumerates real envelope instances, including FX
+    // envelopes and track envelopes, without creating new lanes.
+    const int total = std::clamp(CountTrackEnvelopes(track_), 0, 8192);
+    for (int i = 0; i < total; ++i) {
+        TrackEnvelope* env = GetTrackEnvelope(track_, i);
+        if (!env || !ValidatePtr2(project_, env, "TrackEnvelope*")) { ++failed; continue; }
+        const std::string old = envelopeChunk(env);
+        if (old.empty()) { ++failed; continue; }
+        if (rewriteState(old, "ACT", false) == old &&
+            rewriteState(old, "VIS", false) == old) continue;
+        if (setShown(env, false)) ++changed;
+        else ++failed;
+    }
+    // Send envelopes are stored in AUXRECV blocks on *destination* tracks;
+    // disabling only the source's envelopes would leave these running.
+    const int sends = std::clamp(GetTrackNumSends(track_, 0), 0, 512);
+    for (int i = 0; i < sends; ++i) {
+        const auto route = resolveTarget(project_, track_, 0, i);
+        if (!route.destination) { ++failed; continue; }
+        for (const char* tag : {"AUXVOLENV", "AUXPANENV", "AUXMUTEENV"}) {
+            const std::string old = routingEnvelopeBlock(readTrackChunk(route.destination), route.receive, tag);
+            if (old.empty()) continue;
+            if (rewriteState(old, "ACT", false) == old &&
+                rewriteState(old, "VIS", false) == old) continue;
+            if (setRoutingShown(route, tag, false)) ++changed;
+            else ++failed;
+        }
+    }
+    Undo_EndBlock2(project_, "LReaParams: disable Track automation", UNDO_STATE_TRACKCFG | UNDO_STATE_FX);
+    if (TrackList_AdjustWindows) TrackList_AdjustWindows(false);
+    UpdateArrange();
+    if (failed) speech_("Automation partially disabled. " + std::to_string(changed) +
+        " changed, " + std::to_string(failed) + " failed");
+    else speech_("Automation off. " + std::to_string(changed) + " envelopes");
+}
+
 } // namespace lrp

@@ -292,6 +292,18 @@ void TrackNavigator::applyFixedMidi(const std::string& identity, int value) {
     }
 }
 
+void TrackNavigator::prepareBackgroundMidi() {
+    // Copy a UI navigator for Ctrl+Q, then drop all UI ownership and pending
+    // learn/edit operations. This copy never writes cursor positions to .tp.
+    backgroundMode_ = true;
+    memoryManager_ = memoryStandalone_ = false;
+    clearAutomationConfirm_ = false;
+    learnCc_ = floatingWaiting_ = false;
+    filterEditing_ = numericEditing_ = rangeEditing_ = false;
+    pendingMidiSpeech_.clear();
+    midiSequence_ = recentSequence(); // never replay MIDI received before Ctrl+Q
+}
+
 void TrackNavigator::pollMidi() {
     if (!active_ || memoryManager_ || !contextUnchanged()) return;
     const bool running = learnCc_ || fixedCc_ || floatingCc_ || floatingWaiting_;
@@ -311,7 +323,7 @@ void TrackNavigator::pollMidi() {
         if (auto cc = decodeCc(reinterpret_cast<unsigned char*>(bytes),
             std::clamp(size, 0, static_cast<int>(sizeof(bytes))))) items.push_back({*cc});
     }
-    if (!midiSequence_) { midiSequence_ = newest; return; } // latch historic events
+    if (!midiSequence_ && !backgroundMode_) { midiSequence_ = newest; return; } // foreground latch only
     midiSequence_ = newest;
     for (auto it = items.rbegin(); it != items.rend(); ++it) {
         const auto cc = it->cc;

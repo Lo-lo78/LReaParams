@@ -80,6 +80,7 @@ private:
     bool envelopeActive(int param) const;
     bool setEnvelope(int param,bool active);
     void toggleEnvelope(bool all);
+    bool clearAutomationConfirm_ = false;
     void navigateEnvelope(int direction);
     bool learnCc_=false, fixedCc_=false, floatingCc_=false, floatingWaiting_=false;
     int learnParam_=-1, floatingChannel_=0, floatingNumber_=0, floatingParam_=-1;

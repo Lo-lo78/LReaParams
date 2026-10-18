@@ -35,7 +35,7 @@ assert 'std::vector<Event> pending' in advanced
 assert 'if(!state.allows(value,current))return;' in advanced
 assert 'if(floatingWaiting_ && !fixedCc_)' in advanced
 assert 'fixedCc_=fxOrder_.extraValue("cc_runtime_fixed_map_enabled_v1")' in advanced
-assert ext.index('backgroundMidi_.pollMidi();')<ext.index('if (!current_ || !current_->active()) return;')
+assert ext.index('backgroundMidi_.pollMidi();')<ext.index('if (!current_ || !current_->active()) return;', ext.index('    void tick() {'))
 assert 'Testing/test42_static.py' in (r/'.github/workflows/build-windows.yml').read_text()
 assert 'Sleep(' not in advanced and 'CreateThread(' not in advanced
 print('TEST42 source checks PASS; MSVC/REAPER/NVDA/MIDI hardware not executed')

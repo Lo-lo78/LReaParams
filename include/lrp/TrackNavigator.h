@@ -27,6 +27,8 @@ public:
     void announce() override;
     void announceTitle() override;
     void tickMidi() { pollMidi(); }
+    bool midiRunning() const noexcept { return active_ && (fixedCc_ || floatingCc_); }
+    void prepareBackgroundMidi();
     bool openTrackMemories(bool standalone);
     bool isMemoryManager() const noexcept { return memoryManager_; }
     // Ctrl+Tab targets the track under the logical F1/F2/F3 cursor, not
@@ -138,6 +140,7 @@ private:
     // F1/F2/F3 envelope controls: preserve existing point and item data.
     bool currentEnvelopeActive() const;
     void toggleCurrentAutomation();
+    void clearTrackAutomations();
     // TEST51.1: Lua-compatible, two-pass F1 sends and receives. Stored GUIDs
     // are re-resolved at commit time; no dangling MediaTrack* is retained.
     enum class RoutingKind { none, send, receive };
@@ -207,6 +210,7 @@ private:
     std::size_t nextEndFolderIndex_ = 0;
     Page page_ = Page::tracks;
     bool active_ = false, valueMode_ = false;
+    bool backgroundMode_ = false, clearAutomationConfirm_ = false;
     bool selectionStroke_ = false;
     int selectionAnchorRow_ = 0;
     std::unordered_set<MediaTrack*> selectionBase_;

@@ -31,7 +31,7 @@ struct Action {
 };
 class Extension {
 public:
-    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), backgroundMidi_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_), titleProxy_(info->hwnd_main) {}
+    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), backgroundMidi_([this](const std::string& text) { speak(text); }), backgroundTrackMidi_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_), titleProxy_(info->hwnd_main) {}
     ~Extension() { shutdown(); }
     void init() {
         if (REAPERAPI_LoadAPI(info_.GetFunc) != 0) throw std::runtime_error("Required REAPER API missing");
@@ -40,6 +40,7 @@ public:
         resource_ = fs::u8path(path);
         navigator_.setResourceRoot(resource_);
         backgroundMidi_.setResourceRoot(resource_);
+        backgroundTrackMidi_.setResourceRoot(resource_);
         trackNavigator_.setResourceRoot(resource_);
         for (auto& a : actions_) {
             a.command = info_.Register("command_id", const_cast<char*>(a.id));
@@ -74,24 +75,30 @@ public:
         auto output = reinterpret_cast<void(*)(const char*)>(info_.GetFunc("osara_outputMessage"));
         if (output && !text.empty()) output(text.c_str());
     }
-    // Ctrl+Q follows the Lua: close the NVDA keyboard window, leave REAPER
-    // fully interactive, and keep ONLY a validated FX MIDI runtime parked.
+    // Ctrl+Q uses one parked MIDI context at a time, independent of keyboard
+    // focus. The current foreground navigator is copied before end() clears it.
     void parkMidiAndReturnToReaper() {
-        if (current_ != &navigator_ || !navigator_.active()) return;
-        backgroundMidi_.end(); // one parked context, never accumulate old FX
-        if (navigator_.midiRunning()) {
-            backgroundMidi_ = navigator_; // independent copy; no UI handles owned
+        if (!current_ || !current_->active()) return;
+        const bool wasFx = current_ == &navigator_;
+        const bool wasTrack = current_ == &trackNavigator_;
+        if (!wasFx && !wasTrack) return;
+        backgroundMidi_.end();
+        backgroundTrackMidi_.end();
+        if (wasFx && navigator_.midiRunning()) {
+            backgroundMidi_ = navigator_;
             backgroundMidi_.prepareBackgroundMidi();
+        } else if (wasTrack && trackNavigator_.midiRunning()) {
+            backgroundTrackMidi_ = trackNavigator_;
+            backgroundTrackMidi_.prepareBackgroundMidi();
         }
         exitNavigation(false);
-        // Restore ordinary REAPER/TCP keyboard behavior. Do not install a
-        // persistent keyboard hook or simulate a global key accelerator.
         SetCursorContext(0, nullptr);
         if (IsWindow(info_.hwnd_main) && IsWindowEnabled(info_.hwnd_main)) {
             SetForegroundWindow(info_.hwnd_main);
             SetFocus(info_.hwnd_main);
         }
-        speak(backgroundMidi_.active() ? "Back to REAPER. MIDI active" : "Back to REAPER");
+        speak(backgroundMidi_.active() || backgroundTrackMidi_.midiRunning() ?
+            "Back to REAPER. MIDI active" : "Back to REAPER");
     }
     void exitNavigation(bool announce) {
         const bool wasActive = current_ && current_->active();
@@ -102,6 +109,7 @@ public:
     }
     void fail() noexcept {
         backgroundMidi_.end();
+        backgroundTrackMidi_.end();
         // Fail open at the ABI boundary: unregister capture, discard queued commands.
         input_.stop(); titleProxy_.hideAndRestore(); titleProxyActive_ = false;
         navigator_.end(); trackNavigator_.end(); current_ = nullptr;
@@ -161,7 +169,7 @@ public:
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, Ctrl+Shift+M FX Memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
                 "Track: Ctrl+Shift+M Track Memories; F8 in FX Params is unassigned.\n"
-                "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
+                "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A confirm automation clear.\n"
                 "Alt+F1/F2 presets; Alt+F3/F4 automated parameters. Ctrl+E numeric edit.\n"
                 "Space Play/Stop; Ctrl+Space Play/Pause in FX Params and Track Params. Shift+Space selects in F7 or F1.\n"
                 "Ctrl+R recent searches; Ctrl+Shift+R full context review.\n"
@@ -190,6 +198,7 @@ public:
             break;
         case stopBackgroundMidi:
             backgroundMidi_.end();
+            backgroundTrackMidi_.end();
             speak("Background MIDI off");
             break;
         case nvdaTitle:
@@ -277,6 +286,9 @@ public:
                 // foreground and prevents two contexts driving one parameter.
                 if (desired == &navigator_ && backgroundMidi_.sameMidiFx(navigator_))
                     backgroundMidi_.end();
+                // No two navigators may apply the same incoming MIDI CC.
+                backgroundTrackMidi_.end();
+                if (desired == &trackNavigator_) backgroundMidi_.end();
                 current_ = desired;
                 // The track owning an FX (also a Take FX) must be the real
                 // TCP selection when opening FX Params. Otherwise Escape can
@@ -340,6 +352,17 @@ public:
             } catch (...) {
                 backgroundMidi_.end();
                 OutputDebugStringW(L"LReaParams: parked MIDI callback stopped.\n");
+            }
+        }
+        if (backgroundTrackMidi_.active()) {
+            try {
+                if (!backgroundTrackMidi_.contextUnchanged() || !backgroundTrackMidi_.midiRunning())
+                    backgroundTrackMidi_.end();
+                else if (current_ != &trackNavigator_ && current_ != &navigator_)
+                    backgroundTrackMidi_.tickMidi();
+            } catch (...) {
+                backgroundTrackMidi_.end();
+                OutputDebugStringW(L"LReaParams: parked Track MIDI stopped safely.\n");
             }
         }
         if (!current_ || !current_->active()) return;
@@ -422,7 +445,10 @@ public:
             }
             // Do not let Ctrl+Q fall through to REAPER, or let the UI
             // navigator clear the MIDI state before we park its own copy.
-            if (current_ == &navigator_ && key.ctrl && !key.shift && !key.alt && key.vk == 'Q') {
+            if ((current_ == &navigator_ || current_ == &trackNavigator_) &&
+                key.ctrl && !key.shift && !key.alt && key.vk == 'Q' && !key.repeat &&
+                !((current_ == &navigator_ && (navigator_.nativeTextField() || navigator_.isMemoryManager())) ||
+                  (current_ == &trackNavigator_ && (trackNavigator_.nativeTextField() || trackNavigator_.isMemoryManager())))) {
                 parkMidiAndReturnToReaper();
                 return;
             }
@@ -505,7 +531,7 @@ public:
     }
     void shutdown() noexcept {
         input_.stop(); titleProxy_.shutdown(); titleProxyActive_ = false;
-        backgroundMidi_.end(); navigator_.end(); trackNavigator_.end(); current_ = nullptr;
+        backgroundMidi_.end(); backgroundTrackMidi_.end(); navigator_.end(); trackNavigator_.end(); current_ = nullptr;
         if (fxChainAccelRegistered_) {
             info_.Register("-accelerator", &fxChainAccel_);
             fxChainAccelRegistered_ = false;
@@ -536,7 +562,8 @@ private:
     reaper_plugin_info_t info_;
     DWORD mainThread_{};
     FxNavigator navigator_;
-    FxNavigator backgroundMidi_; // separate from the foreground and Track Params
+    FxNavigator backgroundMidi_; // FX parked after Ctrl+Q
+    TrackNavigator backgroundTrackMidi_; // Track MIDI parked after Ctrl+Q
     TrackNavigator trackNavigator_;
     Navigator* current_ = nullptr;
     InputRouter input_;

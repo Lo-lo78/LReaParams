@@ -68,6 +68,7 @@ void FxNavigator::prepareBackgroundMidi() {
     textEdit_ = false;
     searchMode_ = false;
     memoryManager_ = false;
+    clearAutomationConfirm_ = false;
     defaultConfirm_ = false;
     defaultRegenerate_ = false;
     valueMode_ = false;
@@ -297,7 +298,13 @@ bool FxNavigator::handleAdvanced(const Key& k) {
     }
     if(k.vk=='E'){numericBegin();return true;}
     if(k.vk=='R'){announce();return true;} // full review preserved separately
-    if(k.vk=='A'){toggleEnvelope(k.alt);return true;}
+    if(k.vk=='A') {
+        if (k.alt) {
+            clearAutomationConfirm_ = true;
+            speech_("Disable all automation on current FX? Press Y to confirm, N or Escape to cancel");
+        } else toggleEnvelope(false);
+        return true;
+    }
     if(k.vk==VK_F1||k.vk==VK_F2){navigatePreset(k.vk==VK_F1?-1:1);return true;}
     if(k.vk==VK_F3||k.vk==VK_F4){navigateEnvelope(k.vk==VK_F3?-1:1);return true;}
     return false;
