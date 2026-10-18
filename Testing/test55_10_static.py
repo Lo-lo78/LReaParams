@@ -23,8 +23,8 @@ assert 'if (active_ && !backgroundMode_)' in tr
 assert 'clearAutomationConfirm_' in tr and 'clearAutomationConfirm_' in fx
 assert 'k.ctrl && k.shift && k.alt && !k.altGr && k.vk == \'A\'' in tr
 assert 'k.ctrl && k.shift && k.vk==\'A\'' in fa
-assert 'if (k.alt)' in fa and 'Press Y to confirm' in fa
-assert 'Press Y to confirm' in tr and 'clearTrackAutomations();' in tr
+assert 'if (k.alt)' in fa and 'No selected' in fa and 'Y confirms' in fa
+assert 'No selected' in tr and 'Y confirms' in tr and 'clearTrackAutomations();' in tr
 assert 'toggleEnvelope(true);' in fx
 assert 'createWidthEnvelope(track_, project_)' in ta
 assert 'WIDTHENV2' in ta and 'SetTrackStateChunk(track, newChunk.c_str(), true)' in ta

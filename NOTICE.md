@@ -1,1 +1,1 @@
-LReaParams 0.0.55 — TEST55.10 (includes TEST55.9): Track background MIDI Ctrl+Q; FX/Track confirmation before disabling automation; Width automation creation in F1. Source only, GitHub Actions build required. Parameter Library excluded.
+LReaParams 0.0.55 — TEST55.11: accessible Yes/No confirmation for global automation disable in Track and FX Params. Builds only through GitHub Actions; no local compilation. Parameter Library excluded.

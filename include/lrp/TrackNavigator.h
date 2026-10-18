@@ -211,6 +211,7 @@ private:
     Page page_ = Page::tracks;
     bool active_ = false, valueMode_ = false;
     bool backgroundMode_ = false, clearAutomationConfirm_ = false;
+    bool clearAutomationYes_ = false;
     bool selectionStroke_ = false;
     int selectionAnchorRow_ = 0;
     std::unordered_set<MediaTrack*> selectionBase_;

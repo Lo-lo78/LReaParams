@@ -69,6 +69,7 @@ void FxNavigator::prepareBackgroundMidi() {
     searchMode_ = false;
     memoryManager_ = false;
     clearAutomationConfirm_ = false;
+    clearAutomationYes_ = false;
     defaultConfirm_ = false;
     defaultRegenerate_ = false;
     valueMode_ = false;
@@ -300,8 +301,9 @@ bool FxNavigator::handleAdvanced(const Key& k) {
     if(k.vk=='R'){announce();return true;} // full review preserved separately
     if(k.vk=='A') {
         if (k.alt) {
+            clearAutomationYes_ = false;
             clearAutomationConfirm_ = true;
-            speech_("Disable all automation on current FX? Press Y to confirm, N or Escape to cancel");
+            speech_("Disable all automation on current FX? No selected. Left and Right choose Yes or No. Enter accepts, Y confirms, N or Escape cancels");
         } else toggleEnvelope(false);
         return true;
     }

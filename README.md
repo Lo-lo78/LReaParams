@@ -251,3 +251,7 @@ con etichette corrispondenti; controllare anche F7 e un gruppo salvato.
 ```cmd
 git add . && git commit -m "0.0.44.3: add cyclic FX parameter navigation by initial" && git push
 ```
+
+## TEST55.11 — conferma automazioni accessibile
+
+Ctrl+Maiusc+Alt+A ora espone la domanda e la scelta Yes/No anche a NVDA+Freccia Su. No e predefinito; Freccia Sinistra sceglie Yes, Destra No; Invio conferma la scelta, Y conferma subito, N o Esc annulla. Vedere Docs/TEST55_11_AUTOMATION_CONFIRM_NVDA.md.

@@ -44,6 +44,7 @@ void FxNavigator::end() noexcept {
     }
     pendingF8At_ = 0;
     clearAutomationConfirm_ = false;
+    clearAutomationYes_ = false;
     // Keep per-instance Original/Compare snapshots across navigator exits and
     // Ctrl+Tab. Original is captured only on first entry to the FX; a double
     // F8 is the sole user command which updates that reference.
@@ -1188,8 +1189,12 @@ std::wstring FxNavigator::windowTitle() const {
             editF7_ ? L" - F7 Edit" : L"");
 }
 std::string FxNavigator::reviewLine() const {
-    // NVDA+Up: ONLY the current parameter and its formatted value.
+    // NVDA+Up reads the active confirmation rather than the stale FX parameter.
     if (!active_) return "";
+    if (clearAutomationConfirm_)
+        return std::string("Disable all automation on current FX? ") +
+            (clearAutomationYes_ ? "Yes selected" : "No selected") +
+            ". Left and Right select; Enter confirms the selected answer. Y confirms, N or Escape cancels.";
     if (fxBrowserMode_) return browserSpeech();
     if (memoryManager_) return memoryReview();
     if(recentMode_ && historyIndex_>=0 && historyIndex_<static_cast<int>(searchHistory_.size()))return "Recent searches. "+searchHistory_[static_cast<size_t>(historyIndex_)];
@@ -1367,13 +1372,27 @@ void FxNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
     if (clearAutomationConfirm_) {
         if (k.repeat) return;
-        if (k.vk == 'Y' || k.vk == VK_RETURN) {
+        // The focus stays on the native STATIC (never on the stale Value
+        // trackbar). Its WM_GETTEXT now exposes this prompt to NVDA+Up.
+        // No is the default: Enter alone must not disable automation.
+        if (k.ctrl || k.alt) return;
+        if (k.vk == VK_LEFT || k.vk == VK_RIGHT) {
+            const bool yes = k.vk == VK_LEFT;
+            if (clearAutomationYes_ != yes) {
+                clearAutomationYes_ = yes;
+                speech_(yes ? "Yes" : "No");
+            }
+        } else if (k.vk == VK_TAB) {
+            speech_(reviewLine());
+        } else if (k.vk == 'Y' || (k.vk == VK_RETURN && clearAutomationYes_)) {
             clearAutomationConfirm_ = false;
+            clearAutomationYes_ = false;
             toggleEnvelope(true);
-        } else if (k.vk == 'N' || k.vk == VK_ESCAPE) {
+        } else if (k.vk == 'N' || k.vk == VK_ESCAPE || k.vk == VK_RETURN) {
             clearAutomationConfirm_ = false;
+            clearAutomationYes_ = false;
             speech_("Automation clear cancelled");
-        } else speech_("Press Y to confirm, N or Escape to cancel");
+        }
         return;
     }
     // Memory management or a filtered search may select a parameter without a position save.

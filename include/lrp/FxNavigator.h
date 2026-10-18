@@ -51,7 +51,7 @@ public:
     void announceTitle() override;
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
-    bool nativeValueSlider() const override { return active_ && valueMode_ && !memoryManager_ && !fxBrowserMode_; }
+    bool nativeValueSlider() const override { return active_ && valueMode_ && !clearAutomationConfirm_ && !memoryManager_ && !fxBrowserMode_; }
     // Native Windows EDIT control for F7 rename and Ctrl+F search.
     bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_) && !memoryManager_ && !fxBrowserMode_; }
     std::string nativeTextValue() const { return numericEdit_ ? numericBuffer_ : textEdit_ ? textBuffer_ : search_; }
@@ -81,6 +81,8 @@ private:
     bool setEnvelope(int param,bool active);
     void toggleEnvelope(bool all);
     bool clearAutomationConfirm_ = false;
+    // Selection in the accessible, nondestructive-by-default automation prompt.
+    bool clearAutomationYes_ = false;
     void navigateEnvelope(int direction);
     bool learnCc_=false, fixedCc_=false, floatingCc_=false, floatingWaiting_=false;
     int learnParam_=-1, floatingChannel_=0, floatingNumber_=0, floatingParam_=-1;

@@ -40,7 +40,7 @@ void TrackNavigator::end() noexcept {
     memoryManager_ = memoryStandalone_ = false; memoryItems_.clear();
     active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false;
     rangeEditing_ = false; resetMidiState();
-    backgroundMode_ = false; clearAutomationConfirm_ = false;
+    backgroundMode_ = false; clearAutomationConfirm_ = false; clearAutomationYes_ = false;
     filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear();
 }
 
@@ -119,6 +119,8 @@ bool TrackNavigator::contextUnchanged() const {
 
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.altGr) return false;
+    // While asking for confirmation, no navigation key may reach the TCP.
+    if (clearAutomationConfirm_) return true;
     if (memoryManager_) {
         if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
         if (k.shift) return false;
@@ -148,7 +150,6 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     // gestures to the TCP while this owned keyboard window is active.
     if (k.ctrl && !k.alt && !k.shift && (k.vk == VK_TAB || k.vk == 'Q')) return true;
     if (k.ctrl && k.shift && k.alt && !k.altGr && k.vk == 'A') return true;
-    if (clearAutomationConfirm_) return true;
     if (k.ctrl && k.alt) return !k.shift && (k.vk == 'C' || (f1 && (k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.alt && k.shift) return f1 && !k.ctrl && (k.vk == VK_UP || k.vk == VK_DOWN);
     if (k.ctrl && k.shift) return !k.alt && (k.vk == 'C' || k.vk == 'T' ||
@@ -665,6 +666,10 @@ std::string TrackNavigator::detailColumnSpeech(int previousColumn) const {
 }
 std::string TrackNavigator::reviewLine() const {
     if (!active_) return "";
+    if (clearAutomationConfirm_)
+        return std::string("Disable all automation on current track, including send envelopes and FX? ") +
+            (clearAutomationYes_ ? "Yes selected" : "No selected") +
+            ". Left and Right select; Enter confirms the selected answer. Y confirms, N or Escape cancels.";
     if (memoryManager_) {
         if (memoryItems_.empty()) return "Track Memories. No memories";
         const auto& item = memoryItems_[static_cast<size_t>(memoryRow_)];
@@ -683,7 +688,7 @@ std::string TrackNavigator::reviewLine() const {
     return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
 }
 bool TrackNavigator::nativeValueSlider() const {
-    if (!active_ || !valueMode_) return false;
+    if (!active_ || !valueMode_ || clearAutomationConfirm_) return false;
     const auto* e = current();
     return e && (e->type == Entry::volume || e->type == Entry::pan || e->type == Entry::width);
 }
@@ -950,6 +955,31 @@ void TrackNavigator::nudge(int direction, bool coarse) {
 }
 void TrackNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
+    // This confirmation temporarily owns the navigator's review line. Handle
+    // it BEFORE Tab, transport or the memory shortcuts so NVDA can review the
+    // question and arrow keys never move the underlying parameter.
+    if (clearAutomationConfirm_) {
+        if (k.repeat) return;
+        if (k.ctrl || k.alt) return;
+        if (k.vk == VK_LEFT || k.vk == VK_RIGHT) {
+            const bool yes = k.vk == VK_LEFT;
+            if (yes != clearAutomationYes_) {
+                clearAutomationYes_ = yes;
+                speech_(yes ? "Yes" : "No");
+            }
+        } else if (k.vk == VK_TAB) {
+            speech_(reviewLine());
+        } else if (k.vk == 'Y' || (k.vk == VK_RETURN && clearAutomationYes_)) {
+            clearAutomationConfirm_ = false;
+            clearAutomationYes_ = false;
+            clearTrackAutomations();
+        } else if (k.vk == 'N' || k.vk == VK_ESCAPE || k.vk == VK_RETURN) {
+            clearAutomationConfirm_ = false;
+            clearAutomationYes_ = false;
+            speech_("Automation clear cancelled");
+        }
+        return;
+    }
     if (memoryManager_) { handleMemory(k); return; }
     if (k.ctrl && k.shift && !k.alt && k.vk == 'M') {
         if (!k.repeat) openTrackMemories(false);
@@ -1015,22 +1045,11 @@ void TrackNavigator::handle(const Key& k) {
         }
         return;
     }
-    // Same spoken confirmation as FX Params. Never delete automation points.
-    if (clearAutomationConfirm_) {
-        if (k.repeat) return;
-        if (k.vk == 'Y' || k.vk == VK_RETURN) {
-            clearAutomationConfirm_ = false;
-            clearTrackAutomations();
-        } else if (k.vk == 'N' || k.vk == VK_ESCAPE) {
-            clearAutomationConfirm_ = false;
-            speech_("Automation clear cancelled");
-        } else speech_("Press Y to confirm, N or Escape to cancel");
-        return;
-    }
     if (k.ctrl && k.shift && k.alt && !k.altGr && k.vk == 'A') {
         if (!k.repeat) {
+            clearAutomationYes_ = false;
             clearAutomationConfirm_ = true;
-            speech_("Disable all automation on current track, including send envelopes and FX? Press Y to confirm, N or Escape to cancel");
+            speech_("Disable all automation on current track, including send envelopes and FX? No selected. Left and Right choose Yes or No. Enter accepts, Y confirms, N or Escape cancels");
         }
         return;
     }

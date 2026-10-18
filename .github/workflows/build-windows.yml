@@ -130,6 +130,8 @@ jobs:
         run: python Testing/test55_8_static.py
       - name: TEST55.10 Track background MIDI and global automation source contracts
         run: python Testing/test55_10_static.py
+      - name: TEST55.11 accessible automation confirmation (source only)
+        run: python Testing/test55_11_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build
