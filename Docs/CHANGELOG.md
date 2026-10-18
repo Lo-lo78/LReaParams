@@ -1,3 +1,7 @@
+## 0.0.55 — TEST55.12
+- Riparata la creazione/riattivazione dell’automazione Width in Track Params F1, usando la struttura completa `WIDTHENV2` del Lua e verificando il chunk reale della traccia. Supporto a blocchi Width legacy; gli altri parametri e i profili rimangono invariati.
+- Nuova prova statica in GitHub Actions. Non compilato localmente.
+
 ## TEST55.8 — FX Default restoration
 - Complete index-verified fallback for preset-dependent parameter names; no snapshot overwrites.
 - Enter on FX Memories > Default restores and returns to Plugin Order without clearing unrelated memories.

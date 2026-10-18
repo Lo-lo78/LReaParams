@@ -1,3 +1,5 @@
+> **TEST55.12 / LReaParams 0.0.55:** Correzione automazione Width in F1 con envelope nativo completo (`EGUID`, `PT`, armamento), verifica tramite chunk anche quando l’API non aggiorna subito il puntatore. Nessuna compilazione locale. [Guida e collaudo](Docs/TEST55_12_WIDTH_AUTOMATION.md).
+
 > **TEST55.9 + TEST55.10 / LReaParams 0.0.55:** Ctrl+Q Track Params con MIDI Fixed/Floating in background; Ctrl+Maiusc+Alt+A con conferma e Undo su entrambi i navigatori; creazione Width in F1 con verifica e ripristino in caso di errore. F1/F2/F3 revisionati prima di F4. Sorgente per GitHub Actions, senza build locale. [Guida](Docs/TEST55_10_F1_F3_CLOSURE.md).
 
 > **TEST55.8 / LReaParams 0.0.55:** risolto il ripristino dei Default FX con nomi dei parametri variabili; Invio su Default ripristina il suono e ritorna alla griglia senza cancellare le altre memorie. Canc continua a richiedere conferma per il reset completo. [Guida](Docs/TEST55_8_FX_DEFAULT_RESTORE.md). Nessuna compilazione locale.

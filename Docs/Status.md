@@ -1,3 +1,9 @@
+## TEST55.12 — Width envelope in F1 (source-only)
+
+- Corretto il percorso del parametro Width: riconoscimento dei blocchi `<WIDTHENV2` e `<WIDTHENV` nella traccia, creazione con GUID/punto iniziale come nel Lua originale, attivazione/armamento e verifica reale del chunk senza dipendere soltanto dal puntatore restituito dall’API.
+- Conservati i punti esistenti, gli automation item e il routing; rollback se REAPER rifiuta il risultato. Ctrl+Maiusc+A invariato.
+- Build C++ e collaudo NVDA/REAPER NON eseguiti localmente. GitHub Actions e test audio richiesti.
+
 ## TEST55.9 + TEST55.10 — final pass on Track Params F1/F2/F3 (source-only)
 
 - Ctrl+Q now parks **Track Params MIDI** in a separate background-only navigator and restores ordinary TCP focus. Fixed CC maps continue to target exact saved track GUIDs and outgoing routes; Floating CC keeps the current parameter context from before Ctrl+Q. A fresh sequence baseline blocks stale events. Both FX and Track background MIDI are stopped by the existing stop-background-MIDI REAPER action; no two active navigators share a controller event.

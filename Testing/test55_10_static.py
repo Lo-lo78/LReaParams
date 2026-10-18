@@ -26,9 +26,9 @@ assert 'k.ctrl && k.shift && k.vk==\'A\'' in fa
 assert 'if (k.alt)' in fa and 'No selected' in fa and 'Y confirms' in fa
 assert 'No selected' in tr and 'Y confirms' in tr and 'clearTrackAutomations();' in tr
 assert 'toggleEnvelope(true);' in fx
-assert 'createWidthEnvelope(track_, project_)' in ta
-assert 'WIDTHENV2' in ta and 'SetTrackStateChunk(track, newChunk.c_str(), true)' in ta
-assert 'SetTrackStateChunk(track, oldChunk.c_str(), true)' in ta
+assert 'setWidthShown(track_, project_, enable)' in ta
+assert 'WIDTHENV2' in ta and 'EGUID ' in ta and 'PT 0 ' in ta and 'SetTrackStateChunk(track, revised.c_str(), false)' in ta
+assert 'SetTrackStateChunk(track, oldChunk.c_str(), false)' in ta
 assert 'GetTrackEnvelopeByChunkName' in ta
 assert 'CountTrackEnvelopes(track_)' in ta
 assert 'setShown(env, false)' in ta

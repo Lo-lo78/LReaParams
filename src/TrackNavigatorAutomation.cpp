@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <string_view>
+#include <cstdio>
 
 namespace lrp {
 namespace {
@@ -216,37 +217,117 @@ bool setRoutingShown(const RouteTarget& route, const char* tag, bool on) {
     const auto checked = readTrackChunk(route.destination);
     return !checked.empty() && armIsOn(routingEnvelopeBlock(checked, route.receive, tag));
 }
-// Only a standard REAPER envelope header is added, leaving every existing
-// track chunk byte intact. There is no guessed action ID or accidental default
-// envelope rewrite. Incompatible chunks fail without changing the project.
-TrackEnvelope* trackWidthEnvelope(MediaTrack* track) {
-    TrackEnvelope* env = GetTrackEnvelopeByChunkName ?
-        GetTrackEnvelopeByChunkName(track, "<WIDTHENV2") : nullptr;
-    return env ? env : (GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track, "Width") : nullptr);
+// Width is a native TRACK envelope (WIDTHENV2, occasionally WIDTHENV), not an
+// FX parameter. Use the complete top-level track chunk as the source of truth:
+// some REAPER builds do not expose a newly inserted Width envelope through
+// GetTrackEnvelopeByName / GetTrackEnvelopeByChunkName immediately.
+// Never mistake a similarly named nested section for the track's own envelope.
+std::string widthEnvelopeBlock(const std::string& trackChunk,
+                               std::size_t* offset = nullptr, std::size_t* count = nullptr) {
+    const auto lines = splitLines(trackChunk);
+    int depth = 0;
+    for (std::size_t i = 0; i < lines.size(); ++i) {
+        const auto line = lines[i].text;
+        if (depth == 1 && (line == "<WIDTHENV2" || line == "<WIDTHENV")) {
+            const auto begin = lines[i].begin;
+            int blockDepth = 1;
+            for (std::size_t j = i + 1; j < lines.size(); ++j) {
+                const auto nested = lines[j].text;
+                if (!nested.empty() && nested.front() == '<') ++blockDepth;
+                else if (nested == ">") --blockDepth;
+                if (blockDepth == 0) {
+                    const auto end = lines[j].end;
+                    if (offset) *offset = begin;
+                    if (count) *count = end - begin;
+                    return trackChunk.substr(begin, end - begin);
+                }
+            }
+            return {}; // Damaged envelope: don't edit the track.
+        }
+        if (!line.empty() && line.front() == '<') ++depth;
+        else if (line == ">") --depth;
+        if (depth < 0) return {};
+    }
+    return {};
 }
-bool createWidthEnvelope(MediaTrack* track, ReaProject* project) {
-    if (!track || !project || !SetTrackStateChunk) return false;
-    if (auto* existing = trackWidthEnvelope(track))
-        return ValidatePtr2(project, existing, "TrackEnvelope*") && setShown(existing, true);
-    std::string oldChunk = readTrackChunk(track);
+TrackEnvelope* trackWidthEnvelope(MediaTrack* track) {
+    TrackEnvelope* env = nullptr;
+    if (GetTrackEnvelopeByChunkName) {
+        env = GetTrackEnvelopeByChunkName(track, "<WIDTHENV2");
+        if (!env) env = GetTrackEnvelopeByChunkName(track, "<WIDTHENV");
+    }
+    if (!env && GetTrackEnvelopeByName) env = GetTrackEnvelopeByName(track, "Width");
+    return env;
+}
+bool widthShown(MediaTrack* track) {
+    const auto chunk = readTrackChunk(track);
+    if (!chunk.empty()) {
+        const auto block = widthEnvelopeBlock(chunk);
+        if (!block.empty()) return isShown(block);
+    }
+    TrackEnvelope* env = trackWidthEnvelope(track);
+    return env && isShown(envelopeChunk(env));
+}
+std::string newWidthEnvelope(MediaTrack* track) {
+    if (!genGuid || !GetMediaTrackInfo_Value) return {};
+    GUID guid{};
+    genGuid(&guid);
+    char guidString[64]{};
+    const int n = std::snprintf(guidString, sizeof(guidString),
+        "{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}",
+        static_cast<unsigned long>(guid.Data1), static_cast<unsigned>(guid.Data2),
+        static_cast<unsigned>(guid.Data3), static_cast<unsigned>(guid.Data4[0]),
+        static_cast<unsigned>(guid.Data4[1]), static_cast<unsigned>(guid.Data4[2]),
+        static_cast<unsigned>(guid.Data4[3]), static_cast<unsigned>(guid.Data4[4]),
+        static_cast<unsigned>(guid.Data4[5]), static_cast<unsigned>(guid.Data4[6]),
+        static_cast<unsigned>(guid.Data4[7]));
+    if (n <= 0 || static_cast<std::size_t>(n) >= sizeof(guidString)) return {};
+    const double value = GetMediaTrackInfo_Value(track, "D_WIDTH");
+    char initialPoint[96]{};
+    const int pointSize = std::snprintf(initialPoint, sizeof(initialPoint), "PT 0 %.12f 0", value);
+    if (pointSize <= 0 || static_cast<std::size_t>(pointSize) >= sizeof(initialPoint)) return {};
+    // Mirrors the working Lua's REAPER WIDTHENV2 structure; arm explicitly.
+    return std::string("<WIDTHENV2\nEGUID ") + guidString +
+        "\nACT 1 -1\nVIS 1 1 1.0\nLANEHEIGHT 0 0\nARM 1\nDEFSHAPE 0 -1 -1\n" +
+        initialPoint + "\n>\n";
+}
+bool setWidthShown(MediaTrack* track, ReaProject* project, bool on) {
+    if (!track || !project || !ValidatePtr2(project, track, "MediaTrack*") ||
+        !SetTrackStateChunk || !GetTrackStateChunk) return false;
+    const auto oldChunk = readTrackChunk(track);
     if (oldChunk.empty()) return false;
-    // If an envelope already exists under the native chunk tag, do not add a
-    // duplicate. The caller should instead resolve it through REAPER's API.
-    if (oldChunk.find("<WIDTHENV2\n") != std::string::npos ||
-        oldChunk.find("<WIDTHENV2\r\n") != std::string::npos) return false;
-    const auto close = oldChunk.rfind("\n>");
-    if (close == std::string::npos || close + 2 >= oldChunk.size() + 1) return false;
-    // Insert directly before the track's final '>'; no FX chain/AUXRECV edits.
-    std::string newChunk = oldChunk;
-    newChunk.insert(close + 1, "<WIDTHENV2\nACT 1\nVIS 1 1 1\nLANEHEIGHT 0 0\nARM 1\nDEFSHAPE 0 -1 -1\n>\n");
-    if (!SetTrackStateChunk(track, newChunk.c_str(), true)) return false;
-    auto* env = trackWidthEnvelope(track);
-    if (env && ValidatePtr2(project, env, "TrackEnvelope*") && isShown(envelopeChunk(env))) return true;
-    // Undo an unsupported or ignored chunk structure immediately.
-    SetTrackStateChunk(track, oldChunk.c_str(), true);
+    std::string revised = oldChunk;
+    std::size_t offset = 0, count = 0;
+    const auto block = widthEnvelopeBlock(oldChunk, &offset, &count);
+    if (!block.empty()) {
+        const auto active = rewriteState(block, "ACT", on);
+        if (active.empty()) return false;
+        const auto visible = rewriteState(active, "VIS", on);
+        if (visible.empty()) return false;
+        const auto armed = on ? ensureArmed(visible) : visible;
+        if (armed.empty()) return false;
+        revised.replace(offset, count, armed);
+    } else {
+        if (!on) return false;
+        // Reject damaged/unknown Width blocks, never risk duplicating one.
+        if (oldChunk.find("<WIDTHENV") != std::string::npos) return false;
+        const auto finalClose = oldChunk.rfind("\n>");
+        if (finalClose == std::string::npos) return false;
+        const auto created = newWidthEnvelope(track);
+        if (created.empty()) return false;
+        revised.insert(finalClose + 1, created);
+    }
+    if (revised == oldChunk) return widthShown(track) == on;
+    // Surrounding Undo_BeginBlock2/Undo_EndBlock2 groups the change.
+    if (!SetTrackStateChunk(track, revised.c_str(), false)) return false;
+    // Verify the real native chunk, not solely a potentially stale API ptr.
+    const auto after = readTrackChunk(track);
+    const auto newBlock = widthEnvelopeBlock(after);
+    if (!after.empty() && !newBlock.empty() && isShown(newBlock) == on &&
+        (!on || armIsOn(newBlock))) return true;
+    SetTrackStateChunk(track, oldChunk.c_str(), false);
     return false;
 }
-
 } // namespace
 
 bool TrackNavigator::currentEnvelopeActive() const {
@@ -261,8 +342,8 @@ bool TrackNavigator::currentEnvelopeActive() const {
     if (page_ != Page::tracks) {
         return routingShown(resolveTarget(project_, track_, e->category, e->index), routingTag(name));
     }
-    TrackEnvelope* env = (page_ == Page::tracks && e->type == Entry::width) ?
-        trackWidthEnvelope(track_) : (GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track_, name) : nullptr);
+    if (e->type == Entry::width && page_ == Page::tracks) return widthShown(track_);
+    TrackEnvelope* env = GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track_, name) : nullptr;
     return env && ValidatePtr2(project_, env, "TrackEnvelope*") && isShown(envelopeChunk(env));
 }
 
@@ -332,8 +413,21 @@ void TrackNavigator::toggleCurrentAutomation() {
         speech_(created ? feedback(true) : "Send/receive automation not created");
         return;
     }
-    TrackEnvelope* env = (page_ == Page::tracks && e->type == Entry::width) ?
-        trackWidthEnvelope(track_) : (GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track_, name) : nullptr);
+    // Width is a native track envelope: handle existing and absent cases
+    // through the same verified chunk path (including legacy WIDTHENV).
+    if (e->type == Entry::width && page_ == Page::tracks) {
+        const bool enable = !currentEnvelopeActive();
+        Undo_BeginBlock2(project_);
+        const bool changed = setWidthShown(track_, project_, enable);
+        Undo_EndBlock2(project_, "LReaParams: Track Width automation", UNDO_STATE_TRACKCFG);
+        if (changed && currentEnvelopeActive() == enable) {
+            if (TrackList_AdjustWindows) TrackList_AdjustWindows(false);
+            UpdateArrange();
+            speech_(feedback(enable));
+        } else speech_("Width automation change not confirmed. No changes");
+        return;
+    }
+    TrackEnvelope* env = GetTrackEnvelopeByName ? GetTrackEnvelopeByName(track_, name) : nullptr;
     if (env && ValidatePtr2(project_, env, "TrackEnvelope*")) {
         const bool enable = !currentEnvelopeActive();
         Undo_BeginBlock2(project_);
@@ -341,16 +435,6 @@ void TrackNavigator::toggleCurrentAutomation() {
         Undo_EndBlock2(project_, "LReaParams: Track Params envelope", UNDO_STATE_TRACKCFG);
         if (ok && currentEnvelopeActive() == enable) { UpdateArrange(); speech_(feedback(enable)); }
         else speech_("Automation change not confirmed");
-        return;
-    }
-    if (e->type == Entry::width && page_ == Page::tracks) {
-        Undo_BeginBlock2(project_);
-        const bool created = createWidthEnvelope(track_, project_);
-        Undo_EndBlock2(project_, "LReaParams: create track Width automation", UNDO_STATE_TRACKCFG);
-        if (TrackList_AdjustWindows) TrackList_AdjustWindows(false);
-        UpdateArrange();
-        speech_(created && currentEnvelopeActive() ? feedback(true) :
-            "Width automation could not be created. No changes");
         return;
     }
     if (!nativeAction || !Main_OnCommand) {

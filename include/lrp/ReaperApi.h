@@ -1,6 +1,7 @@
 #pragma once
 #include <cstring>
 #define REAPERAPI_MINIMAL
+#define REAPERAPI_WANT_genGuid
 #define REAPERAPI_WANT_Main_OnCommand
 #define REAPERAPI_WANT_NamedCommandLookup
 #define REAPERAPI_WANT_ReorderSelectedTracks
