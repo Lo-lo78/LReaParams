@@ -18,8 +18,9 @@ for token in (
 assert 'src/TrackNavigatorFxTcpList.cpp' in cmake
 assert 'if (fxTcpListOpen_) { handleFxTcpParameterGridKey(k); return; }' in fx
 assert 'if (fxTcpListOpen_) return fxTcpParameterGridReview(includeContext);' in fx
-assert 'if (fxTcpRow_ == 0) openFxTcpParameterGrid(false);' in fx
-assert 'openFxTcpParameterGrid(true)' in fx  # visible grid, now Alt+Enter
+assert 'if (!k.repeat) { rebuildFxTcp(true); openFxTcpParameterGrid(false); }' in fx
+assert 'if (currentFxTcpParameter()) {' in fx
+assert 'openFxTcpParameterGrid(true)' not in fx  # TEST56.6 removes the Alt+Enter visible-only mode
 assert 'if (fxTcpListOpen_) {' in nav and 'k.vk == VK_RETURN' in nav
 assert 'case VK_F1: case VK_F2: case VK_F6:' in nav
 assert 'std::clamp(fxTcpListGridHeight_ + (k.vk == VK_F1 ? -1 : 1), 1, 200)' in grid

@@ -364,16 +364,15 @@ void TrackNavigator::commitFxTcpParameterGrid(bool keepOpen) {
     }
     if (!keepOpen) {
         fxTcpColumn_ = std::clamp(e.fxIndex, 0, static_cast<int>(fxTcpColumns_.size()) - 1);
-        fxTcpRow_ = 0;
+        fxTcpRow_ = fxTcpHeight() > 1 ? 1 : 0;
         if (desired && currentFxTcpColumn()) {
             const auto& params = currentFxTcpColumn()->parameters;
             for (int i = 0; i < static_cast<int>(params.size()); ++i)
                 if (params[static_cast<size_t>(i)].index == e.paramIndex) { fxTcpRow_ = i + 1; break; }
         } else if (currentFxTcpColumn()) {
-            // When removing a visible control, return to its former neighbor,
-            // not always to the FX header. The header is the empty fallback.
+            // Return to the closest surviving parameter, not a fake FX header.
             const int count = static_cast<int>(currentFxTcpColumn()->parameters.size());
-            fxTcpRow_ = std::min(oldVisibleRow, count);
+            fxTcpRow_ = count > 0 ? std::clamp(oldVisibleRow, 1, count) : 0;
         }
         fxTcpListOpen_ = false;
         fxTcpListEntries_.clear(); fxTcpVisibleColumns_.clear(); fxTcpGridFilter_.clear();

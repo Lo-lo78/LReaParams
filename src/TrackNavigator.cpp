@@ -158,13 +158,20 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
             }
         }
         if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
-        if (k.ctrl && !k.shift && !k.alt && k.vk == 'F') return true;
+        if (k.ctrl && !k.shift && !k.alt && (k.vk == 'F' || k.vk == 'B' ||
+            k.vk == 'D')) return true;
+        if (k.ctrl && k.shift && !k.alt &&
+            (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == 'A')) return true;
+        if (k.ctrl && k.shift && k.alt && !k.altGr && k.vk == 'A') return true;
         if (!valueMode_ && fxTcpSearchCharacter(k)) return true;
+        // Alt+Enter always opens the names-only TCP addition grid.
+        if (k.alt && !k.ctrl && !k.shift && k.vk == VK_RETURN) return true;
         if (!k.ctrl && k.alt && !k.shift &&
-            (k.vk == VK_RETURN || k.vk == VK_LEFT || k.vk == VK_RIGHT ||
+            (k.vk == VK_LEFT || k.vk == VK_RIGHT ||
              k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT ||
              k.vk == VK_HOME || k.vk == VK_END)) return true;
-        if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_UP || k.vk == VK_DOWN)) return true;
+        if (k.ctrl && !k.shift && !k.alt &&
+            (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT)) return true;
         if (k.ctrl && !k.alt && !k.shift &&
             (k.vk == VK_TAB || k.vk == 'Q' || k.vk == VK_SPACE ||
              k.vk == VK_HOME || k.vk == VK_END)) return true;
@@ -173,7 +180,8 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
             case VK_F1: case VK_F2: case VK_F3: case VK_F4: case VK_F6:
             case VK_LEFT: case VK_RIGHT: case VK_UP: case VK_DOWN:
             case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT:
-            case VK_TAB: case VK_ESCAPE: case VK_SPACE: case VK_RETURN: return true;
+            case VK_TAB: case VK_ESCAPE: case VK_SPACE: case VK_RETURN:
+            case VK_DELETE: return true;
             default: return false;
         }
     }
@@ -327,8 +335,9 @@ void TrackNavigator::restorePosition() {
                 if (savedFx == text) { fxTcpColumn_ = i; break; }
             }
             try {
-                fxTcpRow_ = std::clamp(std::stoi(memory_.position("F4.Row")), 0, fxTcpHeight() - 1);
-            } catch (...) { fxTcpRow_ = 0; }
+                fxTcpRow_ = std::clamp(std::stoi(memory_.position("F4.Row")),
+                    fxTcpHeight() > 1 ? 1 : 0, fxTcpHeight() - 1);
+            } catch (...) { fxTcpRow_ = fxTcpHeight() > 1 ? 1 : 0; }
         }
         return;
     } else page_ = Page::tracks;
@@ -823,7 +832,8 @@ std::wstring TrackNavigator::windowTitle() const {
     if (!active_) return L"Track Params";
     if (page_ == Page::fxTcp && !memoryManager_)
         return std::wstring(L"Track Params - ") + wideUtf8(trackName()) +
-            (fxTcpListOpen_ ? (fxTcpListVisibleOnly_ ? L" - Visible TCP parameters - Remove" : L" - FX parameter selection") : L" - FX TCP") +
+            (std::wstring(L" - ") + wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX") +
+             (fxTcpListOpen_ ? L" - Add TCP parameters" : L" - TCP parameters")) +
             (filterEditing_ ? L" - Filter" : !(fxTcpListOpen_ ? fxTcpGridFilter_ : fxTcpMainFilter_).empty() ? L" - Filter active" : L"");
     if (memoryManager_) {
         static constexpr const wchar_t* titles[] = {L"MIDI CC", L"Parameter Steps", L"Parameter Speech", L"Track Positions", L"Volume Ranges"};

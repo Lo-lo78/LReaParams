@@ -45,7 +45,8 @@ browser_key = method(contexts, 'void FxNavigator::browserKey(')
 assert 'browserSwitchColumn(k.vk==VK_LEFT?-1:1)' in browser_key
 assert 'std::vector<int> column' not in browser_key
 assert "browserMove(k.vk==VK_UP?-1:1)" in browser_key
-assert 'browserMoveFx(k.vk==VK_UP?-1:1)' in browser_key
+assert 'browserSwitchTrack(k.vk==VK_UP?-1:1)' in browser_key
+assert 'browserMoveFx(k.vk == VK_PRIOR ? -1 : 1)' in browser_key
 
 switch = method(cpp, 'void FxNavigator::switchFx(')
 assert 'const bool fromMonitor = (fx_ & 0x1000000) != 0;' in switch

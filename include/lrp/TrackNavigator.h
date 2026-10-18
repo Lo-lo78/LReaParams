@@ -74,6 +74,7 @@ private:
     const FxTcpParameter* currentFxTcpParameter() const;
     void moveFxTcpColumn(int delta);
     void moveFxTcpRow(int delta);
+    void moveFxTcpGrid(unsigned int key); // fixed eight-row FX Params layout
     static bool fxTcpInitialMatch(const std::string& label, wchar_t letter);
     static wchar_t fxTcpSearchCharacter(const Key& k);
     void jumpFxTcpByInitial(wchar_t letter, bool backwards);
@@ -81,6 +82,13 @@ private:
     std::string fxTcpStepKey() const;
     bool writeFxTcpValue(double normalized);
     void nudgeFxTcpValue(int direction, bool coarse);
+    bool fxTcpSelectedIdentityValid() const;
+    void toggleFxTcpBypass();
+    void toggleFxTcpDeltaSolo();
+    void moveFxTcpFx(int direction);
+    void removeCurrentFxTcpControl();
+    bool fxTcpAutomationActive() const;
+    void toggleFxTcpAutomation();
     std::string fxTcpValueSpeech() const;
     static bool fxTcpMatchesSearch(const std::string& label, const std::string& query);
     void toggleFxTcpFilter();

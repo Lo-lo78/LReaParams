@@ -207,7 +207,7 @@ void TrackNavigator::rebuildFxTcp(bool preserveSelection) {
                 }
             }
         }
-        fxTcpRow_ = std::clamp(oldRow, 0, fxTcpHeight() - 1);
+        fxTcpRow_ = std::clamp(oldRow, fxTcpHeight() > 1 ? 1 : 0, fxTcpHeight() - 1);
         if (oldParam >= 0 && hadOldGuid &&
             std::memcmp(&fxTcpColumns_[static_cast<size_t>(fxTcpColumn_)].guid, &oldGuid, sizeof(GUID)) == 0) {
             const auto& params = fxTcpColumns_[static_cast<size_t>(fxTcpColumn_)].parameters;
@@ -215,6 +215,9 @@ void TrackNavigator::rebuildFxTcp(bool preserveSelection) {
                 if (params[static_cast<size_t>(i)].index == oldParam) { fxTcpRow_ = i + 1; break; }
         }
     }
+    // No header is part of F4 navigation. With TCP parameters, select one;
+    // row zero is a non-interactive empty state only.
+    if (fxTcpHeight() > 1 && fxTcpRow_ == 0) fxTcpRow_ = 1;
 }
 
 std::string TrackNavigator::fxTcpValueSpeech() const {
@@ -235,7 +238,7 @@ std::string TrackNavigator::fxTcpReview(bool includeContext) const {
     if (fxTcpRow_ == 0) {
         if (TrackFX_GetEnabled && !TrackFX_GetEnabled(track_, column->fxIndex)) name += ", bypassed";
         if (TrackFX_GetOffline && TrackFX_GetOffline(track_, column->fxIndex)) name += ", offline";
-        if (includeContext && column->parameters.empty()) name += ", no TCP parameters";
+        if (column->parameters.empty()) name += ", no TCP parameters. Alt+Enter to add";
         return name;
     }
     const FxTcpParameter* parameter = currentFxTcpParameter();
@@ -245,8 +248,11 @@ std::string TrackNavigator::fxTcpReview(bool includeContext) const {
         TrackFX_GetFormattedParamValue(track_, column->fxIndex, parameter->index, formatted, sizeof(formatted));
     std::string value = formatted[0] ? formatted : "value unavailable";
     std::string result = parameter->name + ", " + value;
+    if (fxTcpAutomationActive()) result += ". Auto";
     if (includeContext) result = name + ", " + result + ", TCP parameter " +
-        std::to_string(fxTcpRow_) + " of " + std::to_string(column->parameters.size());
+        std::to_string(fxTcpRow_) + " of " + std::to_string(column->parameters.size()) +
+        ". Grid column " + std::to_string((fxTcpRow_ - 1) / 8 + 1) +
+        ", row " + std::to_string((fxTcpRow_ - 1) % 8 + 1) + " of 8";
     return result;
 }
 
@@ -282,9 +288,10 @@ bool TrackNavigator::selectFxTcpPage() {
                 fxTcpColumn_ = i; break;
             }
         }
-        try { fxTcpRow_ = std::clamp(std::stoi(memory_.position("F4.Row")), 0, fxTcpHeight() - 1); }
-        catch (...) { fxTcpRow_ = 0; }
-    }
+        try { fxTcpRow_ = std::clamp(std::stoi(memory_.position("F4.Row")),
+            fxTcpHeight() > 1 ? 1 : 0, fxTcpHeight() - 1); }
+        catch (...) { fxTcpRow_ = fxTcpHeight() > 1 ? 1 : 0; }
+    } else if (fxTcpHeight() > 1) fxTcpRow_ = 1;
     rememberFxTcpPosition();
     announceTitle();
     return true;
@@ -296,18 +303,44 @@ void TrackNavigator::moveFxTcpColumn(int delta) {
     if (next == fxTcpColumn_) return; // Silent boundary, as FX Memories.
     fxTcpColumn_ = next;
     valueMode_ = false;
-    fxTcpRow_ = std::min(fxTcpRow_, fxTcpHeight() - 1);
+    fxTcpRow_ = std::clamp(fxTcpRow_, fxTcpHeight() > 1 ? 1 : 0, fxTcpHeight() - 1);
     rememberFxTcpPosition();
-    // A new FX column needs its name once; vertical movements stay concise.
+    // A new FX announces its name once; vertical movement remains concise.
     speech_(fxTcpReview(true));
 }
 void TrackNavigator::moveFxTcpRow(int delta) {
-    const int next = std::clamp(fxTcpRow_ + delta, 0, fxTcpHeight() - 1);
+    const int next = std::clamp(fxTcpRow_ + delta, fxTcpHeight() > 1 ? 1 : 0, fxTcpHeight() - 1);
     if (next == fxTcpRow_) return;
     fxTcpRow_ = next;
     valueMode_ = false;
     rememberFxTcpPosition();
     speech_(fxTcpReview(false));
+}
+
+// TEST56.7: FX Params-style grid of eight TCP parameters per column.
+// No interactive FX header: the FX name belongs to the title and Tab review.
+void TrackNavigator::moveFxTcpGrid(unsigned int key) {
+    const auto* col = currentFxTcpColumn();
+    if (!col) return;
+    const int count = static_cast<int>(col->parameters.size());
+    if (!count) return; // Empty FX remains accessible through Alt+Enter.
+    if (fxTcpRow_ == 0) fxTcpRow_ = 1; // Legacy saved header position.
+    const int index = fxTcpRow_ - 1;
+    const int first = (index / 8) * 8;
+    const int last = std::min(count - 1, first + 7);
+    int next = index;
+    switch (key) {
+        case VK_UP: if (index > first) --next; break;
+        case VK_DOWN: if (index < last) ++next; break;
+        case VK_LEFT: if (index >= 8) next -= 8; break;
+        case VK_RIGHT: if (index + 8 < count) next += 8; break;
+        case VK_HOME: next = first; break;
+        case VK_END: next = last; break;
+        case VK_PRIOR: next = std::max(first, index - 5); break;
+        case VK_NEXT: next = std::min(last, index + 5); break;
+        default: return;
+    }
+    if (next != index) moveFxTcpRow(next + 1 - fxTcpRow_);
 }
 
 wchar_t TrackNavigator::fxTcpSearchCharacter(const Key& k) {
@@ -403,6 +436,103 @@ void TrackNavigator::nudgeFxTcpValue(int direction, bool coarse) {
     writeFxTcpValue(old + direction * step);
 }
 
+// Never address an FX by a stale column index after REAPER reordered its chain.
+bool TrackNavigator::fxTcpSelectedIdentityValid() const {
+    const auto* column = currentFxTcpColumn();
+    if (!project_ || !track_ || !ValidatePtr2(project_, track_, "MediaTrack*") ||
+        !column || !TrackFX_GetFXGUID || !TrackFX_GetCount ||
+        column->fxIndex < 0 || column->fxIndex >= TrackFX_GetCount(track_)) return false;
+    const GUID* live = TrackFX_GetFXGUID(track_, column->fxIndex);
+    return live && std::memcmp(live, &column->guid, sizeof(GUID)) == 0;
+}
+void TrackNavigator::toggleFxTcpBypass() {
+    rebuildFxTcp(true);
+    if (!fxTcpSelectedIdentityValid() || !TrackFX_GetEnabled || !TrackFX_SetEnabled) {
+        speech_("FX no longer available"); return;
+    }
+    const int fx = currentFxTcpColumn()->fxIndex;
+    const bool before = TrackFX_GetEnabled(track_, fx);
+    if (Undo_BeginBlock2) Undo_BeginBlock2(project_);
+    TrackFX_SetEnabled(track_, fx, !before);
+    if (Undo_EndBlock2) Undo_EndBlock2(project_, "LReaParams: F4 toggle FX bypass", UNDO_STATE_FX);
+    if (TrackFX_GetEnabled(track_, fx) == before) { speech_("Bypass not changed"); return; }
+    speech_(before ? "Bypassed" : "Enabled");
+}
+void TrackNavigator::toggleFxTcpDeltaSolo() {
+    rebuildFxTcp(true);
+    if (!fxTcpSelectedIdentityValid() || !TrackFX_GetNumParams ||
+        !TrackFX_GetParamName || !TrackFX_GetParamNormalized ||
+        !TrackFX_SetParamNormalized) { speech_("FX no longer available"); return; }
+    const int fx = currentFxTcpColumn()->fxIndex;
+    const int count = TrackFX_GetNumParams(track_, fx);
+    if (count <= 0) { speech_("Delta Solo unavailable for this FX"); return; }
+    const int param = count - 1;
+    char label[256]{};
+    if (!TrackFX_GetParamName(track_, fx, param, label, sizeof(label))) {
+        speech_("Delta Solo unavailable for this FX"); return;
+    }
+    // Only REAPER's special final wrapper parameter, never an ordinary knob.
+    std::string name(label);
+    std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    if (name != "delta" && name != "delta solo") {
+        speech_("Delta Solo unavailable for this FX"); return;
+    }
+    const double old = TrackFX_GetParamNormalized(track_, fx, param);
+    const double target = old > .5 ? 0.0 : 1.0;
+    if (Undo_BeginBlock2) Undo_BeginBlock2(project_);
+    const bool ok = TrackFX_SetParamNormalized(track_, fx, param, target);
+    if (TrackFX_EndParamEdit) TrackFX_EndParamEdit(track_, fx, param);
+    if (Undo_EndBlock2) Undo_EndBlock2(project_, "LReaParams: F4 Delta Solo", UNDO_STATE_FX);
+    if (!ok || (TrackFX_GetParamNormalized(track_, fx, param) > .5) != (target > .5)) {
+        speech_("Delta Solo not changed"); return;
+    }
+    speech_(target > .5 ? "Delta Solo on" : "Delta Solo off");
+}
+void TrackNavigator::moveFxTcpFx(int direction) {
+    rebuildFxTcp(true);
+    if (!fxTcpSelectedIdentityValid() || !TrackFX_CopyToTrack ||
+        !Undo_BeginBlock2 || !Undo_EndBlock2 ||
+        !TrackFX_GetFXGUID) { speech_("FX cannot be moved"); return; }
+    const int from = currentFxTcpColumn()->fxIndex;
+    const int total = TrackFX_GetCount(track_);
+    const int to = from + direction;
+    if (to < 0 || to >= total) return; // silent edge
+    // REAPER's CopyToTrack move indexes follow the current chain, not
+    // the displayed TCP parameter order. Verify the FX GUID after moving.
+    const GUID moving = currentFxTcpColumn()->guid;
+    Undo_BeginBlock2(project_);
+    TrackFX_CopyToTrack(track_, from, track_, to, true);
+    Undo_EndBlock2(project_, "LReaParams: F4 move FX", UNDO_STATE_FX);
+    rebuildFxTcp(true);
+    for (int i = 0; i < static_cast<int>(fxTcpColumns_.size()); ++i) {
+        if (std::memcmp(&fxTcpColumns_[static_cast<size_t>(i)].guid, &moving, sizeof(GUID)) != 0) continue;
+        fxTcpColumn_ = i;
+        fxTcpRow_ = std::clamp(fxTcpRow_, fxTcpHeight() > 1 ? 1 : 0, fxTcpHeight() - 1);
+        rememberFxTcpPosition();
+        speech_(fxTcpReview(true));
+        return;
+    }
+    speech_("Moved FX not found");
+}
+void TrackNavigator::removeCurrentFxTcpControl() {
+    rebuildFxTcp(true);
+    if (fxTcpRow_ == 0) return; // Delete never deletes an FX header / the FX.
+    if (!fxTcpSelectedIdentityValid()) { speech_("FX no longer available"); return; }
+    const auto* col = currentFxTcpColumn();
+    const auto* p = currentFxTcpParameter();
+    if (!col || !p) return;
+    const int fx = col->fxIndex, param = p->index;
+    if (!fxTcpParameterVisible(fx, param)) { speech_("TCP parameter no longer visible"); return; }
+    if (!setFxTcpParameterVisible(fx, param, false)) {
+        speech_("TCP parameter not removed"); return;
+    }
+    rebuildFxTcp(true);
+    rememberFxTcpPosition();
+    speech_("TCP parameter removed. " + fxTcpReview(false));
+}
+
 void TrackNavigator::handleFxTcpKey(const Key& k) {
     if (filterEditing_) {
         if (k.repeat) return;
@@ -414,6 +544,36 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
     if (fxTcpListOpen_) { handleFxTcpParameterGridKey(k); return; }
     if (k.ctrl && !k.shift && !k.alt && k.vk == 'F') {
         if (!k.repeat) toggleFxTcpFilter();
+        return;
+    }
+    if (k.ctrl && !k.shift && !k.alt && k.vk == 'B') {
+        if (!k.repeat) toggleFxTcpBypass();
+        return;
+    }
+    if (k.ctrl && !k.shift && !k.alt && k.vk == 'D') {
+        if (!k.repeat) toggleFxTcpDeltaSolo();
+        return;
+    }
+    // Unified FX reorder gesture in both navigators: Ctrl+PageUp/Down.
+    // Ctrl+Shift+Up/Down remains reserved for changing tracks.
+    if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_PRIOR || k.vk == VK_NEXT)) {
+        if (!k.repeat) moveFxTcpFx(k.vk == VK_PRIOR ? -1 : 1);
+        return;
+    }
+    if (k.ctrl && k.shift && !k.alt && k.vk == 'A') {
+        if (!k.repeat) toggleFxTcpAutomation();
+        return;
+    }
+    if (k.ctrl && k.shift && k.alt && !k.altGr && k.vk == 'A') {
+        if (!k.repeat) {
+            clearAutomationYes_ = false;
+            clearAutomationConfirm_ = true;
+            speech_("Disable all automation on current track, including send envelopes and FX? No selected. Left and Right choose Yes or No. Enter accepts, Y confirms, N or Escape cancels");
+        }
+        return;
+    }
+    if (!k.ctrl && !k.alt && !k.shift && k.vk == VK_DELETE) {
+        if (!k.repeat) removeCurrentFxTcpControl();
         return;
     }
     if (k.ctrl && k.shift && !k.alt && k.vk == 'M') {
@@ -435,7 +595,7 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
         }
         return;
     }
-    if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_UP || k.vk == VK_DOWN)) {
+    if (k.ctrl && k.shift && !k.alt && (k.vk == VK_UP || k.vk == VK_DOWN)) {
         const int dir = k.vk == VK_UP ? -1 : 1;
         for (int i = row_ + dir; i >= 0 && i < static_cast<int>(rows_.size()); i += dir) {
             MediaTrack* candidate = rows_[static_cast<size_t>(i)].track;
@@ -452,6 +612,13 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
         }
         return; // Silent edge: no other visible track with FX.
     }
+    if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_UP || k.vk == VK_DOWN)) {
+        if (!k.repeat) {
+            rebuildFxTcp(true);
+            moveFxTcpColumn(k.vk == VK_UP ? -1 : 1);
+        }
+        return;
+    }
     if (k.vk == VK_F4) return;
     if (k.vk == VK_F1) { valueMode_ = false; selectPage(Page::tracks); return; }
     if (k.vk == VK_F2) { valueMode_ = false; selectPage(Page::sends); return; }
@@ -462,20 +629,19 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
         else selectPage(Page::tracks);
         return;
     }
-    // Function keys change environments; Alt+Enter owns the editable TCP-visible
-    // selection grid. F6 is explicitly reserved for a future environment.
-    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) return;
-    if (k.vk == VK_RETURN && k.alt && !k.ctrl && !k.shift) {
-        if (!k.repeat) openFxTcpParameterGrid(true);
+    // Alt+Enter opens the names-only grid for adding TCP controls from
+    // ANY F4 cell, including an FX with no controls yet.
+    if (k.alt && !k.ctrl && !k.shift && k.vk == VK_RETURN) {
+        if (!k.repeat) { rebuildFxTcp(true); openFxTcpParameterGrid(false); }
         return;
     }
+    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) return;
     if (k.vk == VK_RETURN && !k.ctrl && !k.alt && !k.shift) {
         if (!k.repeat) {
-            if (fxTcpRow_ == 0) openFxTcpParameterGrid(false);
-            else {
+            if (currentFxTcpParameter()) {
                 valueMode_ = !valueMode_;
                 speech_(std::string(valueMode_ ? "Value, " : "Grid, ") + fxTcpReview(false));
-            }
+            } else speech_("No TCP parameters. Press Alt+Enter to add");
         }
         return;
     }
@@ -505,9 +671,16 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
                         k.vk == VK_PRIOR || k.vk == VK_NEXT);
         return;
     }
-    if (valueMode_ && !k.ctrl && !k.alt && !k.shift &&
+    if (valueMode_ && !k.ctrl && !k.shift &&
         (k.vk == VK_HOME || k.vk == VK_END)) {
         writeFxTcpValue(k.vk == VK_HOME ? 1.0 : 0.0);
+        return;
+    }
+    // Alt+Home/End ALWAYS changes the value, including in Grid mode.
+    // Ctrl+Home/End instead navigates to the first/last TCP parameter.
+    if (!k.ctrl && !k.shift && k.alt &&
+        (k.vk == VK_HOME || k.vk == VK_END)) {
+        if (!k.repeat) writeFxTcpValue(k.vk == VK_HOME ? 1.0 : 0.0);
         return;
     }
     if (k.vk == VK_TAB && !k.ctrl && !k.alt && !k.shift) {
@@ -519,33 +692,17 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
         return;
     }
     if (valueMode_) return; // ordinary arrows do not navigate the active Value slider
-    if (!k.ctrl && !k.shift && k.alt && (k.vk == VK_HOME || k.vk == VK_END)) {
-        rebuildFxTcp(true);
-        const int height = fxTcpHeight();
-        if (height > 1) moveFxTcpRow((k.vk == VK_HOME ? 1 : height - 1) - fxTcpRow_);
-        return;
-    }
-
     // Re-query the TCP API after external FX / TCP configuration edits.
     // Reattach to the GUID and parameter ID, not a now-stale column index.
     rebuildFxTcp(true);
     if (fxTcpColumns_.empty()) { speech_("No track FX"); selectPage(Page::tracks); return; }
     if (k.ctrl && !k.alt && !k.shift && (k.vk == VK_HOME || k.vk == VK_END)) {
-        const int target = k.vk == VK_HOME ? 0 : static_cast<int>(fxTcpColumns_.size()) - 1;
-        moveFxTcpColumn(target - fxTcpColumn_);
+        const int count = fxTcpHeight() - 1;
+        if (count > 0) moveFxTcpRow((k.vk == VK_HOME ? 1 : count) - fxTcpRow_);
         return;
     }
     if (k.ctrl || k.alt || k.shift) return;
-    switch (k.vk) {
-        case VK_LEFT: moveFxTcpColumn(-1); break;
-        case VK_RIGHT: moveFxTcpColumn(1); break;
-        case VK_UP: moveFxTcpRow(-1); break;
-        case VK_DOWN: moveFxTcpRow(1); break;
-        case VK_PRIOR: moveFxTcpRow(-5); break;
-        case VK_NEXT: moveFxTcpRow(5); break;
-        case VK_HOME: moveFxTcpRow(-fxTcpRow_); break;
-        case VK_END: moveFxTcpRow(fxTcpHeight() - 1 - fxTcpRow_); break;
-        default: break;
-    }
+    // Normal arrows never change FX: only navigate the current 8-high grid.
+    moveFxTcpGrid(k.vk);
 }
 } // namespace lrp

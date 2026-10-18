@@ -1009,7 +1009,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         if (k.altGr && k.character) return true;
         if (k.ctrl && k.alt && !k.shift && !k.altGr && k.vk=='B') return true; // Lua offline
         if (k.ctrl && !k.alt && !k.shift &&
-            (k.vk=='P'||k.vk=='B'||k.vk=='D'||k.vk=='W'||
+            (k.vk==VK_PRIOR||k.vk==VK_NEXT||k.vk=='P'||k.vk=='B'||k.vk=='D'||k.vk=='W'||
              k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_UP||k.vk==VK_DOWN||
              k.vk==VK_HOME||k.vk==VK_END)) return true;
         if (k.ctrl && k.shift && !k.alt &&
@@ -1096,7 +1096,9 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (k.ctrl) {
         if (k.alt) return false;
         return k.vk == VK_HOME || k.vk == VK_END || VK_RETURN == k.vk ||
-               k.vk == VK_UP || k.vk == VK_DOWN || k.vk == 'F' || k.vk == 'R';
+               k.vk == VK_UP || k.vk == VK_DOWN ||
+               (!editF7_ && (k.vk == VK_PRIOR || k.vk == VK_NEXT)) ||
+               k.vk == 'F' || k.vk == 'R';
     }
     return k.vk == VK_ESCAPE || k.vk == VK_RETURN || k.vk == VK_F1 || k.vk == VK_F2 ||
            k.vk == VK_HOME || k.vk == VK_END || k.vk == VK_TAB ||
@@ -1479,6 +1481,11 @@ void FxNavigator::handle(const Key& k) {
     if (k.ctrl && !k.alt && !k.shift && k.vk=='B') {if(!k.repeat)toggleBypass();return;}
     if (k.ctrl && !k.alt && k.vk=='D') {
         if(!k.repeat){if(k.shift)clearProjectDeltaSolo();else toggleDeltaSolo();}
+        return;
+    }
+    if (k.ctrl && !k.shift && !k.alt && !editF7_ &&
+        (k.vk == VK_PRIOR || k.vk == VK_NEXT)) {
+        if (!k.repeat) browserMoveFx(k.vk == VK_PRIOR ? -1 : 1);
         return;
     }
     if (k.ctrl && !k.alt && k.vk>=VK_F1 && k.vk<=VK_F12) {

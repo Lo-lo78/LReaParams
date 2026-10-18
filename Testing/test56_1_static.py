@@ -16,7 +16,7 @@ assert 'GetTCPFXParm(project_, track_, i, &fx, &param)' in fx
 assert 'column.fxIndex = fx' in fx and 'fxTcpColumns_.push_back' in fx
 assert 'TrackFX_GetParamName' in fx and 'TrackFX_GetFormattedParamValue' in fx
 assert 'if (next == fxTcpRow_) return;' in fx and 'if (next == fxTcpColumn_) return;' in fx
-assert 'fxTcpRow_ = std::min(fxTcpRow_, fxTcpHeight() - 1)' in fx
+assert 'fxTcpRow_ = std::clamp(fxTcpRow_, fxTcpHeight() > 1 ? 1 : 0, fxTcpHeight() - 1)' in fx
 assert 'memory_.setPosition("F4.FxGUID"' in fx
 assert 'syncCursorToReaper();' in fx
 assert 'selectPage(Page::fxTcp)' in nav

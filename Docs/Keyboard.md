@@ -1,3 +1,7 @@
+# TEST56.7 — Shortcut correnti in FX Params e Track Params F4
+
+Ctrl+Pagina Su/Giù sposta fisicamente l’FX nella catena da FX Params (anche dal browser) e da Track Params F4. Ctrl+Maiusc+Su/Giù cambia traccia in FX Params, anche dal browser. Ctrl+Su/Giù cambia FX senza spostarlo. In Track F4, Alt+Invio apre la griglia dei nomi per aggiungere parametri TCP; Invio su un parametro cambia Grid/Value. Le note storiche seguenti possono documentare tasti superati.
+
 **Aggiornamento TEST55.6:** FX Params: F8 singolo passa da Original a Compare e viceversa; F8 doppio aggiorna Original con il suono corrente senza cambio di lato. La pressione singola attende il riconoscimento del doppio gesto. Il controllo virtuale Compare non è più in griglia. **Ctrl+Maiusc+M** rimane invariato per FX Memories e Track Memories.
 
 **Aggiornamento TEST55.5:** **Ctrl+Maiusc+M** è il comando comune per aprire/chiudere il gestore memorie in FX Params e Track Params. In Track Params sostituisce Alt+F8; F8 in FX Params rimane senza funzione, riservato al futuro. Esc esce dai gestori. Le azioni REAPER dedicate restano disponibili.

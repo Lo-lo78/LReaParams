@@ -347,6 +347,43 @@ bool TrackNavigator::currentEnvelopeActive() const {
     return env && ValidatePtr2(project_, env, "TrackEnvelope*") && isShown(envelopeChunk(env));
 }
 
+bool TrackNavigator::fxTcpAutomationActive() const {
+    const FxTcpColumn* col = currentFxTcpColumn();
+    const FxTcpParameter* param = currentFxTcpParameter();
+    if (!col || !param || !GetFXEnvelope || !TrackFX_GetFXGUID ||
+        !track_ || !project_ || !ValidatePtr2(project_, track_, "MediaTrack*")) return false;
+    const GUID* id = TrackFX_GetFXGUID(track_, col->fxIndex);
+    if (!id || std::memcmp(id, &col->guid, sizeof(GUID)) != 0) return false;
+    TrackEnvelope* env = GetFXEnvelope(track_, col->fxIndex, param->index, false);
+    return env && ValidatePtr2(project_, env, "TrackEnvelope*") &&
+        isShown(envelopeChunk(env));
+}
+void TrackNavigator::toggleFxTcpAutomation() {
+    rebuildFxTcp(true);
+    if (!fxTcpSelectedIdentityValid() || !currentFxTcpParameter() ||
+        !GetFXEnvelope || !Undo_BeginBlock2 || !Undo_EndBlock2) {
+        speech_("FX TCP automation unavailable"); return;
+    }
+    const FxTcpColumn* col = currentFxTcpColumn();
+    const FxTcpParameter* param = currentFxTcpParameter();
+    const int fx = col->fxIndex, index = param->index;
+    const std::string name = param->name;
+    const bool before = fxTcpAutomationActive();
+    Undo_BeginBlock2(project_);
+    // REAPER's native API creates just this FX's selected parameter envelope.
+    // setShown modifies ACT/VIS/ARM only and preserves all point/item data.
+    TrackEnvelope* env = GetFXEnvelope(track_, fx, index, !before);
+    const bool ok = env && ValidatePtr2(project_, env, "TrackEnvelope*") &&
+        setShown(env, !before);
+    Undo_EndBlock2(project_, "LReaParams: F4 FX parameter automation", UNDO_STATE_FX | UNDO_STATE_TRACKCFG);
+    if (!ok || fxTcpAutomationActive() == before) {
+        speech_("Automation change not confirmed"); return;
+    }
+    if (TrackList_AdjustWindows) TrackList_AdjustWindows(false);
+    if (UpdateArrange) UpdateArrange();
+    speech_(std::string(before ? "Auto off. " : "Auto. ") + name + ", " + fxTcpValueSpeech());
+}
+
 void TrackNavigator::toggleCurrentAutomation() {
     const Entry* e = current();
     if (!e || !track_) return;

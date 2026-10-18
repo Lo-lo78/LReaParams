@@ -171,6 +171,7 @@ private:
     void browserSwitchColumn(int direction);
     void browserSelect();
     void browserMoveFx(int direction);
+    void browserSwitchTrack(int direction);
     std::string browserSpeech() const;
     int browserVisibleIndex() const;
     bool browserEntryInScope(int entryIndex) const;

@@ -261,10 +261,23 @@ LRESULT CALLBACK InputRouter::hook(int code, WPARAM param, LPARAM data) noexcept
         const bool chordUp = isSpace && up &&
             self->swallowed_[VK_SPACE] == message.hwnd;
         bool consumed = false;
+        // Intercept the exact F4 Alt+Home/End gesture at queue removal as
+        // well: REAPER can consume WM_SYSKEYDOWN as a Main accelerator before
+        // our focused TitleProxy STATIC/sliders receive it. No global hook.
+        const bool altEdge = (message.wParam == VK_HOME || message.wParam == VK_END) &&
+            ((down && (GetKeyState(VK_MENU) & 0x8000)) ||
+             (up && self->swallowed_[static_cast<UINT>(message.wParam)] == message.hwnd));
         if (chordDown || chordUp) {
             // Run first even in accelerator and native focus-window modes:
             // REAPER must not also dispatch its Action List Ctrl+Space binding.
             consumed = self->interceptTransport(message);
+        } else if (altEdge && self->navigator_ &&
+                   self->navigator_->accepts(Key{static_cast<UINT>(message.wParam),
+                     (GetKeyState(VK_CONTROL) & 0x8000) != 0,
+                     (GetKeyState(VK_MENU) & 0x8000) != 0,
+                     (GetKeyState(VK_SHIFT) & 0x8000) != 0,
+                     (message.lParam & (1LL << 30)) != 0, message.hwnd})) {
+            consumed = self->route(message, true);
         } else if (!self->ownedWindow_ &&
                    (!self->escapeHookOnly_ ||
                     ((down || up) && message.wParam == VK_ESCAPE))) {

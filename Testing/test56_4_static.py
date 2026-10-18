@@ -19,9 +19,9 @@ assert 'k.vk == \'F\'' in grid and 'k.vk == \'F\'' in core
 assert 'if (page_ == Page::fxTcp && filterEditing_)' in h
 assert 'Filter FX parameter grid' in h
 assert 'Search cleared. ' in core
-# Main F4 Alt+Home / End, without changing its FX column.
-assert 'k.vk == VK_HOME || k.vk == VK_END' in core
-assert 'if (height > 1) moveFxTcpRow(' in core
+# TEST56.6: Alt+Home/End changes VALUE; Ctrl+Home/End navigates.
+assert 'Alt+Home/End ALWAYS changes the value' in core
+assert 'moveFxTcpRow((k.vk == VK_HOME ? 1 : count) - fxTcpRow_)' in core
 # Alt+Enter visible grid: columns per FX, rows start at the FX header,
 # vertical speech must never prepend FX name.
 for token in ('fxTcpVisibleColumns_', 'moveFxTcpVisibleColumn',
@@ -32,7 +32,7 @@ for token in ('fxTcpVisibleColumns_', 'moveFxTcpVisibleColumn',
     assert token in grid or token in h, token
 assert 'if (fxTcpListVisibleOnly_ && fxTcpListRow_ == 0) return;' in grid
 assert 'rebuildFxTcpVisibleColumns(fxTcpColumn_, param->index)' in grid
-assert 'Visible TCP parameters - Remove' in track
+assert 'Visible TCP parameters - Remove' not in track  # UI retired in TEST56.6
 assert 'fxTcpParameterVisible(fxIndex, paramIndex) == visible' in grid
 assert 'TrackFX_GetFXGUID(track_, e.fxIndex)' in grid
 # No regressions to Step/Undo or single .tp structure.

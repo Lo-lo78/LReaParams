@@ -275,10 +275,66 @@ void FxNavigator::browserCycleByInitial(wchar_t character, bool backwards) {
         }
     }
 }
+void FxNavigator::browserSwitchTrack(int direction) {
+    if (!fxBrowserMode_ || !direction || !track_ ||
+        track_ == GetMasterTrack(project_)) return;
+    const int total = CountTracks(project_);
+    const int ordinal = static_cast<int>(GetMediaTrackInfo_Value(track_, "IP_TRACKNUMBER")) - 1;
+    if (ordinal < 0 || ordinal >= total) return;
+    MediaTrack* target = nullptr;
+    for (int index = ordinal + direction; index >= 0 && index < total; index += direction) {
+        MediaTrack* candidate = GetTrack(project_, index);
+        if (!candidate || !ValidatePtr2(project_, candidate, "MediaTrack*") ||
+            !GetTrackGUID(candidate)) continue;
+        // Unlike the parameter grid, the browser must also reach offline FX.
+        const int fxCount = TrackFX_GetCount(candidate);
+        for (int fx = 0; fx < fxCount; ++fx)
+            if (TrackFX_GetFXGUID(candidate, fx)) { target = candidate; break; }
+        if (target) break;
+    }
+    if (!target) return; // Silent boundary.
+    const GUID* id = GetTrackGUID(target);
+    if (!id) return;
+    // Do not save the old FX under the new track GUID. On failure, put every
+    // cursor and profile association back exactly as before.
+    rememberPosition(); flushParameterSteps(); flushPersistentPosition();
+    FxNavigator backup(*this);
+    track_ = target; take_ = nullptr; trackGuid_ = *id;
+    browserIndex_ = -1; count_ = 0;
+    if (!rebuildEntries()) { *this = std::move(backup); return; }
+    int preferred = 0;
+    if (const auto* previous = contextMemory(); previous && previous->hasLastFx) {
+        const int remembered = rememberedFxIndex(*previous);
+        if (remembered >= 0) preferred = remembered;
+    }
+    preferred = std::clamp(preferred, 0, static_cast<int>(entries_.size()) - 1);
+    if (TrackFX_GetNumParams(track_, entries_[static_cast<size_t>(preferred)].index) > 0) {
+        if (!selectFx(preferred)) { *this = std::move(backup); return; }
+    } else {
+        const auto& selected = entries_[static_cast<size_t>(preferred)];
+        fx_ = selected.index; fxGuid_ = selected.guid;
+        parameter_ = 0; parameterName_.clear(); count_ = 0;
+    }
+    fxBrowserMode_ = true;
+    browserScopeMonitor_ = false;
+    browserCursor_ = preferred;
+    browserMasterCursor_ = browserMonitorCursor_ = -1;
+    SetOnlyTrackSelected(target);
+    UpdateArrange();
+    char label[2048]{};
+    GetTrackName(target, label, sizeof(label));
+    speech_(std::string(label[0] ? label : "Track") + ". " + browserSpeech());
+}
+
 void FxNavigator::browserMoveFx(int direction) {
     if (!direction || entries_.empty()) return;
-    const int srcIndex = browserVisibleIndex();
-    if (srcIndex < 0) return;
+    const int srcIndex = fxBrowserMode_ ? browserVisibleIndex() : browserIndex_;
+    if (srcIndex < 0 || srcIndex >= static_cast<int>(entries_.size())) return;
+    const GUID* current = take_ ? TakeFX_GetFXGUID(take_, entries_[static_cast<size_t>(srcIndex)].index) :
+                                  TrackFX_GetFXGUID(track_, entries_[static_cast<size_t>(srcIndex)].index);
+    if (!guidEquals(current, entries_[static_cast<size_t>(srcIndex)].guid)) {
+        speech_("FX list changed. Reopen FX Params"); return;
+    }
     const int targetIndex = srcIndex + direction;
     if (!browserEntryInScope(targetIndex)) return;
     const int src = entries_[static_cast<size_t>(srcIndex)].index;
@@ -301,9 +357,17 @@ void FxNavigator::browserMoveFx(int direction) {
         // The host may have shifted the active FX to another numeric slot.
         // Rebind by GUID; never use an old slot against a different plugin.
         count_=0;browserIndex_=-1;
-        if (!selectFx(newActive)) {end();return;}
+        const FxEntry& active = entries_[static_cast<size_t>(newActive)];
+        const int nparams = take_ ? TakeFX_GetNumParams(take_, active.index) :
+                                    TrackFX_GetNumParams(track_, active.index);
+        if (fxBrowserMode_ && nparams <= 0) {
+            // Offline FX can be physically reordered without parameters.
+            fx_ = active.index; fxGuid_ = active.guid;
+            browserIndex_ = newActive;
+            parameter_ = 0; parameterName_.clear();
+        } else if (!selectFx(newActive)) {end();return;}
         browserCursor_=newCursor;
-        speech_("FX moved. " + browserSpeech());
+        speech_("FX moved. " + (fxBrowserMode_ ? browserSpeech() : fxContextAnnouncement()));
         return;
     }
     // REAPER replaced the instance rather than moving it. Do not guess.
@@ -374,6 +438,11 @@ void FxNavigator::browserKey(const Key& k) {
     }
     if (k.ctrl && !k.shift && !k.alt) {
         if (k.vk=='P') {browserSelect();return;}
+        // Ctrl+PageUp/Down physically moves the selected FX inside its chain.
+        if (k.vk == VK_PRIOR || k.vk == VK_NEXT) {
+            if (!k.repeat) browserMoveFx(k.vk == VK_PRIOR ? -1 : 1);
+            return;
+        }
         // Ctrl+Up/Down can also navigate inside the opened chain, just like
         // the parameter grid. It must not jump between Master and Monitor FX.
         if (k.vk==VK_UP||k.vk==VK_DOWN) {browserMove(k.vk==VK_UP?-1:1);return;}
@@ -391,7 +460,7 @@ void FxNavigator::browserKey(const Key& k) {
     if (k.alt && k.shift && !k.ctrl && k.vk=='F') {openNativeFxBrowser();return;}
     if (k.ctrl && k.shift && !k.alt) {
         if (k.vk=='F') {openCurrentFxChain();return;}
-        if (k.vk==VK_UP||k.vk==VK_DOWN) {browserMoveFx(k.vk==VK_UP?-1:1);return;}
+        if (k.vk==VK_UP||k.vk==VK_DOWN) {if (!k.repeat) browserSwitchTrack(k.vk==VK_UP?-1:1);return;}
         if (k.vk=='D') {clearProjectDeltaSolo();return;}
     }
     if (k.vk==VK_ESCAPE) {end();return;}
