@@ -126,6 +126,7 @@ private:
     bool midiTarget(std::string& section, std::string& key) const;
     // Resolve source/destination GUIDs and the exact repeated send ordinal.
     bool midiFixedIdentity(std::string& identity) const;
+    std::string fixedRoutingSignature(const std::string& identity) const;
     void applyMidi(const std::string& section, const std::string& key, int value); // Floating, follows cursor
     void applyFixedMidi(const std::string& identity, int value); // Fixed, follows saved GUIDs
     void resetMidiState();
@@ -153,6 +154,7 @@ private:
     void resetPendingRouting() noexcept;
     std::string pendingRoutingStatus() const;
 
+    void jumpByInitial(wchar_t letter); // Lua: F1 track names, F2/F3 fields in current column
     void moveTrack(int delta);
     void moveParameter(int delta);
     void moveDetailColumn(int delta);

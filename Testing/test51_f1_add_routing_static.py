@@ -38,7 +38,9 @@ assert 'Undo_BeginBlock2(project_)' in routing and 'Undo_EndBlock2(project_' in 
 assert 'UNDO_STATE_TRACKCFG' in routing
 assert 'if (page_ != Page::tracks) { speech_("Only in Tracks"); return; }' in routing
 assert 'pendingRouting_ != kind' in routing and 'Finish or cancel Add receive first' in routing
-assert 'if (added) { TrackList_AdjustWindows(false); UpdateArrange(); }' in routing
+assert 'if (added) {' in routing and 'TrackList_AdjustWindows(false); UpdateArrange();' in routing
+assert 'memory_.invalidateSendGuardsForSource(trackGuidText(sources[s]))' in routing
+assert 'memory_.flush();' in routing
 assert 'TrackNavigator::cancelTrackRouting' in routing
 assert 'handle_add_send_shortcut()' in lua and 'handle_add_receive_shortcut()' in lua
 assert 'Ctrl Shift S' in lua and 'Ctrl Shift R' in lua

@@ -1,4 +1,5 @@
 #include "lrp/TrackNavigator.h"
+#include "lrp/Storage.h"
 #include <algorithm>
 #include <cmath>
 #include <string>
@@ -109,6 +110,30 @@ bool decodeFixedTarget(const std::string& id, FixedTarget& out) {
     return out.parameter == "Volume" || out.parameter == "Pan" || out.parameter == "Width" ||
         out.parameter == "Mute" || out.parameter == "Solo" || out.parameter == "PhaseInvert";
 }
+}
+
+// REAPER does not expose a permanent GUID per send. Hash the source's outgoing
+// routing topology at learn time and validate it before every Fixed CC edit.
+// If a send is inserted/deleted/reordered or its destination changes, fail
+// closed rather than unexpectedly controlling the next send with that ordinal.
+// Completely indistinguishable duplicate sends cannot be disambiguated by the
+// REAPER API; the user must relearn after structural routing edits.
+std::string TrackNavigator::fixedRoutingSignature(const std::string& identity) const {
+    FixedTarget target;
+    if (!decodeFixedTarget(identity, target) || !target.send || !GetSetTrackSendInfo) return {};
+    MediaTrack* source = findSavedTrack(target.source);
+    if (!source) return {};
+    const int count = GetTrackNumSends(source, 0);
+    if (count < 0 || count > 512) return {};
+    std::string topology = "LReaParams.SendTopology.v1|" + target.source + "|" + std::to_string(count);
+    for (int i = 0; i < count; ++i) {
+        auto* peer = static_cast<MediaTrack*>(GetSetTrackSendInfo(source, 0, i, "P_DESTTRACK", nullptr));
+        if (!peer || !ValidatePtr2(project_, peer, "MediaTrack*")) return {};
+        const auto guid = trackGuidText(peer);
+        if (guid.empty()) return {};
+        topology += "|" + guid;
+    }
+    return sha256(topology);
 }
 
 void TrackNavigator::resetMidiState() {
@@ -232,6 +257,12 @@ void TrackNavigator::applyFixedMidi(const std::string& identity, int value) {
     if (!source) return; // Deleted track: its map remains inert, not reassigned.
     MediaTrack* dest = target.send ? findSavedTrack(target.destination) : nullptr;
     if (target.send && (!dest || !GetSetTrackSendInfo)) return;
+    // Legacy ordinal-only sends have no guard and are deliberately inactive
+    // until relearned. An altered route graph must never hijack a Fixed CC.
+    if (target.send) {
+        const auto saved = memory_.routingGuard(identity);
+        if (saved.empty() || saved != fixedRoutingSignature(identity)) return;
+    }
     int sendIndex = -1;
     if (target.send) {
         int occurrence = 0;
@@ -329,6 +360,17 @@ void TrackNavigator::pollMidi() {
         const auto cc = it->cc;
         if (learnCc_) {
             const std::string link = std::to_string(cc.channel) + "," + std::to_string(cc.number);
+            // Validate outgoing routing before modifying any mapping: a
+            // failed learn must not wipe an older valid CC association.
+            std::string signature;
+            if (learnIdentity_.rfind("Sends|", 0) == 0) {
+                signature = fixedRoutingSignature(learnIdentity_);
+                if (signature.empty()) {
+                    learnCc_ = false;
+                    speech_("Routing unavailable. CC not learned");
+                    continue;
+                }
+            }
             // A physical controller has one Fixed target per project.
             // Do not destroy imported generic Lua entries: they are inactive
             // compatibility data and cannot drive other tracks.
@@ -338,6 +380,9 @@ void TrackNavigator::pollMidi() {
                     oldCh == cc.channel && oldCC == cc.number)
                     memory_.setFixedCcLink(row.first, "");
             }
+            // Store the guard in the same .tp transaction as this Fixed CC.
+            // Track parameters do not need a routing guard; send/receive do.
+            if (!signature.empty()) memory_.setRoutingGuard(learnIdentity_, signature);
             memory_.setFixedCcLink(learnIdentity_, link);
             memory_.setFixedEnabled(true);
             memory_.flush();

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <cwctype>
 #include <iomanip>
 #include <cstdio>
 #include <sstream>
@@ -141,6 +142,10 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
             (k.ctrl && !k.alt && !k.shift && k.vk == 'F');
     }
     if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
+    // Printable letters and digits cycle the Lua column/track initial search.
+    // InputRouter supplies the character in the active keyboard layout.
+    if (!k.ctrl && !k.alt && !k.altGr && !valueMode_ && k.character &&
+        std::iswalnum(static_cast<wint_t>(k.character))) return true;
     if (page_ == Page::tracks && !k.alt && k.ctrl &&
         k.vk >= VK_F1 && k.vk <= VK_F12) return true;
     const bool f1 = page_ == Page::tracks;
@@ -863,6 +868,51 @@ void TrackNavigator::moveToFolder(int direction) {
     }
     // Silent boundary, same as ordinary F1 movement.
 }
+void TrackNavigator::jumpByInitial(wchar_t letter) {
+    if (!active_ || valueMode_ || !std::iswalnum(static_cast<wint_t>(letter))) return;
+    const auto requested = std::towlower(static_cast<wint_t>(letter));
+    if (page_ == Page::tracks) {
+        const int count = static_cast<int>(rows_.size());
+        for (int offset = 1; offset <= count; ++offset) {
+            const int next = (row_ + offset) % count;
+            char label[2048]{};
+            if (!GetTrackName(rows_[static_cast<size_t>(next)].track, label, sizeof(label))) continue;
+            const auto wide = wideUtf8(label);
+            const auto first = std::find_if_not(wide.begin(), wide.end(), [](wchar_t c) {
+                return std::iswspace(static_cast<wint_t>(c)) != 0;
+            });
+            if (first == wide.end() || std::towlower(static_cast<wint_t>(*first)) != requested) continue;
+            if (next == row_) return; // Only one matching track: silent boundary.
+            row_ = next;
+            track_ = rows_[static_cast<size_t>(row_)].track;
+            resetSelectionStroke();
+            syncCursorToReaper();
+            midiPickup_.clear();
+            rememberPosition();
+            announceTrack(); // preserve F1 parameter column
+            return;
+        }
+        return; // No match: do not announce or move.
+    }
+    // F2/F3: one column per connection; cycle through its 14 fields only.
+    for (int offset = 1; offset <= detailHeight; ++offset) {
+        const int next = (parameter_ + offset) % detailHeight;
+        const auto index = detailIndex_ * detailHeight + next;
+        if (index < 0 || index >= static_cast<int>(entries_.size())) continue;
+        const auto& title = entries_[static_cast<size_t>(index)].title;
+        const auto wide = wideUtf8(title);
+        const auto first = std::find_if_not(wide.begin(), wide.end(), [](wchar_t c) {
+            return std::iswspace(static_cast<wint_t>(c)) != 0;
+        });
+        if (first == wide.end() || std::towlower(static_cast<wint_t>(*first)) != requested) continue;
+        if (next == parameter_) return;
+        parameter_ = next;
+        stepScale_ = memory_.step(parameterKey());
+        rememberPosition();
+        announce(); // vertical speech: parameter and value only
+        return;
+    }
+}
 void TrackNavigator::moveTrack(int delta) {
     if (page_ != Page::tracks) return;
     resetSelectionStroke();
@@ -1255,6 +1305,11 @@ void TrackNavigator::handle(const Key& k) {
     }
     if (k.vk == VK_HOME) { moveParameter(-parameter_); return; }
     if (k.vk == VK_END) { moveParameter((page_ == Page::tracks ? 8 : detailHeight - 1) - parameter_); return; }
+    if (!k.ctrl && !k.alt && !k.altGr && !valueMode_ && k.character &&
+        std::iswalnum(static_cast<wint_t>(k.character))) {
+        if (!k.repeat) jumpByInitial(k.character);
+        return;
+    }
     // F1: left/right = parameters, up/down = tracks.
     // F2/F3: left/right = SEND/RECEIVE COLUMNS, up/down = 14 vertical fields.
     if (k.vk == VK_LEFT) { if (page_ == Page::tracks) moveParameter(-1); else moveDetailColumn(-1); return; }

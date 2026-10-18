@@ -146,6 +146,11 @@ void TrackNavigator::rebuildMemoryList() {
             const auto comma = entry.second.find(',');
             label += comma == std::string::npos ? ", CC " + entry.second :
                 ", Channel " + entry.second.substr(0, comma) + ", CC " + entry.second.substr(comma + 1);
+            if (entry.first.rfind("Sends|", 0) == 0) {
+                const auto guard = memory_.routingGuard(entry.first);
+                if (guard.empty() || guard != fixedRoutingSignature(entry.first))
+                    label += ", routing changed, relearn CC";
+            }
             memoryItems_.push_back({"S:" + entry.first, label, entry.second, 0});
         }
         for (const auto* group : trackPages) {

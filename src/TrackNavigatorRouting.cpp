@@ -119,7 +119,13 @@ void TrackNavigator::completeTrackRouting() {
     }
     resetPendingRouting();
     resetSelectionStroke();
-    if (added) { TrackList_AdjustWindows(false); UpdateArrange(); }
+    if (added) {
+        for (std::size_t s = 0; s < sources.size(); ++s) {
+            if (sources[s]) memory_.invalidateSendGuardsForSource(trackGuidText(sources[s]));
+        }
+        memory_.flush();
+        TrackList_AdjustWindows(false); UpdateArrange();
+    }
     // Keep the second-stage selection and the F1 cursor as in the Lua.
     refreshTrackSelection();
     std::string result = "Added " + std::to_string(added) + (receive ? " receives." : " sends.");

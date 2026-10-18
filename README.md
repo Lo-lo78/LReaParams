@@ -1,3 +1,5 @@
+> **TEST55.13 / LReaParams 0.0.55:** ricerca ciclica per iniziale come nel Lua (F1 per traccia, F2/F3 per parametro nella colonna), protezione dei CC Fixed di send/receive quando cambia la struttura del routing. **Gli Step rimangono condivisi per tipo di parametro, non per traccia.** Solo sorgente per GitHub Actions, senza compilazione locale. [Guida TEST55.13](Docs/TEST55_13_INITIAL_ROUTING_REFINEMENTS.md).
+
 > **TEST55.12 / LReaParams 0.0.55:** Correzione automazione Width in F1 con envelope nativo completo (`EGUID`, `PT`, armamento), verifica tramite chunk anche quando l’API non aggiorna subito il puntatore. Nessuna compilazione locale. [Guida e collaudo](Docs/TEST55_12_WIDTH_AUTOMATION.md).
 
 > **TEST55.9 + TEST55.10 / LReaParams 0.0.55:** Ctrl+Q Track Params con MIDI Fixed/Floating in background; Ctrl+Maiusc+Alt+A con conferma e Undo su entrambi i navigatori; creazione Width in F1 con verifica e ripristino in caso di errore. F1/F2/F3 revisionati prima di F4. Sorgente per GitHub Actions, senza build locale. [Guida](Docs/TEST55_10_F1_F3_CLOSURE.md).

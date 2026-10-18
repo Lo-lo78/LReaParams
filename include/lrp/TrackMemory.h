@@ -29,6 +29,11 @@ public:
     std::string fixedCcLink(const std::string& identity) const;
     void setFixedCcLink(const std::string& identity, const std::string& link);
     std::map<std::string, std::string> fixedCcLinks() const;
+    // Fingerprint of the outgoing-send topology at CC learn time. Absent or
+    // changed guard: do not apply an ambiguous legacy Fixed CC send mapping.
+    std::string routingGuard(const std::string& identity) const;
+    void setRoutingGuard(const std::string& identity, const std::string& signature);
+    void invalidateSendGuardsForSource(const std::string& sourceGuid);
     // Independent, initially OFF, speech preference for each exact Fixed CC target.
     // The same identity is shared by an outgoing Send and its incoming Receive.
     bool fixedCcSpeech(const std::string& identity) const;

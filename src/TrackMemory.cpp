@@ -16,6 +16,7 @@ constexpr const char* navigationSection = "LReaParams.NavigationMemory";
 constexpr const char* midiSection = "LReaParams.MidiSettings";
 constexpr const char* fixedByTargetSection = "LReaParams.FixedCCByTarget";
 constexpr const char* fixedSpeechSection = "LReaParams.FixedCCSpeechByTarget";
+constexpr const char* routingGuardSection = "LReaParams.FixedRoutingGuards";
 
 std::string patchLine(std::string bytes, const std::string& section,
                       const std::string& key, const std::string& value) {
@@ -208,6 +209,22 @@ void TrackMemory::setFixedCcLink(const std::string& identity, const std::string&
         throw ProfileError("Missing track GUID in Fixed CC identity");
     if (link.size() > 32) throw ProfileError("Invalid Fixed CC link");
     edit(fixedByTargetSection, identity, link);
+    if (link.empty() && identity.rfind("Sends|{", 0) == 0)
+        edit(routingGuardSection, identity, "");
+}
+std::string TrackMemory::routingGuard(const std::string& identity) const {
+    return read(routingGuardSection, identity);
+}
+void TrackMemory::setRoutingGuard(const std::string& identity, const std::string& signature) {
+    if (identity.rfind("Sends|{", 0) != 0 || (signature.size() != 64 && !signature.empty()))
+        throw ProfileError("Invalid Fixed CC routing guard");
+    edit(routingGuardSection, identity, signature);
+}
+void TrackMemory::invalidateSendGuardsForSource(const std::string& sourceGuid) {
+    const std::string prefix = "Sends|" + sourceGuid + "|";
+    for (const auto& item : entries(routingGuardSection))
+        if (item.first.rfind(prefix, 0) == 0 && !item.second.empty())
+            edit(routingGuardSection, item.first, "");
 }
 bool TrackMemory::fixedCcSpeech(const std::string& identity) const {
     // No entry = silent, exactly like FX Params. Never fall back to a

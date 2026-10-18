@@ -165,6 +165,10 @@ void TrackNavigator::deleteCurrentRouting() {
     Undo_EndBlock2(project_, receive ? "LReaParams: remove receive" :
         "LReaParams: remove send", UNDO_STATE_TRACKCFG);
     if (!ok) { speech_("Delete routing failed"); return; }
+    // Invalidate guards even if a subsequent edit recreates the same number
+    // and destination order of sends (otherwise ordinals could be reused).
+    memory_.invalidateSendGuardsForSource(trackGuidText(source));
+    memory_.flush();
     TrackList_AdjustWindows(false);
     UpdateArrange();
     // Rebuild before the next context check, or the old send counts would
