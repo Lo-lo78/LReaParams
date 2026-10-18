@@ -1,2 +1,2 @@
-LReaParams 0.0.55 — TEST55 Track Memories e Volume range.
-Source-only. No local compilation. Build only with GitHub Actions. Parameter Library excluded.
+LReaParams 0.0.55 — TEST55.3: Fixed MIDI CC per-track GUID and per-send routing identity.
+Source-only for GitHub Actions; no local C++ compilation. Parameter Library excluded.

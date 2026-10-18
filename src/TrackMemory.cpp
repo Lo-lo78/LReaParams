@@ -14,6 +14,7 @@ constexpr const char* stepsSection = "LReaParams.StepScales";
 constexpr const char* speechSection = "LReaParams.ParameterSpeech";
 constexpr const char* navigationSection = "LReaParams.NavigationMemory";
 constexpr const char* midiSection = "LReaParams.MidiSettings";
+constexpr const char* fixedByTargetSection = "LReaParams.FixedCCByTarget";
 
 std::string patchLine(std::string bytes, const std::string& section,
                       const std::string& key, const std::string& value) {
@@ -194,6 +195,24 @@ void TrackMemory::setCcSpeech(const std::string& page, const std::string& id, bo
     if (page != "Track" && page != "Sends" && page != "Receives") throw ProfileError("Unsupported CC speech page");
     edit("CCSpeech." + page, ccKey(id), on ? "1" : "");
 }
+std::string TrackMemory::fixedCcLink(const std::string& identity) const {
+    return read(fixedByTargetSection, identity);
+}
+void TrackMemory::setFixedCcLink(const std::string& identity, const std::string& link) {
+    // Never allow a legacy generic parameter name in the scoped namespace.
+    if (identity.rfind("Track|{", 0) != 0 && identity.rfind("Sends|{", 0) != 0)
+        throw ProfileError("Missing track GUID in Fixed CC identity");
+    if (link.size() > 32) throw ProfileError("Invalid Fixed CC link");
+    edit(fixedByTargetSection, identity, link);
+}
+std::map<std::string, std::string> TrackMemory::fixedCcLinks() const {
+    auto all = entries(fixedByTargetSection);
+    for (auto it = all.begin(); it != all.end();) {
+        if (it->second.empty()) it = all.erase(it);
+        else ++it;
+    }
+    return all;
+}
 std::string TrackMemory::ccLink(const std::string& section, const std::string& key) const {
     if (section != "Track" && section != "Sends" && section != "Receives") return {};
     return read(section, key);
@@ -220,11 +239,9 @@ bool TrackMemory::fixedEnabled() const {
     const std::string saved = read(midiSection, "FixedEnabled");
     if (saved == "1") return true;
     if (saved == "0") return false;
-    // Before the first explicit toggle, an imported map is ready on reopen.
-    for (const char* group : {"Track", "Sends", "Receives"})
-        for (const auto& row : ccLinks(group))
-            if (!row.second.empty()) return true;
-    return false;
+    // An imported type-wide Lua map is not a Fixed target: no track GUID.
+    // Never reactivate it across every track merely because it is present.
+    return !fixedCcLinks().empty();
 }
 void TrackMemory::setFixedEnabled(bool on) { edit(midiSection, "FixedEnabled", on ? "1" : "0"); }
 std::map<std::string, std::string> TrackMemory::entries(const std::string& section) const {

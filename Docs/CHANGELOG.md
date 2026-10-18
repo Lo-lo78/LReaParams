@@ -1,3 +1,11 @@
+## TEST55.3 — Fixed MIDI CC per-track GUID
+
+- Track Fixed CC bound to an immutable REAPER Track GUID, not the navigated Pan/Volume type.
+- Send/Receive CC bound to source/destination GUIDs plus send ordinal; Floating CC unchanged.
+- Project `.tp` receives `[LReaParams.FixedCCByTarget]`; previous type-wide maps preserved and shown as inactive legacy entries in Track Memories.
+- Ctrl+Delete and Alt+F8 delete individual scoped associations; per-GUID MIDI pickup.
+- Added Windows native profile persistence tests and source-only static checks.
+
 ## TEST55.1 — MSVC compile fix (GitHub Actions)
 
 - `src/TrackNavigatorMemories.cpp`: separate the `std::string` and `size_t` local `auto` declarations at the two Track Memories speech/CC handlers (C3538).

@@ -43,6 +43,8 @@ std::string TrackNavigator::trackGuidText(MediaTrack* target) const {
 }
 MediaTrack* TrackNavigator::findSavedTrack(const std::string& guid) const {
     if (guid.empty() || !project_) return nullptr;
+    if (MediaTrack* master = GetMasterTrack(project_))
+        if (trackGuidText(master) == guid) return master;
     for (int i = 0, count = CountTracks(project_); i < count; ++i) {
         MediaTrack* candidate = GetTrack(project_, i);
         if (candidate && trackGuidText(candidate) == guid) return candidate;
@@ -128,14 +130,43 @@ bool TrackNavigator::openTrackMemories(bool standalone) {
 void TrackNavigator::rebuildMemoryList() {
     memoryItems_.clear();
     if (memoryColumn_ == 0) {
+        // One memory per physical Track or Send; old Lua type-wide mappings
+        // remain visible as explicitly INACTIVE compatibility entries.
+        for (const auto& entry : memory_.fixedCcLinks()) {
+            std::string label = entry.first;
+            const auto pipe = entry.first.find('|');
+            if (pipe != std::string::npos) {
+                if (entry.first.rfind("Track|", 0) == 0) {
+                    const auto last = entry.first.rfind('|');
+                    const auto guid = entry.first.substr(pipe + 1, last - pipe - 1);
+                    label = savedTrackLabel(guid) + ", " + entry.first.substr(last + 1);
+                } else if (entry.first.rfind("Sends|", 0) == 0) {
+                    const auto destStart = entry.first.find('|', pipe + 1);
+                    const auto ordinalStart = entry.first.find('|', destStart + 1);
+                    const auto parmStart = entry.first.find('|', ordinalStart + 1);
+                    if (destStart != std::string::npos && ordinalStart != std::string::npos &&
+                        parmStart != std::string::npos) {
+                        const auto source = entry.first.substr(pipe + 1, destStart - pipe - 1);
+                        const auto dest = entry.first.substr(destStart + 1, ordinalStart - destStart - 1);
+                        const auto ordinal = entry.first.substr(ordinalStart + 1, parmStart - ordinalStart - 1);
+                        label = savedTrackLabel(source) + ", Send " + ordinal + " to " +
+                            savedTrackLabel(dest) + ", " + entry.first.substr(parmStart + 1);
+                    }
+                }
+            }
+            const auto comma = entry.second.find(',');
+            label += comma == std::string::npos ? ", CC " + entry.second :
+                ", Channel " + entry.second.substr(0, comma) + ", CC " + entry.second.substr(comma + 1);
+            memoryItems_.push_back({"S:" + entry.first, label, entry.second, 0});
+        }
         for (const auto* group : trackPages) {
             for (const auto& entry : memory_.ccLinks(group)) {
                 if (entry.second.empty()) continue;
                 const auto comma = entry.second.find(',');
                 const std::string controller = comma == std::string::npos ? "CC " + entry.second :
                     "Channel " + entry.second.substr(0, comma) + ", CC " + entry.second.substr(comma + 1);
-                memoryItems_.push_back({std::string(group) + "." + entry.first,
-                    std::string(group) + ", " + entry.first + ", " + controller,
+                memoryItems_.push_back({std::string("L:") + group + "." + entry.first,
+                    std::string("Legacy inactive, ") + group + ", " + entry.first + ", " + controller,
                     entry.second, 0});
             }
         }
@@ -212,9 +243,14 @@ void TrackNavigator::memoryDelete() {
     const auto item = memoryItems_[static_cast<size_t>(memoryRow_)];
     const int removedColumn = memoryColumn_;
     if (memoryColumn_ == 0) {
-        const auto dot = item.key.find('.');
-        if (dot == std::string::npos) return;
-        memory_.setCcLink(item.key.substr(0, dot), item.key.substr(dot + 1), "");
+        if (item.key.rfind("S:", 0) == 0)
+            memory_.setFixedCcLink(item.key.substr(2), "");
+        else if (item.key.rfind("L:", 0) == 0) {
+            const auto legacy = item.key.substr(2);
+            const auto dot = legacy.find('.');
+            if (dot == std::string::npos) return;
+            memory_.setCcLink(legacy.substr(0, dot), legacy.substr(dot + 1), "");
+        } else return;
         midiPickup_.clear();
     } else if (memoryColumn_ == 1) {
         memory_.setStep(item.key, 0);

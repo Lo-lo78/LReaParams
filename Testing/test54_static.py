@@ -26,8 +26,8 @@ assert 'pending.rbegin()' not in midi and 'items.rbegin()' in midi
 assert 'decodeCc(' in midi and 'midiSequence_' in midi
 assert 'pickup.allows(value, norm(before))' in midi
 assert 'pendingMidiSpeech_' in midi and 'GetTickCount64()' in midi
-assert 'memory_.setCcLink(group, row.first, "")' in midi
-assert 'memory_.setCcLink(learnSection_, learnKey_, link)' in midi
+assert 'memory_.setFixedCcLink(row.first, "")' in midi
+assert 'memory_.setFixedCcLink(learnIdentity_, link)' in midi
 assert 'continue; // learn event must never modify the target' in midi
 assert 'if (filterEditing_ || numericEditing_)' in midi
 assert 'if (section != sectionFor(page_' in midi

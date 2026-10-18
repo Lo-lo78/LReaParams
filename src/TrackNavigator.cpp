@@ -582,7 +582,9 @@ std::string TrackNavigator::valueText(const Entry& e, double value) const {
 std::string TrackNavigator::ccParameterSuffix() const {
     std::string section, key;
     if (!midiTarget(section, key)) return {};
-    const std::string link = memory_.ccLink(section, key);
+    std::string identity;
+    if (!midiFixedIdentity(identity)) return {};
+    const std::string link = memory_.fixedCcLink(identity);
     const auto separator = link.find(',');
     if (separator == std::string::npos) return {};
     try {
@@ -1009,7 +1011,7 @@ void TrackNavigator::handle(const Key& k) {
         if (!k.repeat) midiShortcut(k);
         return;
     }
-    if (k.vk == VK_ESCAPE && learnCc_) { learnCc_ = false; learnSection_.clear(); learnKey_.clear(); speech_("CC learn cancelled"); return; }
+    if (k.vk == VK_ESCAPE && learnCc_) { learnCc_ = false; learnSection_.clear(); learnKey_.clear(); learnIdentity_.clear(); speech_("CC learn cancelled"); return; }
     if (k.ctrl && k.shift && !k.alt && k.vk == 'I') {
         if (!k.repeat) beginVolumeRangeEdit();
         return;

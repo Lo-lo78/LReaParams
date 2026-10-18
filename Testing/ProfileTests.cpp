@@ -259,8 +259,8 @@ int main(int argc, char** argv) {
         const std::string savedProject = "C:\\Music\\Album\\Bass.rpp";
         TrackMemory tm;
         tm.load(trackRoot, savedProject);
-        check(tm.fixedEnabled() && tm.ccLink("Track", "Volume") == "1,7",
-            "Imported Fixed CC is missing or disabled");
+        check(!tm.fixedEnabled() && tm.ccLink("Track", "Volume") == "1,7",
+            "Legacy type-wide CC should remain readable but inactive without a GUID");
         check(tm.step("Track.Volume") == 0 && tm.ccSpeech("Track", "Volume"),
             "Imported memory preferences wrong");
         const auto projectTp = tm.file();
@@ -282,6 +282,21 @@ int main(int argc, char** argv) {
         check(tm.trackSlot(2).empty() && tm.entries("LReaParams.TrackPositions").empty(),
               "Track slots should start empty");
         tm.setTrackSlot(2, trackSlotGuid);
+        // TEST55.3: Fixed CC identities belong to a GUID, not the generic Pan
+        // control. Two tracks may have different controllers for the same Pan.
+        const std::string otherGuid = "{A2345678-1234-1234-1234-1234567890AB}";
+        const std::string bassPan = "Track|" + trackSlotGuid + "|Pan";
+        const std::string drumsPan = "Track|" + otherGuid + "|Pan";
+        const std::string firstSend = "Sends|" + trackSlotGuid + "|" + otherGuid + "|1|Volume";
+        const std::string secondSend = "Sends|" + trackSlotGuid + "|" + otherGuid + "|2|Volume";
+        tm.setFixedCcLink(bassPan, "1,10");
+        tm.setFixedCcLink(drumsPan, "1,11");
+        tm.setFixedCcLink(firstSend, "2,14");
+        tm.setFixedCcLink(secondSend, "2,15");
+        check(tm.fixedCcLinks().size() == 4 && tm.fixedCcLink(bassPan) == "1,10" &&
+              tm.fixedCcLink(drumsPan) == "1,11" && tm.fixedCcLink(secondSend) == "2,15",
+              "Scoped CC identities collapsed two tracks or duplicate sends");
+        rejected([&] { tm.setFixedCcLink("Pan", "1,10"); });
         check(tm.trackSlot(2) == trackSlotGuid &&
               tm.entries("LReaParams.TrackPositions").at("Slot2") == trackSlotGuid,
               "Track position not visible before flush");
@@ -303,6 +318,19 @@ int main(int argc, char** argv) {
         check(tmAgain.trackSlot(2) == trackSlotGuid &&
               tmAgain.entries("LReaParams.TrackPositions").at("Slot2") == trackSlotGuid,
               "Track position not persisted in project TP");
+        check(tmAgain.fixedCcLink(bassPan) == "1,10" &&
+              tmAgain.fixedCcLink(drumsPan) == "1,11" &&
+              tmAgain.fixedCcLink(firstSend) == "2,14" &&
+              tmAgain.fixedCcLink(secondSend) == "2,15" &&
+              tmAgain.fixedCcLinks().size() == 4,
+              "Project-scoped Fixed CC identities did not persist");
+        tmAgain.setFixedCcLink(bassPan, ""); tmAgain.flush();
+        TrackMemory afterScopedDelete;
+        afterScopedDelete.load(trackRoot, savedProject);
+        check(afterScopedDelete.fixedCcLink(bassPan).empty() &&
+              afterScopedDelete.fixedCcLink(drumsPan) == "1,11" &&
+              afterScopedDelete.fixedCcLink(secondSend) == "2,15",
+              "Deleting one Fixed CC erased a different track or duplicated send");
         check(tmAgain.fixedEnabled() && tmAgain.ccLink("Track", "Volume") == "4,77" &&
             tmAgain.step("Track.Volume") == -4 && tmAgain.step("Track.Pan") == 2 &&
             tmAgain.step("Sends.Volume") == -3, "Project Fixed CC or Steps not restored");

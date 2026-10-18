@@ -1,3 +1,5 @@
+> **TEST55.3 / LReaParams 0.0.55:** CC Fixed specifici di traccia GUID e send sorgente/destinazione/occorrenza; Floating segue il cursore. Track Memories mostra i CC specifici e marca le vecchie mappe generali come inattive. Un solo `.tp` per progetto. Nessuna build locale. [Dettagli](Docs/TEST55_3_FIXED_CC_PER_TRACK.md).
+
 > **TEST55.2 / LReaParams 0.0.55:** Track Memories ora annuncia la prima voce, salta le categorie vuote e mantiene silenziosi i bordi come FX Memories. Ctrl+Maiusc+I applica il Volume range del `.tp` a tastiera, Value, Ctrl+E e MIDI CC/pickup; Tab comunica i limiti. [Guida TEST55.2](Docs/TEST55_2_F8_VOLUME_RANGE.md). Nessuna compilazione locale.
 
 > **TEST55.1:** risolti due errori di compilazione MSVC C3538 in `src/TrackNavigatorMemories.cpp` (dichiarazioni `auto` con tipi diversi). Nessuna modifica funzionale rispetto alla TEST55; compilazione esclusivamente via GitHub Actions.

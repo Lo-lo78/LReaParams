@@ -122,7 +122,10 @@ private:
     void midiShortcut(const Key&);
     void pollMidi();
     bool midiTarget(std::string& section, std::string& key) const;
-    void applyMidi(const std::string& section, const std::string& key, int value);
+    // Resolve source/destination GUIDs and the exact repeated send ordinal.
+    bool midiFixedIdentity(std::string& identity) const;
+    void applyMidi(const std::string& section, const std::string& key, int value); // Floating, follows cursor
+    void applyFixedMidi(const std::string& identity, int value); // Fixed, follows saved GUIDs
     void resetMidiState();
     // TEST52: native SWS clipboard keeps track-to-track routing intact.
     enum class TrackClipboardAction { cut, copy, paste };
@@ -181,7 +184,7 @@ private:
     bool numericEditing_ = false;
     bool rangeEditing_ = false;
     bool learnCc_ = false, fixedCc_ = false, floatingCc_ = false, floatingWaiting_ = false;
-    std::string learnSection_, learnKey_;
+    std::string learnSection_, learnKey_, learnIdentity_;
     int midiSequence_ = 0, floatingChannel_ = -1, floatingNumber_ = -1;
     std::string floatingTarget_;
     std::map<std::string, Pickup> midiPickup_;

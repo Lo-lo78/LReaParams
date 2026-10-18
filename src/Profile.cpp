@@ -154,6 +154,19 @@ Profile parseLegacy(std::string bytes) {
                     require(f.key.size() <= 200 && !f.key.empty() &&
                             (f.value.empty() || f.value == "0" || f.value == "1"), "Invalid Track speech preference");
                 }
+            } else if (name == "LReaParams.FixedCCByTarget") {
+                // Project-specific Fixed CCs are keyed by immutable track GUIDs.
+                // For sends, the ordinal distinguishes duplicate connections.
+                static const std::regex scopedTrack(
+                    R"(Track\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|(Volume|Pan|Width|Mute|Solo|PhaseInvert))");
+                static const std::regex scopedSend(
+                    R"(Sends\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|([1-9][0-9]{0,2})\|(Volume|Pan|Mute))");
+                for (const auto& l : pair.second) {
+                    const auto f = field(l);
+                    require(std::regex_match(f.key, scopedTrack) || std::regex_match(f.key, scopedSend),
+                        "Invalid scoped Track CC identity");
+                    ccValue(f.value);
+                }
             } else if (name == "LReaParams.MidiSettings") {
                 for (const auto& l : pair.second) {
                     const auto f = field(l);

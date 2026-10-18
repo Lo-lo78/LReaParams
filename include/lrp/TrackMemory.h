@@ -23,6 +23,12 @@ public:
     void setValueSpeech(const std::string& parameter, bool enabled);
     bool ccSpeech(const std::string& page, const std::string& parameter) const;
     void setCcSpeech(const std::string& page, const std::string& parameter, bool enabled);
+    // TEST55.3: per-target Fixed CC, in this project's existing TP file.
+    // Older [Track]/[Sends]/[Receives] CC maps remain unchanged and inert.
+    // Identity: Track|{GUID}|Parameter or Sends|{sourceGUID}|{destGUID}|ordinal|Parameter.
+    std::string fixedCcLink(const std::string& identity) const;
+    void setFixedCcLink(const std::string& identity, const std::string& link);
+    std::map<std::string, std::string> fixedCcLinks() const;
     // Read and patch existing Lua-compatible MIDI maps; never rebuild the .tp.
     std::string ccLink(const std::string& section, const std::string& key) const;
     void setCcLink(const std::string& section, const std::string& key, const std::string& link);

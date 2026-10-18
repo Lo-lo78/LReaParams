@@ -1,3 +1,7 @@
+## 0.0.55 — TEST55.3 Fixed CC per GUID della traccia
+
+Bindings Fixed indipendenti dal cursore, salvati nel `.tp` di progetto; legacy type-wide inattivi, senza perdita dati. Vedi Docs/TEST55_3_FIXED_CC_PER_TRACK.md.
+
 ## 0.0.55 — Track Memories e range Volume
 
 Track Memories autonomo o Alt+F8, cinque categorie, 12 slot di traccia persistenti per progetto, gestione MIDI CC Fixed e preferenze dei parametri, range volume per pagina con Ctrl+Maiusc+I. F4–F8 e automazioni globali restano incompleti. Solo sorgente e verifiche statiche. [Guida](TEST55_TRACK_MEMORIES.md).

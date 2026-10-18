@@ -29,3 +29,5 @@ NO C++ compilation, native CTest, REAPER runtime, NVDA or MIDI hardware test per
 
 LReaParams 0.0.54 TEST54: Tools/run_static.py 49 Python SOURCE-ONLY suites PASS. Includes Track Params MIDI CC, Lua-compatible .tp patching, numeric Ctrl+E, linked routing, plus all prior contracts.
 NOT RUN: C++ native compilation, MSVC, CMake, MSBuild, CTest, REAPER, NVDA/OSARA or MIDI hardware. Build via GitHub Actions.
+
+TEST55.3: targeted source contracts, previous TEST54/54.1/55/55.2 checks and source audit passed. Full suite not completed (timeout). Native C++ build and REAPER/NVDA runtime NOT RUN locally.
