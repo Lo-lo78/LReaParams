@@ -32,7 +32,7 @@ assert 'continue; // learn event must never modify the target' in midi
 assert 'if (filterEditing_ || numericEditing_)' in midi
 assert 'if (section != sectionFor(page_' in midi
 assert 'midiPickup_.clear()' in nav
-assert 'memory_.ccSpeech(section, key)' in midi
+assert 'memory_.fixedCcSpeech(speechTarget)' in midi and 'memory_.fixedCcSpeech(identity)' in midi
 assert 'std::string TrackMemory::ccLink(' in mem
 assert 'std::map<std::string, std::string> TrackMemory::ccLinks(' in mem
 assert 'patchLine(std::move(payload)' in mem

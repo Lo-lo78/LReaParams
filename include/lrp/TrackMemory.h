@@ -29,6 +29,10 @@ public:
     std::string fixedCcLink(const std::string& identity) const;
     void setFixedCcLink(const std::string& identity, const std::string& link);
     std::map<std::string, std::string> fixedCcLinks() const;
+    // Independent, initially OFF, speech preference for each exact Fixed CC target.
+    // The same identity is shared by an outgoing Send and its incoming Receive.
+    bool fixedCcSpeech(const std::string& identity) const;
+    void setFixedCcSpeech(const std::string& identity, bool on);
     // Read and patch existing Lua-compatible MIDI maps; never rebuild the .tp.
     std::string ccLink(const std::string& section, const std::string& key) const;
     void setCcLink(const std::string& section, const std::string& key, const std::string& link);
@@ -38,6 +42,7 @@ public:
     // A scoped REAPER dB range; absent preferences preserve the 0.0.54 behavior.
     std::pair<double, double> volumeRange(const std::string& page) const;
     void setVolumeRange(const std::string& page, double low, double high);
+    void clearVolumeRange(const std::string& page);
     std::string trackSlot(int slot) const;
     void setTrackSlot(int slot, const std::string& guid);
     std::string position(const std::string& key) const;

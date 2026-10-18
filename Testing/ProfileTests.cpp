@@ -96,11 +96,14 @@ int main(int argc, char** argv) {
         const auto ignored = root / L"LReaParams" / L"Params" / L"old.pp";
         overwrite(ignored, "untouched"); report = importProfiles(root, cancel);
         check(readFile(ignored) == "untouched", "Retired data modified");
-        // Roundtrip intentional profile edits, including hidden CC links and virtual Compare.
+        // Roundtrip intentional profile edits, including hidden CC links and legacy
+        // Compare metadata. It stays on disk but is no longer a navigable parameter.
         const auto profileRoot = root / L"profile-edits";
         FxOrder order;
         order.load(profileRoot,"Synthetic edit test",4,[](int id){return id==compareParamIndex?std::string("Compare"):"Parameter "+std::to_string(id);});
         check(!order.hasRealModifications(),"Compare must not create a Custom Order");
+        check(order.visibleOrder()==std::vector<int>({0,1,2,3}),
+              "F8 Compare should never appear in a new FX parameter list");
         order.ccLinks[1]="2\t74";order.hidden.insert(1);
         order.paramSlots[12]=compareParamIndex;
         order.setExtraValue("future_key","opaque value");
@@ -158,8 +161,8 @@ int main(int argc, char** argv) {
         const std::vector<int> intended{
             reaeq::enabled(0),reaeq::type(0),0,1,2,
             reaeq::enabled(1),reaeq::type(1),4,3,5,
-            reaeq::target,reaeq::action,compareParamIndex,6,7,8};
-        check(migratedEq.visibleOrder()==intended,"ReaEQ virtuals still follow Global Gain");
+            reaeq::target,reaeq::action,6,7,8};
+        check(migratedEq.visibleOrder()==intended,"ReaEQ virtuals still follow Global Gain or obsolete Compare is visible");
         check(readFile(eqPath)==storedEq,"Passive ReaEQ order migration rewrote .fx profile");
         // Lua-compatible LastParam survives REAPER restart without changing
         // user CustomOrder, hidden params, groups, MIDI or arbitrary extras.
@@ -233,7 +236,8 @@ int main(int argc, char** argv) {
         FxOrder f8;
         f8.load(f7Root,"F7 F8 dynamics fixture",4,f7Names,f7Native);
         check(f8.storedCustomOrder() && f8.custom,"Custom Order not restored");
-        check(f8.order==f7.order,"Duplicated virtual occurrence lost");
+        const std::vector<int> f7Migrated{0,1,-200000,-200000,2,3};
+        check(f8.order==f7Migrated,"Duplicated real virtual occurrence lost or Compare remained navigable");
         check(f8.hidden.count(-200000),"Hidden virtual control lost");
         check(f8.aliases.at(1)=="Custom threshold","Custom alias lost");
         check(f8.groups.at(12)==f7.groups.at(12) && f8.groupNames.at(12)=="Dynamics",
@@ -241,8 +245,8 @@ int main(int argc, char** argv) {
         check(f8.paramSlots.at(12)==-200000 && f8.groupSlotMode,
               "Memory position 12 or Groups mode lost");
         check(f8.ccLinks.at(1)=="2\t74","MIDI CC mapping lost");
-        check(f8.visibleOrder()==std::vector<int>({0,1,2,compareParamIndex,3}),
-              "Hidden virtuals leaked into visible Custom Order");
+        check(f8.visibleOrder()==std::vector<int>({0,1,2,3}),
+              "Hidden virtuals or legacy Compare leaked into Custom Order");
         // 0.0.54.1: all Track Params preferences, mappings and future F4
         // share ONE project .tp; the previous global map is only a seed.
         const auto trackRoot = root / L"track-memory54-project";
@@ -289,6 +293,11 @@ int main(int argc, char** argv) {
         const std::string drumsPan = "Track|" + otherGuid + "|Pan";
         const std::string firstSend = "Sends|" + trackSlotGuid + "|" + otherGuid + "|1|Volume";
         const std::string secondSend = "Sends|" + trackSlotGuid + "|" + otherGuid + "|2|Volume";
+        check(!tm.fixedCcSpeech(bassPan) && !tm.fixedCcSpeech(drumsPan),
+              "New physical CCs must be silent by default");
+        tm.setFixedCcSpeech(bassPan, true);
+        check(tm.fixedCcSpeech(bassPan) && !tm.fixedCcSpeech(drumsPan),
+              "Per-target CC speech unexpectedly enabled an unrelated track");
         tm.setFixedCcLink(bassPan, "1,10");
         tm.setFixedCcLink(drumsPan, "1,11");
         tm.setFixedCcLink(firstSend, "2,14");
@@ -307,7 +316,8 @@ int main(int argc, char** argv) {
         check(trackEdited.find("[Track]\r\nVolume=4,77\r\nPan=2,10\r\n") != std::string::npos &&
               trackEdited.find("[Sends]\r\nVolume=3,11\r\n") != std::string::npos &&
               trackEdited.find("[UnknownFuture]\r\nopaque data\r\n") != std::string::npos &&
-              trackEdited.find("[CCSpeech.Track]\r\nVolume=\r\n") != std::string::npos &&
+              trackEdited.find("[CCSpeech.Track]\r\n") != std::string::npos &&
+              trackEdited.find("[CCSpeech.Track]\r\nVolume=") == std::string::npos &&
               trackEdited.find("[LReaParams.StepScales]\r\n") != std::string::npos &&
               trackEdited.find("[FXParams.ProjectTrack]") != std::string::npos,
               "Track project profile lost formatting, CC, F4 namespace or old sections");
@@ -324,6 +334,8 @@ int main(int argc, char** argv) {
               tmAgain.fixedCcLink(secondSend) == "2,15" &&
               tmAgain.fixedCcLinks().size() == 4,
               "Project-scoped Fixed CC identities did not persist");
+        check(tmAgain.fixedCcSpeech(bassPan) && !tmAgain.fixedCcSpeech(drumsPan),
+              "Scoped MIDI speech not restored independently per track");
         tmAgain.setFixedCcLink(bassPan, ""); tmAgain.flush();
         TrackMemory afterScopedDelete;
         afterScopedDelete.load(trackRoot, savedProject);
@@ -338,6 +350,17 @@ int main(int argc, char** argv) {
               !tmAgain.ccSpeech("Track", "Volume") && tmAgain.ccSpeech("Sends", "Pan") &&
               tmAgain.position("F1.Parameter") == "Track.Pan",
               "Speech or navigation was not restored from the project .tp");
+        tmAgain.setFixedCcSpeech(bassPan, false);
+        tmAgain.setStep("Track.Volume", 0);
+        tmAgain.clearVolumeRange("Track");
+        tmAgain.flush();
+        TrackMemory resetPreferences;
+        resetPreferences.load(trackRoot, savedProject);
+        check(!resetPreferences.fixedCcSpeech(bassPan) && resetPreferences.step("Track.Volume") == 0 &&
+              resetPreferences.entries("LReaParams.StepScales").count("Track.Volume") == 0 &&
+              resetPreferences.entries("LReaParams.FixedCCSpeechByTarget").count(bassPan) == 0 &&
+              resetPreferences.entries("LReaParams.VolumeRanges").count("Track") == 0,
+              "Reset must remove default overrides from project TP");
         tmAgain.setFixedEnabled(false); tmAgain.flush();
         tmAgain.setTrackSlot(2, ""); tmAgain.flush();
         TrackMemory afterDeletion;

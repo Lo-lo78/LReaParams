@@ -114,11 +114,12 @@ bool TrackNavigator::contextUnchanged() const {
 bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.altGr) return false;
     if (memoryManager_) {
+        if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
         if (k.shift) return false;
         if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END);
-        if (k.alt) return k.vk == VK_F8 || k.vk == VK_LEFT || k.vk == VK_RIGHT;
+        if (k.alt) return k.vk == VK_LEFT || k.vk == VK_RIGHT;
         switch (k.vk) {
-            case VK_ESCAPE: case VK_F8: case VK_TAB: case VK_RETURN: case VK_DELETE:
+            case VK_ESCAPE: case VK_TAB: case VK_RETURN: case VK_DELETE:
             case VK_UP: case VK_DOWN: case VK_LEFT: case VK_RIGHT:
             case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT: return true;
             default: return false;
@@ -131,7 +132,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
         return k.vk == VK_RETURN || k.vk == VK_ESCAPE ||
             (k.ctrl && !k.alt && !k.shift && k.vk == 'F');
     }
-    if (k.alt && !k.ctrl && !k.shift && k.vk == VK_F8) return true;
+    if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
     if (page_ == Page::tracks && !k.alt && k.ctrl &&
         k.vk >= VK_F1 && k.vk <= VK_F12) return true;
     const bool f1 = page_ == Page::tracks;
@@ -657,11 +658,11 @@ std::string TrackNavigator::detailColumnSpeech(int previousColumn) const {
 std::string TrackNavigator::reviewLine() const {
     if (!active_) return "";
     if (memoryManager_) {
-        if (memoryItems_.empty()) return "Track Memories. No entries";
+        if (memoryItems_.empty()) return "Track Memories. No memories";
         const auto& item = memoryItems_[static_cast<size_t>(memoryRow_)];
         const int col = std::clamp(memoryColumn_, 0, 4);
         static constexpr const char* labels[] = {"MIDI CC", "Parameter Steps", "Parameter Speech",
-            "Track Positions", "Navigation Memory"};
+            "Track Positions", "Volume Ranges"};
         return std::string(labels[col]) + ". " + item.label;
     }
     // NVDA+Up in Grid reviews only the parameter and value, like FX Params.
@@ -719,7 +720,7 @@ void TrackNavigator::announceTitle() {
 std::wstring TrackNavigator::windowTitle() const {
     if (!active_) return L"Track Params";
     if (memoryManager_) {
-        static constexpr const wchar_t* titles[] = {L"MIDI CC", L"Parameter Steps", L"Parameter Speech", L"Track Positions", L"Navigation Memory"};
+        static constexpr const wchar_t* titles[] = {L"MIDI CC", L"Parameter Steps", L"Parameter Speech", L"Track Positions", L"Volume Ranges"};
         return std::wstring(L"Track Memories - ") + titles[static_cast<size_t>(std::clamp(memoryColumn_, 0, 4))];
     }
     const wchar_t* pageSuffix = page_ == Page::tracks ? L"" :
@@ -942,7 +943,7 @@ void TrackNavigator::nudge(int direction, bool coarse) {
 void TrackNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     if (memoryManager_) { handleMemory(k); return; }
-    if (k.alt && !k.ctrl && !k.shift && k.vk == VK_F8) {
+    if (k.ctrl && k.shift && !k.alt && k.vk == 'M') {
         if (!k.repeat) openTrackMemories(false);
         return;
     }
@@ -974,7 +975,9 @@ void TrackNavigator::handle(const Key& k) {
             info += ". Step " + std::to_string(memory_.step(id)) +
                 (memory_.valueSpeech(id) ? ". Value speech on" : ". Value speech off");
             if (ccSpeechSupported()) {
-                info += memory_.ccSpeech(page, bare) ? ". MIDI speech on" : ". MIDI speech off";
+                std::string target;
+                const bool speak = midiFixedIdentity(target) && memory_.fixedCcSpeech(target);
+                info += speak ? ". MIDI speech on" : ". MIDI speech off";
             }
             if (page_ == Page::tracks) info += ". " + std::to_string(CountSelectedTracks(project_)) + " tracks selected";
             info += filterSuffix();
@@ -1096,11 +1099,10 @@ void TrackNavigator::handle(const Key& k) {
             speech_(on ? "Value speech on" : "Value speech off");
         } else {
             if (!ccSpeechSupported()) { speech_("MIDI speech not available for this field"); return; }
-            const auto id = parameterKey();
-            const auto page = page_ == Page::tracks ? "Track" : page_ == Page::sends ? "Sends" : "Receives";
-            const auto bare = id.substr(id.find('.') + 1);
-            const bool on = !memory_.ccSpeech(page, bare);
-            memory_.setCcSpeech(page, bare, on); memory_.flush();
+            std::string target;
+            if (!midiFixedIdentity(target)) { speech_("MIDI speech target unavailable"); return; }
+            const bool on = !memory_.fixedCcSpeech(target);
+            memory_.setFixedCcSpeech(target, on); memory_.flush();
             speech_(on ? "MIDI speech on" : "MIDI speech off");
         }
         return;

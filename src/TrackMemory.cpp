@@ -15,6 +15,7 @@ constexpr const char* speechSection = "LReaParams.ParameterSpeech";
 constexpr const char* navigationSection = "LReaParams.NavigationMemory";
 constexpr const char* midiSection = "LReaParams.MidiSettings";
 constexpr const char* fixedByTargetSection = "LReaParams.FixedCCByTarget";
+constexpr const char* fixedSpeechSection = "LReaParams.FixedCCSpeechByTarget";
 
 std::string patchLine(std::string bytes, const std::string& section,
                       const std::string& key, const std::string& value) {
@@ -40,11 +41,14 @@ std::string patchLine(std::string bytes, const std::string& section,
         at = stop;
     }
     if (match != std::string::npos) {
+        // Default/reset means no stored override, as in FX Memories.
+        if (value.empty()) { bytes.erase(match, matchEnd - match); return bytes; }
         const bool hasNewline = matchEnd > match && bytes[matchEnd - 1] == '\n';
         const std::string oldEol = hasNewline && matchEnd - match >= 2 && bytes[matchEnd - 2] == '\r' ? "\r\n" : "\n";
         bytes.replace(match, matchEnd - match, line + (hasNewline ? oldEol : ""));
         return bytes;
     }
+    if (value.empty()) return bytes; // Do not create empty/default settings.
     if (begin != std::string::npos) {
         if (end == bytes.size()) end = bytes.size();
         const bool needsEol = end > 0 && bytes[end - 1] != '\n';
@@ -205,6 +209,16 @@ void TrackMemory::setFixedCcLink(const std::string& identity, const std::string&
     if (link.size() > 32) throw ProfileError("Invalid Fixed CC link");
     edit(fixedByTargetSection, identity, link);
 }
+bool TrackMemory::fixedCcSpeech(const std::string& identity) const {
+    // No entry = silent, exactly like FX Params. Never fall back to a
+    // type-wide legacy Track.Pan preference for a specific physical track.
+    return read(fixedSpeechSection, identity) == "1";
+}
+void TrackMemory::setFixedCcSpeech(const std::string& identity, bool on) {
+    if (identity.rfind("Track|{", 0) != 0 && identity.rfind("Sends|{", 0) != 0)
+        throw ProfileError("Missing target GUID in Track CC speech identity");
+    edit(fixedSpeechSection, identity, on ? "1" : "");
+}
 std::map<std::string, std::string> TrackMemory::fixedCcLinks() const {
     auto all = entries(fixedByTargetSection);
     for (auto it = all.begin(); it != all.end();) {
@@ -279,6 +293,11 @@ void TrackMemory::setVolumeRange(const std::string& page, double low, double hig
     std::ostringstream out;
     out << std::fixed << std::setprecision(2) << low << ',' << high;
     edit("LReaParams.VolumeRanges", page, out.str());
+}
+void TrackMemory::clearVolumeRange(const std::string& page) {
+    if (page != "Track" && page != "Sends" && page != "Receives")
+        throw ProfileError("Unsupported Track Volume range section");
+    edit("LReaParams.VolumeRanges", page, "");
 }
 std::string TrackMemory::trackSlot(int slot) const {
     if (slot < 1 || slot > 12) return {};

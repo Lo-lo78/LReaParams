@@ -219,7 +219,9 @@ void TrackNavigator::applyMidi(const std::string& section, const std::string& ke
     try { put(*target, next); } catch (...) { suppressPutSpeech_ = false; throw; }
     suppressPutSpeech_ = false;
     pickup.applied(norm(get(*target)));
-    if (memory_.ccSpeech(section, key)) pendingMidiSpeech_ = key + ", " + valueText(*target, get(*target));
+    std::string speechTarget;
+    if (midiFixedIdentity(speechTarget) && memory_.fixedCcSpeech(speechTarget))
+        pendingMidiSpeech_ = key + ", " + valueText(*target, get(*target));
 }
 
 void TrackNavigator::applyFixedMidi(const std::string& identity, int value) {
@@ -274,7 +276,7 @@ void TrackNavigator::applyFixedMidi(const std::string& identity, int value) {
     pickup.applied(normalized(next));
     TrackList_AdjustWindows(false);
     UpdateArrange();
-    if (memory_.ccSpeech(target.send ? "Sends" : "Track", target.parameter)) {
+    if (memory_.fixedCcSpeech(identity)) {
         std::string label = savedTrackLabel(target.source);
         if (target.send) {
             label += ", Send to " + savedTrackLabel(target.destination);

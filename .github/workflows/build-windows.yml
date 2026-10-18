@@ -118,6 +118,14 @@ jobs:
         run: python Testing/test55_static.py
       - name: Verify TEST55.3 per-track Fixed CC scope (source only)
         run: python Testing/test55_3_static.py
+      - name: Verify TEST55.4 unified FX and Track memory defaults (source only)
+        run: python Testing/test55_4_static.py
+      - name: Verify TEST55.5 unified memory shortcuts (source only)
+        run: python Testing/test55_5_static.py
+      - name: TEST55.6 Compare F8 A/B contract
+        run: python Testing/test55_6_static.py
+      - name: TEST55.7 initial Original snapshot and per-instance re-entry (source only)
+        run: python Testing/test55_7_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

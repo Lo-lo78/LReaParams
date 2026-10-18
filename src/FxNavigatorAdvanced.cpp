@@ -153,14 +153,7 @@ void FxNavigator::applyMidi(int param,int value) {
         }
         return;
     }
-    if(param==compareParamIndex) {
-        auto& state=pickup_[param];const double current=compareFormatted()=="Original"?0:1;
-        if(state.allows(value,current) && setCompare(value/127.0)) {
-            state.applied(compareFormatted()=="Original"?0:1);
-            queueCcSpeech(param,compareFormatted());
-        }
-        return;
-    }
+    if(param==compareParamIndex) return; // Legacy CC map: Compare is now F8 only.
     if(param<0||param>=count_||!valid())return;
     if(dynamicsDetectorInput(param)) {
         auto& pickup=pickup_[param];
@@ -488,7 +481,7 @@ bool FxNavigator::applyCompare(const CompareSnapshot& snapshot) {
                 const double value=snapshot.values[snapshot.values.size()-3+tail];
                 ok=(take_?TakeFX_SetParamNormalized(take_,fx_,n-3+tail,value):TrackFX_SetParamNormalized(track_,fx_,n-3+tail,value))&&ok;
             }
-            refreshAfterStructure(compareParamIndex);
+            refreshAfterStructure(parameter_);
         }
         Undo_EndBlock2(project_,"LReaParams: ReaEQ Compare",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
         return ok;
@@ -509,17 +502,86 @@ bool FxNavigator::applyCompare(const CompareSnapshot& snapshot) {
     Undo_EndBlock2(project_,"LReaParams: Compare",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
     pickup_.clear();if(!ok)speech_("Compare restore incomplete. Use REAPER Undo");return ok;
 }
+void FxNavigator::initializeCompare() {
+    if (!valid()) return;
+    // The first time each GUID-identifiable FX is visited, capture the live
+    // REAPER project/work-in-progress sound, WITHOUT applying or changing it.
+    // An armed snapshot survives navigation, Ctrl+Tab and Exit/Re-enter.
+    // A structural reset invalidates both sides; then start a fresh pair from
+    // the live state instead of trying to restore incompatible parameters.
+    if (const auto* existing = findCompareState(); existing && existing->armed) return;
+    auto& state = compareState();
+    state.original = captureCompare();
+    state.edited = state.original;
+    state.armed = true;
+    state.originalActive = false; // Initially editing the Compare side.
+}
+
+bool FxNavigator::toggleCompare() {
+    if (!valid()) return false;
+    initializeCompare();
+    auto& state = compareState();
+    if (!state.armed) return false;
+    if (!state.originalActive) {
+        // Preserve current edits as Compare, then audition immutable Original.
+        auto compare = captureCompare();
+        if (!applyCompare(state.original)) return false;
+        state.edited = std::move(compare);
+        state.originalActive = true;
+        speech_("Original");
+    } else {
+        // Do not overwrite Original with provisional edits made while hearing it.
+        if (!applyCompare(state.edited)) return false;
+        state.originalActive = false;
+        speech_("Compare");
+    }
+    return true;
+}
+
+bool FxNavigator::updateOriginal() {
+    if (!valid()) return false;
+    initializeCompare();
+    auto& state = compareState();
+    // The user alone commits Original: no state switch, no automatic snapshot
+    // overwrite on FX entry or on an ordinary single F8.
+    state.original = captureCompare();
+    state.armed = true;
+    speech_("Original updated");
+    return true;
+}
+
+void FxNavigator::resolveF8() {
+    if (!pendingF8At_) return;
+    pendingF8At_ = 0;
+    toggleCompare();
+}
+
+void FxNavigator::f8Press() {
+    const ULONGLONG now = GetTickCount64();
+    if (pendingF8At_ && now - pendingF8At_ <= GetDoubleClickTime()) {
+        pendingF8At_ = 0;
+        updateOriginal(); // Double F8 never briefly applies the other sound.
+    } else {
+        if (pendingF8At_) resolveF8();
+        pendingF8At_ = now ? now : 1;
+    }
+}
+
+void FxNavigator::pollCompare() {
+    if (!pendingF8At_) return;
+    if (!active_ || !contextUnchanged()) { pendingF8At_ = 0; return; }
+    if (GetTickCount64() - pendingF8At_ > GetDoubleClickTime()) resolveF8();
+}
+
 bool FxNavigator::setCompare(double value) {
-    if(!valid()||!std::isfinite(value))return false;
-    auto& state=compareState();
-    if(!state.armed) {state.original=captureCompare();state.edited={};state.armed=true;state.originalActive=false;return true;}
-    const bool original=value<0.5;if(original==state.originalActive)return false;
-    if(original){auto edited=captureCompare();if(!applyCompare(state.original))return false;state.edited=std::move(edited);}
-    else if(!applyCompare(state.edited))return false;
-    state.originalActive=original;return true;
+    // Removed virtual parameter: retained only for legacy source compatibility.
+    // Old .fx Compare/CC entries can never change the A/B state implicitly.
+    (void)value;
+    return false;
 }
 std::string FxNavigator::compareFormatted() const {
-    const auto* state=findCompareState();return !state||!state->armed?"Not armed":state->originalActive?"Original":"Edited";
+    const auto* state=findCompareState();
+    return !state||!state->armed ? "Not initialized" : state->originalActive ? "Original" : "Compare";
 }
 }
 

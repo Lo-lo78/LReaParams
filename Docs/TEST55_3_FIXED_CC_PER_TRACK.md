@@ -1,3 +1,5 @@
+> Nota storica: in TEST55.5 **Ctrl+Maiusc+M** ha sostituito Alt+F8 (Track Memories) e F8 (FX Memories). Vedere [TEST55.5](TEST55_5_UNIFIED_MEMORY_SHORTCUT.md).
+
 # TEST55.3 — MIDI CC Fixed specifici della traccia
 
 Base: TEST55.2. **Non eseguire compilazioni locali**; usa GitHub Actions MSVC e poi REAPER/NVDA.

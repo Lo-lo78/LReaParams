@@ -130,8 +130,22 @@ private:
     bool eqBandParam(int param,int type) const;
     void refreshAfterStructure(int preferred);
     struct CompareSnapshot { std::string eqChunk; std::vector<double> values; std::vector<std::string> names; };
+    // Temporary A/B snapshots belong to an FX instance, not its shared .fx profile.
+    // Original captures the live state on FIRST entry and survives navigator
+    // exit/re-entry (during this REAPER session); only double F8 updates it.
     struct CompareState { GUID guid{};ReaProject* project{};MediaItem_Take* take{};GUID track{};
         CompareSnapshot original,edited;bool armed=false,originalActive=false; };
+    // A single F8 is deferred until the Windows double-click interval expires.
+    // This prevents the first press of a double F8 from switching the sound.
+    ULONGLONG pendingF8At_ = 0;
+    void f8Press();
+    void resolveF8();
+    void initializeCompare();
+    bool updateOriginal();
+    bool toggleCompare();
+public:
+    void pollCompare();
+private:
     std::vector<CompareState> compareStates_;
     CompareState& compareState();
     const CompareState* findCompareState() const;

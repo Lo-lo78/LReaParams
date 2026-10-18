@@ -1,3 +1,7 @@
+**Aggiornamento TEST55.6:** FX Params: F8 singolo passa da Original a Compare e viceversa; F8 doppio aggiorna Original con il suono corrente senza cambio di lato. La pressione singola attende il riconoscimento del doppio gesto. Il controllo virtuale Compare non è più in griglia. **Ctrl+Maiusc+M** rimane invariato per FX Memories e Track Memories.
+
+**Aggiornamento TEST55.5:** **Ctrl+Maiusc+M** è il comando comune per aprire/chiudere il gestore memorie in FX Params e Track Params. In Track Params sostituisce Alt+F8; F8 in FX Params rimane senza funzione, riservato al futuro. Esc esce dai gestori. Le azioni REAPER dedicate restano disponibili.
+
 ## TEST54.3 — Ctrl+E e FX assenti
 
 - Ctrl+E / Invio in Track Params: conferma senza il secondo messaggio `Set.`; il controllo NVDA riporta il parametro aggiornato.
@@ -146,7 +150,7 @@ Le azioni FX Params, Track Params e FX Memories si assegnano nella Action List. 
 | Ctrl+F1..F12 | Richiamo gruppo/posizione; stesso gruppo ritorna |
 | Ctrl+Shift+F1..F12 | Salva gruppo/posizione |
 | Ctrl+Enter in F7 | Rinomina gruppo o parametro, anche Compare |
-| F8 / azione FX Memories | Gestore a sette colonne |
+| Ctrl+Maiusc+M / azione FX Memories | Gestore a sette colonne (F8 libero per il futuro) |
 | Ctrl+Alt+C | Learn del primo CC nuovo; Esc o stesso gesto annulla |
 | Tab / Delete durante Learn | Legge stato / rimuove associazione |
 | Shift+C | Fixed CC on/off, pickup |
@@ -167,7 +171,7 @@ Le azioni FX Params, Track Params e FX Memories si assegnano nella Action List. 
 
 Compare appare prima dei tre wrapper REAPER. Il primo movimento lo arma; movimento verso il basso passa a Original, verso l'alto a Edited. I bordi non ciclano. Le modifiche a Edited vengono catturate prima del ritorno a Original.
 
-F8: Left/Right cambia fra colonne non vuote; Up/Down sceglie voce; Enter carica fuori Edit; F7 carica in Edit dove consentito; Delete elimina. Hidden non ha Enter attivo. Default Enter apre una conferma con No iniziale: frecce selezionano, Y/N confermano, Esc annulla, F8 esce. Default Delete apre la stessa conferma Yes/No di Enter: No non modifica niente; Yes ripristina il Default e azzera le memorie di navigazione, conservando lo snapshot. Il reset Default F8 cancella anche le memorie di navigazione gestite, mantenendo lo snapshot.
+FX Memories (Ctrl+Maiusc+M): Left/Right cambia fra colonne non vuote; Up/Down sceglie voce; Enter carica fuori Edit; F7 carica in Edit dove consentito; Delete elimina. Hidden non ha Enter attivo. Default Enter apre una conferma con No iniziale: frecce selezionano, Y/N confermano, Esc annulla, Ctrl+Maiusc+M esce. Default Delete apre la stessa conferma Yes/No di Enter: No non modifica niente; Yes ripristina il Default e azzera le memorie di navigazione, conservando lo snapshot. Il reset Default in FX Memories cancella anche le memorie di navigazione gestite, mantenendo lo snapshot.
 
 I campi nativi permettono Ctrl+A/C/X/V, cursore e selezione Windows. L'editor numerico dichiara unità raw quando non dispone di formatter numerici monotoni; non digitare dB/Hz se viene annunciato Host raw units. Le unità ReaEQ specifiche sono disponibili sui Track FX; Take FX conserva il percorso generico come Lua.
 

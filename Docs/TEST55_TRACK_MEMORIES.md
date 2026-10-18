@@ -1,3 +1,5 @@
+> Nota storica: in TEST55.5 **Ctrl+Maiusc+M** ha sostituito Alt+F8 (Track Memories) e F8 (FX Memories). Vedere [TEST55.5](TEST55_5_UNIFIED_MEMORY_SHORTCUT.md).
+
 # TEST55 — Track Memories e volume range nel progetto
 
 **Base:** LReaParams 0.0.54.4, senza includere Parameter Library e senza build locale.

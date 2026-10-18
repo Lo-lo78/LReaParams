@@ -1,3 +1,11 @@
+> **TEST55.7 / LReaParams 0.0.55:** Original catturato al **primo ingresso** nell’istanza FX, senza cambiare il suono; sopravvive a Esc/Ctrl+Tab e al ritorno nello stesso FX durante la sessione. F8 singolo confronta, doppio aggiorna Original. [Guida e collaudo](Docs/TEST55_7_FIRST_ENTRY_ORIGINAL.md). Nessuna compilazione locale.
+
+> **TEST55.6 / LReaParams 0.0.55:** F8 in FX Params è Compare A/B. Singolo alterna Original e Compare; doppio conferma il suono attuale come nuovo Original senza cambiare lato. L'ingresso nell'FX non applica snapshot e mantiene il suono reale del progetto. Compare non è più un parametro; Ctrl+Maiusc+M conserva i gestori memorie. [Guida e collaudo](Docs/TEST55_6_F8_COMPARE_AB.md). Nessuna compilazione locale.
+
+> **TEST55.5 / LReaParams 0.0.55:** Ctrl+Maiusc+M apre FX Memories o Track Memories in base al navigatore; Esc o lo stesso gesto torna indietro. Rimosso Alt+F8 Track e liberato F8 FX per il futuro. [Guida](Docs/TEST55_5_UNIFIED_MEMORY_SHORTCUT.md). Non compilato localmente.
+
+> **TEST55.4 / LReaParams 0.0.55:** unificazione delle memorie: Track MIDI CC silenzioso di default, Ctrl+T specifico per il target GUID, solo preferenze personalizzate in Track Memories; FX F8 indipendente da F7. [Guida](Docs/TEST55_4_UNIFIED_MEMORIES.md). Nessuna compilazione locale.
+
 > **TEST55.3 / LReaParams 0.0.55:** CC Fixed specifici di traccia GUID e send sorgente/destinazione/occorrenza; Floating segue il cursore. Track Memories mostra i CC specifici e marca le vecchie mappe generali come inattive. Un solo `.tp` per progetto. Nessuna build locale. [Dettagli](Docs/TEST55_3_FIXED_CC_PER_TRACK.md).
 
 > **TEST55.2 / LReaParams 0.0.55:** Track Memories ora annuncia la prima voce, salta le categorie vuote e mantiene silenziosi i bordi come FX Memories. Ctrl+Maiusc+I applica il Volume range del `.tp` a tastiera, Value, Ctrl+E e MIDI CC/pickup; Tab comunica i limiti. [Guida TEST55.2](Docs/TEST55_2_F8_VOLUME_RANGE.md). Nessuna compilazione locale.

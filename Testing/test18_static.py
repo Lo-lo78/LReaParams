@@ -18,7 +18,8 @@ for op in ('fxOrder_.deleteCustomOrder()','fxOrder_.hidden.erase(entry.param)',
            'fxOrder_.groups.erase(entry.slot)','fxOrder_.paramSlots.erase(entry.slot)',
            'fxOrder_.order.erase(fxOrder_.order.begin()+entry.rawPos)'):
     assert op in mem,op
-assert 'if(!standalone && !editF7_)' in mem
+assert 'if(!standalone && !editF7_)' not in mem
+assert 'memoryReturnF7_=editF7_' in mem
 assert 'memories' not in str(root/'src/FxNavigatorMemories.cpp')
 assert 'group_slot_name_v1::slot::' in order
 assert 'defaultConfirm_=true' in mem and 'defaultYes_=false' in mem

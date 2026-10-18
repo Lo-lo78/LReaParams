@@ -14,13 +14,12 @@ cmake=(r/'CMakeLists.txt').read_text()
 assert 'src/TrackNavigatorMemories.cpp' in cmake
 assert 'case trackMemories:' in core and 'trackNavigator_.openTrackMemories(true)' in core
 assert 'trackNavigator_.isMemoryManager()' in core
-assert 'k.vk == VK_F8' in nav and 'openTrackMemories(false)' in nav
+assert "k.vk == 'M'" in nav and 'openTrackMemories(false)' in nav
 assert 'void TrackNavigator::handleMemory' in manager
-# MSVC C3538 regression: string and size_t cannot share a single auto declaration.
-assert "const auto key = item.key.substr(2);\n            const auto dot = key.find('.')" in manager
-assert "const auto id = item.key.substr(2);\n            const auto dot = id.find('.')" in manager
+# MSVC C3538 regression: string and size_t must never share auto declarations.
 assert "const auto key = item.key.substr(2), dot" not in manager
 assert "const auto id = item.key.substr(2), dot" not in manager
+assert 'const auto target = item.key.substr(2);' in manager
 assert 'void TrackNavigator::memoryDelete' in manager
 assert 'void TrackNavigator::saveTrackSlot' in manager
 assert 'void TrackNavigator::recallTrackSlot' in manager

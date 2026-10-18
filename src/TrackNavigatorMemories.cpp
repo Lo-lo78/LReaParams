@@ -9,25 +9,10 @@
 namespace lrp {
 namespace {
 constexpr const char* columnNames[] = {"MIDI CC", "Parameter Steps", "Parameter Speech",
-                                       "Track Positions", "Navigation Memory"};
+                                       "Track Positions", "Volume Ranges"};
 const char* trackPages[] = {"Track", "Sends", "Receives"};
-// Show default settings as well as customized entries; users must be able to
-// edit a parameter before any explicit preference has ever been saved.
-const char* defaultParameterIds[] = {
-    "Track.Volume", "Track.Pan", "Track.Width", "Track.Mute", "Track.Solo",
-    "Track.PhaseInvert", "Track.SendCount", "Track.ReceiveCount", "Track.FXCount",
-    "Sends.Volume", "Sends.Pan", "Sends.Mute", "Sends.AudioSourceMode", "Sends.AudioSource",
-    "Sends.AudioDestination", "Sends.SendType", "Sends.MidiSource", "Sends.MidiDestination",
-    "Sends.MidiSourceBus", "Sends.MidiDestinationBus", "Sends.MidiFollowsFader", "Sends.MidiMerge",
-    "Receives.Volume", "Receives.Pan", "Receives.Mute", "Receives.AudioSourceMode",
-    "Receives.AudioSource", "Receives.AudioDestination", "Receives.SendType", "Receives.MidiSource",
-    "Receives.MidiDestination", "Receives.MidiSourceBus", "Receives.MidiDestinationBus",
-    "Receives.MidiFollowsFader", "Receives.MidiMerge"
-};
-const char* defaultMidiIds[] = {
-    "Track.Volume", "Track.Pan", "Track.Width", "Track.Mute", "Track.Solo", "Track.PhaseInvert",
-    "Sends.Volume", "Sends.Pan", "Sends.Mute", "Receives.Volume", "Receives.Pan", "Receives.Mute"
-};
+// Like FX Memories, show saved *differences* from the default, not every
+// possible parameter, zero-step, silent CC, or unused track slot.
 std::string guidString(const GUID& g) {
     char text[64]{};
     std::snprintf(text, sizeof(text), "{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
@@ -129,31 +114,35 @@ bool TrackNavigator::openTrackMemories(bool standalone) {
 }
 void TrackNavigator::rebuildMemoryList() {
     memoryItems_.clear();
+    // Human-readable target names in MIDI CC and speech lists, not raw GUIDs.
+    const auto targetLabel = [this](const std::string& identity) {
+        const auto first = identity.find('|');
+        if (first == std::string::npos) return identity;
+        if (identity.rfind("Track|", 0) == 0) {
+            const auto last = identity.rfind('|');
+            if (last == first || last == std::string::npos) return identity;
+            return savedTrackLabel(identity.substr(first + 1, last - first - 1)) +
+                ", " + identity.substr(last + 1);
+        }
+        if (identity.rfind("Sends|", 0) == 0) {
+            const auto second = identity.find('|', first + 1);
+            if (second == std::string::npos) return identity;
+            const auto third = identity.find('|', second + 1);
+            if (third == std::string::npos) return identity;
+            const auto fourth = identity.find('|', third + 1);
+            if (fourth == std::string::npos) return identity;
+            return savedTrackLabel(identity.substr(first + 1, second - first - 1)) +
+                ", Send " + identity.substr(third + 1, fourth - third - 1) +
+                " to " + savedTrackLabel(identity.substr(second + 1, third - second - 1)) +
+                ", " + identity.substr(fourth + 1);
+        }
+        return identity;
+    };
     if (memoryColumn_ == 0) {
         // One memory per physical Track or Send; old Lua type-wide mappings
         // remain visible as explicitly INACTIVE compatibility entries.
         for (const auto& entry : memory_.fixedCcLinks()) {
-            std::string label = entry.first;
-            const auto pipe = entry.first.find('|');
-            if (pipe != std::string::npos) {
-                if (entry.first.rfind("Track|", 0) == 0) {
-                    const auto last = entry.first.rfind('|');
-                    const auto guid = entry.first.substr(pipe + 1, last - pipe - 1);
-                    label = savedTrackLabel(guid) + ", " + entry.first.substr(last + 1);
-                } else if (entry.first.rfind("Sends|", 0) == 0) {
-                    const auto destStart = entry.first.find('|', pipe + 1);
-                    const auto ordinalStart = entry.first.find('|', destStart + 1);
-                    const auto parmStart = entry.first.find('|', ordinalStart + 1);
-                    if (destStart != std::string::npos && ordinalStart != std::string::npos &&
-                        parmStart != std::string::npos) {
-                        const auto source = entry.first.substr(pipe + 1, destStart - pipe - 1);
-                        const auto dest = entry.first.substr(destStart + 1, ordinalStart - destStart - 1);
-                        const auto ordinal = entry.first.substr(ordinalStart + 1, parmStart - ordinalStart - 1);
-                        label = savedTrackLabel(source) + ", Send " + ordinal + " to " +
-                            savedTrackLabel(dest) + ", " + entry.first.substr(parmStart + 1);
-                    }
-                }
-            }
+            std::string label = targetLabel(entry.first);
             const auto comma = entry.second.find(',');
             label += comma == std::string::npos ? ", CC " + entry.second :
                 ", Channel " + entry.second.substr(0, comma) + ", CC " + entry.second.substr(comma + 1);
@@ -171,44 +160,41 @@ void TrackNavigator::rebuildMemoryList() {
             }
         }
     } else if (memoryColumn_ == 1) {
-        std::set<std::string> keys(std::begin(defaultParameterIds), std::end(defaultParameterIds));
-        for (const auto& entry : memory_.entries("LReaParams.StepScales")) keys.insert(entry.first);
-        for (const auto& id : keys) {
-            const auto value = std::to_string(memory_.step(id));
-            memoryItems_.push_back({id, id + ", Step " + value, value, 0});
+        for (const auto& entry : memory_.entries("LReaParams.StepScales")) {
+            const int step = memory_.step(entry.first);
+            if (step == 0) continue; // No Step 0 rows, including old empty keys.
+            memoryItems_.push_back({entry.first, entry.first + ", Step " +
+                std::to_string(step), std::to_string(step), 0});
         }
     } else if (memoryColumn_ == 2) {
-        std::set<std::string> keys(std::begin(defaultParameterIds), std::end(defaultParameterIds));
-        for (const auto& entry : memory_.entries("LReaParams.ParameterSpeech")) keys.insert(entry.first);
-        for (const auto& id : keys) {
-            const bool on = memory_.valueSpeech(id);
-            memoryItems_.push_back({"V:" + id, id + ", Value speech " + (on ? "on" : "off"),
-                                    on ? "1" : "0", 0});
+        for (const auto& entry : memory_.entries("LReaParams.ParameterSpeech")) {
+            // Keyboard value speech defaults ON. Store and show only OFF.
+            if (memory_.valueSpeech(entry.first)) continue;
+            memoryItems_.push_back({"V:" + entry.first,
+                entry.first + ", Value speech off", "0", 0});
         }
-        std::set<std::string> midiKeys(std::begin(defaultMidiIds), std::end(defaultMidiIds));
-        for (const auto* group : trackPages)
-            for (const auto& entry : memory_.entries(std::string("CCSpeech.") + group))
-                midiKeys.insert(std::string(group) + "." + entry.first);
-        for (const auto& id : midiKeys) {
-            const auto dot = id.find('.');
-            if (dot == std::string::npos) continue;
-            const auto page = id.substr(0, dot), key = id.substr(dot + 1);
-            const bool on = memory_.ccSpeech(page, key);
-            memoryItems_.push_back({"C:" + id, id + ", MIDI speech " + (on ? "on" : "off"),
-                                    on ? "1" : "0", 0});
+        for (const auto& entry : memory_.entries("LReaParams.FixedCCSpeechByTarget")) {
+            // CC speech defaults OFF for each physical Track/Send identity.
+            if (!memory_.fixedCcSpeech(entry.first)) continue;
+            memoryItems_.push_back({"C:" + entry.first,
+                targetLabel(entry.first) + ", MIDI speech on", "1", 0});
         }
+        // A legacy type-wide speech preference does not activate any new
+        // Fixed target. Keep its bytes intact but do not display it as active.
     } else if (memoryColumn_ == 3) {
         for (int slot = 1; slot <= 12; ++slot) {
-            auto guid = memory_.trackSlot(slot);
+            const auto guid = memory_.trackSlot(slot);
+            if (guid.empty()) continue; // Unused slots are not memories.
             memoryItems_.push_back({"Slot" + std::to_string(slot),
                 "Slot " + std::to_string(slot) + ", " + savedTrackLabel(guid), guid, slot});
         }
     } else if (memoryColumn_ == 4) {
-        const auto active = memory_.position("LastPage");
-        for (const auto* page : {"F1", "F2", "F3"}) {
-            const auto value = memory_.position(std::string(page) + ".Parameter");
-            memoryItems_.push_back({page, std::string(page) + (active == page ? ", last page" : "") +
-                (value.empty() ? ", no stored parameter" : ", " + value), value, 0});
+        // Automatic last cursor positions are *not* user-created memories.
+        // Explicitly configured volume ranges are, and belong in this manager.
+        for (const auto& entry : memory_.entries("LReaParams.VolumeRanges")) {
+            if (entry.second.empty()) continue;
+            memoryItems_.push_back({entry.first, entry.first + ", " + entry.second + " dB",
+                entry.second, 0});
         }
     }
     memoryRow_ = memoryItems_.empty() ? 0 : std::clamp(memoryRow_, 0, static_cast<int>(memoryItems_.size()) - 1);
@@ -216,7 +202,36 @@ void TrackNavigator::rebuildMemoryList() {
 void TrackNavigator::speakMemory(const std::string& prefix) const {
     const std::string header = prefix.empty() ? "" : prefix + ". ";
     const auto col = static_cast<size_t>(std::clamp(memoryColumn_, 0, 4));
-    if (memoryItems_.empty()) { speech_(header + columnNames[col] + ". No memories"); return; }
+    if (memoryItems_.empty()) {
+        bool any = false;
+        // Empty startup profiles must say 'No memories' once, as in FX Memories.
+        for (int i = 0; i < 5 && !any; ++i) {
+            // Rebuild in a local copy would be more expensive; read-only
+            // section scans avoid changing the user's current column.
+            if (i == 0) {
+                any = !memory_.fixedCcLinks().empty();
+                for (const auto* page : trackPages) {
+                    for (const auto& link : memory_.ccLinks(page))
+                        if (!link.second.empty()) { any = true; break; }
+                    if (any) break;
+                }
+            }
+            else if (i == 1) {
+                for (const auto& e : memory_.entries("LReaParams.StepScales"))
+                    if (memory_.step(e.first) != 0) { any = true; break; }
+            } else if (i == 2) {
+                for (const auto& e : memory_.entries("LReaParams.ParameterSpeech"))
+                    if (!memory_.valueSpeech(e.first)) { any = true; break; }
+                if (!any) for (const auto& e : memory_.entries("LReaParams.FixedCCSpeechByTarget"))
+                    if (memory_.fixedCcSpeech(e.first)) { any = true; break; }
+            } else if (i == 3) {
+                for (int slot = 1; slot <= 12; ++slot)
+                    if (!memory_.trackSlot(slot).empty()) { any = true; break; }
+            } else any = !memory_.entries("LReaParams.VolumeRanges").empty();
+        }
+        speech_(any ? header + columnNames[col] + ". No memories" : "Track Memories. No memories");
+        return;
+    }
     speech_(header + columnNames[col] + ". " + memoryItems_[static_cast<size_t>(memoryRow_)].label);
 }
 void TrackNavigator::memoryExit() {
@@ -258,16 +273,13 @@ void TrackNavigator::memoryDelete() {
     } else if (memoryColumn_ == 2) {
         // Restore the default behavior (value speech on, CC speech off).
         if (item.key.rfind("V:", 0) == 0) memory_.setValueSpeech(item.key.substr(2), true);
-        else if (item.key.rfind("C:", 0) == 0) {
-            const auto key = item.key.substr(2);
-            const auto dot = key.find('.');
-            if (dot != std::string::npos) memory_.setCcSpeech(key.substr(0, dot), key.substr(dot + 1), false);
-        }
+        else if (item.key.rfind("C:", 0) == 0)
+            memory_.setFixedCcSpeech(item.key.substr(2), false);
     } else if (memoryColumn_ == 3) {
         if (item.value.empty()) { speech_("Slot already empty"); return; }
         memory_.setTrackSlot(item.slot, "");
-    } else {
-        speech_("Navigation positions update automatically. Press Enter to recall"); return;
+    } else if (memoryColumn_ == 4) {
+        memory_.clearVolumeRange(item.key);
     }
     memory_.flush();
     const auto label = item.label;
@@ -302,11 +314,8 @@ void TrackNavigator::memoryActivate() {
             const auto id = item.key.substr(2);
             memory_.setValueSpeech(id, !memory_.valueSpeech(id));
         } else if (item.key.rfind("C:", 0) == 0) {
-            const auto id = item.key.substr(2);
-            const auto dot = id.find('.');
-            if (dot == std::string::npos) return;
-            const auto page = id.substr(0, dot), key = id.substr(dot + 1);
-            memory_.setCcSpeech(page, key, !memory_.ccSpeech(page, key));
+            const auto target = item.key.substr(2);
+            memory_.setFixedCcSpeech(target, !memory_.fixedCcSpeech(target));
         }
         memory_.flush(); rebuildMemoryList(); speakMemory(); return;
     }
@@ -321,18 +330,15 @@ void TrackNavigator::memoryActivate() {
         return;
     }
     if (memoryColumn_ == 4) {
-        memory_.setPosition("LastPage", item.key);
-        memory_.flush();
-        // Reopen the saved page on this track; its last column is resolved by real index.
-        memoryManager_ = memoryStandalone_ = false;
-        memoryItems_.clear();
-        restorePosition();
-        speech_("Restored. " + currentParameterSpeech());
+        speech_("Edit this range with Control Shift I on the Volume parameter; Delete restores the default");
     }
 }
 void TrackNavigator::handleMemory(const Key& k) {
-    if (k.repeat && (k.vk == VK_RETURN || k.vk == VK_DELETE || k.vk == VK_F8 || k.vk == VK_ESCAPE)) return;
-    if (k.vk == VK_ESCAPE || k.vk == VK_F8) { memoryExit(); return; }
+    if (k.repeat && (k.vk == VK_RETURN || k.vk == VK_DELETE || k.vk == VK_ESCAPE ||
+        (k.ctrl && k.shift && !k.alt && k.vk == 'M'))) return;
+    if (k.vk == VK_ESCAPE || (k.ctrl && k.shift && !k.alt && k.vk == 'M')) {
+        memoryExit(); return;
+    }
     if (k.vk == VK_TAB) { speakMemory(); return; }
     if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_HOME || k.vk == VK_END)) {
         const int step = k.vk == VK_HOME ? 1 : -1;

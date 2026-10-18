@@ -187,8 +187,8 @@ void FxOrder::reset() noexcept {
 void FxOrder::normalize() {
     std::vector<int> kept;
     std::set<int> included;
-    for(int id:order)if(permitted(id)){kept.push_back(id);included.insert(id);}
-    for(int id:defaultOrder_)if(!included.count(id))kept.push_back(id);
+    for(int id:order)if(id!=compareParamIndex && permitted(id)){kept.push_back(id);included.insert(id);}
+    for(int id:defaultOrder_)if(id!=compareParamIndex && !included.count(id))kept.push_back(id);
     order.swap(kept);
     for(auto it=hidden.begin();it!=hidden.end();)if(!permitted(*it))it=hidden.erase(it);else ++it;
     for(auto it=aliases.begin();it!=aliases.end();)if(!permitted(it->first))it=aliases.erase(it);else ++it;
@@ -196,7 +196,7 @@ void FxOrder::normalize() {
 std::vector<int> FxOrder::visibleOrder() const {
     std::vector<int> visible;
     const auto& source=custom?order:defaultOrder_;
-    for(int id:source)if(!custom||!hidden.count(id))visible.push_back(id);
+    for(int id:source)if(id!=compareParamIndex && (!custom||!hidden.count(id)))visible.push_back(id);
     return visible;
 }
 std::string FxOrder::label(int id) const {
@@ -216,11 +216,11 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
     count_=std::max(0,paramCount);
     if(nativeOrder.empty()){
         for(int i=0;i<count_;++i)defaultOrder_.push_back(i);
-        defaultOrder_.insert(defaultOrder_.end()-std::min<int>(3,static_cast<int>(defaultOrder_.size())),compareParamIndex);
+        // Compare is now an F8 action, never a virtual parameter.
     }else {
         std::set<int> unique;
         for(int id:nativeOrder)if(unique.insert(id).second &&
-            (id==compareParamIndex || (id>=0 && id<count_) || (id==-200000 || id==-210000 || (id<0 && id>=-100127))))
+            (id!=compareParamIndex && ((id>=0 && id<count_) || (id==-200000 || id==-210000 || (id<0 && id>=-100127)))))
             defaultOrder_.push_back(id);
     }
     for(int id:defaultOrder_)if(id<0 && id!=compareParamIndex)validVirtual_.insert(id);

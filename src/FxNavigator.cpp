@@ -42,6 +42,10 @@ void FxNavigator::end() noexcept {
         try {rememberPosition();} catch (...) {}
         flushPersistentPosition();
     }
+    pendingF8At_ = 0;
+    // Keep per-instance Original/Compare snapshots across navigator exits and
+    // Ctrl+Tab. Original is captured only on first entry to the FX; a double
+    // F8 is the sole user command which updates that reference.
     active_ = false; fxBrowserMode_ = false; browserScopeMonitor_ = false; browserCursor_ = 0; browserMasterCursor_ = browserMonitorCursor_ = -1;
     recentMode_ = false; numericEdit_ = false; learnCc_ = false;
     floatingCc_ = false; floatingWaiting_ = false; pickup_.clear();
@@ -104,6 +108,17 @@ bool FxNavigator::begin() {
     nativeFxWindowRequest_ = NativeFxWindow::none;
     project_ = EnumProjects(-1, nullptr, 0);
     if (!project_) { speech_("No REAPER project"); return false; }
+    // Retain A/B snapshots for other OPEN project tabs, but discard snapshots
+    // belonging to closed projects. Never dereference saved project pointers.
+    // No state is applied to an FX when reopening this navigator.
+    compareStates_.erase(std::remove_if(compareStates_.begin(), compareStates_.end(),
+        [](const CompareState& state) {
+            for (int index = 0; ; ++index) {
+                ReaProject* openProject = EnumProjects(index, nullptr, 0);
+                if (!openProject) return true;
+                if (openProject == state.project) return false;
+            }
+        }), compareStates_.end());
     track_ = nullptr; take_ = nullptr;
     if (explicitTrack && ValidatePtr2(project_, explicitTrack, "MediaTrack*"))
         track_ = explicitTrack;
@@ -921,6 +936,7 @@ bool FxNavigator::selectFx(int index) {
     loadFxOrder();
     restorePersistedParameter();
     parameterName_ = parameterName();
+    initializeCompare(); // Capture only; never apply Original when entering an FX.
     resetMidiContext();
     valueMode_ = false; searchMode_ = false; search_.clear();
     rememberPosition();
@@ -975,7 +991,7 @@ bool FxNavigator::uiStillOpen() const {
 }
 bool FxNavigator::accepts(const Key& k) const noexcept {
     if (!active_) return false;
-    // The Lua transport gestures belong to FX Params in Grid, Value, F7 and F8.
+    // The Lua transport gestures belong to FX Params in Grid, Value, F7 and Memories.
     // Native search/rename/numeric EDIT controls must retain their space key.
     if (fxBrowserMode_) {
         if (k.vk==VK_SPACE && !k.shift && !k.alt) return true; // transport
@@ -1004,12 +1020,13 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (k.vk == VK_SPACE && !k.shift && !k.alt &&
         !textEdit_ && !searchMode_ && !numericEdit_) return true;
     if (memoryManager_) {
-        if(defaultConfirm_)return !k.ctrl&&!k.alt&&!k.shift&&(k.vk=='Y'||k.vk=='N'||k.vk==VK_ESCAPE||k.vk==VK_F8||k.vk==VK_RETURN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_UP||k.vk==VK_DOWN);
+        if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk == 'M') return true;
+        if(defaultConfirm_)return !k.ctrl&&!k.alt&&!k.shift&&(k.vk=='Y'||k.vk=='N'||k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_UP||k.vk==VK_DOWN);
         if(k.vk==VK_F12)return false;
         if(k.ctrl)return !k.alt && !k.shift && (k.vk==VK_HOME||k.vk==VK_END);
         if(k.shift)return false;
         if(k.alt)return k.vk==VK_LEFT||k.vk==VK_RIGHT;
-        return k.vk==VK_ESCAPE||k.vk==VK_F7||k.vk==VK_F8||
+        return k.vk==VK_ESCAPE||k.vk==VK_F7||
                k.vk==VK_TAB||k.vk==VK_RETURN||k.vk==VK_DELETE||
                k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||
                k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT;
@@ -1042,7 +1059,12 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (!k.ctrl && k.alt && !k.shift && (k.vk == 'G' || k.vk == 'M')) return true;
     if (k.ctrl && !k.alt && ((k.vk=='B' && !k.shift)||k.vk=='D')) return true;
     if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F3 || k.vk==VK_F5 || k.vk==VK_F6 || k.vk==VK_F9)) return true;
-    if ((k.vk == VK_F7 || k.vk == VK_F8) && !k.ctrl && !k.alt && !k.shift) return true;
+    // F8 is the standalone A/B command, independent of F7 and FX Memories.
+    if (k.vk == VK_F8 && !k.ctrl && !k.alt && !k.shift && !k.altGr &&
+        !textEdit_ && !numericEdit_ && !searchMode_ && !recentMode_ && !fxBrowserMode_ && !memoryManager_) return true;
+    if (k.vk == VK_F7 && !k.ctrl && !k.alt && !k.shift) return true;
+    if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk == 'M' &&
+        !textEdit_ && !numericEdit_ && !searchMode_ && !recentMode_ && !fxBrowserMode_) return true;
     if (k.ctrl && !k.alt && k.vk >= VK_F1 && k.vk <= VK_F12) return true;
     // Italian/European keyboard punctuation can require AltGr (Right Alt).
     // Distinguish it from real Ctrl+Alt shortcuts using the physical Right Alt.
@@ -1333,9 +1355,16 @@ void FxNavigator::searchPreview() {
 }
 void FxNavigator::handle(const Key& k) {
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
-    // A filtered search or F8 may select a parameter without a position save.
+    // Memory management or a filtered search may select a parameter without a position save.
     // Before using its step for a value change, load that parameter's setting.
     if (!fxBrowserMode_) syncParameterStep();
+    if (k.vk == VK_F8 && !k.ctrl && !k.alt && !k.shift && !k.altGr &&
+        !textEdit_ && !numericEdit_ && !searchMode_ && !recentMode_ && !fxBrowserMode_ && !memoryManager_) {
+        if (!k.repeat) f8Press();
+        return;
+    }
+    // A new key finalizes a pending single F8 before changing FX, editing or exiting.
+    if (pendingF8At_) resolveF8();
     // Mirror the original Lua transport semantics. Consume key repeats so a
     // held Space cannot alternately start/stop transport multiple times.
     // Shift+Space is intentionally left to the F7 selection controller.
@@ -1395,7 +1424,12 @@ void FxNavigator::handle(const Key& k) {
         }
     }
     if (!searchMode_ && handleAdvanced(k))return;
-    if(k.vk==VK_F8 && !k.ctrl && !k.alt && !k.shift){if(!k.repeat)openFxMemories(false);return;}
+    // Same memory shortcut as Track Params; F8 is reserved exclusively for A/B Compare.
+    if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk == 'M' &&
+        !searchMode_ && !recentMode_ && !fxBrowserMode_) {
+        if (!k.repeat) openFxMemories(false);
+        return;
+    }
     if (!k.ctrl && k.alt && !k.shift && (k.vk=='G'||k.vk=='M')) {
         chooseSlotAccess(k.vk=='G'?0:1);return;
     }

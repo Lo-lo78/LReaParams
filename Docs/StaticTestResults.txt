@@ -1,33 +1,6 @@
-TEST55.2 (source only): Tools/audit.py PASS, TEST55.2/55/54 static regression checks PASS.
-Previous source-only runner passed through TEST54.4 but exceeded the execution limit before finishing all suites; no errors observed up to that point.
-MSVC/CTest and REAPER/NVDA/MIDI hardware NOT RUN. GitHub Actions is required.
-
-TEST55.1 source-only verification: Tools/audit.py PASS; TEST55 and TEST54.2/54.3/54.4/54 static suites PASS. A full sequential run exceeded the execution window after TEST54.1 with no reported failure. No local C++ build or REAPER runtime testing.
-
-TEST55 source-only: Python audit PASS; 53/53 existing and TEST55 static suites PASS.
-No CMake, MSVC, local build or REAPER/NVDA runtime tests executed.
-GitHub Actions must compile and execute ProfileTests.cpp + ControlTests.cpp.
-
-LReaParams 0.0.54.4 TEST54.4: 53 Python source-only suites PASS (audit and regression contracts).
-Also checked routing-pending exception after the complete run.
-NO C++ compilation, local CMake, MSVC, REAPER, NVDA or hardware MIDI test performed. GitHub Actions and manual acceptance pending.
-
-TEST54.3 (source only): Tools/audit.py PASS; TEST54.3, TEST54.2 and TEST54 individual static contracts PASS.
-Earlier suites passed individually in the aggregate source-only runner; the aggregate invocation
-was interrupted by the tool time limit near its end. No Windows native build was attempted.
-Required next steps: GitHub Actions MSVC/CTest, then REAPER + NVDA Ctrl+E and empty FX tests.
-
-TEST54.2 (source-only): 50 Python static suites PASS; Tools/audit.py PASS.
-TEST54.2 adds nonduplicated Auto speech, send/receive envelope chunk+SWS/BR source verification and shared Ctrl+Tab source tests.
-No C++ compiler, CMake, MSBuild, native CTest, REAPER, NVDA or MIDI hardware was run locally.
-GitHub Actions + runtime validation required.
-
-TEST54.1 (source-only): 49 Python static suites passed locally; Tools/audit.py PASS.
-New GitHub Actions C++ fixtures cover project .tp Fixed CC reopen, OFF state,
-same-name projects, legacy import, conflict/backup and format.
-NO C++ compilation, native CTest, REAPER runtime, NVDA or MIDI hardware test performed.
-
-LReaParams 0.0.54 TEST54: Tools/run_static.py 49 Python SOURCE-ONLY suites PASS. Includes Track Params MIDI CC, Lua-compatible .tp patching, numeric Ctrl+E, linked routing, plus all prior contracts.
-NOT RUN: C++ native compilation, MSVC, CMake, MSBuild, CTest, REAPER, NVDA/OSARA or MIDI hardware. Build via GitHub Actions.
-
-TEST55.3: targeted source contracts, previous TEST54/54.1/55/55.2 checks and source audit passed. Full suite not completed (timeout). Native C++ build and REAPER/NVDA runtime NOT RUN locally.
+TEST55.7 source verification
+PASS Testing/test55_7_static.py
+PASS Testing/test55_6_static.py
+PASS Testing/test55_5_static.py
+PASS Tools/audit.py
+No native compilation. Complete historical static suite NOT claimed.

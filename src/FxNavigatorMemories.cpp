@@ -15,12 +15,9 @@ constexpr const char* names[] = {"Memory positions", "Groups", "Hidden parameter
 bool FxNavigator::openFxMemories(bool standalone) {
     if (!active_ || !valid()) return false;
     if(memoryManager_) {memoryExit();return true;}
-    // As in Lua, F8 from the normal FX grid is only available while editing
-    // with F7. The dedicated REAPER action is explicitly independent of F7.
-    if(!standalone && !editF7_) {
-        speech_(fxOrder_.custom?"F8 available in F7":"F8 not available in Plugin order");
-        return false;
-    }
+    // TEST55.5: Ctrl+Shift+M is the independent memory-manager entry point in
+    // FX Grid, Value and F7. The dedicated REAPER action uses this same UI.
+    // Preserve the exact origin to return correctly after Escape.
     memoryReturnF7_=editF7_;
     memoryReturnF7Filter_=f7FilterQuery_;
     memoryReturnParam_=parameter_;
@@ -43,25 +40,29 @@ void FxNavigator::rebuildMemoryColumns() {
     // Columns match the Lua F8 editor's visual and keyboard order, including
     // non-consecutive real Group and Memory slot numbers.
     for(const auto& pair:fxOrder_.paramSlots) {
+        if (pair.second == compareParamIndex) continue;
         MemoryEntry e;e.slot=pair.first;e.param=pair.second;
         e.label=(e.param==compareParamIndex || eqVirtualValid(e.param) || dynamicsVirtualValid(e.param) || (e.param>=0&&e.param<count_))?fxOrder_.label(e.param):"Missing parameter";
         memoryColumns_[0].push_back(std::move(e));
     }
     for(const auto& pair:fxOrder_.groups) {
-        if(pair.second.empty())continue;
+        const int activeCount=static_cast<int>(std::count_if(pair.second.begin(),pair.second.end(),
+            [](int id){return id!=compareParamIndex;}));
+        if(activeCount==0)continue;
         MemoryEntry e;e.slot=pair.first;
         const auto it=fxOrder_.groupNames.find(e.slot);
         const std::string groupName=it!=fxOrder_.groupNames.end()?it->second:std::string();
         e.label=(groupName.empty()?std::string():groupName+". ")+
-                std::to_string(pair.second.size())+" parameters";
+                std::to_string(activeCount)+" parameters";
         memoryColumns_[1].push_back(std::move(e));
     }
-    for(int id:fxOrder_.hidden)if(id==compareParamIndex || eqVirtualValid(id) || dynamicsVirtualValid(id) || (id>=0&&id<count_)){
+    for(int id:fxOrder_.hidden)if(eqVirtualValid(id) || dynamicsVirtualValid(id) || (id>=0&&id<count_)){
         MemoryEntry e;e.param=id;e.label=fxOrder_.label(id);
         memoryColumns_[2].push_back(std::move(e));
     }
     // MIDI CC links share the native main-thread runtime and Lua profile keys.
     for(const auto& pair:fxOrder_.ccLinks) {
+        if (pair.first == compareParamIndex) continue;
         MemoryEntry e;e.param=pair.first;
         // Lua profiles store "channel\tCC"; announce both field names
         // explicitly rather than presenting an opaque tab-separated pair.
@@ -74,12 +75,15 @@ void FxNavigator::rebuildMemoryColumns() {
         memoryColumns_[3].push_back(std::move(e));
     }
     if(fxOrder_.storedCustomOrder()) {
-        MemoryEntry e;e.label=std::to_string(fxOrder_.order.size())+" parameters";
+        const auto count=std::count_if(fxOrder_.order.begin(),fxOrder_.order.end(),
+            [](int id){return id!=compareParamIndex;});
+        MemoryEntry e;e.label=std::to_string(count)+" parameters";
         memoryColumns_[4].push_back(std::move(e));
     }
     std::map<int,int> counts;
     for(int pos=0;pos<static_cast<int>(fxOrder_.order.size());++pos) {
         const int id=fxOrder_.order[static_cast<size_t>(pos)];
+        if (id == compareParamIndex) continue;
         if(++counts[id] > 1) {
             MemoryEntry e;e.param=id;e.rawPos=pos;e.occurrence=counts[id];
             e.label=fxOrder_.label(id)+". Copy "+std::to_string(e.occurrence);
@@ -223,7 +227,7 @@ void FxNavigator::memoryLoad(bool toEdit) {
         memoryReturnPosition_=-1;
     }
     const bool standalone=memoryStandalone_;
-    // Enter in standalone F8 selects the memory and opens FX Params. Escape
+    // Enter in standalone FX Memories selects the memory and opens FX Params. Escape
     // without selecting returns directly to REAPER (no accidental edit).
     memoryStandalone_=false;
     memoryReturnF7_=false;
@@ -283,11 +287,18 @@ void FxNavigator::memoryDelete() {
     speech_("Deleted "+removed+". "+(memoryHasEntries()?memoryColumnName():"Parameter Navigator. No memories"));
 }
 void FxNavigator::memoryNavigate(const Key& k) {
+    if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk=='M') {
+        if (!k.repeat) {
+            defaultConfirm_=false;
+            defaultRegenerate_=false;
+            memoryExit();
+        }
+        return;
+    }
     if(defaultConfirm_) {
         if(k.repeat)return;
         // A confirmation is modal: ignore modified Y/N and other commands.
         if(k.ctrl || k.alt || k.shift)return;
-        if(k.vk==VK_F8){defaultConfirm_=false;memoryExit();return;}
         if(k.vk==VK_ESCAPE || k.vk=='N'){defaultConfirm_=false;defaultYes_=false;speakMemory("No");return;}
         if(k.vk==VK_LEFT||k.vk==VK_UP){if(defaultYes_){defaultYes_=false;speakMemory();}return;}
         if(k.vk==VK_RIGHT||k.vk==VK_DOWN){if(!defaultYes_){defaultYes_=true;speakMemory();}return;}
@@ -297,13 +308,13 @@ void FxNavigator::memoryNavigate(const Key& k) {
         }
         return;
     }
-    if(defaultRegenerate_ && !k.repeat && (k.vk==VK_RETURN||k.vk==VK_F8)) {
+    if(defaultRegenerate_ && !k.repeat && k.vk==VK_RETURN) {
         defaultRegenerate_=false;snapshotDefaultsIfMissing();
         if(!fxOrder_.hasDefaultValues()){defaultRegenerate_=true;speech_("Cannot save default");return;}
         memoryExit();return;
     }
-    if(k.repeat && (k.vk==VK_F7||k.vk==VK_F8||k.vk==VK_RETURN||k.vk==VK_DELETE))return;
-    if(k.vk==VK_ESCAPE || (k.vk==VK_F8 && !k.ctrl && !k.alt)) {memoryExit();return;}
+    if(k.repeat && (k.vk==VK_F7||k.vk==VK_RETURN||k.vk==VK_DELETE))return;
+    if(k.vk==VK_ESCAPE) {memoryExit();return;}
     if(k.vk==VK_TAB){speakMemory();return;}
     if(k.vk==VK_F7 && !k.ctrl && !k.alt){memoryLoad(true);return;}
     if(k.alt && !k.ctrl && !k.shift && (k.vk==VK_LEFT || k.vk==VK_RIGHT)) {

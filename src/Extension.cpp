@@ -159,7 +159,8 @@ public:
             exitNavigation(false);
             ShowMessageBox("LReaParams 0.0.55 - Track Memories\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
-                "FX: F7 order editor, F8 memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
+                "FX: F7 order editor, Ctrl+Shift+M FX Memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
+                "Track: Ctrl+Shift+M Track Memories; F8 in FX Params is unassigned.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A clear current FX envelopes.\n"
                 "Alt+F1/F2 presets; Alt+F3/F4 automated parameters. Ctrl+E numeric edit.\n"
                 "Space Play/Stop; Ctrl+Space Play/Pause in FX Params and Track Params. Shift+Space selects in F7 or F1.\n"
@@ -350,6 +351,7 @@ public:
         if(current_==&navigator_) {
             const auto previous=current_->reviewLine();
             navigator_.pollMidi();
+            navigator_.pollCompare(); // Resolve single F8 after double-press window.
             const auto next=current_->reviewLine();
             if(titleProxyActive_ && next!=previous) {
                 titleProxy_.updateReviewLine(next);

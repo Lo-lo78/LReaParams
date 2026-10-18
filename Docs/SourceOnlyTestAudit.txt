@@ -1,12 +1,1 @@
-TEST55.1 MSVC C3538 fix: the two mixed-type const auto declarations in TrackNavigatorMemories.cpp are split into separate statements.
-TEST55 static test and Tools/audit.py passed; the previous source-only regression checks through TEST54.1 passed, and TEST54.2/54.3/54.4/54/55 were also verified independently.
-The full sequential run was interrupted at its execution timeout; no test failure was reported.
-No C++ local build, CMake, MSBuild, REAPER/NVDA or MIDI test performed. Rebuild through GitHub Actions required.
-
-LReaParams 0.0.54.4 TEST54.4: 53 Python source-only suites PASS (audit and regression contracts).
-Also checked routing-pending exception after the complete run.
-NO C++ compilation, local CMake, MSVC, REAPER, NVDA or hardware MIDI test performed. GitHub Actions and manual acceptance pending.
-
-LReaParams 0.0.54 TEST54: 49 Python source-only suites passed. No local build, REAPER, NVDA, or MIDI execution. GitHub Actions native build and end-to-end tests required.
-
-TEST55.3 scoped Fixed CC code audit PASS; profile validator updated. Native MSVC build remains for GitHub Actions.
+TEST55.6: Static tests TEST55.5 and TEST55.6 plus legacy ReaEQ TEST43/TEST43.1 source contracts PASS; Tools/audit.py PASS. Native compilation and REAPER runtime NOT RUN.

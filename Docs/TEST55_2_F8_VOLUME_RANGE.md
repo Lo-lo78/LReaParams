@@ -1,3 +1,5 @@
+> Nota storica: in TEST55.5 **Ctrl+Maiusc+M** ha sostituito Alt+F8 (Track Memories) e F8 (FX Memories). Vedere [TEST55.5](TEST55_5_UNIFIED_MEMORY_SHORTCUT.md).
+
 # TEST55.2 — Track Memories F8 e intervalli di Volume
 
 Base: sorgente TEST55.1 con la correzione MSVC C3538. Nessuna compilazione locale.

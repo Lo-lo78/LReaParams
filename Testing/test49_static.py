@@ -15,7 +15,7 @@ assert 'TrackMemory memory_' in hdr
 assert 'memory_.load(resource_, projectFilename)' in cpp
 assert 'memory_.setStep(parameterKey(), stepScale_)' in cpp
 assert 'memory_.setValueSpeech(id, on)' in cpp
-assert 'memory_.setCcSpeech(page, bare, on)' in cpp
+assert 'memory_.setFixedCcSpeech(target, on)' in cpp
 assert 'memory_.valueSpeech(parameterKey())' in cpp
 assert 'rememberPosition(); memory_.flush();' in cpp
 assert 'CCSpeech.' in mem and 'LReaParams.StepScales' in mem

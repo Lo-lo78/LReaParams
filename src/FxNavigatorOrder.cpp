@@ -202,6 +202,7 @@ void FxNavigator::loadFxOrder() {
 void FxNavigator::rebuildView(int preferParam,int preferPosition) {
     if(groupSlot_ && !groupEditAll_) {
         visible_=fxOrder_.groups[groupSlot_];
+        visible_.erase(std::remove(visible_.begin(),visible_.end(),compareParamIndex),visible_.end());
     } else visible_=fxOrder_.visibleOrder();
     if(visible_.empty()) {
         // Even when all parameters are hidden, retain a valid host param for

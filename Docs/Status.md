@@ -1,3 +1,22 @@
+## TEST55.7 — F8 Original al primo ingresso (source only)
+- L’ingresso cattura l’attuale stato dell’FX senza applicarlo. Original/Compare sopravvivono a uscita e rientro nello stesso FX durante la sessione e sono separati per istanza. F8 doppio continua a essere l’unico aggiornamento esplicito del riferimento. Le cache dei progetti chiusi vengono scartate. [Guida](TEST55_7_FIRST_ENTRY_ORIGINAL.md). Build e runtime da verificare.
+
+## TEST55.6 — F8 Compare A/B (source only)
+- Singolo F8 alterna; doppio F8 conferma Original. Nessuna modifica sonora all'ingresso in FX Params.
+- Compare non più voce nella navigazione o nelle memorie. Gestori sempre con Ctrl+Maiusc+M.
+- GitHub Actions: compilazione C++ e test runtime ancora da confermare. [Guida](TEST55_6_F8_COMPARE_AB.md).
+
+## TEST55.5 — Gestori memorie, shortcut uniforme (source only)
+- **Ctrl+Maiusc+M** in FX Params apre FX Memories; in Track Params apre Track Memories. Stesso tasto o Esc chiude il gestore.
+- **F8 di FX Params è libero**; **Alt+F8 Track** non apre più le memorie. Le azioni native REAPER mantengono gli stessi Command ID.
+- Nessun cambiamento a preferenze, associazioni MIDI, formato profili o memoria persistente. [Verifiche](TEST55_5_UNIFIED_MEMORY_SHORTCUT.md).
+
+## TEST55.4 — Unified memory defaults (source only)
+- Track Params: Fixed/Floating CC speech OFF unless enabled with Ctrl+T for a specific target GUID. Historical generic CC speech flags are preserved but never leak into physical targets.
+- Track Memories: only stored deviations from defaults; no zero steps, empty slots, or automatic navigation entries. Explicit Volume Ranges replace the automatic navigation column.
+- FX Params F8 now directly opens the same FX Memories manager even outside F7. REAPER actions still launch their existing managers.
+- 56/56 source-only scripts passed, plus Tools/audit.py. Native compilation and NVDA/REAPER behavior NOT TESTED locally.
+
 ## 0.0.55 — TEST55.3 Fixed CC per GUID della traccia
 
 Bindings Fixed indipendenti dal cursore, salvati nel `.tp` di progetto; legacy type-wide inattivi, senza perdita dati. Vedi Docs/TEST55_3_FIXED_CC_PER_TRACK.md.

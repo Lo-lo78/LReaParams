@@ -1,3 +1,25 @@
+## 0.0.55 — TEST55.7
+- Acquisizione A/B alla prima selezione dell’istanza FX, con conservazione per la sessione anche dopo Esc/Ctrl+Tab. Evitata la ricattura involontaria su rientro; cleanup dei progetti chiusi. F8 invariato (singolo A/B, doppio aggiorna Original). Nessuna modifica ai profili.
+
+## 0.0.55 — TEST55.6: F8 Compare A/B
+- FX Params: F8 singolo alterna Original/Compare, doppio F8 aggiorna Original con il suono corrente.
+- L'ingresso in FX non applica mai Original e non cambia il suono memorizzato dal progetto; cattura soltanto una base provvisoria per la sessione.
+- Il vecchio Compare virtuale viene escluso da ordine, griglia, gruppi e FX Memories; legacy `.fx` non riscritti in ingresso.
+- Gestione differita della singola pressione con il tempo di doppio clic Windows, senza cambio sonoro intermedio sul doppio gesto.
+- [Prove manuali](TEST55_6_F8_COMPARE_AB.md); nessuna build locale.
+
+## 0.0.55 — TEST55.5: Ctrl+Maiusc+M per entrambe le memorie
+
+- Un solo gesto in FX Params e Track Params; toggling e ritorno con Esc; F8 FX senza funzione per usi futuri; Alt+F8 Track rimosso.
+- Gestori, `.fx`/`.tp`, associazioni CC e Command ID delle azioni restano invariati. Nessuna build locale; GitHub Actions compilerà la DLL.
+
+## TEST55.4 — Unified FX and Track memory behavior
+- Fixed and Floating Track MIDI CC speech defaults OFF; per-target GUID speech preferences persist separately and do not bleed between same-name parameters on different tracks.
+- Track Memories now lists only deviations from defaults; replaces automatic Navigation Memory listings with explicitly saved Volume Ranges. Empty manager starts without fabricated rows.
+- Resetting a memory drops its key from the project TP rather than leaving a blank placeholder.
+- FX F8 opens FX Memories from Grid/Value without requiring F7 first. Dedicated FX/Track Memories REAPER actions still use their respective managers.
+- No local native build or runtime test performed.
+
 ## TEST55.3 — Fixed MIDI CC per-track GUID
 
 - Track Fixed CC bound to an immutable REAPER Track GUID, not the navigated Pan/Volume type.
