@@ -1,0 +1,10 @@
+TEST56.2 checks (source only):
+- Testing/test56_2_static.py: PASS
+- Testing/test56_1_static.py: PASS
+- Testing/test55_10_static.py: PASS
+- Testing/test55_11_static.py: PASS
+- Testing/test55_12_static.py: PASS
+- Testing/test55_13_static.py: PASS
+- Tools/audit.py: PASS
+- Native C++ compilation: NOT RUN (GitHub Actions only)
+- REAPER/NVDA functional testing: NOT RUN

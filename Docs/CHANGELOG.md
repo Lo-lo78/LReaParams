@@ -1,3 +1,14 @@
+## TEST56.2 — F4 parameter-name grid
+
+- FX header Enter: accessible multi-column names-only parameter grid; F1/F2 adjust height (1..200).
+- Enter: add/show current parameter in TCP and return to corresponding F4 position; Ctrl+Enter: toggle while remaining in grid.
+- F6: visible TCP parameters grid, Enter removes and returns to F4.
+- Protected TCP changes by GUID, native API readback, targeted chunk fallback and Undo. No modification of parameter audio values.
+- Previous TEST56.1 and F1/F2/F3 behavior preserved; no local compilation.
+
+## 0.0.56 — TEST56.1
+- F4 FX TCP: navigazione nativa in sola lettura, parametri esposti nei Track Controls, memoria GUID/posizione nel progetto; ritorno alle pagine originali e scorciatoie condivise. Compilazione solo tramite GitHub Actions.
+
 ## 0.0.55 — TEST55.12
 - Riparata la creazione/riattivazione dell’automazione Width in Track Params F1, usando la struttura completa `WIDTHENV2` del Lua e verificando il chunk reale della traccia. Supporto a blocchi Width legacy; gli altri parametri e i profili rimangono invariati.
 - Nuova prova statica in GitHub Actions. Non compilato localmente.

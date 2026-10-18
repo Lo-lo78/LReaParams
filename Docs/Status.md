@@ -1,3 +1,13 @@
+## TEST56.2 — F4 parameter selection
+
+Nuova griglia accessibile con nomi dei parametri FX, altezza regolabile con F1/F2 e operazioni TCP tramite Invio/Ctrl+Invio. Comandi F4/F6 in linea con il Lua, contenuti senza valori audio. Protezione FXID, verifica visibilità REAPER e Undo.
+
+**Source-only; MSVC GitHub Actions e test REAPER/NVDA non ancora eseguiti.**
+
+## 0.0.56 — TEST56.1: F4 FX TCP navigation (source-only)
+
+Prima griglia F4 C++ basata su CountTCPFXParms/GetTCPFXParm. Colonne per FX (incluse quelle prive di parametri TCP), righe per controlli TCP esposti, bordi silenziosi, continuità F1/F2/F3, lettura NVDA e navigazione fra tracce con FX. **Nessun editor né MIDI F4 in questa TEST**. Solo controlli sorgente: MSVC GitHub Actions e REAPER/NVDA restano da provare. [Guida](TEST56_1_F4_TCP_NAVIGATION.md).
+
 ## TEST55.12 — Width envelope in F1 (source-only)
 
 - Corretto il percorso del parametro Width: riconoscimento dei blocchi `<WIDTHENV2` e `<WIDTHENV` nella traccia, creazione con GUID/punto iniziale come nel Lua originale, attivazione/armamento e verifica reale del chunk senza dipendere soltanto dal puntatore restituito dall’API.

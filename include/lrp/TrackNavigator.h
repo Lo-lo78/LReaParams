@@ -58,7 +58,39 @@ private:
             midiFollowsFader, midiMerge } type{};
     };
     struct TrackRow { MediaTrack* track{}; GUID guid{}; int projectIndex{}; };
-    enum class Page { tracks, sends, receives };
+    enum class Page { tracks, sends, receives, fxTcp };
+    // TEST56.1: F4 is a view of native REAPER TCP parameters, not a copy of
+    // the full FX parameter list. Each FX has a header, including empty FXs.
+    struct FxTcpParameter { int index = -1; std::string name; };
+    struct FxTcpColumn { int fxIndex = -1; GUID guid{}; std::string name;
+        std::vector<FxTcpParameter> parameters; };
+    void rebuildFxTcp(bool preserveSelection);
+    bool selectFxTcpPage();
+    void handleFxTcpKey(const Key& key);
+    void rememberFxTcpPosition();
+    std::string fxTcpReview(bool includeContext) const;
+    int fxTcpHeight() const;
+    const FxTcpColumn* currentFxTcpColumn() const;
+    const FxTcpParameter* currentFxTcpParameter() const;
+    void moveFxTcpColumn(int delta);
+    void moveFxTcpRow(int delta);
+    // TEST56.2: names-only, FX Params-style grid for choosing TCP controls.
+    struct FxTcpListEntry { int fxIndex = -1; int paramIndex = -1; GUID fxGuid{};
+        std::string name; bool visible = false; };
+    void openFxTcpParameterGrid(bool visibleOnly);
+    void closeFxTcpParameterGrid(bool announceCurrent = true);
+    void rebuildFxTcpParameterGrid(int preferFx = -1, int preferParam = -1);
+    std::string fxTcpParameterGridReview(bool details) const;
+    void handleFxTcpParameterGridKey(const Key&);
+    bool setFxTcpParameterVisible(int fxIndex, int paramIndex, bool visible);
+    void commitFxTcpParameterGrid(bool keepOpen);
+    bool fxTcpParameterVisible(int fxIndex, int paramIndex) const;
+    bool fxTcpListOpen_ = false, fxTcpListVisibleOnly_ = false;
+    int fxTcpListFxIndex_ = -1, fxTcpListPosition_ = 0, fxTcpListGridHeight_ = 10;
+    GUID fxTcpListFxGuid_{};
+    std::vector<FxTcpListEntry> fxTcpListEntries_;
+    std::vector<FxTcpColumn> fxTcpColumns_;
+    int fxTcpColumn_ = 0, fxTcpRow_ = 0;
     static constexpr int detailHeight = 14;
     void buildEntries();
     // TEST55: F8-like project TP memory manager, with no separate F7 editor.

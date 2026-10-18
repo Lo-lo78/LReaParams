@@ -1,1 +1,1 @@
-LReaParams 0.0.55 — TEST55.11: accessible Yes/No confirmation for global automation disable in Track and FX Params. Builds only through GitHub Actions; no local compilation. Parameter Library excluded.
+LReaParams 0.0.56 — TEST56.2: F4 names-only parameter grid, Ctrl+Enter TCP toggle, Enter commit, F1/F2 grid height. Builds only via GitHub Actions; no local native compilation. Parameter Library excluded.

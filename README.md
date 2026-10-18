@@ -1,3 +1,7 @@
+> **TEST56.2 / LReaParams 0.0.56:** F4, Invio su intestazione FX apre una **griglia dei soli nomi dei parametri**, con le direzioni e F1/F2 della griglia FX Params. Invio aggiunge al TCP e torna a F4; Ctrl+Invio aggiunge/rimuove senza uscire. F6 da F4 apre la griglia dei controlli TCP visibili per rimuoverli. [Guida TEST56.2](Docs/TEST56_2_F4_TCP_PARAMETER_GRID.md). **Non compilato localmente**: build solo GitHub Actions.
+
+> **TEST56.1 / LReaParams 0.0.56:** prima migrazione F4, griglia FX TCP nativa in sola navigazione (una colonna per FX, header sempre presente, parametri TCP reali, lettura NVDA e bordi silenziosi). Modifiche e lista completa dei parametri verranno nelle TEST56 successive. **Non compilato localmente**: build soltanto via GitHub Actions. [Guida TEST56.1](Docs/TEST56_1_F4_TCP_NAVIGATION.md).
+
 > **TEST55.13 / LReaParams 0.0.55:** ricerca ciclica per iniziale come nel Lua (F1 per traccia, F2/F3 per parametro nella colonna), protezione dei CC Fixed di send/receive quando cambia la struttura del routing. **Gli Step rimangono condivisi per tipo di parametro, non per traccia.** Solo sorgente per GitHub Actions, senza compilazione locale. [Guida TEST55.13](Docs/TEST55_13_INITIAL_ROUTING_REFINEMENTS.md).
 
 > **TEST55.12 / LReaParams 0.0.55:** Correzione automazione Width in F1 con envelope nativo completo (`EGUID`, `PT`, armamento), verifica tramite chunk anche quando l’API non aggiorna subito il puntatore. Nessuna compilazione locale. [Guida e collaudo](Docs/TEST55_12_WIDTH_AUTOMATION.md).

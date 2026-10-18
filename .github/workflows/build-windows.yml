@@ -136,6 +136,10 @@ jobs:
         run: python Testing/test55_12_static.py
       - name: TEST55.13 initial search and guarded sends (source only)
         run: python Testing/test55_13_static.py
+      - name: TEST56.1 FX TCP native grid (source only)
+        run: python Testing/test56_1_static.py
+      - name: Verify TEST56.2 F4 names-only TCP parameter grid (source only)
+        run: python Testing/test56_2_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build
