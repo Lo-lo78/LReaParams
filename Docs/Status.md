@@ -1,3 +1,16 @@
+# TEST56.9.1 — F4 Fixed CC regression correction
+
+- Fixed: the project `.tp` storage writer and native profile parser rejected
+  the `FxTcp|{trackGUID}|{fxGUID}|parameter` identity. This aborted learn and
+  returned focus to REAPER TCP. Both layers now validate this form safely.
+- Ctrl+T speech for F4 uses the same new validation. Existing F1–F3 mappings
+  and the Floating CC engine are unchanged.
+- A future disk/storage failure in CC learn is reported in NVDA without
+  terminating navigation. Existing in-memory mappings are restored on failure.
+- 14 selected static suites plus overall audit passed. The historical full
+  source-only suite timed out after earlier checks; not claimed complete.
+- No native build, CTest or MIDI hardware tests run locally.
+
 ## TEST56.4 — F4 search and visible TCP grid columns
 
 Source-only changes complete. GitHub Actions native build, CTest and REAPER/NVDA verification pending.

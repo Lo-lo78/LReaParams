@@ -345,6 +345,23 @@ int main(int argc, char** argv) {
               tm.fixedCcLink(drumsPan) == "1,11" && tm.fixedCcLink(secondSend) == "2,15",
               "Scoped CC identities collapsed two tracks or duplicate sends");
         rejected([&] { tm.setFixedCcLink("Pan", "1,10"); });
+        // TEST56.9.1: an F4 Fixed CC must survive a real .tp round-trip.
+        // The old writer rejected FxTcp| identities after the first controller
+        // event, causing the navigational focus to fall back into REAPER TCP.
+        const std::string fxTcpA = "FxTcp|" + trackSlotGuid + "|" + otherGuid + "|17";
+        const std::string fxTcpB = "FxTcp|" + trackSlotGuid + "|" + trackSlotGuid + "|17";
+        check(!tm.fixedCcSpeech(fxTcpA) && !tm.fixedCcSpeech(fxTcpB),
+              "F4 MIDI speech must default to OFF independently per FX instance");
+        tm.setFixedCcLink(fxTcpA, "3,74");
+        tm.setFixedCcLink(fxTcpB, "4,75");
+        tm.setFixedCcSpeech(fxTcpA, true);
+        check(tm.fixedCcLink(fxTcpA) == "3,74" && tm.fixedCcLink(fxTcpB) == "4,75" &&
+              tm.fixedCcSpeech(fxTcpA) && !tm.fixedCcSpeech(fxTcpB),
+              "F4 FX instances lost independent CC or speech settings");
+        rejected([&] { tm.setFixedCcLink("FxTcp|" + trackSlotGuid + "|" + otherGuid + "|oops", "3,74"); });
+        rejected([&] { tm.setFixedCcLink("FxTcp|" + trackSlotGuid + "|" + otherGuid + "|32768", "3,74"); });
+        rejected([&] { tm.setFixedCcLink("FxTcp|" + trackSlotGuid + "|not-a-guid|17", "3,74"); });
+        rejected([&] { tm.setFixedCcSpeech("FxTcp|" + trackSlotGuid + "|" + otherGuid + "|17|extra", true); });
         check(tm.trackSlot(2) == trackSlotGuid &&
               tm.entries("LReaParams.TrackPositions").at("Slot2") == trackSlotGuid,
               "Track position not visible before flush");
@@ -371,10 +388,21 @@ int main(int argc, char** argv) {
               tmAgain.fixedCcLink(drumsPan) == "1,11" &&
               tmAgain.fixedCcLink(firstSend) == "2,14" &&
               tmAgain.fixedCcLink(secondSend) == "2,15" &&
-              tmAgain.fixedCcLinks().size() == 4,
+              tmAgain.fixedCcLinks().size() == 6,
               "Project-scoped Fixed CC identities did not persist");
         check(tmAgain.fixedCcSpeech(bassPan) && !tmAgain.fixedCcSpeech(drumsPan),
               "Scoped MIDI speech not restored independently per track");
+        check(tmAgain.fixedCcLink(fxTcpA) == "3,74" && tmAgain.fixedCcLink(fxTcpB) == "4,75" &&
+              tmAgain.fixedCcSpeech(fxTcpA) && !tmAgain.fixedCcSpeech(fxTcpB),
+              "F4 Fixed CC and speech were not restored after reopening project TP");
+        tmAgain.setFixedCcLink(fxTcpA, "");
+        tmAgain.setFixedCcSpeech(fxTcpA, false);
+        tmAgain.flush();
+        TrackMemory afterF4Delete;
+        afterF4Delete.load(trackRoot, savedProject);
+        check(afterF4Delete.fixedCcLink(fxTcpA).empty() &&
+              !afterF4Delete.fixedCcSpeech(fxTcpA) && afterF4Delete.fixedCcLink(fxTcpB) == "4,75",
+              "F4 CC deletion or speech reset erased another FX-instance association");
         tmAgain.setFixedCcLink(bassPan, ""); tmAgain.flush();
         TrackMemory afterScopedDelete;
         afterScopedDelete.load(trackRoot, savedProject);

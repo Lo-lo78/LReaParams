@@ -25,7 +25,8 @@ public:
     void setCcSpeech(const std::string& page, const std::string& parameter, bool enabled);
     // TEST55.3: per-target Fixed CC, in this project's existing TP file.
     // Older [Track]/[Sends]/[Receives] CC maps remain unchanged and inert.
-    // Identity: Track|{GUID}|Parameter or Sends|{sourceGUID}|{destGUID}|ordinal|Parameter.
+    // Identity: Track|{GUID}|Parameter, Sends|{sourceGUID}|{destGUID}|ordinal|Parameter,
+    // or FxTcp|{trackGUID}|{fxGUID}|nativeParameterIndex.
     std::string fixedCcLink(const std::string& identity) const;
     void setFixedCcLink(const std::string& identity, const std::string& link);
     std::map<std::string, std::string> fixedCcLinks() const;

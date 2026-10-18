@@ -1,3 +1,7 @@
+TEST56.9.1: 14 targeted static suites PASS (selected TEST55/56), Tools/audit.py PASS.
+Full historical source-only suite: timeout after preceding tests, NOT counted as complete.
+Windows MSVC compilation, CTest and hardware NVDA/REAPER tests: NOT executed locally.
+
 TEST55.8 source verification
 PASS Tools/audit.py
 PASS Testing/test18_static.py

@@ -1,3 +1,14 @@
+# TEST56.9.1 — F4 Fixed CC writer and focus-loss repair
+
+- Accept valid `FxTcp|{trackGUID}|{fxGUID}|nativeParameterIndex` Fixed CC mappings
+  and per-target MIDI speech settings in both the memory writer and the native
+  `.tp` parser for the same project file.
+- Fix exception that terminated Track Params after the first F4 learn event;
+  storage errors during learning now report an error rather than exiting.
+- Add source and native regression cases for two FX instances, persistence,
+  invalid identities, opt-in speech, and deletion. Floating CC unchanged.
+- No local compilation; build and native CTest are delegated to GitHub Actions.
+
 ## 0.0.56 TEST56.9 — F4 consolidation (source-only)
 
 - Finalized F4 accessible Ctrl+E numeric edit, using shared Win32 EDIT and host formatted numeric values when safe; raw-value fallback and GUID-target guard.

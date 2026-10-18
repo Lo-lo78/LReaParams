@@ -159,9 +159,14 @@ Profile parseLegacy(std::string bytes) {
                     R"(Track\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|(Volume|Pan|Width|Mute|Solo|PhaseInvert))");
                 static const std::regex scopedSend(
                     R"(Sends\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|([1-9][0-9]{0,2})\|(Volume|Pan|Mute))");
+                static const std::regex scopedFxTcp(
+                    R"(FxTcp\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|([0-9]{1,5}))");
                 for (const auto& l : pair.second) {
                     const auto f = field(l);
-                    require((std::regex_match(f.key, scopedTrack) || std::regex_match(f.key, scopedSend)) &&
+                    std::smatch fxParts;
+                    const bool fxTcp = std::regex_match(f.key, fxParts, scopedFxTcp);
+                    if (fxTcp) integer(fxParts[1].str(), 0, 32767);
+                    require((std::regex_match(f.key, scopedTrack) || std::regex_match(f.key, scopedSend) || fxTcp) &&
                         (f.value.empty() || f.value == "1"), "Invalid per-target MIDI speech flag");
                 }
             } else if (name == "LReaParams.FixedCCByTarget") {
@@ -171,10 +176,15 @@ Profile parseLegacy(std::string bytes) {
                     R"(Track\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|(Volume|Pan|Width|Mute|Solo|PhaseInvert))");
                 static const std::regex scopedSend(
                     R"(Sends\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|([1-9][0-9]{0,2})\|(Volume|Pan|Mute))");
+                static const std::regex scopedFxTcp(
+                    R"(FxTcp\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}\|([0-9]{1,5}))");
                 for (const auto& l : pair.second) {
                     const auto f = field(l);
-                    require(std::regex_match(f.key, scopedTrack) || std::regex_match(f.key, scopedSend),
-                        "Invalid scoped Track CC identity");
+                    std::smatch fxParts;
+                    const bool fxTcp = std::regex_match(f.key, fxParts, scopedFxTcp);
+                    if (fxTcp) integer(fxParts[1].str(), 0, 32767);
+                    require(std::regex_match(f.key, scopedTrack) || std::regex_match(f.key, scopedSend) || fxTcp,
+                        "Invalid scoped Track/Send/FX CC identity");
                     ccValue(f.value);
                 }
             } else if (name == "LReaParams.MidiSettings") {

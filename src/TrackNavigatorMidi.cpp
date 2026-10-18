@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace lrp {
@@ -483,18 +484,31 @@ void TrackNavigator::pollMidi() {
             // A physical controller has one Fixed target per project.
             // Do not destroy imported generic Lua entries: they are inactive
             // compatibility data and cannot drive other tracks.
-            for (const auto& row : memory_.fixedCcLinks()) {
-                int oldCh = 0, oldCC = 0;
-                if (row.first != learnIdentity_ && parseCc(row.second, oldCh, oldCC) &&
-                    oldCh == cc.channel && oldCC == cc.number)
-                    memory_.setFixedCcLink(row.first, "");
+            // Saving a Fixed map must never close the accessible navigator if
+            // the project .tp becomes unavailable or is externally modified.
+            // A failure restores the pre-learn memory state, leaving existing
+            // associations intact and the focus inside Track Params.
+            TrackMemory beforeLearn = memory_;
+            try {
+                for (const auto& row : memory_.fixedCcLinks()) {
+                    int oldCh = 0, oldCC = 0;
+                    if (row.first != learnIdentity_ && parseCc(row.second, oldCh, oldCC) &&
+                        oldCh == cc.channel && oldCC == cc.number)
+                        memory_.setFixedCcLink(row.first, "");
+                }
+                // Store the guard in the same .tp transaction as this Fixed CC.
+                // Track parameters do not need a routing guard; send/receive do.
+                if (!signature.empty()) memory_.setRoutingGuard(learnIdentity_, signature);
+                memory_.setFixedCcLink(learnIdentity_, link);
+                memory_.setFixedEnabled(true);
+                memory_.flush();
+            } catch (const std::exception&) {
+                memory_ = std::move(beforeLearn);
+                learnCc_ = false;
+                learnIdentity_.clear();
+                speech_("CC learn failed. Could not save project Track memory");
+                continue;
             }
-            // Store the guard in the same .tp transaction as this Fixed CC.
-            // Track parameters do not need a routing guard; send/receive do.
-            if (!signature.empty()) memory_.setRoutingGuard(learnIdentity_, signature);
-            memory_.setFixedCcLink(learnIdentity_, link);
-            memory_.setFixedEnabled(true);
-            memory_.flush();
             const auto target = learnKey_;
             learnCc_ = false; fixedCc_ = true; floatingCc_ = floatingWaiting_ = false;
             learnIdentity_.clear();

@@ -1,3 +1,11 @@
+> **TEST56.9.1 — F4 Fixed CC repair:** corrected the project `.tp` writer to accept
+> `FxTcp|{trackGUID}|{fxGUID}|parameter` identities for both MIDI mapping and
+> Ctrl+T speech. The previous writer threw during learn and stopped Track
+> Params, returning focus to REAPER TCP. Added safeguards and native regression
+> tests for persistence, independent FX instances and deletion. Floating CC
+> unchanged. [Test guide](Docs/TEST56_9_1_F4_FIXED_CC_PERSISTENCE.md).
+> Compile **only with GitHub Actions**, no local build.
+
 ## TEST56.9 — Close Track Params F4 before F5
 
 - Ctrl+E in F4 opens the existing NVDA-accessible native edit control. The field starts with the current value, in formatted units when the host provides a stable monotonic numeric formatter, otherwise raw REAPER parameter units. Enter confirms; Escape cancels. Unsupported or out-of-range values are rejected, keeping the edit field open. A changed/removed FX cannot receive a stale edit.

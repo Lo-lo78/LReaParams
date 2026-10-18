@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cmath>
 #include <sstream>
+#include <string_view>
 #include <iomanip>
 #include <stdexcept>
 
@@ -63,6 +64,43 @@ std::string patchLine(std::string bytes, const std::string& section,
 std::string ccKey(const std::string& p) {
     if (p == "PhaseInvert") return "PhaseInvert";
     return p;
+}
+// F4 Fixed CC identities are bound to the *physical* track and FX GUID plus
+// the native FX parameter index. Both MIDI learn and MIDI speech use this same
+// guard: refusing FxTcp here used to throw after the first learned CC and
+// terminate the entire accessible navigator (TEST56.9 regression).
+bool isGuid(std::string_view guid) {
+    if (guid.size() != 38 || guid.front() != '{' || guid.back() != '}') return false;
+    for (std::size_t i = 1; i != 37; ++i) {
+        if (i == 9 || i == 14 || i == 19 || i == 24) {
+            if (guid[i] != '-') return false;
+        } else if (!((guid[i] >= '0' && guid[i] <= '9') ||
+                     (guid[i] >= 'A' && guid[i] <= 'F') ||
+                     (guid[i] >= 'a' && guid[i] <= 'f'))) return false;
+    }
+    return true;
+}
+bool isFixedFxTcpIdentity(const std::string& id) {
+    constexpr std::string_view prefix = "FxTcp|";
+    if (id.compare(0, prefix.size(), prefix) != 0) return false;
+    const auto trackEnd = id.find('|', prefix.size());
+    if (trackEnd == std::string::npos ||
+        !isGuid(std::string_view(id).substr(prefix.size(), trackEnd - prefix.size()))) return false;
+    const auto fxEnd = id.find('|', trackEnd + 1);
+    if (fxEnd == std::string::npos ||
+        !isGuid(std::string_view(id).substr(trackEnd + 1, fxEnd - trackEnd - 1))) return false;
+    const auto index = std::string_view(id).substr(fxEnd + 1);
+    if (index.empty() || index.size() > 5) return false;
+    unsigned value = 0;
+    for (char ch : index) {
+        if (ch < '0' || ch > '9') return false;
+        value = value * 10u + static_cast<unsigned>(ch - '0');
+    }
+    return value <= 32767; // Same supported range as the runtime CC decoder.
+}
+bool isScopedFixedCcIdentity(const std::string& identity) {
+    return identity.rfind("Track|{", 0) == 0 || identity.rfind("Sends|{", 0) == 0 ||
+        isFixedFxTcpIdentity(identity);
 }
 }
 void TrackMemory::reset() noexcept {
@@ -205,8 +243,8 @@ std::string TrackMemory::fixedCcLink(const std::string& identity) const {
 }
 void TrackMemory::setFixedCcLink(const std::string& identity, const std::string& link) {
     // Never allow a legacy generic parameter name in the scoped namespace.
-    if (identity.rfind("Track|{", 0) != 0 && identity.rfind("Sends|{", 0) != 0)
-        throw ProfileError("Missing track GUID in Fixed CC identity");
+    if (!isScopedFixedCcIdentity(identity))
+        throw ProfileError("Invalid Track/Send/FX Fixed CC identity");
     if (link.size() > 32) throw ProfileError("Invalid Fixed CC link");
     edit(fixedByTargetSection, identity, link);
     if (link.empty() && identity.rfind("Sends|{", 0) == 0)
@@ -232,8 +270,8 @@ bool TrackMemory::fixedCcSpeech(const std::string& identity) const {
     return read(fixedSpeechSection, identity) == "1";
 }
 void TrackMemory::setFixedCcSpeech(const std::string& identity, bool on) {
-    if (identity.rfind("Track|{", 0) != 0 && identity.rfind("Sends|{", 0) != 0)
-        throw ProfileError("Missing target GUID in Track CC speech identity");
+    if (!isScopedFixedCcIdentity(identity))
+        throw ProfileError("Invalid Track/Send/FX CC speech identity");
     edit(fixedSpeechSection, identity, on ? "1" : "");
 }
 std::map<std::string, std::string> TrackMemory::fixedCcLinks() const {
