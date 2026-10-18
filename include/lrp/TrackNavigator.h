@@ -74,9 +74,16 @@ private:
     const FxTcpParameter* currentFxTcpParameter() const;
     void moveFxTcpColumn(int delta);
     void moveFxTcpRow(int delta);
+    static bool fxTcpInitialMatch(const std::string& label, wchar_t letter);
+    static wchar_t fxTcpSearchCharacter(const Key& k);
+    void jumpFxTcpByInitial(wchar_t letter, bool backwards);
+    void jumpFxTcpGridByInitial(wchar_t letter, bool backwards);
+    std::string fxTcpStepKey() const;
+    bool writeFxTcpValue(double normalized);
+    void nudgeFxTcpValue(int direction, bool coarse);
     // TEST56.2: names-only, FX Params-style grid for choosing TCP controls.
     struct FxTcpListEntry { int fxIndex = -1; int paramIndex = -1; GUID fxGuid{};
-        std::string name; bool visible = false; };
+        std::string name; std::string parameterName; bool visible = false; };
     void openFxTcpParameterGrid(bool visibleOnly);
     void closeFxTcpParameterGrid(bool announceCurrent = true);
     void rebuildFxTcpParameterGrid(int preferFx = -1, int preferParam = -1);

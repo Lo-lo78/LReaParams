@@ -1,6 +1,7 @@
 #include "lrp/TrackNavigator.h"
 #include <algorithm>
 #include <cctype>
+#include <cwctype>
 #include <cstdio>
 #include <cstring>
 #include <sstream>
@@ -159,7 +160,8 @@ void TrackNavigator::rebuildFxTcpParameterGrid(int preferFx, int preferParam) {
             if (fxTcpListVisibleOnly_ && !visible) continue;
             char name[1024]{};
             TrackFX_GetParamName(track_, fx, param, name, sizeof(name));
-            std::string label = name[0] ? name : "Parameter " + std::to_string(param + 1);
+            const std::string paramName = name[0] ? name : "Parameter " + std::to_string(param + 1);
+            std::string label = paramName;
             if (fxTcpListFxIndex_ < 0) {
                 char fxName[1024]{};
                 if (TrackFX_GetFXName) TrackFX_GetFXName(track_, fx, fxName, sizeof(fxName));
@@ -167,7 +169,7 @@ void TrackNavigator::rebuildFxTcpParameterGrid(int preferFx, int preferParam) {
             }
             const GUID* guid = TrackFX_GetFXGUID ? TrackFX_GetFXGUID(track_, fx) : nullptr;
             if (!guid) continue;
-            fxTcpListEntries_.push_back({fx, param, *guid, std::move(label), visible});
+            fxTcpListEntries_.push_back({fx, param, *guid, std::move(label), paramName, visible});
         }
     }
     fxTcpListPosition_ = std::clamp(fxTcpListPosition_, 0,
@@ -192,6 +194,7 @@ std::string TrackNavigator::fxTcpParameterGridReview(bool details) const {
 void TrackNavigator::openFxTcpParameterGrid(bool visibleOnly) {
     if (!track_) return;
     fxTcpListOpen_ = true;
+    valueMode_ = false; // the names-only grid never edits a plugin value
     fxTcpListVisibleOnly_ = visibleOnly;
     fxTcpListFxIndex_ = visibleOnly ? -1 : (currentFxTcpColumn() ? currentFxTcpColumn()->fxIndex : -1);
     if (!visibleOnly && fxTcpListFxIndex_ >= 0 && TrackFX_GetFXGUID) {
@@ -302,6 +305,23 @@ void TrackNavigator::commitFxTcpParameterGrid(bool keepOpen) {
     rebuildFxTcpParameterGrid(e.fxIndex, e.paramIndex);
     speech_(std::string(desired ? "Added. " : "Removed. ") + fxTcpParameterGridReview(false));
 }
+void TrackNavigator::jumpFxTcpGridByInitial(wchar_t letter, bool backwards) {
+    const int count = static_cast<int>(fxTcpListEntries_.size());
+    if (!letter || !count) return;
+    for (int offset = 1; offset <= count; ++offset) {
+        const int index = backwards
+            ? (fxTcpListPosition_ + count - offset) % count
+            : (fxTcpListPosition_ + offset) % count;
+        // Visible global grid prefixes the FX name for context; search only
+        // the real parameter name, exactly like FX Params' cycling.
+        if (!fxTcpInitialMatch(fxTcpListEntries_[static_cast<size_t>(index)].parameterName, letter)) continue;
+        fxTcpListPosition_ = index;
+        speech_(fxTcpParameterGridReview(false));
+        return;
+    }
+    // Silent if no such initial exists.
+}
+
 void TrackNavigator::handleFxTcpParameterGridKey(const Key& k) {
     if (k.ctrl && k.shift && !k.alt && k.vk == 'M') {
         if (!k.repeat) openTrackMemories(false);
@@ -319,26 +339,18 @@ void TrackNavigator::handleFxTcpParameterGridKey(const Key& k) {
         }
         return;
     }
-    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) {
-        if (!k.repeat) {
-            fxTcpListVisibleOnly_ = !fxTcpListVisibleOnly_;
-            if (fxTcpListFxIndex_ < 0 && !fxTcpListVisibleOnly_) {
-                // From the global visible view, return to the selected F4 FX.
-                fxTcpListFxIndex_ = currentFxTcpColumn() ? currentFxTcpColumn()->fxIndex : -1;
-                if (const auto* col = currentFxTcpColumn()) fxTcpListFxGuid_ = col->guid;
-            }
-            rebuildFxTcpParameterGrid();
-            speech_(std::string(fxTcpListVisibleOnly_ ? "Visible TCP parameter grid. " : "FX parameter grid. ") +
-                fxTcpParameterGridReview(false));
-        }
-        return;
-    }
+    // F6 is reserved for a future Track Params environment, not a grid mutation.
+    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) return;
     if (k.vk == VK_TAB && !k.ctrl && !k.shift && !k.alt) {
         if (!k.repeat) speech_(fxTcpParameterGridReview(true));
         return;
     }
     if (k.vk == VK_RETURN && !k.alt && !k.shift) {
         if (!k.repeat) commitFxTcpParameterGrid(k.ctrl);
+        return;
+    }
+    if (fxTcpSearchCharacter(k)) {
+        if (!k.repeat) jumpFxTcpGridByInitial(fxTcpSearchCharacter(k), k.shift);
         return;
     }
     if (fxTcpListEntries_.empty() || k.alt || k.shift) return;

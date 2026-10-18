@@ -1,3 +1,9 @@
+## TEST56.3 — F4 TCP keyboard and Value (source only)
+- F6 now reserved; visible TCP selection moved to Alt+Enter.
+- Cyclic letter/number search in F4 and selector; Shift reverses direction.
+- Value editing with FX parameter step sizes, safety checks and Undo.
+- Native Windows build and REAPER/NVDA still required via GitHub Actions.
+
 ## TEST56.2 — F4 parameter-name grid
 
 - FX header Enter: accessible multi-column names-only parameter grid; F1/F2 adjust height (1..200).

@@ -144,7 +144,9 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (page_ == Page::fxTcp) {
         if (fxTcpListOpen_) {
             if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
-            if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_RETURN || k.vk == VK_HOME || k.vk == VK_END)) return true;
+            if (fxTcpSearchCharacter(k)) return true;
+            if (k.ctrl && !k.shift && !k.alt &&
+                (k.vk == VK_RETURN || k.vk == VK_HOME || k.vk == VK_END)) return true;
             if (k.ctrl || k.alt || k.shift) return false;
             switch (k.vk) {
                 case VK_F1: case VK_F2: case VK_F6: case VK_F4:
@@ -155,10 +157,14 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
             }
         }
         if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
+        if (!valueMode_ && fxTcpSearchCharacter(k)) return true;
+        if (!k.ctrl && k.alt && !k.shift &&
+            (k.vk == VK_RETURN || k.vk == VK_LEFT || k.vk == VK_RIGHT ||
+             k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT)) return true;
         if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_UP || k.vk == VK_DOWN)) return true;
-        // Only claim keys implemented in F4. Other REAPER shortcuts are left
-        // alone; editing, MIDI and automation come in later TEST56 stages.
-        if (k.ctrl && !k.alt && !k.shift && (k.vk == VK_TAB || k.vk == 'Q' || k.vk == VK_SPACE || k.vk == VK_HOME || k.vk == VK_END)) return true;
+        if (k.ctrl && !k.alt && !k.shift &&
+            (k.vk == VK_TAB || k.vk == 'Q' || k.vk == VK_SPACE ||
+             k.vk == VK_HOME || k.vk == VK_END)) return true;
         if (k.ctrl || k.shift || k.alt) return false;
         switch (k.vk) {
             case VK_F1: case VK_F2: case VK_F3: case VK_F4: case VK_F6:
@@ -736,7 +742,7 @@ std::string TrackNavigator::reviewLine() const {
             "Track Positions", "Volume Ranges"};
         return std::string(labels[col]) + ". " + item.label;
     }
-    if (page_ == Page::fxTcp) return fxTcpReview(false);
+    if (page_ == Page::fxTcp) return (valueMode_ && !fxTcpListOpen_ ? "Value, " : "") + fxTcpReview(false);
     // NVDA+Up in Grid reviews only the parameter and value, like FX Params.
     // Track/page names remain available via NVDA+T. Moving between tracks
     // announces the track name; Tab provides the full context.
@@ -747,12 +753,20 @@ std::string TrackNavigator::reviewLine() const {
     return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
 }
 bool TrackNavigator::nativeValueSlider() const {
-    if (page_ == Page::fxTcp) return false; // F4 TEST56.1 is read-only.
+    if (page_ == Page::fxTcp)
+        return active_ && valueMode_ && !fxTcpListOpen_ && !clearAutomationConfirm_ &&
+            currentFxTcpParameter() && currentFxTcpColumn() && TrackFX_GetParamNormalized;
     if (!active_ || !valueMode_ || clearAutomationConfirm_) return false;
     const auto* e = current();
     return e && (e->type == Entry::volume || e->type == Entry::pan || e->type == Entry::width);
 }
 double TrackNavigator::valueFraction() const {
+    if (page_ == Page::fxTcp) {
+        if (!nativeValueSlider()) return 0.0;
+        const auto* col = currentFxTcpColumn();
+        const auto* param = currentFxTcpParameter();
+        return std::clamp(TrackFX_GetParamNormalized(track_, col->fxIndex, param->index), 0.0, 1.0);
+    }
     const auto* e = current();
     if (!e || !nativeValueSlider()) return 0.0;
     const double value = get(*e);
@@ -764,6 +778,10 @@ double TrackNavigator::valueFraction() const {
     return std::clamp((value + 1.0) / 2.0, 0.0, 1.0);
 }
 std::string TrackNavigator::sliderLabel() const {
+    if (page_ == Page::fxTcp) {
+        const auto* p = currentFxTcpParameter();
+        return p ? p->name : "";
+    }
     const auto* e = current();
     return e ? e->title : "";
 }

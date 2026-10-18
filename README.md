@@ -1,3 +1,5 @@
+> **TEST56.3 / LReaParams 0.0.56:** F6 libero; Alt+Invio apre i parametri TCP già visibili. Ricerca alfanumerica ciclica e inversa in F4 e nelle griglie dei nomi. Prima modifica Value dei parametri TCP con Step `.tp` e Undo. **Nessuna compilazione locale.** [Guida TEST56.3](Docs/TEST56_3_F4_VALUE_CYCLIC_NAVIGATION.md).
+
 > **TEST56.2 / LReaParams 0.0.56:** F4, Invio su intestazione FX apre una **griglia dei soli nomi dei parametri**, con le direzioni e F1/F2 della griglia FX Params. Invio aggiunge al TCP e torna a F4; Ctrl+Invio aggiunge/rimuove senza uscire. F6 da F4 apre la griglia dei controlli TCP visibili per rimuoverli. [Guida TEST56.2](Docs/TEST56_2_F4_TCP_PARAMETER_GRID.md). **Non compilato localmente**: build solo GitHub Actions.
 
 > **TEST56.1 / LReaParams 0.0.56:** prima migrazione F4, griglia FX TCP nativa in sola navigazione (una colonna per FX, header sempre presente, parametri TCP reali, lettura NVDA e bordi silenziosi). Modifiche e lista completa dei parametri verranno nelle TEST56 successive. **Non compilato localmente**: build soltanto via GitHub Actions. [Guida TEST56.1](Docs/TEST56_1_F4_TCP_NAVIGATION.md).

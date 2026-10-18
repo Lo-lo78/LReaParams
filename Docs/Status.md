@@ -1,3 +1,7 @@
+## TEST56.3 — F4 keyboard and Value
+
+F6 riservato; Alt+Invio apre i controlli TCP visibili. Ricerca ciclica e inversa nelle due griglie. Valori FX TCP modificabili mediante Value e Alt+frecce, con validazione GUID e Undo, Step persistenti nello stesso `.tp`. Test di sorgente, nessuna build locale. [Guida](TEST56_3_F4_VALUE_CYCLIC_NAVIGATION.md).
+
 ## TEST56.2 — F4 parameter selection
 
 Nuova griglia accessibile con nomi dei parametri FX, altezza regolabile con F1/F2 e operazioni TCP tramite Invio/Ctrl+Invio. Comandi F4/F6 in linea con il Lua, contenuti senza valori audio. Protezione FXID, verifica visibilità REAPER e Undo.

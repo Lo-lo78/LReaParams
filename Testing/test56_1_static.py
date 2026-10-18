@@ -22,14 +22,14 @@ assert 'syncCursorToReaper();' in fx
 assert 'selectPage(Page::fxTcp)' in nav
 assert 'page_ == Page::fxTcp' in nav
 assert 'if (page_ == Page::fxTcp) return nullptr;' in nav
-assert 'entries_.clear(); // F4 is read-only' in fx
+assert 'entries_.clear(); // F4 owns separate FX TCP value targets' in fx
 assert 'if (page_ == Page::fxTcp) return fxTcpReview(false);' in nav
 assert 'if (page_ == Page::fxTcp) { handleFxTcpKey(k); return; }' in nav
 assert 'if (k.ctrl && k.shift && !k.alt && k.vk == \'M\') return true;' in nav
 assert 'case VK_F1: case VK_F2: case VK_F3: case VK_F4:' in nav
 assert 'project(LReaParams VERSION 0.0.56' in cmake
 assert 'python Testing/test56_1_static.py' in workflow
-# Intentionally incomplete: F4 is read-only in this phase.
-assert 'TrackFX_SetParam' not in fx
+# TEST56.3 advances F4 to editing; navigation must still be built from TCP API.
+assert 'writeFxTcpValue' in fx
 assert 'SetTrackStateChunk' not in fx
 print('TEST56.1 FX TCP navigation static contracts PASS; runtime not tested')

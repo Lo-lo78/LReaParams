@@ -1,1 +1,1 @@
-TEST55.6: Static tests TEST55.5 and TEST55.6 plus legacy ReaEQ TEST43/TEST43.1 source contracts PASS; Tools/audit.py PASS. Native compilation and REAPER runtime NOT RUN.
+TEST56.3: source-only F4 key/edit contracts, legacy TEST56.1/56.2 and TEST55.10/12/13 plus Tools/audit.py passed. Full historical suite not completed (timeout); MSVC/CTest and REAPER/NVDA NOT RUN locally. GitHub Actions required.
