@@ -7,6 +7,9 @@
 #include <cctype>
 #include <string_view>
 #include <vector>
+#include <sstream>
+#include <iomanip>
+#include <locale>
 
 namespace lrp {
 namespace {
@@ -248,6 +251,7 @@ std::string TrackNavigator::fxTcpReview(bool includeContext) const {
         TrackFX_GetFormattedParamValue(track_, column->fxIndex, parameter->index, formatted, sizeof(formatted));
     std::string value = formatted[0] ? formatted : "value unavailable";
     std::string result = parameter->name + ", " + value;
+    result += ccParameterSuffix(); // FX Params contract: CC before Auto.
     if (fxTcpAutomationActive()) result += ". Auto";
     if (includeContext) result = name + ", " + result + ", TCP parameter " +
         std::to_string(fxTcpRow_) + " of " + std::to_string(column->parameters.size()) +
@@ -414,8 +418,148 @@ bool TrackNavigator::writeFxTcpValue(double normalized) {
     if (TrackFX_EndParamEdit) TrackFX_EndParamEdit(track_, column->fxIndex, param->index);
     Undo_EndBlock2(project_, "LReaParams: Track F4 FX TCP parameter", UNDO_STATE_FX);
     if (!ok) { speech_("FX parameter change refused"); return false; }
-    speech_(fxTcpValueSpeech()); // FX Params: changes read only the new value.
+    if (!suppressPutSpeech_ && memory_.valueSpeech(fxTcpStepKey()))
+        speech_(fxTcpValueSpeech()); // FX Params: only the new value, if speech enabled.
     return true;
+}
+
+bool TrackNavigator::writeFxTcpRawValue(double raw) {
+    if (!std::isfinite(raw) || !fxTcpSelectedIdentityValid() ||
+        !TrackFX_GetParam || !TrackFX_SetParam || !Undo_BeginBlock2 || !Undo_EndBlock2) return false;
+    const auto* column = currentFxTcpColumn();
+    const auto* parameter = currentFxTcpParameter();
+    if (!column || !parameter || !fxTcpParameterVisible(column->fxIndex, parameter->index)) return false;
+    double low = 0.0, high = 1.0;
+    const double previous = TrackFX_GetParam(track_, column->fxIndex, parameter->index, &low, &high);
+    if (!std::isfinite(low) || !std::isfinite(high) || !std::isfinite(previous) ||
+        raw < std::min(low, high) || raw > std::max(low, high)) return false;
+    if (std::abs(previous - raw) < 1e-12) return true; // valid no-op
+    Undo_BeginBlock2(project_);
+    const bool ok = TrackFX_SetParam(track_, column->fxIndex, parameter->index, raw);
+    if (TrackFX_EndParamEdit) TrackFX_EndParamEdit(track_, column->fxIndex, parameter->index);
+    Undo_EndBlock2(project_, "LReaParams: Track F4 numeric parameter", UNDO_STATE_FX);
+    if (!ok) { speech_("FX parameter change refused"); return false; }
+    if (!suppressPutSpeech_ && memory_.valueSpeech(fxTcpStepKey())) speech_(fxTcpValueSpeech());
+    return true;
+}
+
+bool TrackNavigator::fxTcpFormatNumeric(double norm, double& result, std::string& unit) const {
+    const auto* column = currentFxTcpColumn();
+    const auto* parameter = currentFxTcpParameter();
+    if (!column || !parameter || !TrackFX_FormatParamValueNormalized) return false;
+    char buffer[1024]{};
+    if (!TrackFX_FormatParamValueNormalized(track_, column->fxIndex, parameter->index,
+                                             norm, buffer, sizeof(buffer))) return false;
+    std::istringstream input(buffer);
+    input.imbue(std::locale::classic());
+    if (!(input >> result) || !std::isfinite(result)) return false;
+    std::getline(input, unit);
+    return true;
+}
+
+void TrackNavigator::beginFxTcpNumericEdit() {
+    if (!nativeFilterAvailable_ || filterEditing_ || numericEditing_ || fxTcpListOpen_) {
+        speech_("Numeric editor unavailable"); return;
+    }
+    rebuildFxTcp(true);
+    if (!fxTcpSelectedIdentityValid() || !currentFxTcpParameter() ||
+        !TrackFX_GetParam || !TrackFX_GetParamNormalized) {
+        speech_("No TCP parameter for numeric editing"); return;
+    }
+    const auto* column = currentFxTcpColumn();
+    const auto* parameter = currentFxTcpParameter();
+    double low = 0.0, high = 1.0;
+    double current = TrackFX_GetParam(track_, column->fxIndex, parameter->index, &low, &high);
+    if (!std::isfinite(current)) { speech_("Numeric value unavailable"); return; }
+    fxTcpNumericFormatted_ = false;
+    fxTcpNumericUnit_.clear();
+    double first = 0, last = 0;
+    std::string a, b;
+    if (fxTcpFormatNumeric(0, first, a) && fxTcpFormatNumeric(1, last, b) &&
+        a == b && first != last) {
+        bool monotonic = true;
+        double previous = first;
+        for (int i = 1; i <= 64; ++i) {
+            double value = 0; std::string unit;
+            if (!fxTcpFormatNumeric(i / 64.0, value, unit) || unit != a ||
+                (last > first ? value < previous : value > previous)) {
+                monotonic = false; break;
+            }
+            previous = value;
+        }
+        std::string currentUnit;
+        double displayed = 0;
+        const double norm = TrackFX_GetParamNormalized(track_, column->fxIndex, parameter->index);
+        if (monotonic && std::isfinite(norm) &&
+            fxTcpFormatNumeric(norm, displayed, currentUnit) && currentUnit == a) {
+            fxTcpNumericFormatted_ = true;
+            fxTcpNumericUnit_ = a;
+            current = displayed;
+        }
+    }
+    std::ostringstream text;
+    text.imbue(std::locale::classic());
+    text << std::setprecision(12) << current;
+    numericBuffer_ = text.str();
+    fxTcpNumericGuid_ = column->guid;
+    fxTcpNumericParameter_ = parameter->index;
+    fxTcpNumericTrack_ = rowGuid();
+    numericEditing_ = true;
+    rangeEditing_ = false;
+    valueMode_ = false;
+    speech_(fxTcpNumericFormatted_ ? "Parameter value. " + fxTcpNumericUnit_ :
+                                   "Parameter value. Host raw units");
+}
+
+void TrackNavigator::commitFxTcpNumericEdit() {
+    if (!numericEditing_) return;
+    if (!fxTcpSelectedIdentityValid() || !currentFxTcpParameter() ||
+        rowGuid() != fxTcpNumericTrack_ ||
+        std::memcmp(&currentFxTcpColumn()->guid, &fxTcpNumericGuid_, sizeof(GUID)) != 0 ||
+        currentFxTcpParameter()->index != fxTcpNumericParameter_) {
+        numericEditing_ = false;
+        speech_("FX changed. Numeric edit cancelled");
+        return;
+    }
+    std::istringstream text(numericBuffer_);
+    text.imbue(std::locale::classic());
+    double desired = 0;
+    if (!(text >> desired) || !(text >> std::ws).eof() || !std::isfinite(desired)) {
+        speech_("Invalid number"); return;
+    }
+    bool ok = false;
+    suppressPutSpeech_ = true;
+    if (fxTcpNumericFormatted_) {
+        double first = 0, last = 0; std::string a, b;
+        if (fxTcpFormatNumeric(0, first, a) && fxTcpFormatNumeric(1, last, b) &&
+            a == b && a == fxTcpNumericUnit_ &&
+            desired >= std::min(first, last) && desired <= std::max(first, last)) {
+            double left = 0, right = 1;
+            bool formatterOk = true;
+            for (int i = 0; i < 48; ++i) {
+                const double mid = (left + right) * 0.5;
+                double shown = 0; std::string unit;
+                if (!fxTcpFormatNumeric(mid, shown, unit) || unit != a) {
+                    formatterOk = false; break;
+                }
+                if ((last > first) == (shown < desired)) left = mid;
+                else right = mid;
+            }
+            if (formatterOk) ok = writeFxTcpValue((left + right) * 0.5);
+            if (formatterOk && !ok && TrackFX_GetParamNormalized) {
+                const double now = TrackFX_GetParamNormalized(track_, currentFxTcpColumn()->fxIndex,
+                                                               currentFxTcpParameter()->index);
+                ok = std::isfinite(now) && std::abs(now - (left + right) * 0.5) < 1e-7;
+            }
+        }
+    } else {
+        ok = writeFxTcpRawValue(desired);
+    }
+    suppressPutSpeech_ = false;
+    if (!ok) { speech_("Value unavailable or outside host range"); return; }
+    numericEditing_ = false;
+    // The focused Win32 EDIT already confirmed the value; avoid a second
+    // parameter/CC/Auto announcement after the field closes.
 }
 
 void TrackNavigator::nudgeFxTcpValue(int direction, bool coarse) {
@@ -431,9 +575,33 @@ void TrackNavigator::nudgeFxTcpValue(int direction, bool coarse) {
     if (!std::isfinite(old)) return;
     if (known && toggle) { writeFxTcpValue(direction > 0 ? 1.0 : 0.0); return; }
     double step = known ? (coarse ? large : normal) : 0.0;
-    if (!std::isfinite(step) || step <= 0.0 || step > 1.0) step = coarse ? 0.01 : 0.001;
-    step *= std::pow(2.0, memory_.step(fxTcpStepKey()));
-    writeFxTcpValue(old + direction * step);
+    const double scale = std::pow(2.0, memory_.step(fxTcpStepKey()));
+    if (known && std::isfinite(step) && step > 0.0 && step <= 1.0) {
+        // The host reports discrete steps in normalized coordinates. Snap to
+        // the nearest step before moving, avoiding stuck combo/menu values.
+        const double increments = std::max(1.0, std::round(scale));
+        const double next = (std::round(old / step) + direction * increments) * step;
+        writeFxTcpValue(next);
+        return;
+    }
+    // Conservative JSFX discrete fallback: only when the exposed raw range
+    // is a small integer domain, with an integer current value. A regular
+    // 0..1 continuous parameter must NEVER be treated as a binary switch.
+    if (TrackFX_GetParam) {
+        double low = 0.0, high = 1.0;
+        const double raw = TrackFX_GetParam(track_, column->fxIndex, param->index, &low, &high);
+        if (std::isfinite(raw) && std::isfinite(low) && std::isfinite(high) &&
+            high - low >= 2.0 && high - low <= 64.0 &&
+            std::abs(low - std::round(low)) < 1e-7 &&
+            std::abs(high - std::round(high)) < 1e-7 &&
+            std::abs(raw - std::round(raw)) < 1e-7) {
+            const double amount = std::max(1.0, std::round((coarse ? 5.0 : 1.0) * scale));
+            writeFxTcpRawValue(std::clamp(std::round(raw) + direction * amount, low, high));
+            return;
+        }
+    }
+    step = coarse ? 0.01 : 0.001;
+    writeFxTcpValue(old + direction * step * scale);
 }
 
 // Never address an FX by a stale column index after REAPER reordered its chain.
@@ -534,14 +702,54 @@ void TrackNavigator::removeCurrentFxTcpControl() {
 }
 
 void TrackNavigator::handleFxTcpKey(const Key& k) {
+    if (numericEditing_) {
+        if (!k.repeat && k.vk == VK_RETURN) commitFxTcpNumericEdit();
+        else if (!k.repeat && k.vk == VK_ESCAPE) {
+            numericEditing_ = rangeEditing_ = false;
+            // No change to FX and no automatic exit from F4.
+            speech_("Edit cancelled. " + fxTcpReview(false));
+        }
+        return;
+    }
     if (filterEditing_) {
         if (k.repeat) return;
         if (k.vk == VK_RETURN) applyFxTcpFilter();
         else if (k.vk == VK_ESCAPE || (k.ctrl && !k.shift && !k.alt && k.vk == 'F')) cancelFxTcpFilter();
         return;
     }
-    // The parameter-selection grid owns its own keys, including F1/F2 grid size.
+    // The names-only TCP addition grid must never start learn/edit MIDI.
     if (fxTcpListOpen_) { handleFxTcpParameterGridKey(k); return; }
+    if ((k.ctrl && k.alt && !k.shift && k.vk == 'C') ||
+        (!k.ctrl && !k.alt && k.shift && k.vk == 'C') ||
+        (k.ctrl && !k.alt && k.shift && k.vk == 'C') ||
+        (k.ctrl && !k.alt && !k.shift && k.vk == VK_DELETE)) {
+        if (!k.repeat) midiShortcut(k);
+        return;
+    }
+    if (k.vk == VK_ESCAPE && learnCc_) {
+        learnCc_ = false; learnSection_.clear(); learnKey_.clear(); learnIdentity_.clear();
+        speech_("CC learn cancelled"); return;
+    }
+    if (k.ctrl && !k.alt && k.vk == 'T') {
+        if (k.repeat || !currentFxTcpParameter()) return;
+        if (k.shift) {
+            const auto key = fxTcpStepKey();
+            const bool on = !memory_.valueSpeech(key);
+            memory_.setValueSpeech(key, on); memory_.flush();
+            speech_(on ? "Value speech on" : "Value speech off");
+        } else {
+            std::string id;
+            if (!midiFixedIdentity(id)) { speech_("MIDI speech target unavailable"); return; }
+            const bool on = !memory_.fixedCcSpeech(id);
+            memory_.setFixedCcSpeech(id, on); memory_.flush();
+            speech_(on ? "MIDI speech on" : "MIDI speech off");
+        }
+        return;
+    }
+    if (k.ctrl && !k.shift && !k.alt && k.vk == 'E') {
+        if (!k.repeat) beginFxTcpNumericEdit();
+        return;
+    }
     if (k.ctrl && !k.shift && !k.alt && k.vk == 'F') {
         if (!k.repeat) toggleFxTcpFilter();
         return;
@@ -686,8 +894,12 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
     if (k.vk == VK_TAB && !k.ctrl && !k.alt && !k.shift) {
         if (!k.repeat) {
             const std::string key = fxTcpStepKey();
+            std::string id;
+            const bool ccSpeaking = midiFixedIdentity(id) && memory_.fixedCcSpeech(id);
             speech_((valueMode_ ? "Value, " : "") + fxTcpReview(true) +
-                (key.empty() ? "" : ". Step " + std::to_string(memory_.step(key))));
+                (key.empty() ? "" : ". Step " + std::to_string(memory_.step(key))) +
+                (key.empty() ? "" : (memory_.valueSpeech(key) ? ". Value speech on" : ". Value speech off")) +
+                (ccSpeaking ? ". MIDI speech on" : ". MIDI speech off"));
         }
         return;
     }

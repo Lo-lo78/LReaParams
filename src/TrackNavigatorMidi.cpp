@@ -2,6 +2,8 @@
 #include "lrp/Storage.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -25,12 +27,31 @@ bool parseCc(const std::string& text, int& channel, int& controller) {
     } catch (...) { return false; }
 }
 const char* sectionFor(bool tracks, bool sends) { return tracks ? "Track" : sends ? "Sends" : "Receives"; }
+std::string fxGuidString(const GUID& g) {
+    char text[64]{};
+    std::snprintf(text, sizeof(text), "{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
+        static_cast<unsigned long>(g.Data1), static_cast<unsigned short>(g.Data2),
+        static_cast<unsigned short>(g.Data3), g.Data4[0], g.Data4[1], g.Data4[2], g.Data4[3],
+        g.Data4[4], g.Data4[5], g.Data4[6], g.Data4[7]);
+    return text;
+}
 }
 
 bool TrackNavigator::midiTarget(std::string& section, std::string& key) const {
     section.clear(); key.clear();
     const Entry* e = current();
-    if (!e || !track_) return false;
+    if (!track_) return false;
+    if (page_ == Page::fxTcp) {
+        // Only a selected, *visible* TCP parameter can be learned. The names-only
+        // addition grid is not a MIDI editing surface.
+        const auto* c = currentFxTcpColumn();
+        const auto* p = currentFxTcpParameter();
+        if (fxTcpListOpen_ || !c || !p || !fxTcpSelectedIdentityValid()) return false;
+        section = "F4";
+        key = p->name;
+        return true;
+    }
+    if (!e) return false;
     section = sectionFor(page_ == Page::tracks, page_ == Page::sends);
     if (e->type == Entry::volume) key = "Volume";
     else if (e->type == Entry::pan) key = "Pan";
@@ -49,6 +70,14 @@ bool TrackNavigator::midiFixedIdentity(std::string& identity) const {
     if (!midiTarget(section, key)) return false;
     const std::string owner = trackGuidText(track_);
     if (owner.empty()) return false;
+    if (page_ == Page::fxTcp) {
+        const auto* fx = currentFxTcpColumn();
+        const auto* param = currentFxTcpParameter();
+        if (!fx || !param || !fxTcpSelectedIdentityValid()) return false;
+        identity = "FxTcp|" + owner + "|" + fxGuidString(fx->guid) +
+            "|" + std::to_string(param->index);
+        return true;
+    }
     if (page_ == Page::tracks) {
         identity = "Track|" + owner + "|" + key;
         return true;
@@ -75,6 +104,8 @@ struct FixedTarget {
     bool send = false;
     std::string source, destination, parameter;
     int ordinal = 0;
+    bool fxTcp = false;
+    int fxParam = -1;
 };
 bool decodeFixedTarget(const std::string& id, FixedTarget& out) {
     std::vector<std::string> parts;
@@ -95,6 +126,18 @@ bool decodeFixedTarget(const std::string& id, FixedTarget& out) {
             if (used != parts[3].size() || occurrence < 1 || occurrence > 512) return false;
         } catch (...) { return false; }
         out = {true, parts[1], parts[2], parts[4], occurrence};
+    } else if (parts.size() == 4 && parts[0] == "FxTcp") {
+        int parameter = -1;
+        try {
+            std::size_t used = 0;
+            parameter = std::stoi(parts[3], &used);
+            if (used != parts[3].size() || parameter < 0 || parameter > 32767) return false;
+        } catch (...) { return false; }
+        out = {};
+        out.source = parts[1];
+        out.destination = parts[2]; // FX instance GUID, NOT another track.
+        out.fxTcp = true;
+        out.fxParam = parameter;
     } else return false;
     const auto validGuid = [](const std::string& g) {
         if (g.size() != 38 || g.front() != '{' || g.back() != '}') return false;
@@ -105,7 +148,8 @@ bool decodeFixedTarget(const std::string& id, FixedTarget& out) {
         }
         return true;
     };
-    if (!validGuid(out.source) || (out.send && !validGuid(out.destination))) return false;
+    if (!validGuid(out.source) || ((out.send || out.fxTcp) && !validGuid(out.destination))) return false;
+    if (out.fxTcp) return true;
     if (out.send) return out.parameter == "Volume" || out.parameter == "Pan" || out.parameter == "Mute";
     return out.parameter == "Volume" || out.parameter == "Pan" || out.parameter == "Width" ||
         out.parameter == "Mute" || out.parameter == "Solo" || out.parameter == "PhaseInvert";
@@ -134,6 +178,65 @@ std::string TrackNavigator::fixedRoutingSignature(const std::string& identity) c
         topology += "|" + guid;
     }
     return sha256(topology);
+}
+
+// Fixed FX CCs are bound to the physical track and FX-instance GUID, not
+// current Track Params cursor, FX ordinal, or the TCP control's visible row.
+bool TrackNavigator::resolveFxTcpMidi(const std::string& identity,
+                                       MediaTrack*& owner, int& fxIndex,
+                                       int& parameterIndex) const {
+    owner = nullptr; fxIndex = parameterIndex = -1;
+    FixedTarget target;
+    if (!decodeFixedTarget(identity, target) || !target.fxTcp || !project_ ||
+        !TrackFX_GetCount || !TrackFX_GetFXGUID || !TrackFX_GetNumParams) return false;
+    owner = findSavedTrack(target.source);
+    if (!owner || !ValidatePtr2(project_, owner, "MediaTrack*")) return false;
+    const int count = std::clamp(TrackFX_GetCount(owner), 0, 1024);
+    for (int i = 0; i < count; ++i) {
+        const GUID* live = TrackFX_GetFXGUID(owner, i);
+        if (!live || fxGuidString(*live) != target.destination) continue;
+        if (target.fxParam >= TrackFX_GetNumParams(owner, i)) return false;
+        fxIndex = i;
+        parameterIndex = target.fxParam;
+        return true;
+    }
+    return false; // removed FX must never fall back to another instance.
+}
+
+bool TrackNavigator::applyFxTcpMidi(const std::string& identity, int ccValue, bool floating) {
+    MediaTrack* owner = nullptr;
+    int fx = -1, parameter = -1;
+    if (!resolveFxTcpMidi(identity, owner, fx, parameter) ||
+        !TrackFX_GetParamNormalized || !TrackFX_SetParamNormalized) return false;
+    const double currentValue = TrackFX_GetParamNormalized(owner, fx, parameter);
+    if (!std::isfinite(currentValue)) return false;
+    Pickup& pickup = midiPickup_[identity];
+    double normal = 0, small = 0, large = 0;
+    bool toggle = false;
+    const bool stepped = TrackFX_GetParameterStepSizes &&
+        TrackFX_GetParameterStepSizes(owner, fx, parameter, &normal, &small, &large, &toggle);
+    // Discrete and binary controls must not wait for analog pickup.
+    if (!(stepped && toggle) && !pickup.allows(ccValue, std::clamp(currentValue, 0.0, 1.0)))
+        return false;
+    const double next = stepped && toggle ? (ccValue >= 64 ? 1.0 : 0.0) : ccValue / 127.0;
+    if (std::abs(next - currentValue) < 1e-9) return false;
+    if (!TrackFX_SetParamNormalized(owner, fx, parameter, next)) return false;
+    if (TrackFX_EndParamEdit) TrackFX_EndParamEdit(owner, fx, parameter);
+    pickup.applied(std::clamp(TrackFX_GetParamNormalized(owner, fx, parameter), 0.0, 1.0));
+    // Speech defaults OFF per target. MIDI feedback never repeats the full
+    // GUI announcement unless explicitly enabled with Ctrl+T.
+    if (memory_.fixedCcSpeech(identity)) {
+        char paramName[1024]{}, formatted[512]{}, fxName[1024]{};
+        if (TrackFX_GetParamName) TrackFX_GetParamName(owner, fx, parameter, paramName, sizeof(paramName));
+        if (TrackFX_GetFormattedParamValue)
+            TrackFX_GetFormattedParamValue(owner, fx, parameter, formatted, sizeof(formatted));
+        if (TrackFX_GetFXName) TrackFX_GetFXName(owner, fx, fxName, sizeof(fxName));
+        pendingMidiSpeech_ = (floating ? std::string() : savedTrackLabel(trackGuidText(owner)) + ", ") +
+            (fxName[0] ? std::string(fxName) + ", " : std::string()) +
+            (paramName[0] ? std::string(paramName) : "Parameter " + std::to_string(parameter + 1)) +
+            ", " + (formatted[0] ? std::string(formatted) : std::to_string(next));
+    }
+    return true;
 }
 
 void TrackNavigator::resetMidiState() {
@@ -202,6 +305,11 @@ void TrackNavigator::midiShortcut(const Key& k) {
 void TrackNavigator::applyMidi(const std::string& section, const std::string& key, int value) {
     // An association names a control TYPE; its target is the current track
     // or the current send/receive. Never apply to every track in the project.
+    if (section == "F4" && page_ == Page::fxTcp && track_) {
+        std::string identity;
+        if (midiFixedIdentity(identity)) applyFxTcpMidi(identity, value, true);
+        return;
+    }
     if (section != sectionFor(page_ == Page::tracks, page_ == Page::sends) || !track_) return;
     const Entry* target = nullptr;
     const int index = page_ == Page::tracks ? -1 : current() ? current()->index : -1;
@@ -252,6 +360,7 @@ void TrackNavigator::applyMidi(const std::string& section, const std::string& ke
 void TrackNavigator::applyFixedMidi(const std::string& identity, int value) {
     FixedTarget target;
     if (!decodeFixedTarget(identity, target)) return;
+    if (target.fxTcp) { applyFxTcpMidi(identity, value, false); return; }
     // Resolve per message. Never cache a MediaTrack* across REAPER track edits.
     MediaTrack* source = findSavedTrack(target.source);
     if (!source) return; // Deleted track: its map remains inert, not reassigned.
@@ -411,7 +520,8 @@ void TrackNavigator::pollMidi() {
         } else if (floatingCc_ && cc.channel == floatingChannel_ && cc.number == floatingNumber_) {
             std::string group, key;
             if (midiTarget(group, key)) {
-                const std::string id = group + "." + key;
+                std::string id = group + "." + key;
+                if (group == "F4" && !midiFixedIdentity(id)) continue;
                 if (floatingTarget_ != id) { floatingTarget_ = id; midiPickup_.clear(); }
                 applyMidi(group, key, cc.value);
             }

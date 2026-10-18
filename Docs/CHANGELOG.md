@@ -1,3 +1,19 @@
+## 0.0.56 TEST56.9 — F4 consolidation (source-only)
+
+- Finalized F4 accessible Ctrl+E numeric edit, using shared Win32 EDIT and host formatted numeric values when safe; raw-value fallback and GUID-target guard.
+- Ctrl+Shift+T now correctly suppresses keyboard value-change announcements for F4 without affecting manual NVDA review or the independent MIDI speech preference.
+- Improved host-provided discrete step alignment and conservative small-integer JSFX stepping.
+- No aliases or custom parameter ordering. All F1/F2/F3 features retained and F5 not yet implemented.
+- Native MSVC compilation and REAPER/NVDA functional tests reserved for GitHub Actions and the user's machine.
+
+## 0.0.56 — TEST56.8 (F4 MIDI CC)
+
+- Fixed CC per GUID traccia, GUID istanza FX e parametro TCP; riordino della catena senza perdere il destinatario.
+- Floating, pickup normalizzato, toggle e Ctrl+Q background.
+- Ctrl+T parlato MIDI Off per impostazione predefinita, Ctrl+Maiusc+T parlato modifiche; Ctrl+Canc cancella CC.
+- Track Memories mostra le nuove assegnazioni, tutte nell’unico `.tp` del progetto.
+- Controlli statici; compilazione MSVC e collaudo in REAPER demandati a GitHub Actions/utente.
+
 ## TEST56.4 — F4: concise Value speech, Ctrl+F, visible FX columns (source only)
 
 - Value speech only on change; Ctrl+F FX Params-compatible search; Alt+Home/End.

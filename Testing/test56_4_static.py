@@ -7,7 +7,7 @@ grid=(root/'src/TrackNavigatorFxTcpList.cpp').read_text(encoding='utf-8')
 track=(root/'src/TrackNavigator.cpp').read_text(encoding='utf-8')
 workflow=(root/'.github/workflows/build-windows.yml').read_text(encoding='utf-8')
 # Modify values without redundant names, while normal grid review remains detailed.
-assert 'speech_(fxTcpValueSpeech());' in core
+assert 'speech_(fxTcpValueSpeech());' in core and 'memory_.valueSpeech(fxTcpStepKey())' in core
 assert 'std::string TrackNavigator::fxTcpValueSpeech() const' in core
 assert 'speech_(fxTcpReview(false)); // FX Params: changes' not in core
 # Full Ctrl+F with native EDIT, scoped to F4 vs selection, honors quoted mode.

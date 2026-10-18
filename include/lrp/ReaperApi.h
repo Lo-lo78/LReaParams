@@ -120,6 +120,8 @@
 #define REAPERAPI_WANT_TrackFX_GetPreset
 #define REAPERAPI_WANT_TakeFX_GetPreset
 #define REAPERAPI_WANT_TrackFX_GetParam
+#define REAPERAPI_WANT_TrackFX_SetParam
+#define REAPERAPI_WANT_TrackFX_FormatParamValueNormalized
 #define REAPERAPI_WANT_TakeFX_GetParam
 #define REAPERAPI_WANT_TrackFX_SetParam
 #define REAPERAPI_WANT_TakeFX_SetParam

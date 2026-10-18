@@ -124,6 +124,32 @@ void TrackNavigator::rebuildMemoryList() {
             return savedTrackLabel(identity.substr(first + 1, last - first - 1)) +
                 ", " + identity.substr(last + 1);
         }
+        if (identity.rfind("FxTcp|", 0) == 0) {
+            const auto second = identity.find('|', first + 1);
+            const auto third = second == std::string::npos ? std::string::npos : identity.find('|', second + 1);
+            if (second == std::string::npos || third == std::string::npos) return identity;
+            std::string label = savedTrackLabel(identity.substr(first + 1, second - first - 1));
+            const auto fxGuid = identity.substr(second + 1, third - second - 1);
+            const std::string param = identity.substr(third + 1);
+            MediaTrack* owner = findSavedTrack(identity.substr(first + 1, second - first - 1));
+            if (owner && TrackFX_GetCount && TrackFX_GetFXGUID) {
+                const int count = std::clamp(TrackFX_GetCount(owner), 0, 1024);
+                for (int fx = 0; fx < count; ++fx) {
+                    const GUID* guid = TrackFX_GetFXGUID(owner, fx);
+                    if (!guid || guidString(*guid) != fxGuid) continue;
+                    char name[1024]{}, pname[1024]{};
+                    if (TrackFX_GetFXName) TrackFX_GetFXName(owner, fx, name, sizeof(name));
+                    try {
+                        const int index = std::stoi(param);
+                        if (TrackFX_GetParamName && TrackFX_GetNumParams && index >= 0 && index < TrackFX_GetNumParams(owner, fx))
+                            TrackFX_GetParamName(owner, fx, index, pname, sizeof(pname));
+                    } catch (...) {}
+                    return label + ", " + (name[0] ? name : "FX") + ", " +
+                        (pname[0] ? pname : "Parameter " + param);
+                }
+            }
+            return label + ", FX unavailable, parameter " + param;
+        }
         if (identity.rfind("Sends|", 0) == 0) {
             const auto second = identity.find('|', first + 1);
             if (second == std::string::npos) return identity;

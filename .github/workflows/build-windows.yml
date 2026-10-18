@@ -150,6 +150,10 @@ jobs:
         run: python Testing/test56_6_static.py
       - name: TEST56.7 headerless F4 grid and unified FX chain shortcuts (source only)
         run: python Testing/test56_7_static.py
+      - name: TEST56.8 F4 Fixed and Floating MIDI CC (source only)
+        run: python Testing/test56_8_static.py
+      - name: TEST56.9 F4 numeric edit, value speech and discrete parameters (source only)
+        run: python Testing/test56_9_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

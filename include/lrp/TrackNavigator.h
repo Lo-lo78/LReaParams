@@ -81,6 +81,7 @@ private:
     void jumpFxTcpGridByInitial(wchar_t letter, bool backwards);
     std::string fxTcpStepKey() const;
     bool writeFxTcpValue(double normalized);
+    bool writeFxTcpRawValue(double raw);
     void nudgeFxTcpValue(int direction, bool coarse);
     bool fxTcpSelectedIdentityValid() const;
     void toggleFxTcpBypass();
@@ -181,6 +182,9 @@ private:
     void deleteCurrentRouting();
     void jumpToLinkedRouting(); // Enter on F2/F3 header; retain Value for editable fields
     void beginNumericEdit();
+    void beginFxTcpNumericEdit();
+    void commitFxTcpNumericEdit();
+    bool fxTcpFormatNumeric(double norm, double& result, std::string& unit) const;
     void beginVolumeRangeEdit();
     void commitNumericEdit();
     // TEST54 CC map in the same main .tp as Lua, with pickup and no stale MIDI replay.
@@ -190,6 +194,11 @@ private:
     // Resolve source/destination GUIDs and the exact repeated send ordinal.
     bool midiFixedIdentity(std::string& identity) const;
     std::string fixedRoutingSignature(const std::string& identity) const;
+    // F4 CC targets include project track + plugin-instance GUID + REAPER parameter index.
+    // A moved FX is resolved by its GUID before the next MIDI event.
+    bool resolveFxTcpMidi(const std::string& identity, MediaTrack*& owner,
+                          int& fxIndex, int& parameterIndex) const;
+    bool applyFxTcpMidi(const std::string& identity, int ccValue, bool floating);
     void applyMidi(const std::string& section, const std::string& key, int value); // Floating, follows cursor
     void applyFixedMidi(const std::string& identity, int value); // Fixed, follows saved GUIDs
     void resetMidiState();
@@ -250,6 +259,11 @@ private:
     std::string filterBuffer_;
     std::string numericBuffer_;
     bool numericEditing_ = false;
+    bool fxTcpNumericFormatted_ = false;
+    std::string fxTcpNumericUnit_;
+    GUID fxTcpNumericGuid_{};
+    int fxTcpNumericParameter_ = -1;
+    std::string fxTcpNumericTrack_;
     bool rangeEditing_ = false;
     bool learnCc_ = false, fixedCc_ = false, floatingCc_ = false, floatingWaiting_ = false;
     std::string learnSection_, learnKey_, learnIdentity_;

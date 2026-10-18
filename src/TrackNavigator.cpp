@@ -158,6 +158,12 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
             }
         }
         if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
+        // MIDI commands are handled by F4 itself, not the F1/F2/F3 path.
+        if (k.vk == 'C' && ((k.ctrl && k.alt && !k.shift) ||
+            (k.ctrl && k.shift && !k.alt) || (!k.ctrl && k.shift && !k.alt))) return true;
+        if (k.ctrl && !k.alt && k.vk == 'T') return true;
+        if (k.ctrl && !k.shift && !k.alt && k.vk == 'E') return true;
+        if (k.ctrl && !k.shift && !k.alt && k.vk == VK_DELETE) return true;
         if (k.ctrl && !k.shift && !k.alt && (k.vk == 'F' || k.vk == 'B' ||
             k.vk == 'D')) return true;
         if (k.ctrl && k.shift && !k.alt &&
@@ -755,6 +761,7 @@ std::string TrackNavigator::reviewLine() const {
         return std::string(labels[col]) + ". " + item.label;
     }
     if (page_ == Page::fxTcp) {
+        if (numericEditing_) return nativeTextLabel() + ", " + numericBuffer_;
         if (filterEditing_) return nativeTextLabel() + ", " + filterBuffer_;
         return (valueMode_ && !fxTcpListOpen_ ? "Value, " : "") + fxTcpReview(false);
     }
@@ -834,7 +841,7 @@ std::wstring TrackNavigator::windowTitle() const {
         return std::wstring(L"Track Params - ") + wideUtf8(trackName()) +
             (std::wstring(L" - ") + wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX") +
              (fxTcpListOpen_ ? L" - Add TCP parameters" : L" - TCP parameters")) +
-            (filterEditing_ ? L" - Filter" : !(fxTcpListOpen_ ? fxTcpGridFilter_ : fxTcpMainFilter_).empty() ? L" - Filter active" : L"");
+            (numericEditing_ ? L" - Numeric edit" : filterEditing_ ? L" - Filter" : !(fxTcpListOpen_ ? fxTcpGridFilter_ : fxTcpMainFilter_).empty() ? L" - Filter active" : L"");
     if (memoryManager_) {
         static constexpr const wchar_t* titles[] = {L"MIDI CC", L"Parameter Steps", L"Parameter Speech", L"Track Positions", L"Volume Ranges"};
         return std::wstring(L"Track Memories - ") + titles[static_cast<size_t>(std::clamp(memoryColumn_, 0, 4))];
