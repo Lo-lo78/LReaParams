@@ -1,3 +1,7 @@
+# TEST56.10.2 — F5 connettore pin audio, 128 canali (solo sorgente)
+
+F5 ora usa il numero reale di canali della traccia fino a 128. I canali 65–128 usano il secondo banco API `pin + 0x1000000`; ogni banco rimane indipendente, comprese lettura, toggle, Undo e readback. F4, F1–F3, FX Params e profili `.tp` non sono stati modificati; F6 è ancora da migrare. [Piano di test](TEST56_10_F5_AUDIO_PIN_CONNECTOR.md). Solo controlli statici Python; build GitHub Actions e prova NVDA/REAPER da eseguire.
+
 # TEST56.9.1 — F4 Fixed CC regression correction
 
 - Fixed: the project `.tp` storage writer and native profile parser rejected

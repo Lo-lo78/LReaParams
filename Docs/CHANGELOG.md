@@ -1,3 +1,10 @@
+# 0.0.56 — TEST56.10.2 — F5 128-channel audio pins (source only)
+
+- Extend F5 from 64 to 128 track channels without changing REAPER's `I_NCHAN` or the FX instance.
+- Use the documented `pin + 0x1000000` index for the independent channel 65–128 mapping bank; retain both 32-bit words, read/modify/write the correct bank and confirm through readback.
+- Preserve independent input/output pin columns, navigation, Undo, NVDA review, F4 return and all prior FX/Track functions. Add static boundary checks and GitHub Actions step. F6 not implemented in this test.
+- No local native build or REAPER/NVDA runtime verification.
+
 # TEST56.9.1 — F4 Fixed CC writer and focus-loss repair
 
 - Accept valid `FxTcp|{trackGUID}|{fxGUID}|nativeParameterIndex` Fixed CC mappings

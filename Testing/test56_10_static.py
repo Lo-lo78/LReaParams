@@ -15,7 +15,7 @@ checks = {
     'F5 accepted by keyboard router': 'case VK_F4: case VK_F5: case VK_F6:' in main,
     'F5 handler before F1 F2 F3': 'if (page_ == Page::pinAudio) { handlePinAudioKey(k); return; }' in main,
     'FX GUID identity resolution': 'pinAudioResolvedFx() const' in pin and 'TrackFX_GetFXGUID' in pin,
-    '64 channel two mask mapping': 'channel < 32' in pin and '(channel - 32)' in pin,
+    'banked 128 channel two-mask mapping': 'channelWithinPinBank(channel)' in pin and 'bit < 32' in pin and '(bit - 32)' in pin and 'kSecond64PinBank' in pin,
     'readback verification after write': 'pinAudioSelected(column, channel) == selected' in pin,
     'direct pin-cell editing with Enter': 'case VK_RETURN: case VK_SPACE:' in pin and 'pinAudioSet(pinAudioColumn_, pinAudioChannel_, connect)' in pin,
     'active pin navigators': 'pinAudioJumpSelected' in pin,

@@ -5,6 +5,18 @@
 
 namespace lrp {
 namespace {
+// REAPER's pin mapping API uses two 32-bit words for channels 1-64.
+// The second independent 64-bit bank (channels 65-128) is accessed by
+// adding 0x1000000 to the pin index. Do not shift by 64 or combine
+// banks into a single 64-bit mask: read/modify/write only the target bank.
+constexpr int kMaxAudioTrackChannels = 128;
+constexpr int kSecond64PinBank = 0x1000000;
+int pinIndexForChannel(int pin, int channel) {
+    return pin + (channel >= 64 ? kSecond64PinBank : 0);
+}
+int channelWithinPinBank(int channel) {
+    return channel % 64;
+}
 std::string pinName(int pin) {
     if (pin == 0) return "left";
     if (pin == 1) return "right";
@@ -47,14 +59,13 @@ bool TrackNavigator::enterPinAudio() {
         speech_("No audio pins");
         return false;
     }
-    // An individual track FX supports a maximum of 64 routing channels.
-    // Clamping pin counts avoids unbounded navigation if a plugin returns
-    // unexpected values; it does not modify the plugin's configuration.
-    pinAudioInputs_ = std::clamp(inputPins, 0, 64);
-    pinAudioOutputs_ = std::clamp(outputPins, 0, 64);
+    // Pin count is independent of the track's channel count. Bound both
+    // against REAPER's 128-channel audio matrix, without changing I_NCHAN.
+    pinAudioInputs_ = std::clamp(inputPins, 0, kMaxAudioTrackChannels);
+    pinAudioOutputs_ = std::clamp(outputPins, 0, kMaxAudioTrackChannels);
     const double channels = GetMediaTrackInfo_Value ?
         GetMediaTrackInfo_Value(track_, "I_NCHAN") : 2.0;
-    pinAudioChannels_ = std::clamp(static_cast<int>(channels), 2, 64);
+    pinAudioChannels_ = std::clamp(static_cast<int>(channels), 2, kMaxAudioTrackChannels);
     pinAudioColumn_ = pinAudioChannel_ = 0;
     pinAudioGuid_ = *currentGuid;
     rememberFxTcpPosition();
@@ -90,12 +101,14 @@ bool TrackNavigator::pinAudioSelected(int column, int channel) const {
         column >= pinAudioColumnCount() || channel < 0 || channel >= pinAudioChannels_) return false;
     const bool output = column >= pinAudioInputs_;
     const int pin = output ? column - pinAudioInputs_ : column;
+    const int bankPin = pinIndexForChannel(pin, channel);
+    const int bit = channelWithinPinBank(channel);
     int high = 0;
     const std::uint32_t lowBits = static_cast<std::uint32_t>(
-        TrackFX_GetPinMappings(track_, fx, output ? 1 : 0, pin, &high));
+        TrackFX_GetPinMappings(track_, fx, output ? 1 : 0, bankPin, &high));
     const std::uint32_t highBits = static_cast<std::uint32_t>(high);
-    return channel < 32 ? ((lowBits & (std::uint32_t{1} << channel)) != 0) :
-        ((highBits & (std::uint32_t{1} << (channel - 32))) != 0);
+    return bit < 32 ? ((lowBits & (std::uint32_t{1} << bit)) != 0) :
+        ((highBits & (std::uint32_t{1} << (bit - 32))) != 0);
 }
 
 std::string TrackNavigator::pinAudioReview(bool context) const {
@@ -128,16 +141,18 @@ bool TrackNavigator::pinAudioSet(int column, int channel, bool selected) {
         channel >= pinAudioChannels_) return false;
     const bool output = column >= pinAudioInputs_;
     const int pin = output ? column - pinAudioInputs_ : column;
+    const int bankPin = pinIndexForChannel(pin, channel);
+    const int bit = channelWithinPinBank(channel);
     int high = 0;
     std::uint32_t lowBits = static_cast<std::uint32_t>(
-        TrackFX_GetPinMappings(track_, fx, output ? 1 : 0, pin, &high));
+        TrackFX_GetPinMappings(track_, fx, output ? 1 : 0, bankPin, &high));
     std::uint32_t highBits = static_cast<std::uint32_t>(high);
-    const std::uint32_t mask = std::uint32_t{1} << (channel % 32);
-    std::uint32_t& bits = channel < 32 ? lowBits : highBits;
+    const std::uint32_t mask = std::uint32_t{1} << (bit % 32);
+    std::uint32_t& bits = bit < 32 ? lowBits : highBits;
     if (selected) bits |= mask;
     else bits &= ~mask;
     if (Undo_BeginBlock2) Undo_BeginBlock2(project_);
-    const bool ok = TrackFX_SetPinMappings(track_, fx, output ? 1 : 0, pin,
+    const bool ok = TrackFX_SetPinMappings(track_, fx, output ? 1 : 0, bankPin,
         static_cast<int>(lowBits), static_cast<int>(highBits));
     if (Undo_EndBlock2) Undo_EndBlock2(project_,
         selected ? "LReaParams: connect audio FX pin" : "LReaParams: disconnect audio FX pin", -1);
