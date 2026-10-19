@@ -851,6 +851,10 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
         if (!k.repeat) enterTrackMidi();
         return;
     }
+    if (k.vk == VK_F8 && !k.ctrl && !k.shift && !k.alt) {
+        if (!k.repeat) enterReaRoute();
+        return;
+    }
     if (k.vk == VK_F7 && !k.ctrl && !k.shift && !k.alt) {
         if (!k.repeat) enterHardwareOutputs();
         return;

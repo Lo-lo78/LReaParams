@@ -192,9 +192,10 @@ void TrackNavigator::handlePinAudioKey(const Key& k) {
         switch (k.vk) {
             case VK_F5: case VK_TAB: speech_(pinAudioReview(true)); return;
             case VK_F6: leavePinAudio(false); enterTrackMidi(); return;
-            case VK_F7: if (GetTrackNumSends && GetTrackNumSends(track_, 1) > 0) {
+            case VK_F7: if (hardwareOutputCount() > 0) {
                 leavePinAudio(false); enterHardwareOutputs();
             } else speech_("No hardware outputs"); return;
+            case VK_F8: if (!k.repeat) { leavePinAudio(false); enterReaRoute(); } return;
             case VK_F4: case VK_ESCAPE: leavePinAudio(); return;
             case VK_F1: leavePinAudio(); selectPage(Page::tracks); return;
             case VK_F2: leavePinAudio(); selectPage(Page::sends); return;

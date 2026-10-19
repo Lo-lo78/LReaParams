@@ -1,3 +1,11 @@
+TEST59 — 0.0.59 F8 ReaRoute bridge (2026-10-19)
+
+PASS: all 80 Testing/test*_static.py Python tests.
+PASS: Tools/audit.py (source-only source/oracle/SDK checks).
+PASS: F8 REAPER destination encoding boundary model, separate F7 physical output indices, persistence, Undo source contracts.
+No local native C++, CMake, MSVC, CTest, REAPER, NVDA/OSARA or audio tests.
+Runtime verification and native compilation must be performed through GitHub Actions and user REAPER/NVDA testing.
+
 TEST58 — 0.0.58 F7 Hardware Outputs (2026-10-19)
 Static source tests include F7 11-row routing/API/Undo/position/boundary model and previous F6/F5. Build and audio/keyboard behavior are NOT validated locally; run GitHub Actions MSVC and then REAPER/NVDA.
 

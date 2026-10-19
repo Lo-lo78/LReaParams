@@ -58,7 +58,7 @@ private:
             midiFollowsFader, midiMerge } type{};
     };
     struct TrackRow { MediaTrack* track{}; GUID guid{}; int projectIndex{}; };
-    enum class Page { tracks, sends, receives, fxTcp, pinAudio, trackMidi, hardwareOutputs };
+    enum class Page { tracks, sends, receives, fxTcp, pinAudio, trackMidi, hardwareOutputs, reaRoute };
     // TEST56.1: F4 is a view of native REAPER TCP parameters, not a copy of
     // the full FX parameter list. Each FX has a header, including empty FXs.
     struct FxTcpParameter { int index = -1; std::string name; };
@@ -154,8 +154,23 @@ private:
     void deleteHardwareOutput();
     void rememberHardwareOutputPosition();
     int hardwareOutputCount() const;
+    std::vector<int> hardwareOutputIndexes() const;
     int hardwareOutputColumn_ = 0, hardwareOutputRow_ = 0;
     std::string hardwareOutputEdge_;
+    // 0.0.59: F8 is a bridge: input column, output-control column, then
+    // one 11-row column for each ReaRoute-only hardware output.
+    bool enterReaRoute();
+    void handleReaRouteKey(const Key&);
+    std::string reaRouteReview(bool context) const;
+    void reaRouteMove(int column, int row);
+    void reaRouteAdjust(int direction, bool coarse = false, int edge = 0);
+    void reaRouteEnter();
+    void reaRouteDelete();
+    void reaRouteAddOutput();
+    void rememberReaRoutePosition();
+    std::vector<int> reaRouteOutputIndexes() const;
+    int reaRouteColumn_ = 0, reaRouteRow_ = 0;
+
     std::vector<FxTcpColumn> fxTcpColumns_;
     int fxTcpColumn_ = 0, fxTcpRow_ = 0;
     static constexpr int detailHeight = 14;

@@ -50,9 +50,20 @@ std::string pairText(int raw, bool source) {
 }
 } // namespace
 
+std::vector<int> TrackNavigator::hardwareOutputIndexes() const {
+    std::vector<int> indexes;
+    if (!track_ || !project_ || !ValidatePtr2(project_, track_, "MediaTrack*") ||
+        !GetTrackNumSends || !GetTrackSendInfo_Value) return indexes;
+    const int total = std::clamp(GetTrackNumSends(track_, kHardwareCategory), 0, 512);
+    for (int i=0; i<total; ++i) {
+        // Physical hardware output destination indices are below the ReaRoute base.
+        const int raw = static_cast<int>(GetTrackSendInfo_Value(track_, kHardwareCategory, i, "I_DSTCHAN"));
+        if ((raw & 1023) < 512) indexes.push_back(i);
+    }
+    return indexes;
+}
 int TrackNavigator::hardwareOutputCount() const {
-    return active_ && track_ && project_ && ValidatePtr2(project_, track_, "MediaTrack*") && GetTrackNumSends
-        ? std::clamp(GetTrackNumSends(track_, kHardwareCategory), 0, 512) : 0;
+    return static_cast<int>(hardwareOutputIndexes().size());
 }
 
 std::string TrackNavigator::hardwareOutputReview(bool context) const {
@@ -60,7 +71,8 @@ std::string TrackNavigator::hardwareOutputReview(bool context) const {
     if (count <= 0) return "No hardware outputs";
     const int column = std::clamp(hardwareOutputColumn_, 0, count-1);
     const int field = std::clamp(hardwareOutputRow_, 0, kRows-1);
-    const auto get = [this,column](const char* key) { return GetTrackSendInfo_Value(track_, kHardwareCategory, column, key); };
+    const int idx = hardwareOutputIndexes()[static_cast<size_t>(column)];
+    const auto get = [this,idx](const char* key) { return GetTrackSendInfo_Value(track_, kHardwareCategory, idx, key); };
     const int source = static_cast<int>(get("I_SRCCHAN"));
     const int dest = static_cast<int>(get("I_DSTCHAN"));
     std::string value;
@@ -139,7 +151,8 @@ void TrackNavigator::hardwareOutputAdjust(int direction, bool coarse, int edge) 
     const int col = std::clamp(hardwareOutputColumn_, 0, count-1);
     const int row = hardwareOutputRow_;
     if (row == 0) { speech_("Hardware output header. Read only"); return; }
-    const auto get = [this,col](const char* key) { return GetTrackSendInfo_Value(track_, 1, col, key); };
+    const int idx = hardwareOutputIndexes()[static_cast<size_t>(col)];
+    const auto get = [this,idx](const char* key) { return GetTrackSendInfo_Value(track_, 1, idx, key); };
     const double oldLevel = get("D_VOL");
     const double oldPan = get("D_PAN");
     const int source = static_cast<int>(get("I_SRCCHAN"));
@@ -230,8 +243,8 @@ void TrackNavigator::hardwareOutputAdjust(int direction, bool coarse, int edge) 
             speech_("Could not expand track channels"); return;
         }
     }
-    const bool ok = SetTrackSendInfo_Value(track_, kHardwareCategory, col, parm, value);
-    const bool readBack = ok && std::abs(GetTrackSendInfo_Value(track_, kHardwareCategory, col, parm)-value) <= 0.000001;
+    const bool ok = SetTrackSendInfo_Value(track_, kHardwareCategory, idx, parm, value);
+    const bool readBack = ok && std::abs(GetTrackSendInfo_Value(track_, kHardwareCategory, idx, parm)-value) <= 0.000001;
     if (!readBack && expanded) SetMediaTrackInfo_Value(track_, "I_NCHAN", oldTrackChannels);
     if (Undo_EndBlock2) Undo_EndBlock2(project_,
         (std::string("LReaParams: hardware output ") + kFields[row]).c_str(), UNDO_STATE_TRACKCFG);
@@ -247,7 +260,8 @@ void TrackNavigator::hardwareOutputAdjust(int direction, bool coarse, int edge) 
 void TrackNavigator::deleteHardwareOutput() {
     if (!RemoveTrackSend || hardwareOutputCount() == 0) { speech_("No hardware outputs"); return; }
     const int oldCount = hardwareOutputCount();
-    const int target = std::clamp(hardwareOutputColumn_, 0, oldCount-1);
+    const int logical = std::clamp(hardwareOutputColumn_, 0, oldCount-1);
+    const int target = hardwareOutputIndexes()[static_cast<size_t>(logical)];
     if (Undo_BeginBlock2) Undo_BeginBlock2(project_);
     const bool removed = RemoveTrackSend(track_, kHardwareCategory, target);
     if (Undo_EndBlock2) Undo_EndBlock2(project_, "LReaParams: delete hardware output", UNDO_STATE_TRACKCFG);
@@ -255,7 +269,7 @@ void TrackNavigator::deleteHardwareOutput() {
     if (TrackList_AdjustWindows) TrackList_AdjustWindows(false);
     if (UpdateArrange) UpdateArrange();
     const int count = hardwareOutputCount();
-    hardwareOutputColumn_ = count ? std::clamp(target, 0, count-1) : 0;
+    hardwareOutputColumn_ = count ? std::clamp(logical, 0, count-1) : 0;
     rememberHardwareOutputPosition();
     // When empty, return to F1 so stale hardware indexes cannot be reused.
     if (!count) {
@@ -276,6 +290,7 @@ void TrackNavigator::handleHardwareOutputsKey(const Key& k) {
             case VK_F5: speech_("Select an FX in F4 first"); return;
             case VK_F6: enterTrackMidi(); return;
             case VK_F7: case VK_TAB: speech_(hardwareOutputReview(true)); return;
+            case VK_F8: if (!k.repeat) enterReaRoute(); return;
             case VK_ESCAPE: if (valueMode_) { valueMode_ = false; speech_("Grid, " + hardwareOutputReview(false)); }
                 else selectPage(Page::tracks); return;
             case VK_DELETE: deleteHardwareOutput(); return;
@@ -288,8 +303,10 @@ void TrackNavigator::handleHardwareOutputsKey(const Key& k) {
             case VK_HOME: hardwareOutputMove(hardwareOutputColumn_, 0); return;
             case VK_END: hardwareOutputMove(hardwareOutputColumn_, kRows-1); return;
             case VK_RETURN:
+                if (hardwareOutputCount() == 0) { speech_("No hardware outputs"); return; }
                 if (hardwareOutputRow_ == 3 || hardwareOutputRow_ == 4 || hardwareOutputRow_ == 5)
-                    hardwareOutputAdjust(GetTrackSendInfo_Value(track_, 1, hardwareOutputColumn_,
+                    hardwareOutputAdjust(GetTrackSendInfo_Value(track_, 1,
+                        hardwareOutputIndexes()[static_cast<size_t>(std::clamp(hardwareOutputColumn_, 0, hardwareOutputCount()-1))],
                         hardwareOutputRow_ == 3 ? "B_MUTE" : hardwareOutputRow_ == 4 ? "B_PHASE" : "B_MONO") >= 0.5 ? -1 : 1);
                 else if (hardwareOutputRow_ == 0) speech_(hardwareOutputReview(true));
                 else { valueMode_ = !valueMode_; speech_(std::string(valueMode_ ? "Value, " : "Grid, ") + hardwareOutputReview(false)); }

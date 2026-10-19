@@ -1,3 +1,5 @@
+TEST59 / LReaParams 0.0.59: native Track Params F8 ReaRoute migrated from the original Lua. Separate track input, output creation, 11-row per-output grid; native send routing APIs, Undo, project .tp cursor memory, and physical/virtual output isolation in F7. No F4 aliases/manual sorting and no transport key remapping. SOURCE ONLY. Compiled and tested only by GitHub Actions; no local native build.
+
 TEST58 / LReaParams 0.0.58: Track Params F7 Hardware Outputs migrated in C++ (11-row columns, native REAPER hardware routing, Undo, persistent navigation); F6 backslash and silent-edge refinements. No local compilation or build, source only for GitHub Actions.
 
 TEST56.10.1: Removed redundant Ctrl+S two-stage Audio Pin Connector routing, including pending origin state, its helper and announcements. Enter/Space and Delete continue to edit the actual selected matrix cell with REAPER API readback and Undo. No local compilation; GitHub Actions only.

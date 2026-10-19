@@ -50,3 +50,5 @@ Nella sezione di navigazione del `.tp` del progetto: `LastPage=F7`, `F7.TrackGUI
 6. Con due uscite, premi Delete sulla seconda: solo quella deve sparire; Ctrl+Z deve ripristinarla. Elimina l'ultima e controlla il ritorno a F1.
 7. Entra ed esci via F1/F2/F3/F4/F5/F6; controlla FX Params, F5 a 128 canali, F6 MIDI e posizione ripristinata nel `.tp`.
 8. Conferma la build MSVC x64 e CTest dal workflow: i controlli Python sono statici e **non** sostituiscono la DLL in REAPER.
+
+> **TEST59 safety update:** after F8 migration, F7 lists only physical hardware destinations (low 10 I_DSTCHAN bits below 512); ReaRoute outputs are exclusively navigated/edited/deleted in F8. The test item about announcing ReaRoute within F7 describes the older TEST58 behavior.

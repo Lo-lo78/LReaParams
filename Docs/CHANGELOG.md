@@ -1,3 +1,7 @@
+# 0.0.59 — TEST59 F8 ReaRoute (sorgente)
+
+Migrazione nativa della griglia ReaRoute, con input della traccia, controlli di creazione output, colonne di output virtuali, 11 righe, valori e routing REAPER, Undo, lettura di verifica e `.tp`. F7 ora isola i soli hardware output fisici. Nessun alias F4 o modifica delle scorciatoie di trasporto. Solo sorgente, compilazione GitHub Actions. [Dettagli](TEST59_F8_REAROUTE.md).
+
 # 0.0.58 — TEST58 F7 Hardware Outputs (sorgente)
 
 Migrazione nativa C++ della griglia F7, category 1, 11 righe per ogni uscita; valore per valore, Undo, lettura dopo scrittura, Delete, memoria `.tp` e tasti. Rifiniture F6 tastiera e bordi silenziosi. F1-F6 ed FX Params mantenuti. Non compilato localmente. [Guida](TEST58_F7_HARDWARE_OUTPUTS.md).

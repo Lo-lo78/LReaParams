@@ -199,6 +199,7 @@ void TrackNavigator::handleTrackMidiKey(const Key& k) {
             case VK_F5: speech_("Select an FX in F4 first"); return;
             case VK_F6: case VK_TAB: speech_(trackMidiReview(true)); return;
             case VK_F7: if (!k.repeat) enterHardwareOutputs(); return;
+            case VK_F8: if (!k.repeat) enterReaRoute(); return;
             case VK_ESCAPE: end(); return;
             case VK_UP: trackMidiMove(trackMidiRow_ - 1); return;
             case VK_DOWN: trackMidiMove(trackMidiRow_ + 1); return;

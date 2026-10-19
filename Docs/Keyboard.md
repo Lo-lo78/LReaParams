@@ -1,3 +1,7 @@
+## 0.0.59 — Track F8 ReaRoute
+
+F8 apre la griglia del ponte ReaRoute con 11 righe. Colonna 1: input, colonna 2: controlli di output e **Add ReaRoute output** (Invio); colonne successive: output ReaRoute reali. Sinistra/Destra sposta la colonna, Su/Giù la riga; Alt+Su/Giù modifica, Alt+Pagina usa lo step ampio, Alt+Home/End gli estremi; Canc rimuove soltanto l’output ReaRoute sotto il cursore. Tab legge contesto. Esc esce da Value o torna a F1. F7 ora non mescola gli output ReaRoute con gli hardware fisici. [Guida TEST59](TEST59_F8_REAROUTE.md).
+
 ## 0.0.58 — F7 Hardware Outputs
 
 F7 apre gli hardware output fisici della traccia corrente (serve almeno una uscita già configurata in REAPER). Sinistra/Destra cambia colonna; Su/Giù cambia riga (11); Pagina Su/Giù salta 5 righe; Home/End prima/ultima riga, Ctrl+Home/End prima/ultima colonna. Alt+Su/Giù cambia il valore, Alt+Pagina usa lo step ampio, Alt+Home/End imposta massimo/minimo. Invio commuta Mute/Phase/Mono oppure Grid/Value; Delete rimuove soltanto l’uscita corrente. Tab legge contesto, Esc torna a F1, da Value prima alla griglia. Guida: [TEST58 F7](TEST58_F7_HARDWARE_OUTPUTS.md).
