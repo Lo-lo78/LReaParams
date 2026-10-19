@@ -1,3 +1,5 @@
+TEST61.2 / 0.0.61: Fix MSVC C2677 (three duplicated page_ comparisons in TrackNavigator.cpp); add static regression guard to GitHub Actions. No changes to FX Pin Connector F10/F11, OSARA or Track .tp. Native build remains GitHub Actions only.
+
 TEST61.1 / 0.0.61: Corrected three stale source-only Python tests which expected the pre-TEST61 Track Params page layout. No C++ behavior changes. GitHub Actions still needs to run the actual native build.
 
 TEST61 / 0.0.61: FX Params F10 browser/grid replaces Ctrl+P; F11 hosts the moved 128-channel audio pin connector (Track/Take/Monitor); Track Params F5/F6/F7 replace previous F6/F7/F8 with one-time .tp cursor migration. Direct OSARA Peak Watcher actions for Alt+F10/F11/F12 (+Shift). No local compilation.

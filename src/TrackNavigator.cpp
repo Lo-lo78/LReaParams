@@ -907,7 +907,7 @@ std::string TrackNavigator::reviewLine() const {
     return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
 }
 bool TrackNavigator::nativeValueSlider() const {
-    if (page_ == page_ == Page::trackMidi || page_ == Page::hardwareOutputs || page_ == Page::reaRoute) return false;
+    if (page_ == Page::trackMidi || page_ == Page::hardwareOutputs || page_ == Page::reaRoute) return false;
     if (page_ == Page::fxTcp)
         return active_ && valueMode_ && !fxTcpListOpen_ && !clearAutomationConfirm_ &&
             currentFxTcpParameter() && currentFxTcpColumn() && TrackFX_GetParamNormalized;
@@ -916,7 +916,7 @@ bool TrackNavigator::nativeValueSlider() const {
     return e && (e->type == Entry::volume || e->type == Entry::pan || e->type == Entry::width);
 }
 double TrackNavigator::valueFraction() const {
-    if (page_ == page_ == Page::trackMidi || page_ == Page::hardwareOutputs || page_ == Page::reaRoute) return 0.0;
+    if (page_ == Page::trackMidi || page_ == Page::hardwareOutputs || page_ == Page::reaRoute) return 0.0;
     if (page_ == Page::fxTcp) {
         if (!nativeValueSlider()) return 0.0;
         const auto* col = currentFxTcpColumn();
@@ -934,7 +934,7 @@ double TrackNavigator::valueFraction() const {
     return std::clamp((value + 1.0) / 2.0, 0.0, 1.0);
 }
 std::string TrackNavigator::sliderLabel() const {
-    if (page_ == page_ == Page::trackMidi || page_ == Page::hardwareOutputs || page_ == Page::reaRoute) return "";
+    if (page_ == Page::trackMidi || page_ == Page::hardwareOutputs || page_ == Page::reaRoute) return "";
     if (page_ == Page::fxTcp) {
         const auto* p = currentFxTcpParameter();
         return p ? p->name : "";
