@@ -184,6 +184,8 @@ jobs:
         run: python Testing/test61_9_installer_static.py
       - name: TEST61.10 NSIS absolute packaging paths (source only)
         run: python Testing/test61_10_nsis_input_paths_static.py
+      - name: TEST61.11 NSIS accessible installer navigation (source only)
+        run: python Testing/test61_11_installer_accessibility_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Verify TEST60 shared marker and timeline navigation (source only)

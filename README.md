@@ -1,3 +1,28 @@
+## TEST61.11 — Installer NSIS: navigazione NVDA e chiusura automatica
+
+Solo il file `Installer/LReaParams.nsi` e i test/documenti del setup sono stati
+modificati; il codice C++ della DLL resta quello della TEST61.10.
+
+- All'avvio **compare sempre la scelta della lingua**, anche se una precedente
+  installazione aveva memorizzato English. I pulsanti standard NSIS sono
+  localizzati: **Avanti / Indietro / Installa** in italiano; **Next / Back /
+  Install** in inglese, e analogamente nelle altre cinque lingue.
+- La pagina iniziale spiega di chiudere REAPER e descrive il flusso da tastiera.
+  La pagina della cartella delle risorse spiega anche come scegliere REAPER portable.
+- Eliminata la **finestra modale OK prima di copiare i file**, fonte di un passaggio
+  poco chiaro con NVDA. Dopo la scelta della cartella parte direttamente
+  l'installazione. La conferma di percorso non riconosciuto (`reaper.ini`
+  mancante) rimane per evitare installazioni nella cartella sbagliata.
+- Eliminata la **pagina Finish**: al completamento corretto l'installer
+  **si chiude automaticamente**, senza ulteriori Invio o OK. Gli errori
+  di installazione rimangono segnalati con finestre dedicate.
+- Nessuna modifica alla disinstallazione, ai file installati, ai profili
+  o al workflow degli artefatti precedenti.
+
+**Senza compilazione locale:** verificare il nuovo EXE da GitHub Actions su
+Windows usando NVDA. Controllo statico dedicato:
+`python Testing/test61_11_installer_accessibility_static.py`.
+
 ## TEST61.10 — Riparazione percorso sorgenti NSIS (GitHub Actions)
 
 Nella TEST61.9 GitHub Actions aveva gia completato con successo la build
