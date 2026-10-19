@@ -1,5 +1,6 @@
 #pragma once
 #include "Navigator.h"
+#include "TransportMarkers.h"
 #include "ReaperApi.h"
 #include "TrackMemory.h"
 #include "MidiControl.h"
@@ -346,6 +347,8 @@ private:
     std::unordered_set<MediaTrack*> selectionBase_;
     RoutingKind pendingRouting_ = RoutingKind::none;
     std::vector<GUID> pendingTrackGuids_;
+    // TEST60: prevent repetitive marker edge speech (separate in each navigator).
+    int markerEdge_ = 0;
     std::function<void(const std::string&)> speech_;
     std::filesystem::path resource_;
     TrackMemory memory_;

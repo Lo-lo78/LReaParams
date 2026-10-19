@@ -1,6 +1,7 @@
 #pragma once
 #include "ReaperApi.h"
 #include "Navigator.h"
+#include "TransportMarkers.h"
 #include "FxOrder.h"
 #include "MidiControl.h"
 #include <filesystem>
@@ -371,6 +372,8 @@ private:
     std::size_t textCursor_ = 0;
     bool textFresh_ = true;
     std::string parameterName_;
+    // TEST60: prevent repetitive marker edge speech (separate in each navigator).
+    int markerEdge_ = 0;
     std::function<void(const std::string&)> speech_;
 };
 }

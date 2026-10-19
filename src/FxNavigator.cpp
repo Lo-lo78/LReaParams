@@ -1002,6 +1002,8 @@ bool FxNavigator::uiStillOpen() const {
 bool FxNavigator::accepts(const Key& k) const noexcept {
     if (clearAutomationConfirm_) return true;
     if (!active_) return false;
+    if (!textEdit_ && !searchMode_ && !numericEdit_ && !recentMode_ &&
+        !defaultConfirm_ && isTransportMarkerShortcut(k)) return true;
     // The Lua transport gestures belong to FX Params in Grid, Value, F7 and Memories.
     // Native search/rename/numeric EDIT controls must retain their space key.
     if (fxBrowserMode_) {
@@ -1407,6 +1409,13 @@ void FxNavigator::handle(const Key& k) {
     }
     // A new key finalizes a pending single F8 before changing FX, editing or exiting.
     if (pendingF8At_) resolveF8();
+    // TEST60: shared, project-scoped marker/beat/bar navigation.  Never let
+    // these keys reach FX browser, parameter editing, or the Main action list.
+    if (!textEdit_ && !searchMode_ && !numericEdit_ && !recentMode_ &&
+        !defaultConfirm_ && isTransportMarkerShortcut(k)) {
+        if (!k.repeat) executeTransportMarkerShortcut(k, project_, markerEdge_, speech_);
+        return;
+    }
     // Mirror the original Lua transport semantics. Consume key repeats so a
     // held Space cannot alternately start/stop transport multiple times.
     // Shift+Space is intentionally left to the F7 selection controller.

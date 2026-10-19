@@ -1,3 +1,5 @@
+TEST60 (0.0.60): scorciatoie condivise Marker + Transport (FX/Track) senza alias F4, senza rimappare Ctrl+Page e Ctrl+frecce. Fonte Lua invariata. Compilazione SOLO GitHub Actions.
+
 TEST59 / LReaParams 0.0.59: native Track Params F8 ReaRoute migrated from the original Lua. Separate track input, output creation, 11-row per-output grid; native send routing APIs, Undo, project .tp cursor memory, and physical/virtual output isolation in F7. No F4 aliases/manual sorting and no transport key remapping. SOURCE ONLY. Compiled and tested only by GitHub Actions; no local native build.
 
 TEST58 / LReaParams 0.0.58: Track Params F7 Hardware Outputs migrated in C++ (11-row columns, native REAPER hardware routing, Undo, persistent navigation); F6 backslash and silent-edge refinements. No local compilation or build, source only for GitHub Actions.

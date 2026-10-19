@@ -91,6 +91,13 @@
 #define REAPERAPI_WANT_GetMediaItemTake_Item
 #define REAPERAPI_WANT_GetMediaItemInfo_Value
 #define REAPERAPI_WANT_SetEditCurPos
+// TEST60: shared marker + measure/beat transport, project-scoped.
+#define REAPERAPI_WANT_CountProjectMarkers
+#define REAPERAPI_WANT_EnumProjectMarkers3
+#define REAPERAPI_WANT_GetCursorPosition
+#define REAPERAPI_WANT_GetCursorPositionEx
+#define REAPERAPI_WANT_SetEditCurPos2
+#define REAPERAPI_WANT_TimeMap2_timeToBeats
 // Native REAPER Track Controls enumeration (no chunk parsing).
 #define REAPERAPI_WANT_CountTCPFXParms
 #define REAPERAPI_WANT_GetTCPFXParm

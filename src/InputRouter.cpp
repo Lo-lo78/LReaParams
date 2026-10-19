@@ -1,4 +1,5 @@
 #include "lrp/InputRouter.h"
+#include "lrp/TransportMarkers.h"
 #include <cwchar>
 #include <cwctype>
 
@@ -267,7 +268,24 @@ LRESULT CALLBACK InputRouter::hook(int code, WPARAM param, LPARAM data) noexcept
         const bool altEdge = (message.wParam == VK_HOME || message.wParam == VK_END) &&
             ((down && (GetKeyState(VK_MENU) & 0x8000)) ||
              (up && self->swallowed_[static_cast<UINT>(message.wParam)] == message.hwnd));
-        if (chordDown || chordUp) {
+        // In accelerator mode REAPER can otherwise execute its own action
+        // for Ctrl+digits/Alt+Page before our extension receives the key.
+        // Do not intercept unrelated combinations or native editing fields.
+        const UINT vk = static_cast<UINT>(message.wParam);
+        const Key shortcut{vk, (GetKeyState(VK_CONTROL) & 0x8000) != 0,
+                           (GetKeyState(VK_MENU) & 0x8000) != 0,
+                           (GetKeyState(VK_SHIFT) & 0x8000) != 0,
+                           (message.lParam & (1LL << 30)) != 0, message.hwnd,
+                           0, (GetKeyState(VK_RMENU) & 0x8000) != 0};
+        const bool shortcutDown = down && isTransportMarkerShortcut(shortcut);
+        const bool shortcutUp = up &&
+            (vk == VK_PRIOR || vk == VK_NEXT || vk == 'I' || vk == 'O' ||
+             (vk >= '0' && vk <= '9')) &&
+            self->swallowed_[vk] == message.hwnd;
+        if ((shortcutDown || shortcutUp) && self->navigator_ &&
+            (shortcutUp || self->navigator_->accepts(shortcut))) {
+            consumed = self->route(message, true);
+        } else if (chordDown || chordUp) {
             // Run first even in accelerator and native focus-window modes:
             // REAPER must not also dispatch its Action List Ctrl+Space binding.
             consumed = self->interceptTransport(message);

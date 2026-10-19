@@ -128,6 +128,10 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!active_ || k.altGr) return false;
     // While asking for confirmation, no navigation key may reach the TCP.
     if (clearAutomationConfirm_) return true;
+    // TEST60: global navigation before specialized F1-F8 maps. The native
+    // EDIT receives its own keystrokes, and Ctrl+Page Up/Down remains for FX.
+    if (!filterEditing_ && !numericEditing_ &&
+        isTransportMarkerShortcut(k)) return true;
     if (memoryManager_) {
         if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
         if (k.shift) return false;
@@ -1291,6 +1295,11 @@ void TrackNavigator::handle(const Key& k) {
             clearAutomationYes_ = false;
             speech_("Automation clear cancelled");
         }
+        return;
+    }
+    if (!filterEditing_ && !numericEditing_ &&
+        isTransportMarkerShortcut(k)) {
+        if (!k.repeat) executeTransportMarkerShortcut(k, project_, markerEdge_, speech_);
         return;
     }
     if (memoryManager_) { handleMemory(k); return; }
