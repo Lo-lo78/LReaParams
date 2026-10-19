@@ -1,3 +1,11 @@
+TEST61.1 — 0.0.61 GitHub Actions static-test compatibility fix (2026-10-19)
+PASS: all 82 source-only Python tests (82/82); 3 tests updated for remapped Track F5-F7.
+PASS: Tools/audit.py source-only SDK/profile/oracle verification.
+FAILURE ADDRESSED: TEST55.5 expected VK_F8 for ReaRoute; TEST61 maps ReaRoute to VK_F7.
+ADDITIONAL FIXES: TEST56.1 obsolete enum incl. pinAudio, TEST56.2 old F4 function-key list.
+No C++ source changes, no local CMake/MSVC/native compilation, no REAPER/NVDA runtime tests.
+Native GitHub Actions compilation must still run.
+
 TEST61 — 0.0.61 F10 Browser/Grid, F11 FX Pin Connector, Track F5–F7 remap (2026-10-19)
 PASS: 24 targeted Python source/static regression tests (24/24).
 PASS: TEST61 source-only pin matrix 128-channel mask oracle / Track–Take–Monitor API presence / F10–F11 key and browser behaviors / .tp page layout migration / OSARA named actions.

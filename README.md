@@ -1,3 +1,5 @@
+> **TEST61.1 — riparazione workflow GitHub Actions:** aggiornati i test statici storici TEST55.5 e TEST56.1/56.2, che facevano ancora riferimento alle pagine F5/F8 antecedenti alla migrazione TEST61. Nessuna modifica al codice C++, alle API audio, alle scorciatoie, ai file `.tp` o agli FX. Il precedente workflow si fermava prima di CMake/MSVC; la compilazione nativa resta da effettuare su GitHub Actions.
+
 > **LReaParams 0.0.61 — TEST61:** FX Params **F10** sostituisce Ctrl+P per passare da Browser a Grid e viceversa; **F11** apre il Pin Connector per Track/Take/Monitor FX fino a 128 canali. Track Params scala le pagine: F5 MIDI, F6 Hardware, F7 ReaRoute; i cursori `.tp` vengono migrati una sola volta, F8 libero. Ripristinati Alt+F10/F11/F12 e Alt+Shift con azioni OSARA Peak Watcher. [Guida e collaudo TEST61](Docs/TEST61_FX_PIN_MIGRATION.md). **Solo sorgente GitHub Actions, senza compilazione locale.**
 
 > Le sezioni delle versioni precedenti sono cronologia: le scorciatoie correnti prevalgono sulle indicazioni storiche che citano Ctrl+P o F10 libero.

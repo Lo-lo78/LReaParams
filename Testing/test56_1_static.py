@@ -9,7 +9,9 @@ cmake = (root / 'CMakeLists.txt').read_text(encoding='utf-8')
 workflow = (root / '.github/workflows/build-windows.yml').read_text(encoding='utf-8')
 assert '#define REAPERAPI_WANT_CountTCPFXParms' in api
 assert '#define REAPERAPI_WANT_GetTCPFXParm' in api
-assert 'enum class Page { tracks, sends, receives, fxTcp, pinAudio, trackMidi, hardwareOutputs, reaRoute }' in header
+# TEST61 relocated audio pins to FX Params and renumbered Track MIDI/HW/ReaRoute.
+assert 'enum class Page { tracks, sends, receives, fxTcp, trackMidi, hardwareOutputs, reaRoute }' in header
+assert 'pinAudio' not in header.split('enum class Page {', 1)[1].split('}', 1)[0]
 assert 'src/TrackNavigatorFxTcp.cpp' in cmake
 assert 'CountTCPFXParms(project_, track_)' in fx
 assert 'GetTCPFXParm(project_, track_, i, &fx, &param)' in fx

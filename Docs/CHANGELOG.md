@@ -1,3 +1,5 @@
+TEST61.1 — GitHub Actions source-test compatibility repair (2026-10-19): corrected obsolete TEST55.5 (ReaRoute formerly F8, now F7) and TEST56.1/56.2 (Track Page enumeration and F4 selector function keys). C++ unchanged; no native compilation performed locally.
+
 TEST61 / LReaParams 0.0.61: FX F10 Browser↔Grid (Ctrl+P removed), FX F11 128-channel audio pin connector for Track, Take and Monitor FX; Track F5 MIDI, F6 Hardware, F7 ReaRoute, with one-time .tp page cursor conversion; six OSARA Peak Watcher actions restored. No local build; MSVC through GitHub Actions. See Docs/TEST61_FX_PIN_MIGRATION.md.
 
 # 0.0.59 — TEST59 F8 ReaRoute (sorgente)

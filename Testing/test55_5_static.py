@@ -16,8 +16,8 @@ assert "k.vk == 'M'" in tmem and 'memoryExit()' in tmem
 # F8 no longer drives FX memory transitions; Alt+F8 no longer drives Track memory transitions.
 assert 'k.vk == VK_F8' in fx and 'f8Press()' in fx
 assert 'VK_F8' not in fxmem
-# TEST59 reuses plain F8 for Track ReaRoute; Ctrl+Shift+M remains the memory shortcut.
-assert 'VK_F8' in track and 'enterReaRoute()' in track
+# TEST61 moves Track ReaRoute to F7; Ctrl+Shift+M remains the memory shortcut.
+assert 'k.vk == VK_F7' in track and 'enterReaRoute()' in track
 assert 'openTrackMemories(true)' not in track
 assert 'VK_F8' not in tmem
 assert 'openFxMemories(true)' in actions and 'openTrackMemories(true)' in actions

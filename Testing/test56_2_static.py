@@ -22,7 +22,8 @@ assert 'if (!k.repeat) { rebuildFxTcp(true); openFxTcpParameterGrid(false); }' i
 assert 'if (currentFxTcpParameter()) {' in fx
 assert 'openFxTcpParameterGrid(true)' not in fx  # TEST56.6 removes the Alt+Enter visible-only mode
 assert 'if (fxTcpListOpen_) {' in nav and 'k.vk == VK_RETURN' in nav
-assert 'case VK_F1: case VK_F2: case VK_F6:' in nav
+# TEST61 moved Track MIDI to F5, Hardware Outputs to F6 and ReaRoute to F7.
+assert 'case VK_F1: case VK_F2: case VK_F5: case VK_F6: case VK_F7: case VK_F4:' in nav
 assert 'std::clamp(fxTcpListGridHeight_ + (k.vk == VK_F1 ? -1 : 1), 1, 200)' in grid
 assert 'const int start = (fxTcpListPosition_ / height) * height;' in grid
 assert 'case VK_LEFT: if (next - height >= 0)' in grid
