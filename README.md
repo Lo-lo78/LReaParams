@@ -1,3 +1,40 @@
+## TEST61.9 — Installer EXE GitHub Actions e licenza
+
+GitHub Actions adesso genera un quarto artefatto:
+**`LReaParams-0.0.61-Windows-x64-SETUP-EXE`**. Dopo avere estratto lo ZIP
+scaricato da Actions, eseguire **`LReaParams-0.0.61-Windows-x64-Setup.exe`**.
+
+L'installer NSIS (Windows x64, per utente, senza privilegi amministrativi per
+la cartella predefinita) propone la selezione di 7 lingue e della cartella
+**delle risorse** di REAPER. Percorso predefinito:
+`%APPDATA%\REAPER`. Per REAPER portable selezionare invece la cartella
+portatile contenente `reaper.ini`. Prima dell'installazione chiudere REAPER.
+
+Installa:
+- `%REAPER_RESOURCES%\UserPlugins\reaper_lreaparams.dll`;
+- `%REAPER_RESOURCES%\LReaParams\Guide\` (tutte le 7 lingue);
+- `%REAPER_RESOURCES%\LReaParams\Licenses\` (GPL-3.0 e attribuzioni);
+- `%REAPER_RESOURCES%\LReaParams\Source\` (ZIP dei sorgenti della stessa
+  revisione GitHub compilata e hash del commit);
+- `%REAPER_RESOURCES%\LReaParams\Uninstall-LReaParams.exe`.
+
+I dati in `Plugins`, `Tracks`, `Settings` e `Backups` NON vengono mai
+sovrascritti o rimossi; l'installer crea queste cartelle solo se mancanti.
+Il disinstallatore elimina soltanto la DLL e i file inclusi nel pacchetto,
+mai i profili e le impostazioni. È disponibile anche nelle impostazioni
+App installate di Windows. Lo ZIP `MULTILINGUAL` e le guide restano artefatti
+separati per installazione manuale.
+
+**Licenza:** LReaParams viene proposto sotto GNU GPL version 3 only
+(`GPL-3.0-only`, SPDX)
+(`LICENSE`, `THIRD_PARTY_NOTICES.md`), a condizione che il titolare dei
+diritti confermi di poter applicare questa licenza a tutti i propri sorgenti,
+compresi quelli Lua storici. I componenti di terzi mantengono i loro avvisi.
+La gratuità da sola non equivale a una licenza open source.
+
+**Nessuna compilazione locale:** il workflow Windows/MSVC e makensis girano
+esclusivamente in GitHub Actions. Test: `python Testing/test61_9_installer_static.py`.
+
 ## TEST61.8 — Import legacy Lua settings and keyboard Settings action
 
 The existing REAPER action **LReaParams: Import legacy profiles** now asks **Y** to import, **N** to leave files untouched; **Escape** cancels. At startup the same question appears only once when old Lua TXT profiles are found. Your choice is saved in `LReaParams\Settings\LegacyImportChoice.txt`. To import later run the action at any time. No automatic conversion occurs without confirmation. Original Lua TXT files remain in their old folder, native .fx/.tp differences are not overwritten, and verified backups are retained.

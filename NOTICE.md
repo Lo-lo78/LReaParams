@@ -1,3 +1,5 @@
+TEST61.9 / 0.0.61: Added an open-source NSIS Windows x64 setup executable via GitHub Actions. Installs the DLL to UserPlugins, 7-language guide to LReaParams/Guide, and corresponding source and license files alongside existing data. User profiles are preserved on install/uninstall. Added GPL-3.0-only proposed licensing and third-party notices; final authorship clearance remains with the project owner. SOURCE ONLY; no local builds.
+
 TEST61.4 / 0.0.61: Track F6 hardware outputs open with zero outputs; Add column with selectable device-backed physical destination, create via CreateTrackSend(track,nullptr), API read-back and rollback on failure, Undo and focus on created output. Delete last returns to Add column; F7 ReaRoute excluded. Native build only on GitHub Actions.
 
 TEST61.3 / 0.0.61: FX F11 Pin Connector speech shortened: connected cells use "Attive. ", unconnected cells have no status prefix, including after toggle/delete. No changes to routing, keyboard controls, storage or APIs; native build remains GitHub Actions only.

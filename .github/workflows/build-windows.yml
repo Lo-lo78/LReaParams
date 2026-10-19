@@ -180,6 +180,8 @@ jobs:
         run: python Testing/test61_6_multilingual_guides_static.py
       - name: TEST61.8 legacy import consent and keyboard dialog shortcuts (source only)
         run: python Testing/test61_8_legacy_import_choices_static.py
+      - name: TEST61.9 installer packaging and profile preservation (source only)
+        run: python Testing/test61_9_installer_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Verify TEST60 shared marker and timeline navigation (source only)
@@ -218,4 +220,53 @@ jobs:
         with:
           name: LReaParams-0.0.61-HTML-Guides
           path: Guide/
+          if-no-files-found: error
+      - name: Package complete corresponding source from this commit
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          $sha = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw "Cannot determine source commit" }
+          git archive --format=zip --output=dist/LReaParams-0.0.61-Source.zip HEAD
+          if ($LASTEXITCODE -ne 0) { throw "Cannot package matching source" }
+          @(
+            "LReaParams 0.0.61 complete corresponding source",
+            "Built from Git commit: $sha",
+            "Source: https://github.com/Lo-lo78/LReaParamsSwitch/tree/$sha",
+            "The included LReaParams-0.0.61-Source.zip contains the build scripts, C++ source, original Lua references, and the installer source.",
+            "License: GPL-3.0-only for LReaParams-owned code; see LICENSE and THIRD_PARTY_NOTICES.md in that archive."
+          ) | Set-Content -Path dist/SOURCE-COMMIT.txt -Encoding utf8
+      - name: Install NSIS setup builder
+        shell: pwsh
+        run: |
+          $nsis = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          if (-not (Test-Path $nsis)) {
+            choco install nsis --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "NSIS installation failed" }
+          }
+          if (-not (Test-Path $nsis)) { throw "makensis.exe was not found" }
+      - name: Generate safe uninstall manifest and build EXE installer
+        shell: pwsh
+        run: |
+          python Tools/create_installer_manifest.py
+          if ($LASTEXITCODE -ne 0) { throw "Cannot generate uninstall file list" }
+          python Testing/test61_9_installer_static.py
+          if ($LASTEXITCODE -ne 0) { throw "Installer safety verification failed" }
+          $nsis = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          & $nsis /V3 'Installer/LReaParams.nsi'
+          if ($LASTEXITCODE -ne 0) { throw "NSIS installer build failed" }
+          if (-not (Test-Path 'dist/LReaParams-0.0.61-Windows-x64-Setup.exe')) { throw "EXE was not produced" }
+      - name: Upload one-click Windows x64 installer
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: LReaParams-0.0.61-Windows-x64-SETUP-EXE
+          path: dist/LReaParams-0.0.61-Windows-x64-Setup.exe
+          if-no-files-found: error
+      - name: Upload complete source for GPL distribution
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: LReaParams-0.0.61-COMPLETE-SOURCE
+          path: |
+            dist/LReaParams-0.0.61-Source.zip
+            dist/SOURCE-COMMIT.txt
           if-no-files-found: error
