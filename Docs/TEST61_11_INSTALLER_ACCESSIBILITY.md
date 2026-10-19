@@ -1,5 +1,7 @@
 # TEST61.11 — Installer accessibile per NVDA
 
+> Documento storico: nella TEST61.12 è stata ripristinata la pagina Finale con pulsante Fine/Finish. Per il comportamento attuale consultare `TEST61_12_INSTALLER_DYNAMIC_PATH_FINISH.md`.
+
 Installer NSIS MUI2: sempre possibile scegliere la lingua all'avvio, quindi i
 pulsanti del wizard seguono la lingua selezionata. In italiano: Avanti,
 Indietro, Installa (i nomi esatti sono quelli di NSIS per la lingua italiana).

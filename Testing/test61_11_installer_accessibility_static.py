@@ -7,7 +7,7 @@ nsis = (root/'Installer'/'LReaParams.nsi').read_text(encoding='utf-8')
 wf = (root/'.github/workflows/build-windows.yml').read_text(encoding='utf-8')
 assert 'AutoCloseWindow true' in nsis
 assert '!insertmacro MUI_PAGE_INSTFILES' in nsis
-assert not re.search(r'^\s*!insertmacro MUI_PAGE_FINISH\b', nsis, re.M)
+assert re.search(r'^\s*!insertmacro MUI_PAGE_FINISH\b', nsis, re.M)
 assert '!define MUI_LANGDLL_ALWAYSSHOW' in nsis
 assert '!define MUI_LANGDLL_ALLLANGUAGES' in nsis
 assert '!insertmacro MUI_LANGDLL_DISPLAY' in nsis
@@ -25,4 +25,4 @@ assert 'MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 "$(PathUnrecognized
 assert 'LReaParams\\Guide' in nsis
 assert 'WriteUninstaller' in nsis
 assert 'test61_11_installer_accessibility_static.py' in wf
-print('TEST61.11 PASS: multilingual Next/Back wizard, no blocking OK, no Finish page, auto-close on success')
+print('TEST61.11 PASS: multilingual Next/Back wizard, no blocking OK, explicit Finish page')

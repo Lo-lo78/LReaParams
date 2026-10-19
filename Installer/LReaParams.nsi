@@ -1,4 +1,4 @@
-; LReaParams native Windows x64 installer (TEST61.11)
+; LReaParams native Windows x64 installer (TEST61.12)
 ; Compile with NSIS 3.x makensis on GitHub Actions, after the C++ build.
 ; The installer itself is open source; it never deletes native user profiles.
 ; NSIS/zlib compressor is used (no LZMA module required).
@@ -24,13 +24,18 @@ Unicode true
 
 Name "${APP_NAME} ${APP_VERSION}"
 OutFile "${PROJECT_ROOT}\dist\LReaParams-${APP_VERSION}-Windows-x64-Setup.exe"
+; $APPDATA is resolved at runtime on the target computer for the user
+; launching the installer (not for the user who built or published the EXE).
+; If this same user previously installed to a custom/portable resource path,
+; InstallDirRegKey reuses that saved selection, never another user's HKCU.
 InstallDir "$APPDATA\REAPER"
 InstallDirRegKey HKCU "${SETTINGS_KEY}" "ResourcePath"
 RequestExecutionLevel user
 SetCompressor /SOLID zlib
 ShowInstDetails show
-; After a successful install close directly: no extra Finish or OK/Enter.
-; Installation errors still display the usual NSIS error messages.
+; Automatically progress from the copy log to the standard Finish page;
+; the localized Finish / Fine button closes the installer when pressed.
+; The final page is only reached after the installation steps complete.
 AutoCloseWindow true
 ShowUninstDetails show
 BrandingText "LReaParams - free and open-source REAPER extension"
@@ -59,7 +64,10 @@ VIAddVersionKey "LegalCopyright" "Copyright (C) 2026 Lo-lo78"
 !define MUI_PAGE_CUSTOMFUNCTION_LEAVE ValidateResourceDirectory
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
-; No MUI_PAGE_FINISH: installation automatically closes when complete.
+; The dedicated completion screen has the standard localized Finish button.
+; Do not define MUI_FINISHPAGE_NOAUTOCLOSE: no extra Next is required.
+!define MUI_FINISHPAGE_TEXT "$(InstallerFinished)"
+!insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 
@@ -88,23 +96,32 @@ LangString PathUnrecognized ${LANG_RUSSIAN} "В выбранной папке н
 LangString PathUnrecognized ${LANG_SIMPCHINESE} "所选文件夹中没有 reaper.ini，可能不是 REAPER 资源文件夹。仍要继续吗？选择“否”更改路径。"
 LangString PathUnrecognized ${LANG_JAPANESE} "選択したフォルダーに reaper.ini がありません。REAPERのリソースフォルダーではない可能性があります。続行しますか？「いいえ」で選び直します。"
 
-; Readable instructions on the Welcome and Directory wizard pages replace the
-; blocking pre-install OK message. No blank intermediate screen to confirm.
-LangString InstallerWelcome ${LANG_ENGLISH} "This wizard installs LReaParams and its offline guides. Close REAPER before continuing. Choose Next to select the REAPER resource folder, then choose Install. The installer closes automatically when finished. Existing profiles and settings are preserved."
-LangString InstallerWelcome ${LANG_ITALIAN} "Questa procedura installa LReaParams e le guide offline. Chiudi REAPER prima di continuare. Premi Avanti per scegliere la cartella delle risorse di REAPER, poi Installa. Al termine la finestra si chiude automaticamente. Profili e impostazioni vengono conservati."
-LangString InstallerWelcome ${LANG_SPANISH} "Este asistente instala LReaParams y las guías sin conexión. Cierra REAPER antes de continuar. Pulsa Siguiente para elegir la carpeta de recursos de REAPER y después Instalar. La ventana se cerrará automáticamente al terminar. Se conservan los perfiles y ajustes."
-LangString InstallerWelcome ${LANG_FRENCH} "Cet assistant installe LReaParams et les guides hors ligne. Fermez REAPER avant de continuer. Choisissez Suivant pour sélectionner le dossier de ressources REAPER, puis Installer. La fenêtre se fermera automatiquement à la fin. Vos profils et réglages sont conservés."
-LangString InstallerWelcome ${LANG_RUSSIAN} "Мастер установит LReaParams и автономные руководства. Перед продолжением закройте REAPER. Нажмите «Далее», чтобы выбрать папку ресурсов REAPER, затем «Установить». После успешной установки окно закроется автоматически. Профили и настройки сохранятся."
-LangString InstallerWelcome ${LANG_SIMPCHINESE} "本向导将安装 LReaParams 和离线指南。请先关闭 REAPER。点击“下一步”选择 REAPER 资源文件夹，然后点击“安装”。安装成功后窗口会自动关闭。现有配置和设置将保留。"
-LangString InstallerWelcome ${LANG_JAPANESE} "このウィザードは LReaParams とオフラインガイドをインストールします。先に REAPER を終了してください。「次へ」で REAPER のリソースフォルダーを選び、「インストール」を選択してください。完了後は自動的に閉じます。既存の設定は保持されます。"
+; Short screen-reader-friendly messages. The destination edit field displays
+; the actual expanded path for THIS Windows account. No personal path is embedded
+; into these language strings and no redundant intermediate dialog is shown.
+LangString InstallerWelcome ${LANG_ENGLISH} "This wizard installs LReaParams and its offline guides. Close REAPER before continuing. Select Next to choose the resource folder, then Install. When installation is complete, select Finish to close. Existing profiles and settings are preserved."
+LangString InstallerWelcome ${LANG_ITALIAN} "Questa procedura installa LReaParams e le guide offline. Chiudi REAPER prima di continuare. Premi Avanti per scegliere la cartella delle risorse, poi Installa. Al termine premi Fine per chiudere. Profili e impostazioni vengono conservati."
+LangString InstallerWelcome ${LANG_SPANISH} "Este asistente instala LReaParams y las guías sin conexión. Cierra REAPER antes de continuar. Pulsa Siguiente para elegir la carpeta de recursos y después Instalar. Al finalizar, pulsa Finalizar para cerrar. Se conservan los perfiles y ajustes."
+LangString InstallerWelcome ${LANG_FRENCH} "Cet assistant installe LReaParams et les guides hors ligne. Fermez REAPER avant de continuer. Choisissez Suivant pour sélectionner le dossier des ressources, puis Installer. Une fois terminé, choisissez Terminer pour fermer. Vos profils et réglages sont conservés."
+LangString InstallerWelcome ${LANG_RUSSIAN} "Мастер установит LReaParams и автономные руководства. Перед продолжением закройте REAPER. Нажмите «Далее», чтобы выбрать папку ресурсов, затем «Установить». После установки нажмите «Готово», чтобы закрыть окно. Профили и настройки сохраняются."
+LangString InstallerWelcome ${LANG_SIMPCHINESE} "本向导将安装 LReaParams 和离线指南。请先关闭 REAPER。点击“下一步”选择资源文件夹，然后点击“安装”。安装完成后点击“完成”关闭。现有配置和设置将保留。"
+LangString InstallerWelcome ${LANG_JAPANESE} "このウィザードは LReaParams とオフラインガイドをインストールします。先に REAPER を終了してください。「次へ」でリソースフォルダーを選び、「インストール」を選択します。完了後は「完了」で閉じます。既存の設定は保持されます。"
 
-LangString ResourceDirectoryHelp ${LANG_ENGLISH} "Choose the REAPER resource directory (normally $APPDATA\REAPER), NOT the folder containing reaper.exe. For portable REAPER, choose the folder containing reaper.ini. Next/Install starts installation directly; no extra OK is needed. Back changes the previous selection."
-LangString ResourceDirectoryHelp ${LANG_ITALIAN} "Scegli la cartella delle risorse di REAPER (di solito $APPDATA\REAPER), NON la cartella contenente reaper.exe. Per REAPER portatile scegli la cartella con reaper.ini. Avanti/Installa avvia subito la copia; non serve un ulteriore OK. Indietro torna alla schermata precedente."
-LangString ResourceDirectoryHelp ${LANG_SPANISH} "Elige la carpeta de recursos de REAPER (normalmente $APPDATA\REAPER), NO la de reaper.exe. Para REAPER portátil, elige la carpeta con reaper.ini. Siguiente/Instalar inicia la instalación sin otra confirmación. Atrás vuelve a la pantalla anterior."
-LangString ResourceDirectoryHelp ${LANG_FRENCH} "Choisissez le dossier des ressources REAPER (en général $APPDATA\REAPER), PAS celui de reaper.exe. Pour REAPER portable, choisissez le dossier contenant reaper.ini. Suivant/Installer lance directement l'installation ; aucun autre OK. Précédent revient en arrière."
-LangString ResourceDirectoryHelp ${LANG_RUSSIAN} "Выберите папку ресурсов REAPER (обычно $APPDATA\REAPER), а НЕ папку с reaper.exe. Для портативного REAPER выберите папку с reaper.ini. «Далее»/«Установить» сразу запускает установку; дополнительное OK не требуется. «Назад» возвращает назад."
-LangString ResourceDirectoryHelp ${LANG_SIMPCHINESE} "请选择 REAPER 资源文件夹（通常为 $APPDATA\REAPER），而不是 reaper.exe 所在文件夹。便携版请选择包含 reaper.ini 的文件夹。点击“下一步”或“安装”直接开始安装，无需额外确定。“上一步”返回。"
-LangString ResourceDirectoryHelp ${LANG_JAPANESE} "REAPER のリソースフォルダー (通常 $APPDATA\REAPER) を選択してください。reaper.exe があるフォルダーではありません。ポータブル版は reaper.ini のあるフォルダーを選びます。「次へ」/「インストール」で直接開始します。追加の OK は不要です。「戻る」で前画面に戻れます。"
+LangString ResourceDirectoryHelp ${LANG_ENGLISH} "The proposed folder is determined automatically from the current Windows user's REAPER resources. To use portable REAPER, select its folder containing reaper.ini. Then choose Install."
+LangString ResourceDirectoryHelp ${LANG_ITALIAN} "La cartella proposta viene ricavata automaticamente dalle risorse di REAPER dell'utente Windows corrente. Per REAPER portatile scegli la cartella contenente reaper.ini. Poi premi Installa."
+LangString ResourceDirectoryHelp ${LANG_SPANISH} "La carpeta propuesta se determina automáticamente a partir de los recursos de REAPER del usuario actual de Windows. Para REAPER portátil, elige la carpeta que contiene reaper.ini. Después pulsa Instalar."
+LangString ResourceDirectoryHelp ${LANG_FRENCH} "Le dossier proposé est déterminé automatiquement pour l'utilisateur Windows actuel. Pour une version portable de REAPER, choisissez le dossier contenant reaper.ini. Puis choisissez Installer."
+LangString ResourceDirectoryHelp ${LANG_RUSSIAN} "Предложенная папка определяется автоматически для текущего пользователя Windows. Для портативного REAPER выберите папку с reaper.ini. Затем нажмите «Установить»."
+LangString ResourceDirectoryHelp ${LANG_SIMPCHINESE} "默认文件夹根据当前 Windows 用户的 REAPER 资源目录自动确定。若使用便携版 REAPER，请选择包含 reaper.ini 的文件夹，然后点击“安装”。"
+LangString ResourceDirectoryHelp ${LANG_JAPANESE} "選択候補のフォルダーは現在の Windows ユーザーの REAPER リソースから自動設定されます。ポータブル版は reaper.ini のあるフォルダーを選び、「インストール」を選択してください。"
+
+LangString InstallerFinished ${LANG_ENGLISH} "LReaParams and its offline guides have been installed successfully. Select Finish to close the installer."
+LangString InstallerFinished ${LANG_ITALIAN} "LReaParams e le guide offline sono stati installati correttamente. Premi Fine per chiudere l'installazione."
+LangString InstallerFinished ${LANG_SPANISH} "LReaParams y las guías se han instalado correctamente. Pulsa Finalizar para cerrar el instalador."
+LangString InstallerFinished ${LANG_FRENCH} "LReaParams et les guides ont été installés avec succès. Choisissez Terminer pour fermer l'installation."
+LangString InstallerFinished ${LANG_RUSSIAN} "LReaParams и руководства успешно установлены. Нажмите «Готово», чтобы закрыть установщик."
+LangString InstallerFinished ${LANG_SIMPCHINESE} "LReaParams 和离线指南已成功安装。点击“完成”关闭安装程序。"
+LangString InstallerFinished ${LANG_JAPANESE} "LReaParams とオフラインガイドのインストールが完了しました。「完了」を押して閉じてください。"
 
 LangString DllCopyFailed ${LANG_ENGLISH} "The DLL could not be installed. Please close REAPER and check write permissions, then run the installer again."
 LangString DllCopyFailed ${LANG_ITALIAN} "Impossibile installare la DLL. Chiudi REAPER e controlla i permessi di scrittura, poi riprova."

@@ -1,4 +1,23 @@
-## TEST61.11 — Installer NSIS: navigazione NVDA e chiusura automatica
+## TEST61.12 — Cartella risorse dinamica e schermata Fine / Finish
+
+- La cartella predefinita **non** contiene un nome utente fisso: NSIS risolve
+  `$APPDATA\REAPER` **sul PC dell'utente che esegue il setup**, non su quello
+  che compila l'installer. Ogni utente ha la propria directory in Roaming.
+  `InstallDirRegKey` può proporre il percorso scelto precedentemente dallo
+  stesso utente (utile per REAPER portatile), consultando soltanto HKCU.
+- Le descrizioni del setup in tutte le **7 lingue** non mostrano percorsi
+  personali né istruzioni su precedenti finestre modali. Il campo destinazione
+  mostra invece la vera cartella selezionata, sempre modificabile.
+- Dopo **Installa** viene mostrata una pagina di completamento tradotta.
+  **Fine** in italiano / **Finish** in inglese chiude il programma. Non è
+  richiesto un altro pulsante dopo Fine.
+- Nessuna modifica al C++ della DLL, ai file installati o alla disinstallazione;
+  gli archivi esistenti di GitHub Actions sono conservati.
+
+**Senza build locale:** provare su GitHub Actions e in Windows con NVDA.
+Verifica statica: `python Testing/test61_12_installer_path_finish_static.py`.
+
+## TEST61.11 — Installer NSIS: navigazione NVDA (comportamento finale sostituito da TEST61.12)
 
 Solo il file `Installer/LReaParams.nsi` e i test/documenti del setup sono stati
 modificati; il codice C++ della DLL resta quello della TEST61.10.
