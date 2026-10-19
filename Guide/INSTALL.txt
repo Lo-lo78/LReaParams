@@ -1,0 +1,32 @@
+LReaParams 0.0.61 — multilingual user guides
+
+Install the DLL and ALL Guide files into the REAPER resource directory:
+
+  REAPER resource path\UserPlugins\reaper_lreaparams.dll
+  REAPER resource path\LReaParams\Guide\index.html
+  REAPER resource path\LReaParams\Guide\LReaParams - FX Params.html
+  REAPER resource path\LReaParams\Guide\LReaParams - Track Params.html
+  REAPER resource path\LReaParams\Guide\it\index.html
+  REAPER resource path\LReaParams\Guide\es\index.html
+  REAPER resource path\LReaParams\Guide\fr\index.html
+  REAPER resource path\LReaParams\Guide\ru\index.html
+  REAPER resource path\LReaParams\Guide\zh-CN\index.html
+  REAPER resource path\LReaParams\Guide\ja\index.html
+
+In REAPER's Main Action List, run:
+  LReaParams: Open User Guide
+You can assign it a custom keyboard shortcut.
+It opens index.html in the default browser, presenting the language list first.
+The same command is in Extensions > LReaParams > Open User Guide.
+
+If Guide/index.html is missing, the DLL shows a clear installation message.
+The original detailed English guides remain available alongside the
+translated functional references, which cover the main pages and key controls.
+Translations are concise functional references; for expanded explanations,
+use the 'Full English reference' link in each translated manual.
+
+INSTALLAZIONE IN ITALIANO:
+  Copia reaper_lreaparams.dll in UserPlugins e tutta la cartella Guide
+  in LReaParams\Guide all'interno della directory delle risorse di REAPER.
+  Nell'elenco azioni esegui LReaParams: Open User Guide.
+  La prima pagina offre la scelta della lingua, poi FX Params o Track Params.

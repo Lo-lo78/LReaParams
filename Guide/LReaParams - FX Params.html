@@ -1,0 +1,391 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LReaParams 0.0.61 — FX Params guide</title><style>
+:root{color-scheme:light dark}body{font:1.04rem/1.65 system-ui,'Segoe UI',sans-serif;max-width:76rem;margin:0 auto;padding:1.2rem 1.4rem}h1{font-size:2rem}h2{margin-top:2.1rem;border-bottom:1px solid #7776;padding-bottom:.25rem}h3{margin-top:1.4rem}a:focus-visible{outline:3px solid #d58a00;outline-offset:3px}nav{border:1px solid #8888;border-radius:.45rem;padding:.6rem 1.1rem}nav ul{columns:2;column-gap:2rem;list-style:disc}nav li{break-inside:avoid}nav li.sub{margin-left:1.5rem}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #8888;text-align:left;padding:.45rem .65rem;vertical-align:top}th{font-weight:700;background:#8881}code{word-break:break-word}.skip{position:absolute;left:-9999px}.skip:focus{position:static}footer{margin:3rem 0;border-top:1px solid #8888;padding-top:1rem}@media(max-width:700px){nav ul{columns:1}}
+</style></head><body><a class="skip" href="#main">Skip to guide</a><header><p><a href="index.html">Select language</a> · <a href="index.html">Guide home</a> · <a href="LReaParams%20-%20Track%20Params.html">Companion guide</a></p></header><main id="main"><h1>LReaParams — FX Params</h1><p><strong>Version 0.0.61 · Native REAPER extension · User guide</strong></p><nav aria-label="Guide contents"><h2>Contents</h2><ul><li><a href="#1-installation-actions-and-accessibility">1. Installation, actions and accessibility</a></li><li><a href="#2-main-navigation-and-grids">2. Main navigation and grids</a></li><li class="sub"><a href="#main-fx-shortcuts">Main FX shortcuts</a></li><li><a href="#3-internal-fx-browser-f10">3. Internal FX browser — F10</a></li><li><a href="#4-audio-pin-connector-f11-moved-from-track-params">4. Audio Pin Connector — F11 (moved from Track Params)</a></li><li><a href="#5-parameter-views-custom-order-f7-and-groups">5. Parameter views, Custom order, F7 and Groups</a></li><li class="sub"><a href="#fx-memories-is-not-f8">FX Memories is not F8</a></li><li><a href="#6-compare-a-b-f8">6. Compare A/B — F8</a></li><li><a href="#7-midi-cc-control-speech-and-automation">7. MIDI CC control, speech and automation</a></li><li><a href="#8-reaeq-reacomp-reagate-and-fx-commands">8. ReaEQ, ReaComp, ReaGate and FX commands</a></li><li><a href="#9-search-clipboard-and-default">9. Search, clipboard and Default</a></li><li><a href="#10-shared-transport-timeline-and-osara-peak-watcher">10. Shared transport, timeline and OSARA Peak Watcher</a></li><li><a href="#11-saved-data-and-old-lua-migration">11. Saved data and old Lua migration</a></li></ul></nav>
+
+<p>This is the replacement for the old <em>Speak FX Params - TrackTake Navigator</em> Lua guide (0.346). It describes the native <code>reaper_lreaparams.dll</code>, using the Lua guide as the functional starting point and the current C++ source as the authority for changed behavior. The companion <a href="LReaParams%20-%20Track%20Params.html">Track Params guide</a> documents track controls and routing. No Stretch Marker script is part of LReaParams.</p>
+<h2 id="1-installation-actions-and-accessibility">1. Installation, actions and accessibility</h2>
+<p>Put <code>reaper_lreaparams.dll</code> in REAPER's <strong>UserPlugins</strong> folder inside its resource path, restart REAPER, and locate <strong>LReaParams: FX Params</strong> and <strong>LReaParams: Track Params</strong> in the Action List. Assign the preferred global shortcuts there. The DLL does <strong>not</strong> require <code>Open FX Params.lua</code>, <code>Open Track Params.lua</code>, or the two original Lua navigators as launcher actions. Those Lua files are historical references, not commands to run alongside the DLL.</p>
+<p>OSARA is required for spoken messages and shortcut-help coordination; NVDA reads the native keyboard window, its title/review, and standard Windows text-edit controls. <strong>NVDA+Up</strong> reviews the selected control; <strong>Tab</strong> requests fuller context. Keyboard capture applies only while the LReaParams navigator owns focus. If OSARA shortcut help is enabled, navigator keys are not executed as ordinary edits. Do not treat this window like a global keyboard hook.</p>
+<p>To switch to the other workspace, use <strong>Ctrl+Tab</strong>. <strong>Esc</strong> backs out of the current editor or page and eventually exits the navigator. <strong>Ctrl+Q</strong> returns focus to REAPER while allowing the supported MIDI live-control session to stay active; it is not the same as Esc. Use the REAPER action <strong>LReaParams: Stop background MIDI</strong> to stop background MIDI explicitly.</p>
+<h2 id="2-main-navigation-and-grids">2. Main navigation and grids</h2>
+<p>FX Params navigates track FX, take FX, Master FX, and monitoring FX within their valid contexts. Each parameter is a cell in a grid. Normal arrow keys navigate; the exact horizontal spacing depends on the grid width. <strong>F1/F2</strong> decrease/increase the grid column count. <strong>F3</strong> reviews grid/step information. <strong>Home/End</strong> and <strong>Ctrl+Home/End</strong> navigate to local or overall boundaries as appropriate; navigation stops silently at an edge. <strong>Tab</strong> speaks the full current context; the backslash key gives a concise context announcement. Letters, digits and printable punctuation cycle through matching visible parameter names; Shift plus a printable character searches backward. The actual Windows keyboard layout is used.</p>
+<p><strong>Enter</strong> switches between Grid and Value for an editable parameter. In Value mode, Up/Down adjust rather than navigate; <strong>Esc</strong> returns to Grid. <strong>Alt+Up/Down</strong> adjusts the current value directly from Grid. <strong>Alt+Page Up/Down</strong> uses a coarser increment; <strong>Alt+Home/End</strong> moves to the parameter's limits. <strong>Alt+Left/Right</strong> changes that parameter's step scale from -10 to +10; <strong>Ctrl+Backspace</strong> restores Grid 10 and Step 0. Per-parameter steps are retained by the profile. <strong>Ctrl+E</strong> opens a real accessible numeric EDIT field, Enter commits and Esc cancels. If the host can only provide normalized/raw units, the edit identifies them: do not assume that a typed number is dB or Hz.</p>
+<p><strong>Backspace</strong> restores a parameter's default; <strong>Ctrl+Shift+Backspace</strong> invokes the broader saved Default restoration workflow (with structured ReaEQ handling where supported). <strong>Ctrl+T</strong> affects speech generated by MIDI CC for the current parameter; ordinary grid announcements and NVDA review are separate.</p>
+<h3 id="main-fx-shortcuts">Main FX shortcuts</h3>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Arrows; Home/End; Page Up/Down</td>
+<td>Move through the FX parameter grid, except in Value mode</td>
+</tr>
+<tr>
+<td>F1 / F2</td>
+<td>Reduce / increase grid columns</td>
+</tr>
+<tr>
+<td>F3; Tab; backslash</td>
+<td>Step/grid information; full review; short review</td>
+</tr>
+<tr>
+<td>Enter / Esc</td>
+<td>Enter or leave Value; context-sensitive return</td>
+</tr>
+<tr>
+<td>Alt+Up/Down; Alt+Page Up/Down</td>
+<td>Fine/coarse value adjustment</td>
+</tr>
+<tr>
+<td>Alt+Home/End</td>
+<td>Value maximum/minimum</td>
+</tr>
+<tr>
+<td>Alt+Left/Right</td>
+<td>Parameter step scale -10 through +10</td>
+</tr>
+<tr>
+<td>Ctrl+Backspace</td>
+<td>Reset Grid 10 and the parameter's Step 0</td>
+</tr>
+<tr>
+<td>Ctrl+E</td>
+<td>Numeric editing in a native EDIT control</td>
+</tr>
+<tr>
+<td>Ctrl+Up/Down</td>
+<td>Previous/next FX in the current chain</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+Up/Down</td>
+<td>Previous/next track with FX</td>
+</tr>
+<tr>
+<td>Ctrl+Page Up/Down</td>
+<td>Physically move current FX within its chain</td>
+</tr>
+<tr>
+<td>Ctrl+Left/Right</td>
+<td>Previous/next item containing a suitable take FX</td>
+</tr>
+<tr>
+<td>Ctrl+W</td>
+<td>Return from Take FX to the parent track's FX</td>
+</tr>
+<tr>
+<td>Ctrl+B; Ctrl+Alt+B</td>
+<td>Bypass; FX Offline/Online</td>
+</tr>
+<tr>
+<td>Ctrl+D; Ctrl+Shift+D</td>
+<td>Delta Solo current FX; clear project Delta Solo</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+F</td>
+<td>Open native REAPER FX chain</td>
+</tr>
+<tr>
+<td>Alt+Shift+F</td>
+<td>Open REAPER's native Add FX browser</td>
+</tr>
+<tr>
+<td>Alt+F1 / Alt+F2</td>
+<td>Previous/next host preset</td>
+</tr>
+<tr>
+<td>Alt+F3 / Alt+F4</td>
+<td>Previous/next automated parameter</td>
+</tr>
+<tr>
+<td>Ctrl+F; Ctrl+R</td>
+<td>Parameter search; recent-search history</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+R</td>
+<td>Full FX context review</td>
+</tr>
+<tr>
+<td>Ctrl+Tab</td>
+<td>Change between FX Params and Track Params</td>
+</tr>
+<tr>
+<td>Ctrl+Q</td>
+<td>Leave navigation while preserving eligible live MIDI control</td>
+</tr>
+<tr>
+<td>Space / Ctrl+Space</td>
+<td>REAPER Play/Stop / Play-Pause</td>
+</tr>
+<tr>
+<td>F7</td>
+<td>Structural edit of order/group where allowed</td>
+</tr>
+<tr>
+<td>F8</td>
+<td>Compare Original and Edited sound, <strong>not</strong> Memories</td>
+</tr>
+<tr>
+<td>F10</td>
+<td>Internal FX browser ↔ selected FX grid</td>
+</tr>
+<tr>
+<td>F11</td>
+<td>Audio Pin Connector for the selected FX</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+M</td>
+<td>FX Memories manager</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-internal-fx-browser-f10">3. Internal FX browser — F10</h2>
+<p><strong>F10</strong> opens the internal FX browser from the parameter grid; in the browser, <strong>F10</strong> (or Enter on the selected FX) loads the highlighted FX into its parameter grid. <strong>Ctrl+P no longer opens the browser</strong>: it was removed in version 0.0.61. The browser tracks FX in the current scope, with separate Master and Monitor columns when navigating that context; Left/Right switch between those two chains. The browser offers vertical selection, page jumps, first/last selection, first-character search, Tab review, bypass/offline/Delta Solo, and moving an FX without confusing movement with selection.</p>
+<p><strong>Ctrl+Up/Down</strong> changes the selected FX, <strong>Ctrl+Page Up/Down</strong> physically reorders it, and <strong>Ctrl+Shift+Up/Down</strong> moves to another track with FX while staying in the browser. <strong>Ctrl+B</strong>, <strong>Ctrl+Alt+B</strong>, <strong>Ctrl+D</strong>, and <strong>Ctrl+Shift+D</strong> preserve their FX actions. From the browser <strong>F11</strong> selects the focused FX and enters its audio pin matrix, if it has usable pins. <strong>Ctrl+Shift+F</strong> and <strong>Alt+Shift+F</strong> open the native REAPER windows rather than the internal browser.</p>
+<h2 id="4-audio-pin-connector-f11-moved-from-track-params">4. Audio Pin Connector — F11 (moved from Track Params)</h2>
+<p>This page is <strong>inside FX Params</strong>, not Track Params. Open <strong>F11</strong> from Grid, Value, F7, or the internal browser, on an FX with audio pins. It works for supported <strong>Track FX, Take FX and Monitor FX</strong>. Each column is an input or output audio pin; each row is an existing track audio channel. The display covers channels <strong>1–128</strong> where the context and host provide them, using REAPER's two pin-mapping banks. It does not increase the track's channel count and does not manage MIDI pins.</p>
+<table>
+<thead>
+<tr>
+<th>Keys in F11</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Left / Right</td>
+<td>Previous / next input or output pin</td>
+</tr>
+<tr>
+<td>Up / Down</td>
+<td>Previous / next track channel</td>
+</tr>
+<tr>
+<td>Home / End</td>
+<td>First / last channel of current pin</td>
+</tr>
+<tr>
+<td>Page Up / Page Down</td>
+<td>Five channels back / forward</td>
+</tr>
+<tr>
+<td>Ctrl+Home / Ctrl+End</td>
+<td>Absolute first / last cell</td>
+</tr>
+<tr>
+<td>Ctrl+Up / Ctrl+Down</td>
+<td>Find connected cell in current pin column</td>
+</tr>
+<tr>
+<td>Ctrl+Left / Ctrl+Right</td>
+<td>Find connected cell along current channel row</td>
+</tr>
+<tr>
+<td>Ctrl+Alt+arrow</td>
+<td>Scan the overall matrix for connected cells</td>
+</tr>
+<tr>
+<td>Enter or Space</td>
+<td>Connect/disconnect the focused cell</td>
+</tr>
+<tr>
+<td>Delete</td>
+<td>Disconnect focused cell (no effect on an empty cell)</td>
+</tr>
+<tr>
+<td>Tab or F11</td>
+<td>Review current cell and its track/pin context</td>
+</tr>
+<tr>
+<td>Escape</td>
+<td>Restore original FX parameter and Grid/Value/F7 state</td>
+</tr>
+<tr>
+<td>F10</td>
+<td>Leave pin matrix for FX browser</td>
+</tr>
+</tbody>
+</table>
+<p>An occupied cell begins with the concise announcement <strong>“Attive. Input 1 left. Receives from track channel 1”</strong> (similarly for Output). An empty cell has <strong>no “Disconnected” prefix</strong>: for example “Input 2 right. Receives from track channel 1”. The change is written through REAPER pin-mapping APIs with undo and readback checks. The GUID/context check avoids editing the wrong FX after a chain change. <strong>Do not use the old Track F5 or Ctrl+S pin workflow.</strong></p>
+<h2 id="5-parameter-views-custom-order-f7-and-groups">5. Parameter views, Custom order, F7 and Groups</h2>
+<p><strong>Plugin order</strong> follows the FX's actual parameters and is the protected baseline. <strong>Custom order</strong> is a separately saved view that can rearrange, hide, duplicate or rename displayed occurrences without changing the plugin's real parameter numbers. <strong>Groups</strong> are independent ordered sets; changing a Group does not reorder Custom, and changing Custom does not rewrite a Group. A loaded Group can remember its last navigation position. The stored data are tied to each FX profile, not to arbitrary names in a global Parameter Library.</p>
+<p><strong>F7</strong> is the deliberate structural-edit workspace: it handles selections (including snake/range selection), group or custom rearrangement, Copy/Cut/Paste of parameter occurrences, hiding/unhiding where permitted, and rename actions. Plugin order remains a reference rather than an editable reordering target. Use the available Custom/Group edit path for structural changes and leave F7 to return to ordinary parameter-value operation. <strong>Shift+arrow</strong> selects cells in F7 (the first shift movement anchors the current cell); <strong>Ctrl+Shift+Home/End</strong> extends selection to global edges; <strong>Alt+Shift+arrows</strong> travels between selected cells by grid geometry without altering selection. F7 selection and the normal parameter grid are deliberately different.</p>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>F7 / view action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F7</td>
+<td>Enter or leave structural editing, when available</td>
+</tr>
+<tr>
+<td>Shift+arrows, Shift+Home/End/Page</td>
+<td>Select a path/range in grid order</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+Home/End</td>
+<td>Extend selection to the absolute view boundary</td>
+</tr>
+<tr>
+<td>Alt+Shift+arrows</td>
+<td>Navigate selected cells only</td>
+</tr>
+<tr>
+<td>Ctrl+A</td>
+<td>Select all in applicable edit view</td>
+</tr>
+<tr>
+<td>Ctrl+C / Ctrl+X / Ctrl+V</td>
+<td>Copy, cut, paste occurrences inside permitted F7 contexts</td>
+</tr>
+<tr>
+<td>Ctrl+Z / Ctrl+Y</td>
+<td>Edit undo/redo in structural context</td>
+</tr>
+<tr>
+<td>Ctrl+Delete</td>
+<td>Hide/remove selected occurrences where permitted</td>
+</tr>
+<tr>
+<td>Ctrl+Enter</td>
+<td>Rename group or parameter according to selected slot mode</td>
+</tr>
+<tr>
+<td>Alt+G / Alt+M</td>
+<td>Select Group slots / parameter-position Memory slots</td>
+</tr>
+<tr>
+<td>Ctrl+F1…F12</td>
+<td>Recall group or parameter memory in chosen mode</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+F1…F12</td>
+<td>Save selected group or parameter memory slot</td>
+</tr>
+<tr>
+<td>Ctrl+L</td>
+<td>Switch Plugin/Custom order when a Custom order exists and no Group blocks it</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+M</td>
+<td>Open the dedicated FX Memories manager</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cut is local</strong> to the edit container; <strong>Copy can transfer</strong> a selection into another eligible edit context. In a loaded Group, the separate All parameters view is a copy source rather than permission to destroy unrelated parameters. Renaming is intentional in F7. F7 search is a lens: filtering does not require destroying selection. Positions remembered for Group slots are independent from Custom order.</p>
+<h3 id="fx-memories-is-not-f8">FX Memories is not F8</h3>
+<p>Press <strong>Ctrl+Shift+M</strong> or invoke the dedicated <strong>LReaParams: FX Memories</strong> REAPER action. Its columns manage saved parameter positions, Groups, copied/hidden entries, learned MIDI mappings, Default snapshots and the available profile categories. Left/Right chooses a column, Up/Down chooses an entry, Tab reviews, Enter opens/applies where supported, Delete removes or requests confirmation for destructive operations. A saved <strong>Default</strong> can restore FX values without erasing unrelated memories. Its protected Delete/reset procedure explicitly confirms before changing the stored memory configuration. Esc returns to navigation. The Lua-era instruction <em>“F7 then F8 for the memory manager”</em> is obsolete.</p>
+<h2 id="6-compare-a-b-f8">6. Compare A/B — F8</h2>
+<p><strong>F8 once</strong> toggles <strong>Original</strong> and <strong>Compare/Edited</strong> snapshots for the current FX. Original is initially captured from the real sound when the FX is first entered; opening the navigator does not apply a snapshot or change the sound. Changes made on Compare can be recalled after listening to Original. <strong>Press F8 twice quickly</strong> to update the Original reference from the currently audible sound <strong>without toggling sides</strong>. The short delay before a single F8 action is intentional so Windows' double-press interval can be recognized. A/B snapshots are session/FX-instance state, not new plugin parameters; they survive reopening the navigator within the same REAPER session but not a new REAPER session. The former in-grid Compare virtual parameter is removed.</p>
+<h2 id="7-midi-cc-control-speech-and-automation">7. MIDI CC control, speech and automation</h2>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>MIDI / automation action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ctrl+Alt+C</td>
+<td>Arm fixed CC Learn on current parameter; next new MIDI CC assigns it</td>
+</tr>
+<tr>
+<td>Escape during Learn</td>
+<td>Cancel pending Learn</td>
+</tr>
+<tr>
+<td>Delete during Learn</td>
+<td>Remove the current saved fixed CC link</td>
+</tr>
+<tr>
+<td>Shift+C</td>
+<td>Switch the fixed MIDI CC map on/off</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+C</td>
+<td>Arm or switch off Floating CC (one temporary controller follows current parameter)</td>
+</tr>
+<tr>
+<td>Ctrl+T</td>
+<td>Switch MIDI CC speech on/off <strong>for the current parameter</strong></td>
+</tr>
+<tr>
+<td>Ctrl+Shift+A</td>
+<td>Show/arm or hide/disarm current FX parameter envelope</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+Alt+A</td>
+<td>Start confirmed automation-clear action for current FX context</td>
+</tr>
+<tr>
+<td>Alt+F3/F4</td>
+<td>Previous/next parameter with real automation</td>
+</tr>
+</tbody>
+</table>
+<p>Fixed assignments are stored with the FX profile and use pickup/soft takeover; duplicate CC bindings can be reassigned. Floating CC is temporary and follows whichever supported parameter is selected, temporarily taking priority over fixed mappings. MIDI speech defaults to off per parameter; Ctrl+T does not mute normal navigation. <strong>Ctrl+Q</strong> may leave eligible MIDI processing running with REAPER focus. Automation indications such as <strong>Auto</strong> come from actual REAPER envelopes, not a purely visual flag. Destructive automation clearing is confirmed before execution; do not confuse it with the per-parameter Ctrl+Shift+A toggle.</p>
+<h2 id="8-reaeq-reacomp-reagate-and-fx-commands">8. ReaEQ, ReaComp, ReaGate and FX commands</h2>
+<p>For recognized Cockos effects the DLL offers the migrated virtual handling documented by the original Lua: <strong>ReaEQ</strong> per-band frequency/gain/bandwidth/type navigation, and special <strong>ReaComp / ReaGate</strong> controls with host readback. Real plugin values and REAPER envelopes remain the source of truth; the guide does not imply that every third-party FX exposes such virtual controls. Presets use <strong>Alt+F1/F2</strong>, bypass <strong>Ctrl+B</strong>, Delta Solo <strong>Ctrl+D</strong>, offline <strong>Ctrl+Alt+B</strong>, and FX movement <strong>Ctrl+Page Up/Down</strong>. Preserve the FX chain context when moving between track, take, Master and Monitor chains.</p>
+<h2 id="9-search-clipboard-and-default">9. Search, clipboard and Default</h2>
+<p><strong>Ctrl+F</strong> starts an accessible search by displayed parameter label, with Enter to accept and Esc to cancel. <strong>Ctrl+R</strong> opens saved recent searches, and <strong>Ctrl+Shift+R</strong> reads the broader FX context. The search filter affects current visible results, not the real FX parameter numbers. Outside structural editing, <strong>Ctrl+C</strong> copies a value, <strong>Ctrl+V</strong> pastes compatible value/snapshot data, and <strong>Ctrl+Alt+Shift+C</strong> copies a whole-FX snapshot. Within F7 these same clipboard keys are structural instead. Standard Windows Ctrl+A/C/X/V remains available in text EDIT fields. The Default snapshot management in FX Memories is separate from restoring a <em>single</em> parameter with Backspace.</p>
+<h2 id="10-shared-transport-timeline-and-osara-peak-watcher">10. Shared transport, timeline and OSARA Peak Watcher</h2>
+<p>These commands work in both FX Params and Track Params while the appropriate navigator view owns focus; they do not hijack native text fields or confirmation prompts.</p>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Space</td>
+<td>REAPER Play/Stop; resume playback from pause</td>
+</tr>
+<tr>
+<td>Ctrl+Space</td>
+<td>REAPER Play/Pause (native action)</td>
+</tr>
+<tr>
+<td>Ctrl+1…9; Ctrl+0</td>
+<td>Jump to markers 1–9 and 10; fallback to position in time order</td>
+</tr>
+<tr>
+<td>Ctrl+I / Ctrl+O</td>
+<td>Previous / next marker (regions are excluded)</td>
+</tr>
+<tr>
+<td>Ctrl+Alt+Page Up/Down</td>
+<td>Move timeline one beat backward/forward</td>
+</tr>
+<tr>
+<td>Alt+Shift+Page Up/Down</td>
+<td>Move timeline one bar backward/forward</td>
+</tr>
+<tr>
+<td>Ctrl+Alt+Shift+Page Up/Down</td>
+<td>Move to neighboring/current bar boundary</td>
+</tr>
+<tr>
+<td>Alt+F10/F11/F12</td>
+<td>OSARA Peak Watcher 1 reset / channel 1 / channel 2</td>
+</tr>
+<tr>
+<td>Alt+Shift+F10/F11/F12</td>
+<td>OSARA Peak Watcher 2 reset / channel 1 / channel 2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>F10 and F11 without Alt</strong> belong to the FX Browser and Pin Connector; the combinations <strong>with Alt</strong> belong to OSARA Peak Watcher. <strong>Bare F12</strong> remains reserved; <strong>Ctrl+F12</strong> is memory/group slot 12. All these keys assume an active matching view, rather than remapping REAPER globally.</p>
+<h2 id="11-saved-data-and-old-lua-migration">11. Saved data and old Lua migration</h2>
+<p>The DLL uses its own data tree at <strong><code>REAPER resource path/LReaParams/</code></strong>; FX profiles live in <code>Plugins</code> (typically <strong><code>.fx</code></strong> files), track/project data in <code>Tracks</code> (<strong><code>.tp</code></strong>), along with its other Settings/Backups locations. It can import relevant historical Lua TXT layouts on first run/import without requiring the Lua scripts to execute. REAPER itself remains responsible for storing plugin state, real envelopes, routing and take/track FX chains in the project.</p>
+<p>Some historical Lua behaviors do <strong>not</strong> carry over literally: Parameter Library is <strong>excluded</strong>; F8 is A/B Compare rather than an F8 memory manager; Ctrl+P is <strong>not</strong> the browser; the pin connector is <strong>F11 here</strong>, not Track F5. Do not run Lua and native navigators simultaneously. This guide is aligned to the <strong>0.0.61 TEST61.4 source</strong>, not proof that a particular downloaded DLL has completed GitHub Actions build and NVDA/REAPER runtime verification.</p>
+</main><footer><p>LReaParams 0.0.61 · Original Lua guides consulted for migration · Native C++ implementation is authoritative for shortcuts.</p><p><a href="#main">Return to top</a></p></footer></body></html>

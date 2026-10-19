@@ -1,0 +1,246 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LReaParams 0.0.61 — Track Params guide</title><style>
+:root{color-scheme:light dark}body{font:1.04rem/1.65 system-ui,'Segoe UI',sans-serif;max-width:76rem;margin:0 auto;padding:1.2rem 1.4rem}h1{font-size:2rem}h2{margin-top:2.1rem;border-bottom:1px solid #7776;padding-bottom:.25rem}h3{margin-top:1.4rem}a:focus-visible{outline:3px solid #d58a00;outline-offset:3px}nav{border:1px solid #8888;border-radius:.45rem;padding:.6rem 1.1rem}nav ul{columns:2;column-gap:2rem;list-style:disc}nav li{break-inside:avoid}nav li.sub{margin-left:1.5rem}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #8888;text-align:left;padding:.45rem .65rem;vertical-align:top}th{font-weight:700;background:#8881}code{word-break:break-word}.skip{position:absolute;left:-9999px}.skip:focus{position:static}footer{margin:3rem 0;border-top:1px solid #8888;padding-top:1rem}@media(max-width:700px){nav ul{columns:1}}
+</style></head><body><a class="skip" href="#main">Skip to guide</a><header><p><a href="index.html">Select language</a> · <a href="index.html">Guide home</a> · <a href="LReaParams%20-%20FX%20Params.html">Companion guide</a></p></header><main id="main"><h1>LReaParams — Track Params</h1><p><strong>Version 0.0.61 · Native REAPER extension · User guide</strong></p><nav aria-label="Guide contents"><h2>Contents</h2><ul><li><a href="#1-installation-and-main-idea">1. Installation and main idea</a></li><li><a href="#2-current-track-params-pages-changed-in-0-0-61">2. Current Track Params pages — changed in 0.0.61</a></li><li><a href="#3-f1-tracks">3. F1 — tracks</a></li><li class="sub"><a href="#f1-creating-sends-and-receives">F1 creating sends and receives</a></li><li class="sub"><a href="#f1-automation">F1 automation</a></li><li><a href="#4-f2-sends-and-f3-receives">4. F2 Sends and F3 Receives</a></li><li><a href="#5-f4-fx-controls-visible-in-the-tcp">5. F4 — FX controls visible in the TCP</a></li><li class="sub"><a href="#add-missing-fx-tcp-controls-from-f4">Add missing FX TCP controls from F4</a></li><li><a href="#6-f5-track-midi-formerly-f6">6. F5 — Track MIDI (formerly F6)</a></li><li><a href="#7-f6-physical-hardware-outputs-formerly-f7">7. F6 — Physical Hardware Outputs (formerly F7)</a></li><li class="sub"><a href="#create-an-output-entirely-with-the-keyboard">Create an output entirely with the keyboard</a></li><li><a href="#8-f7-rearoute-bridge-formerly-f8">8. F7 — ReaRoute bridge (formerly F8)</a></li><li><a href="#9-common-value-controls-and-memory">9. Common value controls and memory</a></li><li><a href="#10-fixed-midi-cc-floating-cc-and-speech">10. Fixed MIDI CC, Floating CC and speech</a></li><li><a href="#11-filters-initial-letter-search-transport-and-markers">11. Filters, initial-letter search, transport and markers</a></li><li><a href="#12-automation-storage-and-migration-notes">12. Automation, storage and migration notes</a></li></ul></nav>
+
+<p>This replaces the old <em>Speak Track Params - TrackTake Navigator</em> Lua guide (0.184). It retains the track/navigation/routing workflow while reflecting the <strong>actual C++ DLL page layout</strong>. For full FX parameter grids, Compare and the Audio Pin Connector, open the companion <a href="LReaParams%20-%20FX%20Params.html">FX Params guide</a>. The separate Stretch Marker script is unrelated and is deliberately omitted.</p>
+<h2 id="1-installation-and-main-idea">1. Installation and main idea</h2>
+<p>Install <code>reaper_lreaparams.dll</code> under <strong>UserPlugins</strong> in REAPER's resource path, restart REAPER, and assign a keyboard shortcut to <strong>LReaParams: Track Params</strong> in REAPER's Action List. Assign <strong>LReaParams: FX Params</strong> separately. Old launcher Lua actions and background Lua scripts are <strong>not needed</strong> for the DLL. OSARA provides speech support and NVDA can review its native keyboard window and Windows EDIT controls.</p>
+<p>In the navigator, <strong>F1–F7</strong> choose the seven track pages, <strong>Tab</strong> reads expanded context and <strong>NVDA+Up</strong> reviews the current field. Arrows navigate the active layout; <strong>Enter</strong> toggles editable values or opens linked operations; <strong>Alt+arrows</strong> edit supported values. <strong>Ctrl+Tab</strong> switches to the FX Params navigator if the current context has an FX; with no FX, Track Params remains open. <strong>Ctrl+Q</strong> returns focus to REAPER while supported live MIDI control continues. <strong>Esc</strong> cancels a pending operation, exits Value, goes back to Tracks, or exits the navigator depending on context.</p>
+<h2 id="2-current-track-params-pages-changed-in-0-0-61">2. Current Track Params pages — changed in 0.0.61</h2>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Current use</th>
+<th>Former Lua 0.184 page</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>F1</strong></td>
+<td>Tracks: track control grid</td>
+<td>F1 Tracks</td>
+</tr>
+<tr>
+<td><strong>F2</strong></td>
+<td>Sends from the current track</td>
+<td>F2 Sends</td>
+</tr>
+<tr>
+<td><strong>F3</strong></td>
+<td>Receives of the current track</td>
+<td>F3 Receives</td>
+</tr>
+<tr>
+<td><strong>F4</strong></td>
+<td>Track FX controls exposed in REAPER TCP</td>
+<td>F4 FX TCP</td>
+</tr>
+<tr>
+<td><strong>F5</strong></td>
+<td>Track MIDI settings</td>
+<td>Previously F6</td>
+</tr>
+<tr>
+<td><strong>F6</strong></td>
+<td>Physical hardware audio outputs, including <strong>Add hardware output</strong></td>
+<td>Previously F7</td>
+</tr>
+<tr>
+<td><strong>F7</strong></td>
+<td>ReaRoute virtual audio bridge</td>
+<td>Previously F8</td>
+</tr>
+</tbody>
+</table>
+<p><strong>F8 is not a Track Params page.</strong> The old Track F5 <strong>Audio Pin Connector</strong> was removed from this navigator; open <strong>FX Params and press F11</strong> instead. Saved <code>.tp</code> page/cursor positions have a one-time page-layout migration in the DLL so the previous MIDI/hardware/ReaRoute positions can be reused. Make a backup of a project profile when first testing a migrated copy.</p>
+<h2 id="3-f1-tracks">3. F1 — tracks</h2>
+<p>Each visible TCP track is a row; the nine fields are <strong>Volume, Pan, Width, Mute, Solo, Phase invert, Send count, Receive count and FX count</strong>. <strong>Up/Down</strong> changes the visible track while keeping the field; <strong>Left/Right</strong> changes the field. <strong>Home/End</strong> selects the first/last field; <strong>Ctrl+Home/End</strong> jumps to first/last visible track. Page Up/Down moves by pages, and repeated initial letters cycle through visible tracks. Folder states and end-of-folder boundaries are spoken, including nested folders.</p>
+<p><strong>Enter</strong> on Volume/Pan/Width opens or leaves Value mode; on Mute/Solo/Phase it toggles the state; on Send count/Receive count/FX count it opens <strong>F2/F3/F4</strong>. <strong>Ctrl+Enter</strong> opens/closes a folder when the current track participates in a folder, including the innermost end-folder when applicable. <strong>Ctrl+Alt+Up/Down</strong> navigates to the previous/next visible folder. These commands replace older Lua instructions where plain Enter was used to fold and Ctrl+Alt+Page was used for folder navigation.</p>
+<p><strong>Shift+Space</strong> toggles track selection; <strong>Ctrl+A</strong> selects all visible tracks; <strong>Delete</strong> deselects the focused track; <strong>Ctrl+Shift+Delete</strong> clears the track selection. <strong>Shift+Up/Down/Page</strong> extends a range; <strong>Ctrl+Shift+Up/Down</strong> extends to a list boundary. Keep selection separate from the spoken cursor. <strong>Ctrl+C</strong>, <strong>Ctrl+X</strong> and <strong>Ctrl+V</strong> copy/cut/paste REAPER tracks with routing (SWS/S&amp;M is used where required). <strong>Alt+Shift+Up/Down</strong> moves selected tracks with folder-aware treatment. If a filter is active, clear it before attempting folder moves that conflict with filtered positions.</p>
+<h3 id="f1-creating-sends-and-receives">F1 creating sends and receives</h3>
+<p><strong>Ctrl+Shift+S</strong> creates sends in a two-pass operation: select <strong>source</strong> track(s), invoke the shortcut, then select <strong>destination</strong> track(s) and invoke it again. <strong>Ctrl+Shift+R</strong> does the inverse setup for receives: select destinations first, then sources. <strong>Tab</strong> reports the pending operation. <strong>Esc</strong> cancels the pending routing step without destroying unrelated routing. F2/F3 also let you jump into an existing send/receive pair through their header field.</p>
+<h3 id="f1-automation">F1 automation</h3>
+<p><strong>Ctrl+Shift+A</strong> toggles supported real REAPER track envelopes for <strong>Volume, Pan, Width and Mute</strong>. When an envelope is active its value may be announced with <strong>Auto</strong>. Count fields and unrelated toggles are not all automatable. <strong>Ctrl+Shift+Alt+A</strong> begins a <em>confirmed</em> delete-all-automation operation for the current track, including its supported track, send, receive and FX envelopes. The initial answer is <strong>No</strong>; Left/Right selects, Enter confirms the choice, Y confirms directly and Esc/N cancels.</p>
+<h2 id="4-f2-sends-and-f3-receives">4. F2 Sends and F3 Receives</h2>
+<p>Each routing instance occupies a <strong>column</strong>; its attributes occupy <strong>14 rows</strong>. Left/Right switches send/receive, Up/Down moves through that instance's properties; Tab reads the routing identity and full context. A header's <strong>Enter</strong> jumps to the corresponding receive/send when available. <strong>Ctrl+Up/Down</strong> finds the previous/next visible track with routing of the page's type. <strong>Delete</strong> removes the currently selected send/receive (with REAPER Undo), rather than merely hiding it. These functions work on real REAPER routing instances, including multiple sends to the same destination.</p>
+<p>Common attributes include <strong>Volume</strong>, <strong>Pan</strong>, <strong>Mute</strong>, <strong>Phase</strong>, <strong>Mono</strong>, <strong>MIDI follows fader</strong>, audio source mode and source/destination channel selection, send mode/type, MIDI source/destination channel and MIDI source/destination bus. Source/destination channel pairs support REAPER routing up to <strong>128 channels</strong>, where the host and track configuration allow it. MIDI source and destination buses use their own valid ranges; MIDI merge follows source settings rather than being a free toggle. <strong>Enter</strong> toggles a boolean, opens Value for supported editable data, or reports status when the field is read-only. <strong>Alt+Up/Down</strong> modifies a value, <strong>Alt+Page Up/Down</strong> modifies in coarse steps, <strong>Alt+Home/End</strong> selects its limits. <strong>Alt+Left/Right</strong> adjusts the remembered step scale.</p>
+<p>The route stays identified by its underlying track and send/receive relationship while other routing entries change. Do not confuse Delete here (remove routing) with Delete in F1 (deselect one track).</p>
+<h2 id="5-f4-fx-controls-visible-in-the-tcp">5. F4 — FX controls visible in the TCP</h2>
+<p>F4 is <strong>not</strong> the full FX parameter navigator. It shows the current track's FX and only the parameters exposed as REAPER Track Controls (TCP). The spoken title identifies the FX; there is <strong>no separate selectable header</strong> when an FX contains TCP parameters. The compact grid uses up to <strong>eight rows per column</strong> for the currently selected FX. <strong>Arrows</strong> navigate visible TCP parameters within that FX; <strong>Ctrl+Up/Down</strong> changes FX, <strong>Ctrl+Shift+Up/Down</strong> changes tracks with FX, and <strong>Ctrl+Page Up/Down</strong> physically reorders the FX in its chain. <strong>Ctrl+Home/End</strong> navigates to the first/last TCP parameter, whereas <strong>Alt+Home/End</strong> sets the current parameter's minimum/maximum value even in Grid.</p>
+<p><strong>Enter</strong> switches Grid/Value; <strong>Alt+Up/Down</strong> edits the value directly, <strong>Alt+Left/Right</strong> changes Step, <strong>Ctrl+E</strong> opens numeric edit. <strong>Ctrl+F</strong> filters visible controls by name. <strong>Ctrl+B</strong> bypasses the focused FX; <strong>Ctrl+D</strong> controls Delta Solo. <strong>Ctrl+Shift+A</strong> toggles the focused parameter's envelope; <strong>Ctrl+Shift+Alt+A</strong> begins the guarded automation clear. <strong>Delete</strong> removes <em>only the selected control from the TCP</em>, not the FX from the track. MIDI Fixed/Floating and per-parameter speech shortcuts also work on actual TCP parameters, stored in the project <code>.tp</code>.</p>
+<h3 id="add-missing-fx-tcp-controls-from-f4">Add missing FX TCP controls from F4</h3>
+<p>If an FX has no TCP controls, F4 announces this rather than preventing access. From <strong>any F4 position</strong>, including an FX with no visible TCP parameters, press <strong>Alt+Enter</strong> to open a <strong>names-only parameter selection grid</strong>. Choose a parameter by name. <strong>Enter</strong> adds it to the TCP and returns to F4; <strong>Ctrl+Enter</strong> adds/removes while remaining in the list. <strong>F1/F2</strong> changes the height/column layout of the names grid; standard navigation and <strong>Ctrl+F</strong> find parameters. This is the DLL replacement for multiple historical Lua header/F6 workflows. It does <strong>not</strong> require opening a native FX window just to add a TCP knob.</p>
+<h2 id="6-f5-track-midi-formerly-f6">6. F5 — Track MIDI (formerly F6)</h2>
+<p>F5 works for the selected track <strong>without requiring any FX in F4</strong>. It contains four editable MIDI settings plus a fifth routing entry: <strong>MIDI hardware output, hardware output channel, MIDI input channel map, MIDI control channel</strong>, and <strong>MIDI routing</strong>. Up/Down navigates; Home/End selects first/last; Tab or F5 rereads the current setting; backslash gives a short repeat. <strong>Alt+Up/Down</strong> steps ±1, <strong>Alt+Page Up/Down</strong> changes a larger step (typically four choices), and <strong>Alt+Home/End</strong> selects the extremes. <strong>Enter</strong> increments an editable field; on MIDI routing it goes to F2 or F3 if a routing instance exists. <strong>Esc from F5 ends Track Params</strong> rather than merely returning to F1. Ctrl+Tab/Ctrl+Q are still handled centrally.</p>
+<h2 id="7-f6-physical-hardware-outputs-formerly-f7">7. F6 — Physical Hardware Outputs (formerly F7)</h2>
+<p>This page is for real <strong>audio device outputs</strong>, not virtual ReaRoute. F6 works <strong>even when the current track has zero hardware sends</strong>. The first virtual column is <strong>Add hardware output</strong>, followed by one column per existing physical output. Existing output columns contain these <strong>11 rows</strong>: Hardware output, Volume, Pan, Mute, Phase invert, Mono, Audio source mode, Audio source, Hardware destination, Send type, Pan law.</p>
+<h3 id="create-an-output-entirely-with-the-keyboard">Create an output entirely with the keyboard</h3>
+<ol>
+<li>Open <strong>F6</strong> on the desired track. On a track with no outputs, focus starts at <strong>Add hardware output</strong>.</li>
+<li>On the Add column, choose a physical device destination with <strong>Alt+Up/Down</strong>. <strong>Alt+Page Up/Down</strong> moves four choices and <strong>Alt+Home/End</strong> selects first/last. The spoken destination includes channel numbers and available audio-driver names; an unmatched final channel is offered as mono.</li>
+<li>Press <strong>Enter</strong>. The DLL creates a real REAPER hardware output and moves focus to its new 11-row column. It validates the destination after writing; if creation fails, it tries to remove the incomplete output.</li>
+<li>To add another output, press <strong>Ctrl+Home</strong> (returns to Add), choose another destination and <strong>Enter</strong>. <strong>Right</strong> from Add reaches the existing output; <strong>Left</strong> from the first output returns to Add.</li>
+<li>Select an existing output and press <strong>Delete</strong> to remove <strong>that physical output only</strong>. If it was the last, you remain in F6 on <strong>Add hardware output</strong>. Delete on Add never removes routing.</li>
+</ol>
+<p>On the Add column <strong>Up/Down</strong> explores its <strong>three fields</strong>; <strong>Tab or F6</strong> reads the current choice. On existing output columns, Up/Down moves a field, Left/Right changes output, Page Up/Down moves five rows, Home/End reaches its first/last field, Ctrl+Home returns to Add, Ctrl+End reaches the last existing output. <strong>Alt+Up/Down</strong>, <strong>Alt+Page</strong> and <strong>Alt+Home/End</strong> edit values; Enter toggles Mute/Phase/Mono or opens Value for continuous fields. <strong>Esc</strong> leaves Value first, then returns to F1. F6 reads the actual audio device's available outputs; if none are exposed, it refuses to create a phantom output. Existing ReaRoute outputs are excluded from F6 and remain on F7.</p>
+<h2 id="8-f7-rearoute-bridge-formerly-f8">8. F7 — ReaRoute bridge (formerly F8)</h2>
+<p>F7 separates REAPER's <strong>virtual ReaRoute input</strong> and its <strong>ReaRoute output destinations</strong>. It presents a dedicated input column, an output management/Add column, then actual ReaRoute output columns, each with up to <strong>11 fields</strong>. <strong>Left/Right</strong> moves between input/output columns; <strong>Up/Down</strong> moves through the fields; Home/End goes to the first/last field; Ctrl+Home/End moves to first/last column. <strong>Alt+Up/Down</strong>, <strong>Alt+Page</strong> and <strong>Alt+Home/End</strong> edit supported values; <strong>Enter</strong> on <strong>Add ReaRoute output</strong> creates one and on eligible cells toggles or opens Value. <strong>Delete</strong> deletes only the selected <em>ReaRoute output</em>, never a physical device output. <strong>Tab/F7</strong> reads the complete routing context. <strong>Esc</strong> exits Value first, then returns to Tracks. Availability of the actual ReaRoute driver/bridge depends on REAPER's environment; this page does not install ReaRoute.</p>
+<h2 id="9-common-value-controls-and-memory">9. Common value controls and memory</h2>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>In F1/F2/F3/F4 as appropriate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Arrows, Home/End, Page Up/Down</td>
+<td>Navigate fields, tracks or routing columns</td>
+</tr>
+<tr>
+<td>Enter</td>
+<td>Grid/Value; toggle; linked routing; context action</td>
+</tr>
+<tr>
+<td>Alt+Up/Down; Alt+Page Up/Down</td>
+<td>Fine/coarse value change</td>
+</tr>
+<tr>
+<td>Alt+Home/End</td>
+<td>Maximum/minimum on editable values</td>
+</tr>
+<tr>
+<td>Alt+Left/Right</td>
+<td>Adjust the current stored Step (-10 to +10)</td>
+</tr>
+<tr>
+<td>Ctrl+Backspace</td>
+<td>Reset Step to 0 for the current field</td>
+</tr>
+<tr>
+<td>Ctrl+E</td>
+<td>Accessible numeric EDIT, Enter commits, Esc cancels</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+I</td>
+<td>Edit per-page volume range (supported Volume fields)</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+T</td>
+<td>Toggle automatic spoken value changes</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+M</td>
+<td>Open Track Memories, then Esc to return</td>
+</tr>
+<tr>
+<td>Ctrl+F1…F12</td>
+<td>Recall a Track Memory slot (F1)</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+F1…F12</td>
+<td>Save a Track Memory slot (F1)</td>
+</tr>
+<tr>
+<td>Ctrl+Z / Ctrl+Shift+Z</td>
+<td>REAPER Undo / Redo in normal track navigation when handled</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Track Memories</strong> uses the common <strong>Ctrl+Shift+M</strong> command, not the old Lua <strong>Alt+F8</strong> and not plain F8. It provides saved cursor/parameter/step/speech/MIDI/range controls in the <code>.tp</code> of the current project. Session-only concepts from the old script, especially <em>Ctrl+M cursor memory</em> and <em>Ctrl+Shift+M detailed window titles</em>, <strong>must not be confused with the current DLL shortcut</strong>: Ctrl+Shift+M now opens the memory manager. The standard F1 memory slots are saved into <code>.tp</code> when the project profile can be written, instead of relying only on the lifetime of a deferred Lua script.</p>
+<h2 id="10-fixed-midi-cc-floating-cc-and-speech">10. Fixed MIDI CC, Floating CC and speech</h2>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ctrl+Alt+C</td>
+<td>Arm fixed MIDI CC Learn for eligible F1/F2/F3/F4 field</td>
+</tr>
+<tr>
+<td>Escape while learning</td>
+<td>Cancel learning and return to the current field</td>
+</tr>
+<tr>
+<td>Shift+C</td>
+<td>Toggle the fixed CC map on/off</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+C</td>
+<td>Arm/disable Floating CC on currently selected supported field</td>
+</tr>
+<tr>
+<td>Ctrl+Delete in a supported field</td>
+<td>Remove its fixed CC association (not track selection)</td>
+</tr>
+<tr>
+<td>Ctrl+T</td>
+<td>Toggle MIDI CC speech for this exact target</td>
+</tr>
+<tr>
+<td>Ctrl+Shift+T</td>
+<td>Toggle normal edited-value speech</td>
+</tr>
+<tr>
+<td>Ctrl+Q</td>
+<td>Return focus to REAPER with eligible live MIDI still active</td>
+</tr>
+</tbody>
+</table>
+<p>Fixed CC is identified by the actual track and, for F4, the FX GUID and parameter. Send/receive CC associations also distinguish their real routing instances; changing a track must not silently hand a CC to another track. The <strong><code>.tp</code> project profile</strong> stores eligible fixed mappings and map preferences. Floating CC follows the current supported control, uses pickup/soft takeover and is temporary. Per-target MIDI speech defaults off; Tab and NVDA review are not silenced. In an unsupported field or an empty TCP list, Learn cannot create a meaningful mapping.</p>
+<h2 id="11-filters-initial-letter-search-transport-and-markers">11. Filters, initial-letter search, transport and markers</h2>
+<p><strong>Ctrl+F</strong> toggles a native Windows EDIT filter in F1/F2/F3/F4. Type the text, <strong>Enter</strong> applies, <strong>Esc</strong> cancels the edit; Ctrl+F again clears an active filter. In F1 a filter can open parent folders to reveal a matching track; F2/F3 filter routing columns, and F4 filters current TCP names / name-picker results. Normal letter navigation cycles visible names, not hidden or unrelated internal parameter IDs. <strong>Tab</strong> tells you the filter and context where applicable.</p>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Shared transport or timeline action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Space / Ctrl+Space</td>
+<td>Play/Stop / native REAPER Play-Pause</td>
+</tr>
+<tr>
+<td>Ctrl+1…9 / Ctrl+0</td>
+<td>Jump to marker 1…9 / 10 (time-order fallback)</td>
+</tr>
+<tr>
+<td>Ctrl+I / Ctrl+O</td>
+<td>Previous/next marker (not region)</td>
+</tr>
+<tr>
+<td>Ctrl+Alt+Page Up/Down</td>
+<td>One beat backward/forward</td>
+</tr>
+<tr>
+<td>Alt+Shift+Page Up/Down</td>
+<td>One bar backward/forward</td>
+</tr>
+<tr>
+<td>Ctrl+Alt+Shift+Page Up/Down</td>
+<td>Neighboring/current bar boundary</td>
+</tr>
+<tr>
+<td>Alt+F10/F11/F12</td>
+<td>OSARA Peak Watcher 1 reset / left / right</td>
+</tr>
+<tr>
+<td>Alt+Shift+F10/F11/F12</td>
+<td>OSARA Peak Watcher 2 reset / left / right</td>
+</tr>
+</tbody>
+</table>
+<p>The timeline feedback follows the project tempo/meter map. These shortcuts do not apply to native edit fields, confirmation dialogs or unrelated REAPER windows. F10 and F11 without Alt are FX Params shortcuts, not Track Params pages.</p>
+<h2 id="12-automation-storage-and-migration-notes">12. Automation, storage and migration notes</h2>
+<p><strong>Ctrl+Shift+A</strong> manages supported real envelopes for F1/F2/F3 and for F4 TCP FX parameters. Automation is indicated by the actual envelope state, not a synthetic checkbox. The confirmed <strong>Ctrl+Shift+Alt+A</strong> operation can delete <em>all automation on the current track</em> and therefore must be used carefully. <strong>Alt+F3/F4</strong> in the FX Params navigator navigates automated parameters; do not assume every former Lua key is mapped identically across both DLL navigators.</p>
+<p>Track profiles are per project in the native data folder, typically <strong><code>REAPER resource path/LReaParams/Tracks/*.tp</code></strong>, while FX-specific profiles are in <code>Plugins/*.fx</code>. The migration reads relevant historical Lua TXT data where supported; it does not mean old launcher scripts should still run. <strong>F5 MIDI, F6 Hardware, F7 ReaRoute</strong> are the only current Track pages above F4. <strong>F8 is free</strong> and the pin matrix is in <strong>FX F11</strong>. REAPER's project remains the canonical owner of actual tracks, envelopes and routing; the profile stores navigation preferences and custom mappings.</p>
+<p>This guide reflects <strong>0.0.61 TEST61.4 source code</strong>, not a guarantee of successful build or live REAPER/NVDA execution. Build via GitHub Actions and confirm the installation works with your version of REAPER, OSARA and active audio driver. For historical Lua behavior consult the preserved <code>Legacy</code> sources, but use <strong>this guide's shortcuts</strong> for the DLL.</p>
+</main><footer><p>LReaParams 0.0.61 · Original Lua guides consulted for migration · Native C++ implementation is authoritative for shortcuts.</p><p><a href="#main">Return to top</a></p></footer></body></html>

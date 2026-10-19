@@ -1,3 +1,18 @@
+# LReaParams 0.0.61 — TEST61.6 multilingual user guides
+
+**NEW REAPER action:** `LReaParams: Open User Guide` (also under Extensions > LReaParams). Assign any keyboard shortcut using the REAPER Main Action List. The action opens the default browser to the [language selection page](Guide/index.html), then offers FX Params or Track Params.
+
+**Seven languages:** English (complete original manuals), Italiano, Español, Français, Русский, 简体中文 and 日本語. The six translations are **concise functional guides** with page descriptions, current shortcuts and links to the full English references; they are not line-by-line translations of the long originals. All pages are offline HTML, UTF-8, keyboard accessible, with native links and headings. No JavaScript, external services or internet connection is required.
+
+**Installation:** The GitHub Actions multilingual installation artifact contains the correct REAPER resource directory structure:
+
+- `UserPlugins/reaper_lreaparams.dll`
+- `LReaParams/Guide/index.html`, `en/index.html`, `it/`, `es/`, `fr/`, `ru/`, `zh-CN/`, `ja/` and the complete original English pages.
+
+Place these folders in the REAPER resource directory. The separate guides artifact contains just the Guide folder. If `Guide/index.html` is not found, the action explains where to install it. See [Guide/INSTALL.txt](Guide/INSTALL.txt).
+
+**Migration scope:** FX Params F10 browser, F11 Audio Pin Connector, F8 Compare; Track Params F5 MIDI, F6 Hardware Outputs with Add and F7 ReaRoute. No legacy Lua launcher or Stretch Marker script is part of the package. **No local native compilation**: use the GitHub Actions workflow, then verify in REAPER with NVDA/OSARA.
+
 > **TEST61.4 — Track Params F6 Hardware Outputs:** F6 si apre anche quando la traccia non ha uscite hardware. La colonna «Add hardware output» è accessibile con Ctrl+Home o freccia sinistra dalla prima uscita; Invio crea una vera uscita in REAPER. Alt+Su/Giù sceglie la destinazione fisica disponibile, leggendo anche i nomi dei canali del driver; dopo la creazione si entra nella colonna dell’uscita. Delete sull’ultima uscita ritorna alla colonna Add, senza uscire da F6. Undo, rollback e isolamento rispetto a F7 ReaRoute. **Solo sorgente: compilazione GitHub Actions.** [Guida TEST61.4](Docs/TEST61_4_F6_ADD_HARDWARE_OUTPUT.md).
 
 > **TEST61.3 — annunci F11 Audio Pin Connector:** collegamento presente: `Attive. Input ...` oppure `Attive. Output ...`; collegamento assente: `Input ...` o `Output ...` senza prefisso. Anche la lettura dopo Invio, Spazio e Canc usa la stessa formula. Solo stringhe vocali: nessuna modifica ai pin, ai routing, ai tasti o alle memorie. Nessuna compilazione locale.

@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <system_error>
 #include <cctype>
 #include <algorithm>
 
@@ -163,23 +164,68 @@ public:
             else if (answer == IDNO) backend_ = InputBackend::sdkAccelerator;
             break;
         }
+        case openGuide: {
+            exitNavigation(false);
+            // Prefer the data folder, which survives DLL updates and is writable.
+            // Also accept older manual installation layouts for compatibility.
+            const std::array<fs::path, 3> roots{{
+                resource_ / L"LReaParams" / L"Guide",
+                resource_ / L"UserPlugins" / L"Guide",
+                resource_ / L"Guide"
+            }};
+            fs::path guide;
+            for (const auto& root : roots) {
+                std::error_code ec;
+                const auto candidate = root / L"index.html";
+                if (fs::is_regular_file(candidate, ec)) { guide = candidate; break; }
+            }
+            if (guide.empty()) {
+                MessageBoxW(info_.hwnd_main,
+                    L"Guide/index.html was not found.\n\n"
+                    L"Copy the complete Guide folder (including all language subfolders) "
+                    L"to your REAPER resource path\\LReaParams\\Guide, then run this action again.",
+                    L"LReaParams - Open User Guide", MB_OK | MB_ICONWARNING);
+                break;
+            }
+            const auto result = reinterpret_cast<INT_PTR>(ShellExecuteW(
+                info_.hwnd_main, L"open", guide.c_str(), nullptr, nullptr, SW_SHOWNORMAL));
+            if (result <= 32)
+                MessageBoxW(info_.hwnd_main,
+                    L"Windows could not open the HTML user guide in the default browser.",
+                    L"LReaParams - Open User Guide", MB_OK | MB_ICONWARNING);
+            break;
+        }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.61 - Track Memories\n\n"
-                "FX Params and Track Params, native NVDA/OSARA focus.\n"
-                "FX: F7 order editor, Ctrl+Shift+M FX Memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
-                "Track: F5 MIDI, F6 Hardware outputs, F7 ReaRoute; Ctrl+Shift+M Track Memories.\n"
-                "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A confirm automation clear.\n"
-                "Alt+F1/F2 presets; Alt+F3/F4 automated parameters. Ctrl+E numeric edit.\n"
-                "Space Play/Stop; Ctrl+Space Play/Pause in FX Params and Track Params. Shift+Space selects in F7 or F1.\n"
-                "Ctrl+R recent searches; Ctrl+Shift+R full context review.\n"
-                "FX F10 Browser/Grid; F11 Audio Pin Connector; Ctrl+P removed. F12 alone is reserved; Ctrl+F12 slot 12; Alt+F10/F11/F12 OSARA Peak Watcher.\n"
-                "See Docs/Status.md for remaining Lua differences and required runtime tests.\n"
-                "No local compilation was performed.", "About LReaParams", 0);
+            ShowMessageBox(
+                "LReaParams 0.0.61 - Native REAPER extension\n\n"
+                "Accessible FX Params and Track Params for NVDA and OSARA.\n"
+                "Developed by Lo-lo and contributors.\n\n"
+                "FX Params: F7 structural edit; F8 Compare A/B (double F8 updates Original); "
+                "F10 FX Browser/Grid; F11 Audio Pin Connector (up to 128 channels).\n"
+                "Track Params: F1 Tracks; F2 Sends; F3 Receives; F4 FX TCP; "
+                "F5 Track MIDI; F6 Hardware Outputs (includes Add); F7 ReaRoute. "
+                "Track F8 is unused.\n\n"
+                "Ctrl+Tab switches navigators; Ctrl+Shift+M opens FX/Track Memories.\n"
+                "Ctrl+Alt+C fixed MIDI learn; Shift+C fixed CC on/off; Ctrl+Shift+C floating CC.\n"
+                "Ctrl+Shift+A toggles the current envelope; "
+                "Ctrl+Shift+Alt+A opens automation-clear confirmation.\n"
+                "Ctrl+E numeric edit; Ctrl+F search; Ctrl+Q live MIDI background.\n"
+                "Alt+F1/F2 presets; Alt+F3/F4 automated FX parameters.\n"
+                "Space Play/Stop; Ctrl+Space Play/Pause; Ctrl+I/O markers; "
+                "Ctrl+1 through Ctrl+0 marker jumps.\n"
+                "Alt+F10/F11/F12 and Alt+Shift+F10/F11/F12: OSARA Peak Watcher.\n"
+                "Bare F12 reserved; Ctrl+F12 memory slot 12. Ctrl+P no longer opens the FX Browser.\n\n"
+                "Open User Guide: choose English, Italian, Spanish, French, Russian, "
+                "Simplified Chinese or Japanese; then FX Params or Track Params.\n"
+                "Install Guide in REAPER resource path / LReaParams / Guide.\n"
+                "Data: REAPER resource path / LReaParams / Plugins (.fx) and Tracks (.tp).\n"
+                "The original Lua launcher scripts are not required.",
+                "About LReaParams", 0);
             break;
         case fxMemories: {
-            // Dedicated REAPER action opens the same Lua F8 manager, not a
-            // second profile editor. Use the shared FX navigator and focus owner.
+            // Dedicated REAPER action opens native FX Memories; plain F8 is
+            // Compare A/B. Reuse the FX navigator and focus owner.
             exitNavigation(false);
             if (!speechAvailable() || !info_.GetFunc("osara_isShortcutHelpEnabled")) {
                 speak("FX Memories requires OSARA");break;
@@ -510,7 +556,7 @@ public:
         if (flag == 0) {
             HMENU sub = CreatePopupMenu(); if (!sub) return;
             // Memory actions have independent REAPER command IDs and launch
-            // their own navigator mode; the FX command preserves the Lua F8 grid.
+            // their own navigator mode; FX F8 remains Compare A/B.
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[fxParams].command), actions_[fxParams].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[trackParams].command), actions_[trackParams].menu);
             HMENU memories = CreatePopupMenu();
@@ -525,6 +571,7 @@ public:
             for (int i : {importLegacy, openData, settings})
                 AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[i].command), actions_[i].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[nvdaTitle].command), actions_[nvdaTitle].menu);
+            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[openGuide].command), actions_[openGuide].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[about].command), actions_[about].menu);
             if (!AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(sub), L"LReaParams")) DestroyMenu(sub);
         } else if (flag == 1) updateMenu(menu);
@@ -575,7 +622,7 @@ private:
     bool titleModeEnabled_ = true, titleProxyActive_ = false;
     accelerator_register_t fxChainAccel_{};
     bool fxChainAccelRegistered_ = false;
-    enum ActionIndex { fxParams, trackParams, importLegacy, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, actionCount };
+    enum ActionIndex { fxParams, trackParams, importLegacy, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, openGuide, actionCount };
     std::array<Action, actionCount> actions_{{
         {"LREAPARAMSFXPARAMS", "LReaParams: FX Params", L"FX Params"},
         {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params", L"Track Params"},
@@ -586,7 +633,8 @@ private:
         {"LREAPARAMSFXMEMORIES", "LReaParams: FX Memories", L"FX Memories"},
         {"LREAPARAMSTRACKMEMORIES", "LReaParams: Track Memories", L"Track Memories"},
         {"LREAPARAMSNVDATITLE", "LReaParams: Accessibility Focus Window (toggle)", L"Accessibility Focus Window"},
-        {"LREAPARAMSSTOPMIDIBACKGROUND", "LReaParams: Stop background MIDI", L"Stop background MIDI"}
+        {"LREAPARAMSSTOPMIDIBACKGROUND", "LReaParams: Stop background MIDI", L"Stop background MIDI"},
+        {"LREAPARAMSOPENUSERGUIDE", "LReaParams: Open User Guide", L"Open User Guide"}
     }};
 };
 int fxChainShortcutHook(MSG* msg, accelerator_register_t* ctx) noexcept {
