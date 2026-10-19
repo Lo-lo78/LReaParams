@@ -1,6 +1,7 @@
 """0.0.42 contracts: source-only, no C++ or Windows runtime invoked."""
 from version_contract import version_at_least
 from pathlib import Path
+import re
 r=Path(__file__).resolve().parents[1]
 ext=(r/'src/Extension.cpp').read_text()
 fx=(r/'src/FxNavigator.cpp').read_text()
@@ -10,7 +11,9 @@ hdr=(r/'include/lrp/FxNavigator.h').read_text()
 order=(r/'include/lrp/FxOrder.h').read_text()
 api=(r/'include/lrp/ReaperApi.h').read_text()
 assert version_at_least(r, (0, 0, 42))
-assert 'stopBackgroundMidi, actionCount' in ext
+# A later action may follow Stop background MIDI. Test membership, not an obsolete final enum position.
+assert re.search(r'\benum\s+ActionIndex\s*\{[^}]*\bstopBackgroundMidi\b', ext)
+assert 'case stopBackgroundMidi:' in ext
 assert 'LREAPARAMSSTOPMIDIBACKGROUND' in ext
 assert 'backgroundMidi_ = navigator_' in ext
 assert 'backgroundMidi_.prepareBackgroundMidi()' in ext

@@ -215,7 +215,7 @@ public:
                 "Space Play/Stop; Ctrl+Space Play/Pause; Ctrl+I/O markers; "
                 "Ctrl+1 through Ctrl+0 marker jumps.\n"
                 "Alt+F10/F11/F12 and Alt+Shift+F10/F11/F12: OSARA Peak Watcher.\n"
-                "Bare F12 reserved; Ctrl+F12 memory slot 12. Ctrl+P no longer opens the FX Browser.\n\n"
+                "F12 alone is reserved; Ctrl+F12 memory slot 12. Ctrl+P no longer opens the FX Browser.\n\n"
                 "Open User Guide: choose English, Italian, Spanish, French, Russian, "
                 "Simplified Chinese or Japanese; then FX Params or Track Params.\n"
                 "Install Guide in REAPER resource path / LReaParams / Guide.\n"

@@ -1,3 +1,9 @@
+## TEST61.7 — GitHub Actions source-only regression fix (2026-10-19)
+- Corrected legacy TEST27 string expectation by clarifying the F12 About text (`F12 alone is reserved`; Ctrl+F12 continues to address memory slot 12).
+- Corrected the legacy TEST42 check to verify the Stop Background MIDI action without requiring it to be the last enum entry; the TEST61.6 Open User Guide action remains registered.
+- All 83 Python checks declared by the current GitHub Actions workflow passed locally; no C++, CMake, MSVC or native build was run.
+- No behavior, action identifiers, navigation logic, MIDI routing, HTML guides or translation contents were changed.
+
 ## TEST61.4 — F6 Hardware Output creation
 - Track F6 now opens on empty hardware-output lists; Add column supports Enter and device-aware Alt+arrows.
 - Native CreateTrackSend(track, nullptr), hardware destination mapping, read-back and failure rollback, Undo.

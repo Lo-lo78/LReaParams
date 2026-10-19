@@ -1,3 +1,7 @@
+# LReaParams 0.0.61 — TEST61.7 GitHub Actions test repair
+
+The TEST61.6 workflow stopped before CMake at TEST27, because About used `Bare F12 reserved` where a historical Python check required `F12 alone is reserved`. After this check, historical TEST42 also expected Stop Background MIDI to be the final action in the enum, but the multilingual guide action is now appended. TEST61.7 resolves both mismatches, preserves the actual behavior and seven-language guide, and passes the complete set of 83 workflow Python tests (source-only; **no native compilation**).
+
 # LReaParams 0.0.61 — TEST61.6 multilingual user guides
 
 **NEW REAPER action:** `LReaParams: Open User Guide` (also under Extensions > LReaParams). Assign any keyboard shortcut using the REAPER Main Action List. The action opens the default browser to the [language selection page](Guide/index.html), then offers FX Params or Track Params.
