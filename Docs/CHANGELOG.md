@@ -1,3 +1,7 @@
+# 0.0.58 — TEST58 F7 Hardware Outputs (sorgente)
+
+Migrazione nativa C++ della griglia F7, category 1, 11 righe per ogni uscita; valore per valore, Undo, lettura dopo scrittura, Delete, memoria `.tp` e tasti. Rifiniture F6 tastiera e bordi silenziosi. F1-F6 ed FX Params mantenuti. Non compilato localmente. [Guida](TEST58_F7_HARDWARE_OUTPUTS.md).
+
 # 0.0.57 — TEST57 F6 Track MIDI (sorgente)
 
 - Migrazione della pagina F6 del Lua: 5 voci verticali relative alla traccia, indipendenti dal singolo FX: hardware output, hardware channel, MIDI input channel map, MIDI control channel, MIDI routing (nota/collegamento F2-F3).

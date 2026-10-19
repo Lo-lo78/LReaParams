@@ -1,3 +1,6 @@
+TEST58 — 0.0.58 F7 Hardware Outputs (2026-10-19)
+Static source tests include F7 11-row routing/API/Undo/position/boundary model and previous F6/F5. Build and audio/keyboard behavior are NOT validated locally; run GitHub Actions MSVC and then REAPER/NVDA.
+
 TEST57 — 0.0.57 F6 Track MIDI (2026-10-19)
 PASS: Tools/audit.py
 PASS: Testing/test57_f6_static.py (API, navigation, positions, boundaries)

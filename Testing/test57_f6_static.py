@@ -15,7 +15,8 @@ api = read("include/lrp/ReaperApi.h")
 cmake = read("CMakeLists.txt")
 workflow = read(".github/workflows/build-windows.yml")
 lua = read("Docs/LuaManifest.csv")
-assert "VERSION 0.0.57" in cmake and "src/TrackNavigatorTrackMidi.cpp" in cmake
+from version_contract import version_at_least
+assert version_at_least(root, (0, 0, 57)) and "src/TrackNavigatorTrackMidi.cpp" in cmake
 assert "REAPERAPI_WANT_GetMIDIOutputName" in api
 assert "trackMidi" in h and "trackMidiRow_" in h
 assert "Page::trackMidi" in nav

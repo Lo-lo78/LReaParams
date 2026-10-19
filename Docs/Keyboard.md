@@ -1,3 +1,7 @@
+## 0.0.58 — F7 Hardware Outputs
+
+F7 apre gli hardware output fisici della traccia corrente (serve almeno una uscita già configurata in REAPER). Sinistra/Destra cambia colonna; Su/Giù cambia riga (11); Pagina Su/Giù salta 5 righe; Home/End prima/ultima riga, Ctrl+Home/End prima/ultima colonna. Alt+Su/Giù cambia il valore, Alt+Pagina usa lo step ampio, Alt+Home/End imposta massimo/minimo. Invio commuta Mute/Phase/Mono oppure Grid/Value; Delete rimuove soltanto l’uscita corrente. Tab legge contesto, Esc torna a F1, da Value prima alla griglia. Guida: [TEST58 F7](TEST58_F7_HARDWARE_OUTPUTS.md).
+
 ## 0.0.57 — F6 Track MIDI (scorciatoie attuali)
 
 F6 da F1-F5: apre la pagina MIDI della traccia, senza bisogno di selezionare un FX. Su/Giù: 5 parametri; Home/End: primo/ultimo; Tab: contesto; NVDA+Su: valore corrente. Alt+Su/Giù: ±1; Alt+Pagina Su/Giù: ±4; Alt+Home/End: estremi; Invio: incrementa o naviga al routing F2/F3. F1-F4: pagine; F5 da F6 richiede prima un FX in F4; Esc termina Track Params; Ctrl+Maiusc+M gestisce le memorie. Ctrl+Tab e Ctrl+Q restano del router centrale. [Guida](TEST57_F6_TRACK_MIDI.md).

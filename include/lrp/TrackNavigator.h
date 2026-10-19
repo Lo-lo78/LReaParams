@@ -58,7 +58,7 @@ private:
             midiFollowsFader, midiMerge } type{};
     };
     struct TrackRow { MediaTrack* track{}; GUID guid{}; int projectIndex{}; };
-    enum class Page { tracks, sends, receives, fxTcp, pinAudio, trackMidi };
+    enum class Page { tracks, sends, receives, fxTcp, pinAudio, trackMidi, hardwareOutputs };
     // TEST56.1: F4 is a view of native REAPER TCP parameters, not a copy of
     // the full FX parameter list. Each FX has a header, including empty FXs.
     struct FxTcpParameter { int index = -1; std::string name; };
@@ -145,6 +145,17 @@ private:
     int pinAudioColumn_ = 0, pinAudioChannel_ = 0;
     int trackMidiRow_ = 0;
     std::string trackMidiEdge_;
+    // TEST58: F7 physical hardware outputs: 11 rows per output column.
+    bool enterHardwareOutputs();
+    void handleHardwareOutputsKey(const Key&);
+    std::string hardwareOutputReview(bool context) const;
+    void hardwareOutputMove(int column, int row);
+    void hardwareOutputAdjust(int direction, bool coarse = false, int edge = 0);
+    void deleteHardwareOutput();
+    void rememberHardwareOutputPosition();
+    int hardwareOutputCount() const;
+    int hardwareOutputColumn_ = 0, hardwareOutputRow_ = 0;
+    std::string hardwareOutputEdge_;
     std::vector<FxTcpColumn> fxTcpColumns_;
     int fxTcpColumn_ = 0, fxTcpRow_ = 0;
     static constexpr int detailHeight = 14;

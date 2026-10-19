@@ -161,10 +161,8 @@ void TrackNavigator::trackMidiAdjust(int direction, bool coarse, int edge) {
     }
     if (next == current) {
         const std::string token = std::to_string(trackMidiRow_) + ":" + std::to_string(current);
-        if (trackMidiEdge_ != token) {
-            trackMidiEdge_ = token;
-            speech_(trackMidiReview(false));
-        }
+        trackMidiEdge_ = token; // silent value bounds, as in the Lua
+
         return;
     }
     trackMidiEdge_.clear();
@@ -193,12 +191,14 @@ void TrackNavigator::handleTrackMidiKey(const Key& k) {
                      (k.alt && k.vk == VK_END))) return;
     if (!k.ctrl && !k.shift && !k.alt) {
         switch (k.vk) {
+            case VK_OEM_5: speech_(trackMidiReview(false)); return; // Lua backslash repeats the current value
             case VK_F1: selectPage(Page::tracks); return;
             case VK_F2: selectPage(Page::sends); return;
             case VK_F3: selectPage(Page::receives); return;
             case VK_F4: selectPage(Page::fxTcp); return;
             case VK_F5: speech_("Select an FX in F4 first"); return;
             case VK_F6: case VK_TAB: speech_(trackMidiReview(true)); return;
+            case VK_F7: if (!k.repeat) enterHardwareOutputs(); return;
             case VK_ESCAPE: end(); return;
             case VK_UP: trackMidiMove(trackMidiRow_ - 1); return;
             case VK_DOWN: trackMidiMove(trackMidiRow_ + 1); return;

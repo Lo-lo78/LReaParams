@@ -444,6 +444,14 @@ void TrackNavigator::handleFxTcpParameterGridKey(const Key& k) {
         if (!k.repeat) { closeFxTcpParameterGrid(false); enterTrackMidi(); }
         return;
     }
+    if (k.vk == VK_F7 && !k.ctrl && !k.shift && !k.alt) {
+        if (!k.repeat) {
+            if (GetTrackNumSends && GetTrackNumSends(track_, 1) > 0) {
+                closeFxTcpParameterGrid(false); enterHardwareOutputs();
+            } else speech_("No hardware outputs");
+        }
+        return;
+    }
     if (k.vk == VK_TAB && !k.ctrl && !k.shift && !k.alt) {
         if (!k.repeat) speech_(fxTcpParameterGridReview(true));
         return;

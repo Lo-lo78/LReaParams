@@ -9,7 +9,7 @@ cmake = (root / 'CMakeLists.txt').read_text(encoding='utf-8')
 workflow = (root / '.github/workflows/build-windows.yml').read_text(encoding='utf-8')
 assert '#define REAPERAPI_WANT_CountTCPFXParms' in api
 assert '#define REAPERAPI_WANT_GetTCPFXParm' in api
-assert 'enum class Page { tracks, sends, receives, fxTcp, pinAudio, trackMidi }' in header
+assert 'enum class Page { tracks, sends, receives, fxTcp, pinAudio, trackMidi, hardwareOutputs }' in header
 assert 'src/TrackNavigatorFxTcp.cpp' in cmake
 assert 'CountTCPFXParms(project_, track_)' in fx
 assert 'GetTCPFXParm(project_, track_, i, &fx, &param)' in fx
@@ -27,7 +27,8 @@ assert 'if (page_ == Page::fxTcp) return fxTcpReview(false);' in nav
 assert 'if (page_ == Page::fxTcp) { handleFxTcpKey(k); return; }' in nav
 assert 'if (k.ctrl && k.shift && !k.alt && k.vk == \'M\') return true;' in nav
 assert 'case VK_F1: case VK_F2: case VK_F3: case VK_F4:' in nav
-assert 'project(LReaParams VERSION 0.0.57' in cmake
+from version_contract import version_at_least
+assert version_at_least(root, (0,0,56))
 assert 'python Testing/test56_1_static.py' in workflow
 # TEST56.3 advances F4 to editing; navigation must still be built from TCP API.
 assert 'writeFxTcpValue' in fx

@@ -1,3 +1,5 @@
+TEST58 / LReaParams 0.0.58: Track Params F7 Hardware Outputs migrated in C++ (11-row columns, native REAPER hardware routing, Undo, persistent navigation); F6 backslash and silent-edge refinements. No local compilation or build, source only for GitHub Actions.
+
 TEST56.10.1: Removed redundant Ctrl+S two-stage Audio Pin Connector routing, including pending origin state, its helper and announcements. Enter/Space and Delete continue to edit the actual selected matrix cell with REAPER API readback and Undo. No local compilation; GitHub Actions only.
 
 TEST56.9.1: Correct F4 Fixed MIDI CC persistence. The TrackMemory writer AND native .tp parser now recognize scoped FxTcp identities; this fixes exceptions on first learn that closed the navigator and returned focus to REAPER TCP. Added focused error handling, native regression tests and GitHub Actions source check. Floating MIDI unchanged. No local compilation; MSVC and CTest run through GitHub Actions.
