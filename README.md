@@ -1,3 +1,5 @@
+> **TEST61.3 — annunci F11 Audio Pin Connector:** collegamento presente: `Attive. Input ...` oppure `Attive. Output ...`; collegamento assente: `Input ...` o `Output ...` senza prefisso. Anche la lettura dopo Invio, Spazio e Canc usa la stessa formula. Solo stringhe vocali: nessuna modifica ai pin, ai routing, ai tasti o alle memorie. Nessuna compilazione locale.
+
 > **TEST61.2 — correzione errore C2677 MSVC:** corretti tre confronti duplicati `page_ == page_ == Page::trackMidi` nelle funzioni `nativeValueSlider`, `valueFraction` e `sliderLabel` di `src/TrackNavigator.cpp`. Aggiunto test statico di regressione nel workflow prima della compilazione. F10/F11, Peak Watcher e dati `.tp` invariati. Nessuna compilazione locale.
 
 > **TEST61.1 — riparazione workflow GitHub Actions:** aggiornati i test statici storici TEST55.5 e TEST56.1/56.2, che facevano ancora riferimento alle pagine F5/F8 antecedenti alla migrazione TEST61. Nessuna modifica al codice C++, alle API audio, alle scorciatoie, ai file `.tp` o agli FX. Il precedente workflow si fermava prima di CMake/MSVC; la compilazione nativa resta da effettuare su GitHub Actions.

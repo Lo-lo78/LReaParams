@@ -64,7 +64,7 @@ std::string FxNavigator::pinAudioReview(bool context) const {
     if (pinAudioColumnCount() <= 0) return "No audio pins";
     const bool output = pinAudioColumn_ >= pinAudioInputs_;
     const int pin = output ? pinAudioColumn_ - pinAudioInputs_ : pinAudioColumn_;
-    std::string message = pinAudioSelected(pinAudioColumn_, pinAudioChannel_) ? "Connected. " : "Disconnected. ";
+    std::string message = pinAudioSelected(pinAudioColumn_, pinAudioChannel_) ? "Attive. " : "";
     message += output ? "Output " : "Input ";
     message += std::to_string(pin + 1) + " " + pinLabel(pin);
     message += output ? ". Sends to track channel " : ". Receives from track channel ";
@@ -143,7 +143,7 @@ void FxNavigator::handlePinAudio(const Key& k) {
                     pinAudioReview(false) : "Could not change pin connection"); return;
             }
             case VK_DELETE:
-                if (!pinAudioSelected(pinAudioColumn_, pinAudioChannel_)) { speech_("Not connected"); return; }
+                if (!pinAudioSelected(pinAudioColumn_, pinAudioChannel_)) { speech_(pinAudioReview(false)); return; }
                 speech_(pinAudioSet(pinAudioColumn_, pinAudioChannel_, false) ?
                     pinAudioReview(false) : "Could not disconnect"); return;
             case VK_UP: pinAudioMove(pinAudioColumn_, pinAudioChannel_ - 1); return;

@@ -29,3 +29,10 @@
 7. Check Ctrl+Page Up/Down FX move and Ctrl+Left/Right item/take unchanged. Try Ctrl+Tab between FX and Track navigators; verify no stale focus or CC context.
 
 **Scope:** source-only. No local native compilation, Visual Studio, MSBuild, CMake, REAPER or NVDA runtime tests performed. GitHub Actions will compile and run native tests.
+
+## TEST61.3 — Annunci del Pin Connector
+
+- Collegamento attivo: `Attive. Input 1 left. Receives from track channel 1` (analogo per Output).
+- Collegamento assente: `Input 2 right. Receives from track channel 1` (nessun prefisso).
+- Stessa formula per il movimento, Tab/F11, Invio/Spazio e Canc. Canc su cella già vuota rilegge la cella, senza aggiungere `Not connected`.
+- Modifica limitata ai messaggi: mappature a 128 canali, Undo, focus ed Escape non cambiano.

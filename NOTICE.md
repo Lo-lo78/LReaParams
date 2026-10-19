@@ -1,3 +1,5 @@
+TEST61.3 / 0.0.61: FX F11 Pin Connector speech shortened: connected cells use "Attive. ", unconnected cells have no status prefix, including after toggle/delete. No changes to routing, keyboard controls, storage or APIs; native build remains GitHub Actions only.
+
 TEST61.2 / 0.0.61: Fix MSVC C2677 (three duplicated page_ comparisons in TrackNavigator.cpp); add static regression guard to GitHub Actions. No changes to FX Pin Connector F10/F11, OSARA or Track .tp. Native build remains GitHub Actions only.
 
 TEST61.1 / 0.0.61: Corrected three stale source-only Python tests which expected the pre-TEST61 Track Params page layout. No C++ behavior changes. GitHub Actions still needs to run the actual native build.
