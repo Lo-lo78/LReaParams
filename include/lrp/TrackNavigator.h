@@ -58,7 +58,7 @@ private:
             midiFollowsFader, midiMerge } type{};
     };
     struct TrackRow { MediaTrack* track{}; GUID guid{}; int projectIndex{}; };
-    enum class Page { tracks, sends, receives, fxTcp, pinAudio };
+    enum class Page { tracks, sends, receives, fxTcp, pinAudio, trackMidi };
     // TEST56.1: F4 is a view of native REAPER TCP parameters, not a copy of
     // the full FX parameter list. Each FX has a header, including empty FXs.
     struct FxTcpParameter { int index = -1; std::string name; };
@@ -67,8 +67,15 @@ private:
     // TEST56.10: F5 Audio Pin Connector. The selected FX is resolved by GUID
     // before every read/write; never trust an old chain index.
     bool enterPinAudio();
-    void leavePinAudio();
+    void leavePinAudio(bool speak = true);
     void handlePinAudioKey(const Key&);
+    // 0.0.57: track-owned F6 MIDI page, independent of any FX instance.
+    bool enterTrackMidi();
+    void handleTrackMidiKey(const Key&);
+    std::string trackMidiReview(bool context) const;
+    void trackMidiMove(int row);
+    void trackMidiAdjust(int direction, bool coarse = false, int edge = 0);
+    void rememberTrackMidiPosition();
     int pinAudioResolvedFx() const;
     int pinAudioColumnCount() const noexcept { return pinAudioInputs_ + pinAudioOutputs_; }
     std::string pinAudioReview(bool context) const;
@@ -136,6 +143,8 @@ private:
     GUID pinAudioGuid_{};
     int pinAudioInputs_ = 0, pinAudioOutputs_ = 0, pinAudioChannels_ = 2;
     int pinAudioColumn_ = 0, pinAudioChannel_ = 0;
+    int trackMidiRow_ = 0;
+    std::string trackMidiEdge_;
     std::vector<FxTcpColumn> fxTcpColumns_;
     int fxTcpColumn_ = 0, fxTcpRow_ = 0;
     static constexpr int detailHeight = 14;

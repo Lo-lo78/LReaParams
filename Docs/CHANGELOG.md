@@ -1,3 +1,10 @@
+# 0.0.57 — TEST57 F6 Track MIDI (sorgente)
+
+- Migrazione della pagina F6 del Lua: 5 voci verticali relative alla traccia, indipendenti dal singolo FX: hardware output, hardware channel, MIDI input channel map, MIDI control channel, MIDI routing (nota/collegamento F2-F3).
+- API native REAPER, limite di 32 dispositivi / 16 canali, nomi dei dispositivi se presenti, Undo e readback; navigazione e gestore memorie coerenti con NVDA/OSARA.
+- Salvataggio di posizione F6 nello stesso `.tp`; accesso F6 da F1-F5, F4+Alt+Invio e F5; F5 128 canali invariato.
+- Test Python source-only e workflow per compilazione esclusiva tramite GitHub Actions. **Nessun build/CTEST/reale test hardware locale.** [Guida](TEST57_F6_TRACK_MIDI.md).
+
 # 0.0.56 — TEST56.10.2 — F5 128-channel audio pins (source only)
 
 - Extend F5 from 64 to 128 track channels without changing REAPER's `I_NCHAN` or the FX instance.

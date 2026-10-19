@@ -847,7 +847,10 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
         if (!k.repeat) { rebuildFxTcp(true); openFxTcpParameterGrid(false); }
         return;
     }
-    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) return;
+    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) {
+        if (!k.repeat) enterTrackMidi();
+        return;
+    }
     if (k.vk == VK_RETURN && !k.ctrl && !k.alt && !k.shift) {
         if (!k.repeat) {
             if (currentFxTcpParameter()) {

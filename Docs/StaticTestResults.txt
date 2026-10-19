@@ -1,3 +1,11 @@
+TEST57 — 0.0.57 F6 Track MIDI (2026-10-19)
+PASS: Tools/audit.py
+PASS: Testing/test57_f6_static.py (API, navigation, positions, boundaries)
+PASS: targeted Testing/test52*_static.py through Testing/test56*_static.py
+PASS: F5 TEST56.10.2 128 channels regression
+Full historical Tools/run_static.py not completed (time limit); not claimed.
+No native C++ build, MSVC, CTest, REAPER, NVDA or MIDI device runtime test executed locally.
+
 TEST56.9.1: 14 targeted static suites PASS (selected TEST55/56), Tools/audit.py PASS.
 Full historical source-only suite: timeout after preceding tests, NOT counted as complete.
 Windows MSVC compilation, CTest and hardware NVDA/REAPER tests: NOT executed locally.

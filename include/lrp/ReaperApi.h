@@ -18,6 +18,7 @@
 #define REAPERAPI_WANT_TrackFX_SetEnabled
 #define REAPERAPI_WANT_TakeFX_GetEnabled
 #define REAPERAPI_WANT_TakeFX_SetEnabled
+#define REAPERAPI_WANT_GetMIDIOutputName
 #define REAPERAPI_WANT_GetMediaTrackInfo_Value
 #define REAPERAPI_WANT_GetTrackNumMediaItems
 #define REAPERAPI_WANT_GetTrackMediaItem

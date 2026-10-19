@@ -1,3 +1,7 @@
+# 0.0.57 — TEST57 Track Params F6, MIDI di traccia
+
+F6 è ora una pagina C++ separata e indipendente dall'FX: MIDI hardware output, relativo canale, input channel map, control channel e MIDI routing a F2/F3. Nomi uscite tramite REAPER, scritture verificate, Undo, titolo/lettura NVDA, posizione F6 nello stesso `.tp`. F5 conserva 128 canali, F1-F4 e FX Params invariati. **Solo sorgente e test Python; build GitHub Actions, CTest e prova REAPER/NVDA ancora da eseguire.** [Guida e test](TEST57_F6_TRACK_MIDI.md).
+
 # TEST56.10.2 — F5 connettore pin audio, 128 canali (solo sorgente)
 
 F5 ora usa il numero reale di canali della traccia fino a 128. I canali 65–128 usano il secondo banco API `pin + 0x1000000`; ogni banco rimane indipendente, comprese lettura, toggle, Undo e readback. F4, F1–F3, FX Params e profili `.tp` non sono stati modificati; F6 è ancora da migrare. [Piano di test](TEST56_10_F5_AUDIO_PIN_CONNECTOR.md). Solo controlli statici Python; build GitHub Actions e prova NVDA/REAPER da eseguire.

@@ -1,3 +1,7 @@
+## 0.0.57 — F6 Track MIDI (scorciatoie attuali)
+
+F6 da F1-F5: apre la pagina MIDI della traccia, senza bisogno di selezionare un FX. Su/Giù: 5 parametri; Home/End: primo/ultimo; Tab: contesto; NVDA+Su: valore corrente. Alt+Su/Giù: ±1; Alt+Pagina Su/Giù: ±4; Alt+Home/End: estremi; Invio: incrementa o naviga al routing F2/F3. F1-F4: pagine; F5 da F6 richiede prima un FX in F4; Esc termina Track Params; Ctrl+Maiusc+M gestisce le memorie. Ctrl+Tab e Ctrl+Q restano del router centrale. [Guida](TEST57_F6_TRACK_MIDI.md).
+
 # TEST56.7 — Shortcut correnti in FX Params e Track Params F4
 
 Ctrl+Pagina Su/Giù sposta fisicamente l’FX nella catena da FX Params (anche dal browser) e da Track Params F4. Ctrl+Maiusc+Su/Giù cambia traccia in FX Params, anche dal browser. Ctrl+Su/Giù cambia FX senza spostarlo. In Track F4, Alt+Invio apre la griglia dei nomi per aggiungere parametri TCP; Invio su un parametro cambia Grid/Value. Le note storiche seguenti possono documentare tasti superati.

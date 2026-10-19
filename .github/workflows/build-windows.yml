@@ -162,6 +162,8 @@ jobs:
         run: python Testing/test56_10_1_static.py
       - name: TEST56.10.2 F5 128-channel banked pin mapping (source only)
         run: python Testing/test56_10_2_static.py
+      - name: TEST57 F6 native Track MIDI page (source only)
+        run: python Testing/test57_f6_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Build

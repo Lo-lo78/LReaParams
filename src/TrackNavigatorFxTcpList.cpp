@@ -439,8 +439,11 @@ void TrackNavigator::handleFxTcpParameterGridKey(const Key& k) {
         }
         return;
     }
-    // F6 is reserved for a future Track Params environment, not a grid mutation.
-    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) return;
+    // F6 is a separate track MIDI page. Close this temporary F4 selector.
+    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) {
+        if (!k.repeat) { closeFxTcpParameterGrid(false); enterTrackMidi(); }
+        return;
+    }
     if (k.vk == VK_TAB && !k.ctrl && !k.shift && !k.alt) {
         if (!k.repeat) speech_(fxTcpParameterGridReview(true));
         return;

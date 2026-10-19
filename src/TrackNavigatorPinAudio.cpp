@@ -76,7 +76,7 @@ bool TrackNavigator::enterPinAudio() {
     return true;
 }
 
-void TrackNavigator::leavePinAudio() {
+void TrackNavigator::leavePinAudio(bool speak) {
     if (page_ != Page::pinAudio) return;
     const int fx = pinAudioResolvedFx();
     page_ = Page::fxTcp;
@@ -91,7 +91,7 @@ void TrackNavigator::leavePinAudio() {
             }
         }
     }
-    speech_(fx >= 0 ? "FX parameters. " + fxTcpReview(false) :
+    if (speak) speech_(fx >= 0 ? "FX parameters. " + fxTcpReview(false) :
         "FX no longer available. " + fxTcpReview(false));
 }
 
@@ -191,6 +191,7 @@ void TrackNavigator::handlePinAudioKey(const Key& k) {
     if (!k.ctrl && !k.shift && !k.alt) {
         switch (k.vk) {
             case VK_F5: case VK_TAB: speech_(pinAudioReview(true)); return;
+            case VK_F6: leavePinAudio(false); enterTrackMidi(); return;
             case VK_F4: case VK_ESCAPE: leavePinAudio(); return;
             case VK_F1: leavePinAudio(); selectPage(Page::tracks); return;
             case VK_F2: leavePinAudio(); selectPage(Page::sends); return;

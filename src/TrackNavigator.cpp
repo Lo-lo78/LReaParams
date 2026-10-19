@@ -41,6 +41,7 @@ void TrackNavigator::end() noexcept {
     memoryManager_ = memoryStandalone_ = false; memoryItems_.clear();
     pinAudioInputs_ = pinAudioOutputs_ = pinAudioColumn_ = pinAudioChannel_ = 0;
     pinAudioChannels_ = 2;
+    trackMidiRow_ = 0; trackMidiEdge_.clear();
     active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false;
     rangeEditing_ = false; resetMidiState();
     backgroundMode_ = false; clearAutomationConfirm_ = false; clearAutomationYes_ = false;
@@ -116,6 +117,7 @@ bool TrackNavigator::contextUnchanged() const {
     const auto* guid = GetTrackGUID(row.track);
     if (!guid || std::memcmp(guid, &row.guid, sizeof(GUID)) != 0 || track_ != row.track) return false;
     if (page_ != Page::tracks && page_ != Page::fxTcp && page_ != Page::pinAudio &&
+        page_ != Page::trackMidi &&
         (GetTrackNumSends(track_, 0) != sends_ || GetTrackNumSends(track_, -1) != receives_)) return false;
     return true;
 }
@@ -143,10 +145,30 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
         return k.vk == VK_RETURN || k.vk == VK_ESCAPE ||
             (k.ctrl && !k.alt && !k.shift && k.vk == 'F');
     }
+    if (page_ == Page::trackMidi) {
+        // F6 owns its keys; no unrelated REAPER actions or F1 routing shortcuts.
+        if (!k.ctrl && !k.shift && !k.alt) {
+            switch (k.vk) {
+                case VK_F1: case VK_F2: case VK_F3: case VK_F4: case VK_F5: case VK_F6:
+                case VK_ESCAPE: case VK_TAB: case VK_RETURN: case VK_UP: case VK_DOWN:
+                case VK_PRIOR: case VK_NEXT: case VK_HOME: case VK_END:
+                case VK_SPACE: return true;
+                default: return false;
+            }
+        }
+        if (k.alt && !k.ctrl && !k.shift)
+            return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
+                k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END;
+        if (k.ctrl && !k.alt && !k.shift)
+            return k.vk == VK_HOME || k.vk == VK_END || k.vk == VK_TAB ||
+                k.vk == VK_SPACE || k.vk == 'Q';
+        if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
+        return false;
+    }
     if (page_ == Page::pinAudio) {
         if (!k.ctrl && !k.shift && !k.alt) {
             switch (k.vk) {
-                case VK_F1: case VK_F2: case VK_F3: case VK_F4: case VK_F5:
+                case VK_F1: case VK_F2: case VK_F3: case VK_F4: case VK_F5: case VK_F6:
                 case VK_ESCAPE: case VK_TAB: case VK_RETURN: case VK_DELETE:
                 case VK_UP: case VK_DOWN: case VK_LEFT: case VK_RIGHT:
                 case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT:
@@ -244,14 +266,14 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
         case VK_ESCAPE: case VK_RETURN: case VK_TAB: case VK_SPACE:
         case VK_LEFT: case VK_RIGHT: case VK_UP: case VK_DOWN:
         case VK_HOME: case VK_END: case VK_PRIOR: case VK_NEXT:
-        case VK_F1: case VK_F2: case VK_F3: case VK_F4: return true;
+        case VK_F1: case VK_F2: case VK_F3: case VK_F4: case VK_F6: return true;
         case VK_DELETE: return true; // F1 deselect; F2/F3 remove current routing
         default: return false;
     }
 }
 void TrackNavigator::buildEntries() {
     entries_.clear();
-    if (page_ == Page::fxTcp || page_ == Page::pinAudio) return; // F4/F5 use native FX state.
+    if (page_ == Page::fxTcp || page_ == Page::pinAudio || page_ == Page::trackMidi) return; // dedicated F4/F5/F6 state.
     if (page_ == Page::tracks) {
         entries_ = {
             {"Volume", "D_VOL", 99, -1, Entry::volume},
@@ -332,6 +354,7 @@ std::string TrackNavigator::parameterKey() const {
 void TrackNavigator::rememberPosition() {
     if (page_ == Page::fxTcp) { rememberFxTcpPosition(); return; }
     if (page_ == Page::pinAudio) return; // F4 cursor was saved on entry.
+    if (page_ == Page::trackMidi) { rememberTrackMidiPosition(); return; }
     if (rows_.empty() || !current()) return;
     const auto section = pageKey();
     memory_.setPosition("LastPage", section);
@@ -346,6 +369,15 @@ void TrackNavigator::restorePosition() {
     const auto savedPage = memory_.position("LastPage");
     if (savedPage == "F2" && GetTrackNumSends(track_, 0) > 0) page_ = Page::sends;
     else if (savedPage == "F3" && GetTrackNumSends(track_, -1) > 0) page_ = Page::receives;
+    else if (savedPage == "F6") {
+        page_ = Page::trackMidi;
+        trackMidiRow_ = 0;
+        if (memory_.position("F6.TrackGUID") == rowGuid()) {
+            try { trackMidiRow_ = std::clamp(std::stoi(memory_.position("F6.Row")), 0, 4); }
+            catch (...) { trackMidiRow_ = 0; }
+        }
+        return;
+    }
     else if (savedPage == "F4" && TrackFX_GetCount && TrackFX_GetCount(track_) > 0 &&
              CountTCPFXParms && GetTCPFXParm) {
         page_ = Page::fxTcp;
@@ -419,7 +451,8 @@ bool TrackNavigator::selectPage(Page page) {
     }
     if (page == Page::sends && GetTrackNumSends(track_, 0) <= 0) { speech_("No sends"); return false; }
     if (page == Page::receives && GetTrackNumSends(track_, -1) <= 0) { speech_("No receives"); return false; }
-    if (page != Page::tracks && matchingRoutingCount(track_, page == Page::sends ? 0 : -1) == 0) {
+    if ((page == Page::sends || page == Page::receives) &&
+        matchingRoutingCount(track_, page == Page::sends ? 0 : -1) == 0) {
         speech_(page == Page::sends ? "No matching sends" : "No matching receives"); return false;
     }
     rememberPosition();
@@ -784,6 +817,7 @@ std::string TrackNavigator::reviewLine() const {
         return std::string(labels[col]) + ". " + item.label;
     }
     if (page_ == Page::pinAudio) return pinAudioReview(false);
+    if (page_ == Page::trackMidi) return trackMidiReview(false);
     if (page_ == Page::fxTcp) {
         if (numericEditing_) return nativeTextLabel() + ", " + numericBuffer_;
         if (filterEditing_) return nativeTextLabel() + ", " + filterBuffer_;
@@ -799,7 +833,7 @@ std::string TrackNavigator::reviewLine() const {
     return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
 }
 bool TrackNavigator::nativeValueSlider() const {
-    if (page_ == Page::pinAudio) return false;
+    if (page_ == Page::pinAudio || page_ == Page::trackMidi) return false;
     if (page_ == Page::fxTcp)
         return active_ && valueMode_ && !fxTcpListOpen_ && !clearAutomationConfirm_ &&
             currentFxTcpParameter() && currentFxTcpColumn() && TrackFX_GetParamNormalized;
@@ -808,7 +842,7 @@ bool TrackNavigator::nativeValueSlider() const {
     return e && (e->type == Entry::volume || e->type == Entry::pan || e->type == Entry::width);
 }
 double TrackNavigator::valueFraction() const {
-    if (page_ == Page::pinAudio) return 0.0;
+    if (page_ == Page::pinAudio || page_ == Page::trackMidi) return 0.0;
     if (page_ == Page::fxTcp) {
         if (!nativeValueSlider()) return 0.0;
         const auto* col = currentFxTcpColumn();
@@ -826,7 +860,7 @@ double TrackNavigator::valueFraction() const {
     return std::clamp((value + 1.0) / 2.0, 0.0, 1.0);
 }
 std::string TrackNavigator::sliderLabel() const {
-    if (page_ == Page::pinAudio) return "";
+    if (page_ == Page::pinAudio || page_ == Page::trackMidi) return "";
     if (page_ == Page::fxTcp) {
         const auto* p = currentFxTcpParameter();
         return p ? p->name : "";
@@ -840,6 +874,7 @@ std::string TrackNavigator::sliderLabel() const {
 std::string TrackNavigator::parameterValueSpeech() const {
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     if (page_ == Page::pinAudio) return pinAudioReview(false);
+    if (page_ == Page::trackMidi) return trackMidiReview(false);
     if (page_ == Page::fxTcp) return fxTcpReview(false);
     const auto* e = current();
     if (!e) return page_ == Page::sends ? "No sends" :
@@ -853,6 +888,10 @@ void TrackNavigator::announce() { speech_(parameterValueSpeech()); }
 void TrackNavigator::announceTrack() { speech_(currentParameterSpeech()); }
 void TrackNavigator::announceTitle() {
     if (!active_) return;
+    if (page_ == Page::trackMidi && !memoryManager_) {
+        speech_("Track Params - " + trackName() + ". Track MIDI. " + trackMidiReview(false));
+        return;
+    }
     if (page_ == Page::pinAudio && !memoryManager_) {
         speech_("Audio pin connector. " + trackName() + ". " + pinAudioReview(true));
         return;
@@ -869,6 +908,8 @@ void TrackNavigator::announceTitle() {
 }
 std::wstring TrackNavigator::windowTitle() const {
     if (!active_) return L"Track Params";
+    if (page_ == Page::trackMidi && !memoryManager_)
+        return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + L" - Track MIDI";
     if (page_ == Page::pinAudio && !memoryManager_)
         return std::wstring(L"Track Params - ") + wideUtf8(trackName()) +
             L" - Audio pin connector - " +
@@ -1172,6 +1213,7 @@ void TrackNavigator::handle(const Key& k) {
         return;
     }
     if (memoryManager_) { handleMemory(k); return; }
+    if (page_ == Page::trackMidi) { handleTrackMidiKey(k); return; }
     if (page_ == Page::pinAudio) { handlePinAudioKey(k); return; }
     if (page_ == Page::fxTcp) { handleFxTcpKey(k); return; }
     if (k.ctrl && k.shift && !k.alt && k.vk == 'M') {
@@ -1374,6 +1416,7 @@ void TrackNavigator::handle(const Key& k) {
     if (k.vk == VK_F2) { selectPage(Page::sends); return; }
     if (k.vk == VK_F3) { selectPage(Page::receives); return; }
     if (k.vk == VK_F4) { selectPage(Page::fxTcp); return; }
+    if (k.vk == VK_F6 && !k.ctrl && !k.alt && !k.shift) { if (!k.repeat) enterTrackMidi(); return; }
     if (k.vk == VK_RETURN) {
         if (k.repeat) return;
         const auto* e = current();
