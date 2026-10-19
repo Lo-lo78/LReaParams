@@ -1,3 +1,11 @@
+## TEST61.8 — Import legacy Lua settings and keyboard Settings action
+
+The existing REAPER action **LReaParams: Import legacy profiles** now asks **Y** to import, **N** to leave files untouched; **Escape** cancels. At startup the same question appears only once when old Lua TXT profiles are found. Your choice is saved in `LReaParams\Settings\LegacyImportChoice.txt`. To import later run the action at any time. No automatic conversion occurs without confirmation. Original Lua TXT files remain in their old folder, native .fx/.tp differences are not overwritten, and verified backups are retained.
+
+**LReaParams: Settings (Keyboard Input)** is *not* a general settings screen: press **1** for the recommended REAPER SDK accelerator, **2** for the main-thread compatibility hook, **Escape** for unchanged; the selection lasts only for this REAPER session. Task Dialog labels and direct shortcuts are independent of Windows Yes/No button localization. In-navigator Y/N automation and memory confirmations are unchanged.
+
+**Source only, no local build; compile via GitHub Actions.**
+
 # LReaParams 0.0.61 — TEST61.7 GitHub Actions test repair
 
 The TEST61.6 workflow stopped before CMake at TEST27, because About used `Bare F12 reserved` where a historical Python check required `F12 alone is reserved`. After this check, historical TEST42 also expected Stop Background MIDI to be the final action in the enum, but the multilingual guide action is now appended. TEST61.7 resolves both mismatches, preserves the actual behavior and seven-language guide, and passes the complete set of 83 workflow Python tests (source-only; **no native compilation**).

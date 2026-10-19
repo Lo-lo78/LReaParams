@@ -178,6 +178,8 @@ jobs:
         run: python Testing/test61_4_f6_add_hardware_output_static.py
       - name: TEST61.6 guide action, translations and offline links (source only)
         run: python Testing/test61_6_multilingual_guides_static.py
+      - name: TEST61.8 legacy import consent and keyboard dialog shortcuts (source only)
+        run: python Testing/test61_8_legacy_import_choices_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Verify TEST60 shared marker and timeline navigation (source only)

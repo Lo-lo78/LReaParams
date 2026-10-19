@@ -1,3 +1,12 @@
+
+## TEST61.8 — Consent-first import and accessible keyboard settings (2026-10-19)
+- Startup no longer silently imports or converts old Lua TXT profiles. If legacy files exist, a one-time accessible native question asks **Y** (convert safely) or **N** (leave unchanged); Escape also declines. Answer stored in `LReaParams/Settings/LegacyImportChoice.txt`. The prompt will not recur after an answer; manual import always remains available. No legacy TXT = no startup dialog.
+- Existing REAPER action `LReaParams: Import legacy profiles` (`_LREAPARAMSIMPORTLEGACY`) now asks for explicit Y/N confirmation **every invocation**. Without legacy files it displays an informational message.
+- Existing REAPER action `_LREAPARAMSSETTINGS` is now described as `LReaParams: Settings (Keyboard Input)`; it is a two-choice menu: **1** SDK accelerator (default) / **2** REAPER main-thread compatibility hook; Escape cancels. Mode lasts only until REAPER is closed.
+- Native Windows Task Dialog buttons are explicitly labeled in English with Y/N and 1/2 shortcuts; unmodified keys are routed only while the dialog is focused. Native FX/Track automation confirmations already use Y/N and are unchanged.
+- The same protected importer creates verified backups, never overwrites differing native profiles, and only deletes TXT in *active* LReaParams folders after verification; old Lua source files remain intact.
+- No C++ or native compilation locally. Tests check source contracts; confirm actual keyboard/OSARA behavior on GitHub-built DLL.
+
 ## TEST61.7 — GitHub Actions source-only regression fix (2026-10-19)
 - Corrected legacy TEST27 string expectation by clarifying the F12 About text (`F12 alone is reserved`; Ctrl+F12 continues to address memory slot 12).
 - Corrected the legacy TEST42 check to verify the Stop Background MIDI action without requiring it to be the last enum entry; the TEST61.6 Open User Guide action remains registered.

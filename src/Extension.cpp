@@ -4,6 +4,7 @@
 #include "lrp/InputRouter.h"
 #include "lrp/TitleProxy.h"
 #include "lrp/Storage.h"
+#include "lrp/ChoiceDialogs.h"
 #include <shellapi.h>
 #include <array>
 #include <memory>
@@ -12,6 +13,7 @@
 #include <system_error>
 #include <cctype>
 #include <algorithm>
+#include <cwctype>
 
 namespace lrp {
 namespace {
@@ -64,7 +66,7 @@ public:
         timerRegistered_ = info_.Register("timer", reinterpret_cast<void*>(timerHook)) != 0;
         if (!hookRegistered_ || !toggleRegistered_ || !menuRegistered_ || !timerRegistered_ || !fxChainAccelRegistered_) throw std::runtime_error("Callback registration failed");
         AddExtensionsMainMenu();
-        importer_.start(resource_); // no REAPER APIs are called by this worker
+        startupImportCheckPending_ = true; // No automatic conversion without user consent
     }
     bool shortcutHelp() const {
         const auto query = reinterpret_cast<bool(*)()>(info_.GetFunc("osara_isShortcutHelpEnabled"));
@@ -145,23 +147,27 @@ public:
         }
         case importLegacy:
             exitNavigation(false);
-            announceImport_ = true;
-            speak(importer_.start(resource_) ? "Import started" : "Import already running");
+            requestLegacyImport(false);
             break;
         case openData: {
             exitNavigation(false);
             const auto root = resource_ / L"LReaParams";
             const auto result = reinterpret_cast<INT_PTR>(ShellExecuteW(info_.hwnd_main, L"open", root.c_str(), nullptr, nullptr, SW_SHOWNORMAL));
-            if (result <= 32) speak("Cannot open data folder. Initial import may still be running.");
+            if (result <= 32) speak("Cannot open LReaParams data folder.");
             break;
         }
         case settings: {
             exitNavigation(false);
-            const int answer = MessageBoxW(info_.hwnd_main,
-                L"Keyboard backend, current REAPER session only.\n\nYes: main REAPER thread hook (WH_GETMESSAGE).\nNo: REAPER SDK accelerator plus Escape-only hook (default).\nCancel: keep current setting.\n\nCapture is confined to REAPER's main thread and active navigator.",
-                L"LReaParams Settings", MB_YESNOCANCEL | MB_ICONINFORMATION);
-            if (answer == IDYES) backend_ = InputBackend::mainThreadHook;
-            else if (answer == IDNO) backend_ = InputBackend::sdkAccelerator;
+            const auto choice = chooseKeyboardBackend(info_.hwnd_main,
+                backend_ == InputBackend::mainThreadHook);
+            if (!choice) { speak("Keyboard setting unchanged"); break; }
+            if (*choice == 1) {
+                backend_ = InputBackend::sdkAccelerator;
+                speak("Keyboard: REAPER SDK accelerator. Current session only");
+            } else {
+                backend_ = InputBackend::mainThreadHook;
+                speak("Keyboard: main-thread compatibility hook. Current session only");
+            }
             break;
         }
         case openGuide: {
@@ -220,7 +226,13 @@ public:
                 "Simplified Chinese or Japanese; then FX Params or Track Params.\n"
                 "Install Guide in REAPER resource path / LReaParams / Guide.\n"
                 "Data: REAPER resource path / LReaParams / Plugins (.fx) and Tracks (.tp).\n"
-                "The original Lua launcher scripts are not required.",
+                "The original Lua launcher scripts are not required.\n\n"
+                "Import legacy profiles: Y imports the old Lua TXT settings, N leaves them unchanged. "
+                "At startup the one-time question appears only when legacy TXT files are found. "
+                "Run Import legacy profiles later to import manually.\n"
+                "Settings: 1 chooses REAPER SDK keyboard accelerator (recommended), "
+                "2 chooses the compatibility hook. Escape keeps the mode unchanged. "
+                "This keyboard selection lasts only for the current REAPER session.",
                 "About LReaParams", 0);
             break;
         case fxMemories: {
@@ -378,8 +390,71 @@ public:
                 }
                 refreshToggles();
     }
+    bool containsLegacyTxt(const fs::path& directory) const {
+        std::error_code ec;
+        if (!fs::is_directory(directory, ec) || fs::is_symlink(directory, ec)) return false;
+        fs::recursive_directory_iterator it(directory, fs::directory_options::skip_permission_denied, ec);
+        const fs::recursive_directory_iterator end;
+        for (; !ec && it != end; it.increment(ec)) {
+            if (it->is_symlink(ec)) {
+                if (it->is_directory(ec)) it.disable_recursion_pending();
+                ec.clear();
+                continue;
+            }
+            if (ec) { ec.clear(); continue; }
+            if (!it->is_regular_file(ec)) { ec.clear(); continue; }
+            auto ext = it->path().extension().wstring();
+            std::transform(ext.begin(), ext.end(), ext.begin(),
+                [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
+            if (ext == L".txt") return true;
+        }
+        return false;
+    }
+    bool hasLegacyProfiles() const {
+        const auto legacy = resource_ / L"Scripts" / L"Lo-lo - Scripts" / L"Utility" / L"Scripts";
+        const auto current = resource_ / L"LReaParams";
+        return containsLegacyTxt(legacy / L"Plugins") || containsLegacyTxt(legacy / L"Tracks") ||
+            containsLegacyTxt(current / L"Plugins") || containsLegacyTxt(current / L"Tracks");
+    }
+    void requestLegacyImport(bool atStartup) {
+        if (!hasLegacyProfiles()) {
+            if (!atStartup) MessageBoxW(info_.hwnd_main,
+                L"No legacy TXT profiles were found in the old Lua Plugins/Tracks folders "
+                L"or in the current LReaParams Plugins/Tracks folders. Nothing was changed.",
+                L"LReaParams - Import legacy profiles", MB_OK | MB_ICONINFORMATION);
+            return;
+        }
+        const auto answer = confirmLegacyImport(info_.hwnd_main, atStartup);
+        if (atStartup) {
+            // One-shot startup consent; N or Escape means 'do not import'. If a
+            // later import is wanted, the explicit action always remains available.
+            // The consent marker lives outside active profile directories.
+            const fs::path marker = resource_ / L"LReaParams" / L"Settings" /
+                L"LegacyImportChoice.txt";
+            try {
+                writeNewVerified(marker, answer.value_or(false) ?
+                    "LREAPARAMS_LEGACY_IMPORT_CHOICE_V1\nChoice=Yes\n" :
+                    "LREAPARAMS_LEGACY_IMPORT_CHOICE_V1\nChoice=No\n");
+            } catch (...) { OutputDebugStringW(L"LReaParams: could not save startup import preference.\n"); }
+        }
+        if (!answer || !*answer) {
+            if (!atStartup) speak("Legacy import cancelled. No profiles changed");
+            return;
+        }
+        const bool started = importer_.start(resource_);
+        if (started) announceImport_ = true;
+        speak(started ? "Import started. Verified backups are retained" :
+            "Legacy profile import already running");
+    }
     void tick() {
         if (GetCurrentThreadId() != mainThread_) { fail(); return; }
+        if (startupImportCheckPending_ && IsWindowVisible(info_.hwnd_main) &&
+            IsWindowEnabled(info_.hwnd_main)) {
+            startupImportCheckPending_ = false;
+            std::error_code ec;
+            const fs::path marker = resource_ / L"LReaParams" / L"Settings" / L"LegacyImportChoice.txt";
+            if (!fs::exists(marker, ec) && !ec) requestLegacyImport(true);
+        }
         if (auto report = importer_.poll()) {
             OutputDebugStringA(("LReaParams " + report->summary() + "\n").c_str());
             if (announceImport_) { speak(report->summary()); announceImport_ = false; }
@@ -619,6 +694,7 @@ private:
     fs::path resource_;
     InputBackend backend_ = InputBackend::sdkAccelerator;
     bool hookRegistered_ = false, toggleRegistered_ = false, menuRegistered_ = false, timerRegistered_ = false, announceImport_ = false;
+    bool startupImportCheckPending_ = false;
     bool titleModeEnabled_ = true, titleProxyActive_ = false;
     accelerator_register_t fxChainAccel_{};
     bool fxChainAccelRegistered_ = false;
@@ -628,7 +704,7 @@ private:
         {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params", L"Track Params"},
         {"LREAPARAMSIMPORTLEGACY", "LReaParams: Import legacy profiles", L"Import legacy profiles"},
         {"LREAPARAMSOPENDATAFOLDER", "LReaParams: Open Data Folder", L"Open Data Folder"},
-        {"LREAPARAMSSETTINGS", "LReaParams: Settings", L"Settings"},
+        {"LREAPARAMSSETTINGS", "LReaParams: Settings (Keyboard Input)", L"Keyboard Settings"},
         {"LREAPARAMSABOUT", "LReaParams: About LReaParams", L"About LReaParams"},
         {"LREAPARAMSFXMEMORIES", "LReaParams: FX Memories", L"FX Memories"},
         {"LREAPARAMSTRACKMEMORIES", "LReaParams: Track Memories", L"Track Memories"},
