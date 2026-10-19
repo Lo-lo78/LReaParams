@@ -439,16 +439,16 @@ void TrackNavigator::handleFxTcpParameterGridKey(const Key& k) {
         }
         return;
     }
-    // F6 is a separate track MIDI page. Close this temporary F4 selector.
-    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) {
+    // F5 is the track MIDI page. Close this temporary F4 selector.
+    if (k.vk == VK_F5 && !k.ctrl && !k.shift && !k.alt) {
         if (!k.repeat) { closeFxTcpParameterGrid(false); enterTrackMidi(); }
         return;
     }
-    if (k.vk == VK_F8 && !k.ctrl && !k.shift && !k.alt) {
+    if (k.vk == VK_F7 && !k.ctrl && !k.shift && !k.alt) {
         if (!k.repeat) { closeFxTcpParameterGrid(false); enterReaRoute(); }
         return;
     }
-    if (k.vk == VK_F7 && !k.ctrl && !k.shift && !k.alt) {
+    if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) {
         if (!k.repeat) {
             if (hardwareOutputCount() > 0) {
                 closeFxTcpParameterGrid(false); enterHardwareOutputs();

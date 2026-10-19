@@ -52,9 +52,9 @@ public:
     void announceTitle() override;
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
-    bool nativeValueSlider() const override { return active_ && valueMode_ && !clearAutomationConfirm_ && !memoryManager_ && !fxBrowserMode_; }
+    bool nativeValueSlider() const override { return active_ && valueMode_ && !clearAutomationConfirm_ && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_; }
     // Native Windows EDIT control for F7 rename and Ctrl+F search.
-    bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_) && !memoryManager_ && !fxBrowserMode_; }
+    bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_) && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_; }
     std::string nativeTextValue() const { return numericEdit_ ? numericBuffer_ : textEdit_ ? textBuffer_ : search_; }
     std::string nativeTextLabel() const { return numericEdit_ ? "Parameter value" : textEdit_ ? (textEditParam_ == -1 ? "Group name" : "Parameter name") : "Find parameter"; }
     void setNativeText(const std::string& text);
@@ -167,6 +167,17 @@ private:
     void openCurrentFxChain();
     void openNativeFxBrowser();
     void enterFxBrowser();
+    // TEST61: independent 128-channel FX pin matrix (Track, Take and Monitor).
+    bool enterPinAudio();
+    void leavePinAudio(bool announce = true);
+    void handlePinAudio(const Key& key);
+    std::string pinAudioReview(bool context) const;
+    bool pinAudioSelected(int column, int channel) const;
+    bool pinAudioSet(int column, int channel, bool selected);
+    void pinAudioMove(int column, int channel);
+    void pinAudioJumpSelected(int direction, int axis);
+    int pinAudioColumnCount() const noexcept { return pinAudioInputs_ + pinAudioOutputs_; }
+
     void browserKey(const Key& key);
     void browserMove(int amount);
     void browserSwitchColumn(int direction);
@@ -314,6 +325,10 @@ private:
     int browserIndex_ = 0;
     NativeFxWindow nativeFxWindowRequest_ = NativeFxWindow::none;
     bool fxBrowserMode_ = false;
+    bool pinAudioMode_ = false;
+    int pinAudioInputs_ = 0, pinAudioOutputs_ = 0;
+    int pinAudioChannels_ = 2, pinAudioColumn_ = 0, pinAudioChannel_ = 0;
+
     // Master and Monitor are separate browser columns. Left/Right may switch
     // columns; vertical movement and FX operations never cross their borders.
     bool browserScopeMonitor_ = false;

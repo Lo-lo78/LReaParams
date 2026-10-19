@@ -20,7 +20,7 @@ for marker in ['switchToContext(', 'switchItem(', 'returnToTrackFx(', 'browserKe
 assert 'browserCursor_' in h and 'fxBrowserMode_' in h
 assert 'if (fxBrowserMode_) speech_(browserSpeech());' in source
 assert 'if (fxBrowserMode_) return browserSpeech();' in source
-assert "k.vk=='P'" in source and "k.vk=='W'" in source
+assert "k.vk==VK_F10" in source and "k.vk=='W'" in source
 assert 'k.vk==VK_PRIOR||k.vk==VK_NEXT' in source
 assert 'k.vk==VK_LEFT||k.vk==VK_RIGHT' in source
 assert 'browserMoveFx(' in contexts and 'TrackFX_CopyToTrack(' in contexts and 'TakeFX_CopyToTake(' in contexts

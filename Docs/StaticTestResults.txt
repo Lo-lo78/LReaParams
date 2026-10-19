@@ -1,3 +1,9 @@
+TEST61 — 0.0.61 F10 Browser/Grid, F11 FX Pin Connector, Track F5–F7 remap (2026-10-19)
+PASS: 24 targeted Python source/static regression tests (24/24).
+PASS: TEST61 source-only pin matrix 128-channel mask oracle / Track–Take–Monitor API presence / F10–F11 key and browser behaviors / .tp page layout migration / OSARA named actions.
+PASS: Tools/audit.py source audit (source-only).
+NO local C++, CMake, MSVC, CTest or REAPER/NVDA runtime tests run. GitHub Actions native compilation and actual accessibility/audio behavior remain unverified.
+
 TEST59 — 0.0.59 F8 ReaRoute bridge (2026-10-19)
 
 PASS: all 80 Testing/test*_static.py Python tests.

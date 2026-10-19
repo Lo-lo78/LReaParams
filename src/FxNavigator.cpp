@@ -1,4 +1,5 @@
 #include "lrp/FxNavigator.h"
+#include "lrp/PeakWatcher.h"
 #include "lrp/ReaEqChunk.h"
 #include "lrp/ReaEqVirtual.h"
 #include <algorithm>
@@ -48,7 +49,7 @@ void FxNavigator::end() noexcept {
     // Keep per-instance Original/Compare snapshots across navigator exits and
     // Ctrl+Tab. Original is captured only on first entry to the FX; a double
     // F8 is the sole user command which updates that reference.
-    active_ = false; fxBrowserMode_ = false; browserScopeMonitor_ = false; browserCursor_ = 0; browserMasterCursor_ = browserMonitorCursor_ = -1;
+    active_ = false; fxBrowserMode_ = false; pinAudioMode_ = false; browserScopeMonitor_ = false; browserCursor_ = 0; browserMasterCursor_ = browserMonitorCursor_ = -1;
     recentMode_ = false; numericEdit_ = false; learnCc_ = false;
     floatingCc_ = false; floatingWaiting_ = false; pickup_.clear();
     valueMode_ = false; searchMode_ = false; editF7_ = false;
@@ -1002,16 +1003,31 @@ bool FxNavigator::uiStillOpen() const {
 bool FxNavigator::accepts(const Key& k) const noexcept {
     if (clearAutomationConfirm_) return true;
     if (!active_) return false;
+    if (!textEdit_ && !numericEdit_ && !searchMode_ && !recentMode_ &&
+        isPeakWatcherShortcut(k)) return true;
     if (!textEdit_ && !searchMode_ && !numericEdit_ && !recentMode_ &&
         !defaultConfirm_ && isTransportMarkerShortcut(k)) return true;
     // The Lua transport gestures belong to FX Params in Grid, Value, F7 and Memories.
     // Native search/rename/numeric EDIT controls must retain their space key.
+    if (pinAudioMode_) {
+        if (!k.ctrl && !k.shift && !k.alt &&
+            (k.vk==VK_F10 || k.vk==VK_F11 || k.vk==VK_TAB || k.vk==VK_ESCAPE ||
+             k.vk==VK_RETURN || k.vk==VK_SPACE || k.vk==VK_DELETE ||
+             k.vk==VK_UP || k.vk==VK_DOWN || k.vk==VK_LEFT || k.vk==VK_RIGHT ||
+             k.vk==VK_HOME || k.vk==VK_END || k.vk==VK_PRIOR || k.vk==VK_NEXT)) return true;
+        if (k.ctrl && !k.shift && !k.alt &&
+            (k.vk==VK_HOME || k.vk==VK_END || k.vk==VK_UP || k.vk==VK_DOWN ||
+             k.vk==VK_LEFT || k.vk==VK_RIGHT)) return true;
+        return k.ctrl && k.alt && !k.shift && !k.altGr &&
+            (k.vk==VK_UP || k.vk==VK_DOWN || k.vk==VK_LEFT || k.vk==VK_RIGHT);
+    }
     if (fxBrowserMode_) {
+        if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F10 || k.vk==VK_F11)) return true;
         if (k.vk==VK_SPACE && !k.shift && !k.alt) return true; // transport
         if (k.altGr && k.character) return true;
         if (k.ctrl && k.alt && !k.shift && !k.altGr && k.vk=='B') return true; // Lua offline
         if (k.ctrl && !k.alt && !k.shift &&
-            (k.vk==VK_PRIOR||k.vk==VK_NEXT||k.vk=='P'||k.vk=='B'||k.vk=='D'||k.vk=='W'||
+            (k.vk==VK_PRIOR||k.vk==VK_NEXT||k.vk=='B'||k.vk=='D'||k.vk=='W'||
              k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_UP||k.vk==VK_DOWN||
              k.vk==VK_HOME||k.vk==VK_END)) return true;
         if (k.ctrl && k.shift && !k.alt &&
@@ -1023,8 +1039,8 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
                k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||
                k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT;
     }
-    // Lua Ctrl+P opens a dedicated FX browser, leaving the parameter selection intact.
-    if (k.ctrl && !k.alt && !k.shift && k.vk=='P') return true;
+    // TEST61: F10 replaces Ctrl+P; F11 opens the FX pin connector.
+    if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F10 || k.vk==VK_F11)) return true;
     // Lua context-navigation gestures also work from the parameter grid.
     if (k.ctrl && !k.alt && !k.shift &&
         (k.vk=='W'||k.vk==VK_LEFT||k.vk==VK_RIGHT)) return true;
@@ -1064,9 +1080,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_SPACE||
         (k.vk>='A'&&k.vk<='Z')||(k.vk>='0'&&k.vk<='9')||
         (k.ctrl&&k.vk=='F');
-    if ((k.vk==VK_F10||k.vk==VK_F11||k.vk==VK_F12) && k.alt) return false; // OSARA peak watchers
     if (k.vk == VK_F12 && !k.ctrl) return false; // bare F12 is reserved for future LReaParams commands
-    if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F10)) return false; // unassigned
     if (k.ctrl && !k.alt && k.vk == 'L') return true;
     if (k.vk==VK_BACK && !k.alt) return true;
     if (!k.ctrl && k.alt && !k.shift && (k.vk == 'G' || k.vk == 'M')) return true;
@@ -1156,6 +1170,7 @@ double FxNavigator::valueFraction() const {
 std::string FxNavigator::sliderLabel() const { return displayName(); }
 void FxNavigator::announce() {
     if(!fxBrowserMode_)syncParameterStep();
+    if(pinAudioMode_) {speech_(pinAudioReview(false));return;}
     if(fxBrowserMode_) {speech_(browserSpeech());return;}
     if(memoryManager_) {speakMemory();return;}
     speech_(editF7_ ? editorParameterSpeech() : currentParameterSpeech());
@@ -1163,6 +1178,7 @@ void FxNavigator::announce() {
 void FxNavigator::announceTitle() {
     if (!active_) return;
     if(!fxBrowserMode_)syncParameterStep();
+    if(pinAudioMode_){speech_("Audio Pin Connector. "+pinAudioReview(true));return;}
     if(fxBrowserMode_){speech_("FX Browser. "+browserSpeech());return;}
     if(memoryManager_){speakMemory("FX Memories");return;}
     speech_(fxWindowTitleBase() + ". " + currentParameterSpeech());
@@ -1180,6 +1196,7 @@ std::wstring wideUtf8(const std::string& str) {
 }
 std::wstring FxNavigator::windowTitle() const {
     if (!active_) return L"FX Params";
+    if (pinAudioMode_) return wideUtf8("FX Pin Connector - " + contextName() + " - " + fxDisplayName());
     if (fxBrowserMode_) {
         std::string browserContext = contextName();
         if (track_ == GetMasterTrack(project_) && !entries_.empty())
@@ -1199,6 +1216,7 @@ std::string FxNavigator::reviewLine() const {
         return std::string("Disable all automation on current FX? ") +
             (clearAutomationYes_ ? "Yes selected" : "No selected") +
             ". Left and Right select; Enter confirms the selected answer. Y confirms, N or Escape cancels.";
+    if (pinAudioMode_) return pinAudioReview(true);
     if (fxBrowserMode_) return browserSpeech();
     if (memoryManager_) return memoryReview();
     if(recentMode_ && historyIndex_>=0 && historyIndex_<static_cast<int>(searchHistory_.size()))return "Recent searches. "+searchHistory_[static_cast<size_t>(historyIndex_)];
@@ -1399,6 +1417,23 @@ void FxNavigator::handle(const Key& k) {
         }
         return;
     }
+    if (!textEdit_ && !numericEdit_ && !searchMode_ && !recentMode_ &&
+        isPeakWatcherShortcut(k)) { executePeakWatcherShortcut(k); return; }
+    // TEST61: explicit FX Pin Connector navigation (not the FX parameter grid).
+    if (pinAudioMode_) { handlePinAudio(k); return; }
+    if (!k.ctrl && !k.alt && !k.shift && (k.vk == VK_F10 || k.vk == VK_F11) &&
+        !textEdit_ && !searchMode_ && !numericEdit_ && !recentMode_ &&
+        !memoryManager_ && !defaultConfirm_) {
+        if (k.repeat) return;
+        if (k.vk == VK_F10) {
+            if (fxBrowserMode_) browserSelect();
+            else enterFxBrowser();
+        } else {
+            if (fxBrowserMode_) browserSelect();
+            if (!fxBrowserMode_) enterPinAudio();
+        }
+        return;
+    }
     // Memory management or a filtered search may select a parameter without a position save.
     // Before using its step for a value change, load that parameter's setting.
     if (!fxBrowserMode_) syncParameterStep();
@@ -1468,7 +1503,6 @@ void FxNavigator::handle(const Key& k) {
     if (!searchMode_ && !textEdit_ && !numericEdit_ && !memoryManager_) {
         if (k.ctrl && k.shift && !k.alt && k.vk=='F') {if(!k.repeat)openCurrentFxChain();return;}
         if (k.alt && k.shift && !k.ctrl && k.vk=='F') {if(!k.repeat)openNativeFxBrowser();return;}
-        if (k.ctrl && !k.shift && !k.alt && k.vk=='P') {if(!k.repeat)enterFxBrowser();return;}
         if (k.ctrl && !k.shift && !k.alt && k.vk=='W') {if(!k.repeat)returnToTrackFx();return;}
         if (k.ctrl && !k.shift && !k.alt && (k.vk==VK_LEFT||k.vk==VK_RIGHT)) {
             if(!k.repeat)switchItem(k.vk==VK_LEFT?-1:1);return;

@@ -1,3 +1,5 @@
+TEST61 / 0.0.61: FX Params F10 browser/grid replaces Ctrl+P; F11 hosts the moved 128-channel audio pin connector (Track/Take/Monitor); Track Params F5/F6/F7 replace previous F6/F7/F8 with one-time .tp cursor migration. Direct OSARA Peak Watcher actions for Alt+F10/F11/F12 (+Shift). No local compilation.
+
 TEST60 (0.0.60): scorciatoie condivise Marker + Transport (FX/Track) senza alias F4, senza rimappare Ctrl+Page e Ctrl+frecce. Fonte Lua invariata. Compilazione SOLO GitHub Actions.
 
 TEST59 / LReaParams 0.0.59: native Track Params F8 ReaRoute migrated from the original Lua. Separate track input, output creation, 11-row per-output grid; native send routing APIs, Undo, project .tp cursor memory, and physical/virtual output isolation in F7. No F4 aliases/manual sorting and no transport key remapping. SOURCE ONLY. Compiled and tested only by GitHub Actions; no local native build.

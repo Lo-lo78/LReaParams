@@ -1,3 +1,11 @@
+**NOTA TEST61:** da LReaParams 0.0.61 le assegnazioni vigenti sono **F10 = Browser/Grid**, **F11 = Audio Pin Connector**; Ctrl+P non cambia più la modalità FX. Le sezioni relative alle versioni precedenti sono **storiche** e possono riportare vecchie combinazioni. Track Params: F1–F7, con F5 MIDI, F6 hardware e F7 ReaRoute.
+
+## TEST61 — nuova mappa corrente FX/Track
+
+FX Params: F10 alterna Browser e Grid sull’FX selezionato (il vecchio Ctrl+P è rimosso). F11 apre il Pin Connector Audio 1–128 canali; Esc torna al parametro. Da Pin Connector F10 passa al Browser. Alt+F10/F11/F12 e Alt+Maiusc+F10/F11/F12 controllano rispettivamente Peak Watcher 1 e 2 tramite OSARA. Ctrl+Pagina Su/Giù continua a spostare l’FX, Ctrl+Sinistra/Destra mantiene la navigazione take/item.
+
+Track Params: F1 Tracce, F2 Send, F3 Receive, F4 FX TCP, F5 Track MIDI, F6 Hardware Outputs, F7 ReaRoute. F8 libero. Le descrizioni di F5–F8 nelle sezioni storiche sottostanti precedono TEST61.
+
 ## 0.0.59 — Track F8 ReaRoute
 
 F8 apre la griglia del ponte ReaRoute con 11 righe. Colonna 1: input, colonna 2: controlli di output e **Add ReaRoute output** (Invio); colonne successive: output ReaRoute reali. Sinistra/Destra sposta la colonna, Su/Giù la riga; Alt+Su/Giù modifica, Alt+Pagina usa lo step ampio, Alt+Home/End gli estremi; Canc rimuove soltanto l’output ReaRoute sotto il cursore. Tab legge contesto. Esc esce da Value o torna a F1. F7 ora non mescola gli output ReaRoute con gli hardware fisici. [Guida TEST59](TEST59_F8_REAROUTE.md).

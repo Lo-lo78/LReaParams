@@ -1,3 +1,5 @@
+TEST61 / LReaParams 0.0.61: FX F10 Browser↔Grid (Ctrl+P removed), FX F11 128-channel audio pin connector for Track, Take and Monitor FX; Track F5 MIDI, F6 Hardware, F7 ReaRoute, with one-time .tp page cursor conversion; six OSARA Peak Watcher actions restored. No local build; MSVC through GitHub Actions. See Docs/TEST61_FX_PIN_MIGRATION.md.
+
 # 0.0.59 — TEST59 F8 ReaRoute (sorgente)
 
 Migrazione nativa della griglia ReaRoute, con input della traccia, controlli di creazione output, colonne di output virtuali, 11 righe, valori e routing REAPER, Undo, lettura di verifica e `.tp`. F7 ora isola i soli hardware output fisici. Nessun alias F4 o modifica delle scorciatoie di trasporto. Solo sorgente, compilazione GitHub Actions. [Dettagli](TEST59_F8_REAROUTE.md).

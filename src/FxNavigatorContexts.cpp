@@ -432,12 +432,11 @@ void FxNavigator::browserKey(const Key& k) {
         if(!k.repeat) Main_OnCommand(k.ctrl ? 40073 : 40044, 0);
         return;
     }
-    if (k.repeat && (k.vk==VK_RETURN || k.vk=='P' || k.vk=='B' || k.vk=='D' || k.vk==VK_ESCAPE))return;
+    if (k.repeat && (k.vk==VK_RETURN || k.vk=='B' || k.vk=='D' || k.vk==VK_ESCAPE))return;
     if (k.ctrl && k.alt && !k.shift && !k.altGr && k.vk=='B') {
         toggleOffline();return;
     }
     if (k.ctrl && !k.shift && !k.alt) {
-        if (k.vk=='P') {browserSelect();return;}
         // Ctrl+PageUp/Down physically moves the selected FX inside its chain.
         if (k.vk == VK_PRIOR || k.vk == VK_NEXT) {
             if (!k.repeat) browserMoveFx(k.vk == VK_PRIOR ? -1 : 1);

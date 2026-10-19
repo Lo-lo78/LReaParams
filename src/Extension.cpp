@@ -165,15 +165,15 @@ public:
         }
         case about:
             exitNavigation(false);
-            ShowMessageBox("LReaParams 0.0.55 - Track Memories\n\n"
+            ShowMessageBox("LReaParams 0.0.61 - Track Memories\n\n"
                 "FX Params and Track Params, native NVDA/OSARA focus.\n"
                 "FX: F7 order editor, Ctrl+Shift+M FX Memories, Ctrl+Alt+C learn, Shift+C fixed CC, Ctrl+Shift+C floating CC.\n"
-                "Track: Ctrl+Shift+M Track Memories; F8 in FX Params is unassigned.\n"
+                "Track: F5 MIDI, F6 Hardware outputs, F7 ReaRoute; Ctrl+Shift+M Track Memories.\n"
                 "Ctrl+T MIDI speech, Ctrl+Shift+A parameter envelope, Ctrl+Shift+Alt+A confirm automation clear.\n"
                 "Alt+F1/F2 presets; Alt+F3/F4 automated parameters. Ctrl+E numeric edit.\n"
                 "Space Play/Stop; Ctrl+Space Play/Pause in FX Params and Track Params. Shift+Space selects in F7 or F1.\n"
                 "Ctrl+R recent searches; Ctrl+Shift+R full context review.\n"
-                "F12 alone is reserved; Ctrl+F12 keeps slot 12; Alt+F10/F11/F12 remain with OSARA.\n"
+                "FX F10 Browser/Grid; F11 Audio Pin Connector; Ctrl+P removed. F12 alone is reserved; Ctrl+F12 slot 12; Alt+F10/F11/F12 OSARA Peak Watcher.\n"
                 "See Docs/Status.md for remaining Lua differences and required runtime tests.\n"
                 "No local compilation was performed.", "About LReaParams", 0);
             break;

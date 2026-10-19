@@ -105,10 +105,10 @@ std::string TrackNavigator::hardwareOutputReview(bool context) const {
 
 void TrackNavigator::rememberHardwareOutputPosition() {
     if (page_ != Page::hardwareOutputs) return;
-    memory_.setPosition("LastPage", "F7");
-    memory_.setPosition("F7.TrackGUID", rowGuid());
-    memory_.setPosition("F7.Row", std::to_string(hardwareOutputRow_));
-    memory_.setPosition("F7.Column", std::to_string(hardwareOutputColumn_));
+    memory_.setPosition("LastPage", "F6");
+    memory_.setPosition("F6.TrackGUID", rowGuid());
+    memory_.setPosition("F6.Row", std::to_string(hardwareOutputRow_));
+    memory_.setPosition("F6.Column", std::to_string(hardwareOutputColumn_));
 }
 
 bool TrackNavigator::enterHardwareOutputs() {
@@ -124,9 +124,9 @@ bool TrackNavigator::enterHardwareOutputs() {
     valueMode_ = false;
     resetSelectionStroke();
     hardwareOutputRow_ = hardwareOutputColumn_ = 0;
-    if (memory_.position("F7.TrackGUID") == rowGuid()) {
-        try { hardwareOutputRow_ = std::clamp(std::stoi(memory_.position("F7.Row")), 0, kRows-1); } catch (...) {}
-        try { hardwareOutputColumn_ = std::clamp(std::stoi(memory_.position("F7.Column")), 0, count-1); } catch (...) {}
+    if (memory_.position("F6.TrackGUID") == rowGuid()) {
+        try { hardwareOutputRow_ = std::clamp(std::stoi(memory_.position("F6.Row")), 0, kRows-1); } catch (...) {}
+        try { hardwareOutputColumn_ = std::clamp(std::stoi(memory_.position("F6.Column")), 0, count-1); } catch (...) {}
     }
     rememberHardwareOutputPosition();
     announceTitle();
@@ -287,10 +287,9 @@ void TrackNavigator::handleHardwareOutputsKey(const Key& k) {
             case VK_F2: selectPage(Page::sends); return;
             case VK_F3: selectPage(Page::receives); return;
             case VK_F4: selectPage(Page::fxTcp); return;
-            case VK_F5: speech_("Select an FX in F4 first"); return;
-            case VK_F6: enterTrackMidi(); return;
-            case VK_F7: case VK_TAB: speech_(hardwareOutputReview(true)); return;
-            case VK_F8: if (!k.repeat) enterReaRoute(); return;
+            case VK_F5: enterTrackMidi(); return;
+            case VK_F6: case VK_TAB: speech_(hardwareOutputReview(true)); return;
+            case VK_F7: if (!k.repeat) enterReaRoute(); return;
             case VK_ESCAPE: if (valueMode_) { valueMode_ = false; speech_("Grid, " + hardwareOutputReview(false)); }
                 else selectPage(Page::tracks); return;
             case VK_DELETE: deleteHardwareOutput(); return;

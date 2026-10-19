@@ -1,3 +1,7 @@
+> **LReaParams 0.0.61 — TEST61:** FX Params **F10** sostituisce Ctrl+P per passare da Browser a Grid e viceversa; **F11** apre il Pin Connector per Track/Take/Monitor FX fino a 128 canali. Track Params scala le pagine: F5 MIDI, F6 Hardware, F7 ReaRoute; i cursori `.tp` vengono migrati una sola volta, F8 libero. Ripristinati Alt+F10/F11/F12 e Alt+Shift con azioni OSARA Peak Watcher. [Guida e collaudo TEST61](Docs/TEST61_FX_PIN_MIGRATION.md). **Solo sorgente GitHub Actions, senza compilazione locale.**
+
+> Le sezioni delle versioni precedenti sono cronologia: le scorciatoie correnti prevalgono sulle indicazioni storiche che citano Ctrl+P o F10 libero.
+
 > **LReaParams 0.0.60 — TEST60:** navigazione comune per marker e trasporto a beat/misure in FX Params e Track Params, rispettando Ctrl+Pagina Su/Giù per gli FX e Ctrl+frecce per item/take. [Guida TEST60](Docs/TEST60_MARKER_TRANSPORT.md). **Nessuna compilazione locale: solo GitHub Actions.**
 
 > **LReaParams 0.0.59 — TEST59 F8 ReaRoute:** migrata dal Lua la pagina F8 in C++, con input ReaRoute, aggiunta uscite, 11 righe per ciascuna colonna, parametri audio, Undo, NVDA e posizioni `.tp`. F7 ora mostra soltanto gli output fisici, separati da quelli ReaRoute. Non sono stati aggiunti alias/riordinamento F4 né scorciatoie di trasporto. [Guida e test F8](Docs/TEST59_F8_REAROUTE.md). **Solo sorgente per GitHub Actions: nessuna compilazione locale.**

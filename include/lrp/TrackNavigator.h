@@ -59,31 +59,19 @@ private:
             midiFollowsFader, midiMerge } type{};
     };
     struct TrackRow { MediaTrack* track{}; GUID guid{}; int projectIndex{}; };
-    enum class Page { tracks, sends, receives, fxTcp, pinAudio, trackMidi, hardwareOutputs, reaRoute };
+    enum class Page { tracks, sends, receives, fxTcp, trackMidi, hardwareOutputs, reaRoute };
     // TEST56.1: F4 is a view of native REAPER TCP parameters, not a copy of
     // the full FX parameter list. Each FX has a header, including empty FXs.
     struct FxTcpParameter { int index = -1; std::string name; };
     struct FxTcpColumn { int fxIndex = -1; GUID guid{}; std::string name;
         std::vector<FxTcpParameter> parameters; };
-    // TEST56.10: F5 Audio Pin Connector. The selected FX is resolved by GUID
-    // before every read/write; never trust an old chain index.
-    bool enterPinAudio();
-    void leavePinAudio(bool speak = true);
-    void handlePinAudioKey(const Key&);
-    // 0.0.57: track-owned F6 MIDI page, independent of any FX instance.
+    // TEST61: track-owned F5 MIDI page, independent of any FX instance.
     bool enterTrackMidi();
     void handleTrackMidiKey(const Key&);
     std::string trackMidiReview(bool context) const;
     void trackMidiMove(int row);
     void trackMidiAdjust(int direction, bool coarse = false, int edge = 0);
     void rememberTrackMidiPosition();
-    int pinAudioResolvedFx() const;
-    int pinAudioColumnCount() const noexcept { return pinAudioInputs_ + pinAudioOutputs_; }
-    std::string pinAudioReview(bool context) const;
-    bool pinAudioSelected(int column, int channel) const;
-    bool pinAudioSet(int column, int channel, bool selected);
-    void pinAudioMove(int column, int channel);
-    void pinAudioJumpSelected(int direction, int axis);
     void rebuildFxTcp(bool preserveSelection);
     bool selectFxTcpPage();
     void handleFxTcpKey(const Key& key);
@@ -141,12 +129,9 @@ private:
     int fxTcpListColumn_ = 0, fxTcpListRow_ = 0; // row zero is the FX header
     std::string fxTcpMainFilter_, fxTcpGridFilter_;
     std::vector<FxTcpListEntry> fxTcpListEntries_;
-    GUID pinAudioGuid_{};
-    int pinAudioInputs_ = 0, pinAudioOutputs_ = 0, pinAudioChannels_ = 2;
-    int pinAudioColumn_ = 0, pinAudioChannel_ = 0;
     int trackMidiRow_ = 0;
     std::string trackMidiEdge_;
-    // TEST58: F7 physical hardware outputs: 11 rows per output column.
+    // TEST61: F6 physical hardware outputs: 11 rows per output column.
     bool enterHardwareOutputs();
     void handleHardwareOutputsKey(const Key&);
     std::string hardwareOutputReview(bool context) const;
@@ -158,7 +143,7 @@ private:
     std::vector<int> hardwareOutputIndexes() const;
     int hardwareOutputColumn_ = 0, hardwareOutputRow_ = 0;
     std::string hardwareOutputEdge_;
-    // 0.0.59: F8 is a bridge: input column, output-control column, then
+    // TEST61: F7 is a bridge: input column, output-control column, then
     // one 11-row column for each ReaRoute-only hardware output.
     bool enterReaRoute();
     void handleReaRouteKey(const Key&);
@@ -203,6 +188,7 @@ private:
     bool selectPage(Page);
     void restorePosition();
     void rememberPosition();
+    void migratePageLayout();
     std::string parameterKey() const;
     std::string pageKey() const;
     std::string rowGuid() const;

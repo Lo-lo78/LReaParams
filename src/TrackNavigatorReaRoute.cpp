@@ -165,10 +165,10 @@ std::string TrackNavigator::reaRouteReview(bool context) const {
 
 void TrackNavigator::rememberReaRoutePosition() {
     if (page_ != Page::reaRoute) return;
-    memory_.setPosition("LastPage", "F8");
-    memory_.setPosition("F8.TrackGUID", rowGuid());
-    memory_.setPosition("F8.Row", std::to_string(reaRouteRow_));
-    memory_.setPosition("F8.Column", std::to_string(reaRouteColumn_));
+    memory_.setPosition("LastPage", "F7");
+    memory_.setPosition("F7.TrackGUID", rowGuid());
+    memory_.setPosition("F7.Row", std::to_string(reaRouteRow_));
+    memory_.setPosition("F7.Column", std::to_string(reaRouteColumn_));
 }
 
 bool TrackNavigator::enterReaRoute() {
@@ -183,9 +183,9 @@ bool TrackNavigator::enterReaRoute() {
     resetSelectionStroke();
     valueMode_ = false;
     reaRouteColumn_ = reaRouteRow_ = 0;
-    if (memory_.position("F8.TrackGUID") == rowGuid()) {
-        try { reaRouteRow_ = std::clamp(std::stoi(memory_.position("F8.Row")),0,kRows-1); } catch (...) {}
-        try { reaRouteColumn_ = std::clamp(std::stoi(memory_.position("F8.Column")),
+    if (memory_.position("F7.TrackGUID") == rowGuid()) {
+        try { reaRouteRow_ = std::clamp(std::stoi(memory_.position("F7.Row")),0,kRows-1); } catch (...) {}
+        try { reaRouteColumn_ = std::clamp(std::stoi(memory_.position("F7.Column")),
             0, static_cast<int>(reaRouteOutputIndexes().size())+1); } catch (...) {}
     }
     rememberReaRoutePosition();
@@ -404,10 +404,9 @@ void TrackNavigator::handleReaRouteKey(const Key& k) {
             case VK_F2: selectPage(Page::sends); return;
             case VK_F3: selectPage(Page::receives); return;
             case VK_F4: selectPage(Page::fxTcp); return;
-            case VK_F5: speech_("Select an FX in F4 first"); return;
-            case VK_F6: enterTrackMidi(); return;
-            case VK_F7: enterHardwareOutputs(); return;
-            case VK_F8: case VK_TAB: speech_(reaRouteReview(true)); return;
+            case VK_F5: enterTrackMidi(); return;
+            case VK_F6: enterHardwareOutputs(); return;
+            case VK_F7: case VK_TAB: speech_(reaRouteReview(true)); return;
             case VK_OEM_5: speech_(reaRouteReview(false)); return;
             case VK_ESCAPE: if (valueMode_) { valueMode_ = false; speech_("Grid, " + reaRouteReview(false)); }
                 else selectPage(Page::tracks); return;

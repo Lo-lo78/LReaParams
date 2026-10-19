@@ -70,9 +70,9 @@ std::string TrackNavigator::trackMidiReview(bool context) const {
 
 void TrackNavigator::rememberTrackMidiPosition() {
     if (page_ != Page::trackMidi) return;
-    memory_.setPosition("LastPage", "F6");
-    memory_.setPosition("F6.TrackGUID", rowGuid());
-    memory_.setPosition("F6.Row", std::to_string(trackMidiRow_));
+    memory_.setPosition("LastPage", "F5");
+    memory_.setPosition("F5.TrackGUID", rowGuid());
+    memory_.setPosition("F5.Row", std::to_string(trackMidiRow_));
 }
 
 bool TrackNavigator::enterTrackMidi() {
@@ -93,8 +93,8 @@ bool TrackNavigator::enterTrackMidi() {
     resetSelectionStroke();
     trackMidiEdge_.clear();
     trackMidiRow_ = 0;
-    if (memory_.position("F6.TrackGUID") == rowGuid()) {
-        try { trackMidiRow_ = std::clamp(std::stoi(memory_.position("F6.Row")), 0, 4); }
+    if (memory_.position("F5.TrackGUID") == rowGuid()) {
+        try { trackMidiRow_ = std::clamp(std::stoi(memory_.position("F5.Row")), 0, 4); }
         catch (...) { trackMidiRow_ = 0; }
     }
     rememberTrackMidiPosition();
@@ -196,10 +196,9 @@ void TrackNavigator::handleTrackMidiKey(const Key& k) {
             case VK_F2: selectPage(Page::sends); return;
             case VK_F3: selectPage(Page::receives); return;
             case VK_F4: selectPage(Page::fxTcp); return;
-            case VK_F5: speech_("Select an FX in F4 first"); return;
-            case VK_F6: case VK_TAB: speech_(trackMidiReview(true)); return;
-            case VK_F7: if (!k.repeat) enterHardwareOutputs(); return;
-            case VK_F8: if (!k.repeat) enterReaRoute(); return;
+            case VK_F5: case VK_TAB: speech_(trackMidiReview(true)); return;
+            case VK_F6: if (!k.repeat) enterHardwareOutputs(); return;
+            case VK_F7: if (!k.repeat) enterReaRoute(); return;
             case VK_ESCAPE: end(); return;
             case VK_UP: trackMidiMove(trackMidiRow_ - 1); return;
             case VK_DOWN: trackMidiMove(trackMidiRow_ + 1); return;
