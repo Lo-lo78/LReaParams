@@ -182,6 +182,8 @@ jobs:
         run: python Testing/test61_8_legacy_import_choices_static.py
       - name: TEST61.9 installer packaging and profile preservation (source only)
         run: python Testing/test61_9_installer_static.py
+      - name: TEST61.10 NSIS absolute packaging paths (source only)
+        run: python Testing/test61_10_nsis_input_paths_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Verify TEST60 shared marker and timeline navigation (source only)
@@ -252,8 +254,28 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Cannot generate uninstall file list" }
           python Testing/test61_9_installer_static.py
           if ($LASTEXITCODE -ne 0) { throw "Installer safety verification failed" }
+          python Testing/test61_10_nsis_input_paths_static.py
+          if ($LASTEXITCODE -ne 0) { throw "NSIS file path regression check failed" }
+          # 'File' in NSIS resolves relative paths from Installer/, NOT from this
+          # PowerShell working directory. Supply an absolute root for all inputs.
+          $projectRoot = (Resolve-Path .).Path.TrimEnd('\')
+          $requiredInputs = @(
+            'package/UserPlugins/reaper_lreaparams.dll',
+            'Guide/index.html',
+            'LICENSE',
+            'THIRD_PARTY_NOTICES.md',
+            'dist/LReaParams-0.0.61-Source.zip',
+            'dist/SOURCE-COMMIT.txt',
+            'Installer/Guide-Uninstall.nsh'
+          )
+          foreach ($required in $requiredInputs) {
+            $absoluteFile = Join-Path $projectRoot $required
+            if (-not (Test-Path -LiteralPath $absoluteFile -PathType Leaf)) {
+              throw "Installer input file is missing: $absoluteFile"
+            }
+          }
           $nsis = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
-          & $nsis /V3 'Installer/LReaParams.nsi'
+          & $nsis /V3 "/DPROJECT_ROOT=$projectRoot" 'Installer/LReaParams.nsi'
           if ($LASTEXITCODE -ne 0) { throw "NSIS installer build failed" }
           if (-not (Test-Path 'dist/LReaParams-0.0.61-Windows-x64-Setup.exe')) { throw "EXE was not produced" }
       - name: Upload one-click Windows x64 installer

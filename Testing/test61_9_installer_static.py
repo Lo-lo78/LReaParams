@@ -32,7 +32,7 @@ for locale in ('English','Italian','Spanish','French','Russian','SimpChinese','J
 assert not re.search(r'RMDir\s+/r\s+"\$INSTDIR\\LReaParams', nsis, re.I)
 for profile in ('Plugins', 'Tracks', 'Settings', 'Backups', 'Params'):
     assert not re.search(r'(?:Delete|RMDir)\s+[^\n]*\\LReaParams\\'+profile+r'(?:\\|"|\s)', nsis, re.I)
-assert 'File /r "${__FILEDIR__}\\..\\Guide\\*.*"' in nsis
+assert 'File /r "${PROJECT_ROOT}\\Guide\\*.*"' in nsis
 assert 'CreateDirectory "$INSTDIR\\LReaParams\\Plugins"' in nsis
 assert workflow.count('LReaParams-0.0.61-Windows-x64-SETUP-EXE') == 1
 assert 'git archive --format=zip --output=dist/LReaParams-0.0.61-Source.zip HEAD' in workflow

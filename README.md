@@ -1,3 +1,18 @@
+## TEST61.10 — Riparazione percorso sorgenti NSIS (GitHub Actions)
+
+Nella TEST61.9 GitHub Actions aveva gia completato con successo la build
+C++ e i tre artefatti ZIP, ma `makensis` non trovava la DLL in
+`Installer\Installer\..\package\UserPlugins`. NSIS interpreta i percorsi
+del comando `File` rispetto alla cartella contenente lo script, non alla
+working directory della shell. La TEST61.10 passa il percorso assoluto del
+repository attraverso `/DPROJECT_ROOT=...` e lo applica **a tutti** gli input
+(`DLL`, guide, avvisi legali, sorgenti e manifest di disinstallazione) e
+all'output EXE. Una verifica PowerShell accerta che siano presenti tutti i
+file prima dell'invocazione di NSIS. Il test `test61_10_nsis_input_paths_static.py`
+evita regressioni. Nessuna modifica alle funzioni della DLL o ai dati utente.
+
+**Non eseguire build locali:** GitHub Actions genera l'installer e la DLL.
+
 ## TEST61.9 — Installer EXE GitHub Actions e licenza
 
 GitHub Actions adesso genera un quarto artefatto:

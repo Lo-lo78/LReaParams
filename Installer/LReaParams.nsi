@@ -1,7 +1,14 @@
-; LReaParams native Windows x64 installer (TEST61.9)
+; LReaParams native Windows x64 installer (TEST61.10)
 ; Compile with NSIS 3.x makensis on GitHub Actions, after the C++ build.
 ; The installer itself is open source; it never deletes native user profiles.
 ; NSIS/zlib compressor is used (no LZMA module required).
+
+; PROJECT_ROOT must be the ABSOLUTE workspace directory; all packaged input
+; files are rooted here because NSIS File paths are relative to the script
+; directory even when the compiler is invoked from the repository root.
+!ifndef PROJECT_ROOT
+  !error "PROJECT_ROOT is required: makensis /DPROJECT_ROOT=C:\path\to\repository Installer/LReaParams.nsi"
+!endif
 
 Unicode true
 !include "MUI2.nsh"
@@ -16,7 +23,7 @@ Unicode true
 !define SETTINGS_KEY "Software\Lo-lo78\LReaParams"
 
 Name "${APP_NAME} ${APP_VERSION}"
-OutFile "${__FILEDIR__}\..\dist\LReaParams-${APP_VERSION}-Windows-x64-Setup.exe"
+OutFile "${PROJECT_ROOT}\dist\LReaParams-${APP_VERSION}-Windows-x64-Setup.exe"
 InstallDir "$APPDATA\REAPER"
 InstallDirRegKey HKCU "${SETTINGS_KEY}" "ResourcePath"
 RequestExecutionLevel user
@@ -115,7 +122,7 @@ Section "LReaParams plugin and offline guides" SEC_LRP
   SetOverwrite on
   SetOutPath "$INSTDIR\UserPlugins"
   ClearErrors
-  File "${__FILEDIR__}\..\package\UserPlugins\reaper_lreaparams.dll"
+  File "${PROJECT_ROOT}\package\UserPlugins\reaper_lreaparams.dll"
   IfErrors 0 dll_installed
     MessageBox MB_ICONSTOP|MB_OK "$(DllCopyFailed)"
     SetErrorLevel 1
@@ -123,16 +130,16 @@ Section "LReaParams plugin and offline guides" SEC_LRP
   dll_installed:
 
   SetOutPath "$INSTDIR\LReaParams\Guide"
-  File /r "${__FILEDIR__}\..\Guide\*.*"
+  File /r "${PROJECT_ROOT}\Guide\*.*"
 
   SetOutPath "$INSTDIR\LReaParams\Licenses"
-  File /oname=GPL-3.0.txt "${__FILEDIR__}\..\LICENSE"
-  File "${__FILEDIR__}\..\THIRD_PARTY_NOTICES.md"
+  File /oname=GPL-3.0.txt "${PROJECT_ROOT}\LICENSE"
+  File "${PROJECT_ROOT}\THIRD_PARTY_NOTICES.md"
 
   ; Include the source for the EXACT commit built by this workflow.
   SetOutPath "$INSTDIR\LReaParams\Source"
-  File /oname=LReaParams-0.0.61-Source.zip "${__FILEDIR__}\..\dist\LReaParams-0.0.61-Source.zip"
-  File "${__FILEDIR__}\..\dist\SOURCE-COMMIT.txt"
+  File /oname=LReaParams-0.0.61-Source.zip "${PROJECT_ROOT}\dist\LReaParams-0.0.61-Source.zip"
+  File "${PROJECT_ROOT}\dist\SOURCE-COMMIT.txt"
 
   SetOutPath "$INSTDIR\LReaParams"
   WriteUninstaller "$INSTDIR\LReaParams\Uninstall-LReaParams.exe"
@@ -156,7 +163,7 @@ FunctionEnd
 Section "Uninstall"
   ; Remove only installer-owned files. Never remove the users' profile trees.
   Delete "$INSTDIR\UserPlugins\reaper_lreaparams.dll"
-  !include "${__FILEDIR__}\Guide-Uninstall.nsh"
+  !include "${PROJECT_ROOT}\Installer\Guide-Uninstall.nsh"
   Delete "$INSTDIR\LReaParams\Licenses\GPL-3.0.txt"
   Delete "$INSTDIR\LReaParams\Licenses\THIRD_PARTY_NOTICES.md"
   RMDir "$INSTDIR\LReaParams\Licenses"

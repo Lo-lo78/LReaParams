@@ -1,3 +1,12 @@
+LReaParams 0.0.61 TEST61.10 — NSIS path fix.
+
+GitHub Actions TEST61.9 compiled the C++ DLL but failed in NSIS because the
+File instruction resolved Installer/Installer/../package/UserPlugins.
+
+TEST61.10 passes an absolute PROJECT_ROOT from PowerShell and validates inputs.
+The C++ plugin code, HTML translations, license text, and user data rules are
+unchanged. No local C++ or NSIS compilation has been performed.
+
 TEST61.9 / 0.0.61: Added an open-source NSIS Windows x64 setup executable via GitHub Actions. Installs the DLL to UserPlugins, 7-language guide to LReaParams/Guide, and corresponding source and license files alongside existing data. User profiles are preserved on install/uninstall. Added GPL-3.0-only proposed licensing and third-party notices; final authorship clearance remains with the project owner. SOURCE ONLY; no local builds.
 
 TEST61.4 / 0.0.61: Track F6 hardware outputs open with zero outputs; Add column with selectable device-backed physical destination, create via CreateTrackSend(track,nullptr), API read-back and rollback on failure, Undo and focus on created output. Delete last returns to Add column; F7 ReaRoute excluded. Native build only on GitHub Actions.
