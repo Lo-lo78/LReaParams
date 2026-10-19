@@ -1,3 +1,4 @@
+TEST61.4: 8 targeted source-only test scripts PASS; Tools/audit.py PASS; no native C++ build, CTest or REAPER/NVDA runtime verification.
 TEST61.2 — 0.0.61 MSVC C2677 build correction (2026-10-19)
 PASS: 11 targeted static checks, including SDK/profile audit, F10/F11, Track F5–F7, previous Track F4 and marker transport tests.
 PASS: new regression guard checks all three corrected page conditions in src/TrackNavigator.cpp.

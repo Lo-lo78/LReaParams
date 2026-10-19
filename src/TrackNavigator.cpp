@@ -41,7 +41,7 @@ void TrackNavigator::end() noexcept {
     }
     memoryManager_ = memoryStandalone_ = false; memoryItems_.clear();
     trackMidiRow_ = 0; trackMidiEdge_.clear();
-    hardwareOutputColumn_ = hardwareOutputRow_ = 0; hardwareOutputEdge_.clear();
+    hardwareOutputColumn_ = -1; hardwareOutputRow_ = 0; hardwareOutputNewPair_ = 0; hardwareOutputEdge_.clear();
     reaRouteColumn_ = reaRouteRow_ = 0;
     active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false;
     rangeEditing_ = false; resetMidiState();
@@ -433,14 +433,16 @@ void TrackNavigator::restorePosition() {
         }
         return;
     }
-    else if (savedPage == "F6" && hardwareOutputCount() > 0) {
+    else if (savedPage == "F6") {
         page_ = Page::hardwareOutputs;
-        hardwareOutputRow_ = hardwareOutputColumn_ = 0;
+        hardwareOutputColumn_ = hardwareOutputCount() > 0 ? 0 : -1;
+        hardwareOutputRow_ = 0;
         if (memory_.position("F6.TrackGUID") == rowGuid()) {
             try { hardwareOutputRow_ = std::clamp(std::stoi(memory_.position("F6.Row")), 0, 10); } catch (...) {}
             try { hardwareOutputColumn_ = std::clamp(std::stoi(memory_.position("F6.Column")),
-                0, hardwareOutputCount()-1); } catch (...) {}
+                -1, hardwareOutputCount()-1); } catch (...) {}
         }
+        hardwareOutputRow_ = std::clamp(hardwareOutputRow_, 0, hardwareOutputColumn_ < 0 ? 2 : 10);
         return;
     }
     else if (savedPage == "F5") {

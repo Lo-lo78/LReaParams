@@ -450,9 +450,7 @@ void TrackNavigator::handleFxTcpParameterGridKey(const Key& k) {
     }
     if (k.vk == VK_F6 && !k.ctrl && !k.shift && !k.alt) {
         if (!k.repeat) {
-            if (hardwareOutputCount() > 0) {
-                closeFxTcpParameterGrid(false); enterHardwareOutputs();
-            } else speech_("No hardware outputs");
+            closeFxTcpParameterGrid(false); enterHardwareOutputs();
         }
         return;
     }

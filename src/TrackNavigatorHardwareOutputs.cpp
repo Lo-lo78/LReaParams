@@ -9,10 +9,40 @@ namespace lrp {
 namespace {
 constexpr int kHardwareCategory = 1;
 constexpr int kRows = 11;
+constexpr int kAddRows = 3;
 constexpr std::array<const char*, kRows> kFields = {{
     "Hardware output", "Volume", "Pan", "Mute", "Phase invert", "Mono",
     "Audio source mode", "Audio source", "Hardware destination", "Send type", "Pan law"
 }};
+// Devices can expose an odd channel count: offer the final unmatched channel as mono.
+// Physical I_DSTCHAN values are always below 512; ReaRoute starts at 512.
+int physicalOutputCount() {
+    return GetNumAudioOutputs ? std::clamp(GetNumAudioOutputs(), 0, 512) : 0;
+}
+int physicalDestinationOptions() {
+    const int channels = physicalOutputCount();
+    return channels / 2 + channels % 2;
+}
+int physicalDestination(int option) {
+    const int count = physicalOutputCount();
+    const int first = std::clamp(option, 0, std::max(0, physicalDestinationOptions()-1)) * 2;
+    return (count % 2 && first == count - 1) ? (first | 1024) : first;
+}
+std::string physicalDestinationLabel(int option) {
+    const int count = physicalOutputCount();
+    if (count == 0) return "No audio hardware outputs available";
+    const int first = std::clamp(option, 0, physicalDestinationOptions()-1) * 2;
+    std::string label = "Channels " + std::to_string(first+1);
+    if (first+1 < count) label += "/" + std::to_string(first+2);
+    else label += " mono";
+    if (GetOutputChannelName) {
+        const char* one = GetOutputChannelName(first);
+        const char* two = first+1 < count ? GetOutputChannelName(first+1) : nullptr;
+        if (one && *one) label += ", " + std::string(one);
+        if (two && *two) label += ", " + std::string(two);
+    }
+    return label;
+}
 constexpr std::array<double, 4> kPanLaw = {{-1.0, 0.5, 0.7079457843841379, 1.0}};
 std::string number(double v, int decimals=1) {
     std::ostringstream s; s << std::fixed << std::setprecision(decimals) << v;
@@ -68,7 +98,22 @@ int TrackNavigator::hardwareOutputCount() const {
 
 std::string TrackNavigator::hardwareOutputReview(bool context) const {
     const int count = hardwareOutputCount();
-    if (count <= 0) return "No hardware outputs";
+    if (hardwareOutputColumn_ < 0 || count == 0) {
+        const int row = std::clamp(hardwareOutputRow_, 0, kAddRows-1);
+        const int available = physicalDestinationOptions();
+        std::string message;
+        if (row == 0) message = "Add hardware output. Press Enter to create. " +
+            physicalDestinationLabel(hardwareOutputNewPair_);
+        else if (row == 1) message = "New hardware destination, " +
+            physicalDestinationLabel(hardwareOutputNewPair_) +
+            ". Alt Up or Down changes destination";
+        else message = "Available hardware destinations, " + std::to_string(available) +
+            (available == 1 ? " choice" : " choices") +
+            ". Existing hardware outputs, " + std::to_string(count);
+        if (context) message = trackName() + ". Hardware outputs. " + message +
+            ". Add column. Row " + std::to_string(row+1) + " of " + std::to_string(kAddRows);
+        return message;
+    }
     const int column = std::clamp(hardwareOutputColumn_, 0, count-1);
     const int field = std::clamp(hardwareOutputRow_, 0, kRows-1);
     const int idx = hardwareOutputIndexes()[static_cast<size_t>(column)];
@@ -113,20 +158,23 @@ void TrackNavigator::rememberHardwareOutputPosition() {
 
 bool TrackNavigator::enterHardwareOutputs() {
     if (!active_ || !project_ || !track_ || !ValidatePtr2(project_, track_, "MediaTrack*") ||
-        !GetTrackNumSends || !GetTrackSendInfo_Value || !SetTrackSendInfo_Value || !RemoveTrackSend) {
+        !GetTrackNumSends || !GetTrackSendInfo_Value || !SetTrackSendInfo_Value ||
+        !CreateTrackSend || !RemoveTrackSend) {
         speech_("Hardware output API unavailable"); return false;
     }
     const int count = hardwareOutputCount();
-    if (!count) { speech_(trackName() + ". No hardware outputs"); return false; }
     if (page_ == Page::hardwareOutputs) { speech_(hardwareOutputReview(true)); return true; }
     rememberPosition();
     page_ = Page::hardwareOutputs;
     valueMode_ = false;
     resetSelectionStroke();
-    hardwareOutputRow_ = hardwareOutputColumn_ = 0;
+    hardwareOutputColumn_ = count ? 0 : -1;
+    hardwareOutputRow_ = 0;
+    hardwareOutputNewPair_ = std::clamp(hardwareOutputNewPair_, 0, std::max(0, physicalDestinationOptions()-1));
     if (memory_.position("F6.TrackGUID") == rowGuid()) {
-        try { hardwareOutputRow_ = std::clamp(std::stoi(memory_.position("F6.Row")), 0, kRows-1); } catch (...) {}
-        try { hardwareOutputColumn_ = std::clamp(std::stoi(memory_.position("F6.Column")), 0, count-1); } catch (...) {}
+        try { hardwareOutputColumn_ = std::clamp(std::stoi(memory_.position("F6.Column")), -1, count-1); } catch (...) {}
+        try { hardwareOutputRow_ = std::clamp(std::stoi(memory_.position("F6.Row")), 0,
+            hardwareOutputColumn_ < 0 ? kAddRows-1 : kRows-1); } catch (...) {}
     }
     rememberHardwareOutputPosition();
     announceTitle();
@@ -135,8 +183,8 @@ bool TrackNavigator::enterHardwareOutputs() {
 
 void TrackNavigator::hardwareOutputMove(int column, int row) {
     const int count = hardwareOutputCount();
-    if (!count) { speech_("No hardware outputs"); return; }
-    const int c = std::clamp(column, 0, count-1), r = std::clamp(row, 0, kRows-1);
+    const int c = std::clamp(column, -1, count-1);
+    const int r = std::clamp(row, 0, c < 0 ? kAddRows-1 : kRows-1);
     if (c == hardwareOutputColumn_ && r == hardwareOutputRow_) return; // silent borders
     const bool newColumn = c != hardwareOutputColumn_;
     hardwareOutputColumn_ = c; hardwareOutputRow_ = r;
@@ -147,7 +195,9 @@ void TrackNavigator::hardwareOutputMove(int column, int row) {
 
 void TrackNavigator::hardwareOutputAdjust(int direction, bool coarse, int edge) {
     const int count = hardwareOutputCount();
-    if (count <= 0) { speech_("No hardware outputs"); return; }
+    if (hardwareOutputColumn_ < 0 || count <= 0) {
+        adjustNewHardwareDestination(direction, coarse, edge); return;
+    }
     const int col = std::clamp(hardwareOutputColumn_, 0, count-1);
     const int row = hardwareOutputRow_;
     if (row == 0) { speech_("Hardware output header. Read only"); return; }
@@ -257,8 +307,59 @@ void TrackNavigator::hardwareOutputAdjust(int direction, bool coarse, int edge) 
     speech_(hardwareOutputReview(false));
 }
 
+void TrackNavigator::adjustNewHardwareDestination(int direction, bool coarse, int edge) {
+    const int total = physicalDestinationOptions();
+    if (total <= 0) { speech_("No audio hardware outputs available"); return; }
+    const int step = (coarse ? 4 : 1) * (direction >= 0 ? 1 : -1);
+    const int next = edge < 0 ? 0 : edge > 0 ? total-1 :
+        std::clamp(hardwareOutputNewPair_ + step, 0, total-1);
+    if (next == hardwareOutputNewPair_) return;
+    hardwareOutputNewPair_ = next;
+    speech_(hardwareOutputReview(false));
+}
+
+void TrackNavigator::addHardwareOutput() {
+    if (!project_ || !track_ || !ValidatePtr2(project_, track_, "MediaTrack*") ||
+        !CreateTrackSend || !RemoveTrackSend || !SetTrackSendInfo_Value ||
+        !GetTrackSendInfo_Value) {
+        speech_("Hardware output API unavailable"); return;
+    }
+    const int total = physicalDestinationOptions();
+    if (total <= 0) { speech_("No audio hardware outputs available"); return; }
+    const int option = std::clamp(hardwareOutputNewPair_, 0, total-1);
+    const int dest = physicalDestination(option);
+    if (Undo_BeginBlock2) Undo_BeginBlock2(project_);
+    const int index = CreateTrackSend(track_, nullptr);
+    bool ok = index >= 0;
+    if (ok) {
+        ok = SetTrackSendInfo_Value(track_, kHardwareCategory, index, "I_DSTCHAN", dest);
+        ok = ok && static_cast<int>(GetTrackSendInfo_Value(track_, kHardwareCategory, index, "I_DSTCHAN")) == dest;
+        if (!ok) RemoveTrackSend(track_, kHardwareCategory, index);
+    }
+    if (Undo_EndBlock2) Undo_EndBlock2(project_, "LReaParams: add hardware output", UNDO_STATE_TRACKCFG);
+    if (!ok) { speech_("Could not create hardware output"); return; }
+    const auto indexes = hardwareOutputIndexes();
+    const auto found = std::find(indexes.begin(), indexes.end(), index);
+    if (found != indexes.end()) {
+        hardwareOutputColumn_ = static_cast<int>(found - indexes.begin());
+        hardwareOutputRow_ = 0;
+    } else {
+        hardwareOutputColumn_ = -1;
+        hardwareOutputRow_ = 0;
+        speech_("Hardware output created but was not found in F6");
+        return;
+    }
+    valueMode_ = false;
+    rememberHardwareOutputPosition();
+    if (TrackList_AdjustWindows) TrackList_AdjustWindows(false);
+    if (UpdateArrange) UpdateArrange();
+    speech_("Added hardware output. " + hardwareOutputReview(true));
+}
+
 void TrackNavigator::deleteHardwareOutput() {
-    if (!RemoveTrackSend || hardwareOutputCount() == 0) { speech_("No hardware outputs"); return; }
+    if (hardwareOutputColumn_ < 0 || !RemoveTrackSend || hardwareOutputCount() == 0) {
+        speech_("Select a hardware output to delete"); return;
+    }
     const int oldCount = hardwareOutputCount();
     const int logical = std::clamp(hardwareOutputColumn_, 0, oldCount-1);
     const int target = hardwareOutputIndexes()[static_cast<size_t>(logical)];
@@ -269,13 +370,13 @@ void TrackNavigator::deleteHardwareOutput() {
     if (TrackList_AdjustWindows) TrackList_AdjustWindows(false);
     if (UpdateArrange) UpdateArrange();
     const int count = hardwareOutputCount();
-    hardwareOutputColumn_ = count ? std::clamp(logical, 0, count-1) : 0;
+    hardwareOutputColumn_ = count ? std::clamp(logical, 0, count-1) : -1;
+    // Stay on F6 add column after deleting the last physical output.
+    hardwareOutputRow_ = 0;
+    valueMode_ = false;
     rememberHardwareOutputPosition();
-    // When empty, return to F1 so stale hardware indexes cannot be reused.
-    if (!count) {
-        selectPage(Page::tracks);
-        speech_("Deleted. No hardware outputs");
-    } else speech_("Deleted hardware output. " + hardwareOutputReview(true));
+    if (!count) speech_("Deleted. " + hardwareOutputReview(true));
+    else speech_("Deleted hardware output. " + hardwareOutputReview(true));
 }
 
 void TrackNavigator::handleHardwareOutputsKey(const Key& k) {
@@ -300,9 +401,9 @@ void TrackNavigator::handleHardwareOutputsKey(const Key& k) {
             case VK_LEFT: hardwareOutputMove(hardwareOutputColumn_-1, hardwareOutputRow_); return;
             case VK_RIGHT: hardwareOutputMove(hardwareOutputColumn_+1, hardwareOutputRow_); return;
             case VK_HOME: hardwareOutputMove(hardwareOutputColumn_, 0); return;
-            case VK_END: hardwareOutputMove(hardwareOutputColumn_, kRows-1); return;
+            case VK_END: hardwareOutputMove(hardwareOutputColumn_, hardwareOutputColumn_ < 0 ? kAddRows-1 : kRows-1); return;
             case VK_RETURN:
-                if (hardwareOutputCount() == 0) { speech_("No hardware outputs"); return; }
+                if (hardwareOutputColumn_ < 0 || hardwareOutputCount() == 0) { addHardwareOutput(); return; }
                 if (hardwareOutputRow_ == 3 || hardwareOutputRow_ == 4 || hardwareOutputRow_ == 5)
                     hardwareOutputAdjust(GetTrackSendInfo_Value(track_, 1,
                         hardwareOutputIndexes()[static_cast<size_t>(std::clamp(hardwareOutputColumn_, 0, hardwareOutputCount()-1))],
@@ -331,7 +432,7 @@ void TrackNavigator::handleHardwareOutputsKey(const Key& k) {
         }
     }
     if (k.ctrl && !k.alt && !k.shift) {
-        if (k.vk == VK_HOME) { hardwareOutputMove(0, hardwareOutputRow_); return; }
+        if (k.vk == VK_HOME) { hardwareOutputMove(-1, 0); return; }
         if (k.vk == VK_END) { hardwareOutputMove(hardwareOutputCount()-1, hardwareOutputRow_); return; }
         if (k.vk == VK_TAB || k.vk == 'Q') return; // handled by the top-level router
         if (k.vk == VK_SPACE && Main_OnCommand) { Main_OnCommand(40073, 0); return; }

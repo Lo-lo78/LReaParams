@@ -1,3 +1,8 @@
+## TEST61.4 — F6 Hardware Output creation
+- Track F6 now opens on empty hardware-output lists; Add column supports Enter and device-aware Alt+arrows.
+- Native CreateTrackSend(track, nullptr), hardware destination mapping, read-back and failure rollback, Undo.
+- Deleting last output stays in F6 Add; ReaRoute category destinations remain separate. No local build.
+
 TEST61.3: Audio Pin Connector FX F11 — annunci sintetici: "Attive." solo quando il collegamento esiste; nessuna parola di stato se non collegato. Conferme dei tasti coerenti. Codice audio e routing invariati. Nessuna compilazione locale.
 
 TEST61.1 — GitHub Actions source-test compatibility repair (2026-10-19): corrected obsolete TEST55.5 (ReaRoute formerly F8, now F7) and TEST56.1/56.2 (Track Page enumeration and F4 selector function keys). C++ unchanged; no native compilation performed locally.

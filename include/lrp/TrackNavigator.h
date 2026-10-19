@@ -138,10 +138,14 @@ private:
     void hardwareOutputMove(int column, int row);
     void hardwareOutputAdjust(int direction, bool coarse = false, int edge = 0);
     void deleteHardwareOutput();
+    void addHardwareOutput();
+    void adjustNewHardwareDestination(int direction, bool coarse = false, int edge = 0);
     void rememberHardwareOutputPosition();
     int hardwareOutputCount() const;
     std::vector<int> hardwareOutputIndexes() const;
-    int hardwareOutputColumn_ = 0, hardwareOutputRow_ = 0;
+    // -1 is the always-available Add Hardware Output column, including empty tracks.
+    int hardwareOutputColumn_ = -1, hardwareOutputRow_ = 0;
+    int hardwareOutputNewPair_ = 0;
     std::string hardwareOutputEdge_;
     // TEST61: F7 is a bridge: input column, output-control column, then
     // one 11-row column for each ReaRoute-only hardware output.

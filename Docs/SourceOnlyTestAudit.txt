@@ -1,3 +1,4 @@
+TEST61.4: F6 physical hardware output creation directly from an empty track; 8 targeted suites PASS, source audit PASS. MSVC/REAPER/NVDA remain GitHub Actions/user tests.
 TEST61.1: full suite 82/82 Python static tests PASS; Tools/audit.py PASS. Corrected 3 legacy expectations to current Track F5/F6/F7; native build not run locally.
 TEST57: verificati i contratti statici F6 con Testing/test57_f6_static.py, il modello dei valori limite e le regressioni statiche TEST55/TEST56 incluse TEST56.10.2 F5 128 canali. Tools/audit.py PASS.
 Nessuna build locale, nessuna compilazione C++, nessun CTest o test reale REAPER/NVDA/hardware MIDI.

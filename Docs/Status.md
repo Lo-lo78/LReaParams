@@ -1,3 +1,5 @@
+TEST61.4: F6 ora consente di creare hardware outputs direttamente dalla DLL anche con zero uscite; colonna Add sempre disponibile, destinazioni fisiche dal driver audio, Undo e rollback, separazione da ReaRoute. Nessun cambiamento a F10/F11 o alle altre pagine. Solo sorgente.
+
 TEST61 / LReaParams 0.0.61: FX F10 Browser↔Grid (Ctrl+P removed), FX F11 128-channel audio pin connector for Track, Take and Monitor FX; Track F5 MIDI, F6 Hardware, F7 ReaRoute, with one-time .tp page cursor conversion; six OSARA Peak Watcher actions restored. No local build; MSVC through GitHub Actions. See Docs/TEST61_FX_PIN_MIGRATION.md.
 
 # 0.0.57 — TEST57 Track Params F6, MIDI di traccia
