@@ -188,6 +188,8 @@ jobs:
         run: python Testing/test61_11_installer_accessibility_static.py
       - name: TEST61.12 dynamic resource path and localized Finish (source only)
         run: python Testing/test61_12_installer_path_finish_static.py
+      - name: TEST61.14 persistent FX group and position regression (source only)
+        run: python Testing/test61_14_fx_group_persistence_static.py
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Verify TEST60 shared marker and timeline navigation (source only)

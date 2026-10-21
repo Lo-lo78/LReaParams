@@ -27,7 +27,8 @@ void FxNavigator::flushPersistentPosition() noexcept {
         browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size()) ||
         parameterName_.empty()) return;
     try {
-        if (!fxOrder_.persistLastParameter(parameter_, parameterName_))
+        if (!fxOrder_.persistLastParameter(parameter_, parameterName_, groupSlot_,
+                                           f7FilterActive_ ? f7OriginalPosition(viewPos_) : viewPos_))
             OutputDebugStringW(L"LReaParams: FX position was not saved.\n");
     } catch (const std::exception&) {
         // Navigation/REAPER shutdown must never fail due to a read-only or
@@ -100,7 +101,8 @@ void FxNavigator::restorePersistedParameter() {
         }
         if (!found && !validIndex(target)) return;
     }
-    rebuildView(target);
+    const auto storedView = fxOrder_.lastView();
+    rebuildView(target, storedView ? storedView->viewPosition : -1);
 }
 // Startup context follows the original Lua's track/item selection rather than
 // requiring GetTouchedOrFocusedFX, which is often empty when FX Params is invoked.
@@ -466,6 +468,7 @@ void FxNavigator::rememberPosition() {
             pos.gridHeight = columns_;
             pos.stepScale = stepScale_;
             pos.viewPosition = viewPos_;
+            pos.groupSlot = groupSlot_;
             pos.customView = fxOrder_.custom;
             pos.f7Selected = f7Selected_;
             return;
@@ -478,6 +481,7 @@ void FxNavigator::rememberPosition() {
     pos.gridHeight = columns_;
     pos.stepScale = stepScale_;
     pos.viewPosition = viewPos_;
+    pos.groupSlot = groupSlot_;
     pos.customView = fxOrder_.custom;
     pos.f7Selected = f7Selected_;
     state.positions.push_back(std::move(pos));
@@ -1640,7 +1644,7 @@ void FxNavigator::handle(const Key& k) {
                     (editF7_?editorParameterSpeech():currentParameterSpeech()));
         }
         else if(editF7_)exitF7();
-        else if(groupSlot_){openGroup(groupSlot_);}else end();return;}
+        else end();return;}
     if(k.vk==VK_RETURN && !k.repeat && !editF7_ && dynamicsVirtualValid(parameter_)) {
         speech_(currentParameterSpeech());return; // read-only summary; no slider
     }

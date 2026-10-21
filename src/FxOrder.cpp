@@ -8,7 +8,9 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include <cstring>
 #include <locale>
+#include <limits>
 #include <windows.h>
 
 namespace lrp {
@@ -331,17 +333,47 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
     // Older Lua profiles may contain a custom order without an explicit view flag.
     if(hasRealModifications())customCreated_=true;
 }
+namespace {
+constexpr const char* lastNavigationKey = "lrp_last_navigation_v1";
+}
 std::string FxOrder::lastParameterRecord() const {
     const auto it = profile_.headers.find("LastParam");
     return loaded_ && it != profile_.headers.end() ? it->second : std::string();
 }
+std::optional<FxOrder::LastView> FxOrder::lastView() const {
+    if (!loaded_) return std::nullopt;
+    const auto record = extraValue(lastNavigationKey);
+    const auto comma = record.find(',');
+    if (comma == std::string::npos || record.find(',', comma + 1) != std::string::npos)
+        return std::nullopt;
+    try {
+        const auto numeric = [](const std::string& text, int high) -> int {
+            if (text.empty() || !std::all_of(text.begin(), text.end(), [](unsigned char c) {
+                    return std::isdigit(c) != 0;
+                })) return -1;
+            std::size_t count = 0;
+            const auto n = std::stoll(text, &count, 10);
+            return count == text.size() && n <= high ? static_cast<int>(n) : -1;
+        };
+        const int slot = numeric(record.substr(0, comma), 12);
+        const int position = numeric(record.substr(comma + 1), std::numeric_limits<int>::max());
+        if (slot < 0 || position < 0) return std::nullopt;
+        return LastView{slot, position};
+    } catch (const std::exception&) {return std::nullopt;}
+}
 
-bool FxOrder::persistLastParameter(int parameter, const std::string& parameterName) {
+bool FxOrder::persistLastParameter(int parameter, const std::string& parameterName,
+                                   int groupSlot, int viewPosition) {
     if (!loaded_ || resource_.empty() || file_.empty() || parameterName.empty()) return false;
-    // This is a position-only write: never serialize the in-memory Custom Order,
-    // which may contain old aliases or virtual controls not yet edited by F7.
+    if (groupSlot < 0 || groupSlot > 12 || viewPosition < 0) return false;
+    // This is a navigation-only write. Preserve every user-authored CustomOrder,
+    // GroupSlots, MIDI association, defaults and unrecognized field bytewise.
     const std::string newRecord = std::to_string(parameter) + "\t" + oneLine(parameterName);
-    if (lastParameterRecord() == newRecord && existed_) return true;
+    const LastView newView{groupSlot, viewPosition};
+    const auto oldView = lastView();
+    if (lastParameterRecord() == newRecord && oldView &&
+        oldView->groupSlot == newView.groupSlot &&
+        oldView->viewPosition == newView.viewPosition && existed_) return true;
     std::string payload = profile_.payload;
     const std::string prefix = "LastParam=";
     std::size_t begin = 0;
@@ -359,6 +391,52 @@ bool FxOrder::persistLastParameter(int parameter, const std::string& parameterNa
         begin = newline + 1;
     }
     if (!found) throw ProfileError("FX profile has no LastParam field");
+
+    // The optional v1 entry belongs in [Extra], keeping legacy LastParam
+    // readable by Lua and avoiding new required headers in Version=3.
+    const std::string locationLine = std::string(lastNavigationKey) + "=" +
+        std::to_string(groupSlot) + "," + std::to_string(viewPosition);
+    bool inExtra = false, wroteLocation = false, hasExtra = false;
+    std::size_t extraInsertAt = std::string::npos;
+    std::string extraNewline = "\n";
+    for (std::size_t at = 0; at < payload.size();) {
+        const auto newline = payload.find('\n', at);
+        const auto end = newline == std::string::npos ? payload.size() : newline;
+        const auto logicalEnd = end > at && payload[end - 1] == '\r' ? end - 1 : end;
+        if (payload.compare(at, logicalEnd - at, "[Extra]") == 0) {
+            inExtra = true;
+            hasExtra = true;
+            extraInsertAt = newline == std::string::npos ? end : newline + 1;
+            extraNewline = logicalEnd < end ? "\r\n" : "\n";
+        } else if (inExtra && logicalEnd > at && payload[at] == '[' &&
+                   payload[logicalEnd - 1] == ']') {
+            break;
+        } else if (inExtra && payload.compare(at, std::strlen(lastNavigationKey), lastNavigationKey) == 0 &&
+                   at + std::strlen(lastNavigationKey) < logicalEnd &&
+                   payload[at + std::strlen(lastNavigationKey)] == '=') {
+            payload.replace(at, logicalEnd - at, locationLine);
+            wroteLocation = true;
+            break;
+        }
+        if (newline == std::string::npos) break;
+        at = newline + 1;
+    }
+    if (!wroteLocation) {
+        if (hasExtra) {
+            // [Extra] at EOF with no newline is valid: terminate the header.
+            if (extraInsertAt == payload.size() && !payload.empty() && payload.back() != '\n') {
+                payload += extraNewline;
+                extraInsertAt += extraNewline.size();
+            }
+            payload.insert(extraInsertAt, locationLine + extraNewline);
+        } else {
+            // A legacy .fx may have no [Extra]. Add only that optional
+            // section, using its existing LF/CRLF line endings.
+            const std::string newline = payload.find("\r\n") == std::string::npos ? "\n" : "\r\n";
+            if (!payload.empty() && payload.back() != '\n') payload += newline;
+            payload += "[Extra]" + newline + locationLine + newline;
+        }
+    }
     // Full parser and native envelope checks before touching the original.
     auto checked = parseLegacy(payload);
     if (checked.kind != ProfileKind::fx || checked.headers.at("PluginRaw") != rawName_)

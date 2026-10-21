@@ -193,8 +193,39 @@ void FxNavigator::loadFxOrder() {
     slotMode_=fxOrder_.groupSlotMode?0:1;
     visible_=fxOrder_.visibleOrder();
     int preference=-1;
+    bool restoredFromSession=false;
     if(auto* memory=contextMemory())for(const auto& pos:memory->positions)
-        if(guidSame(&pos.fxGuid,fxGuid_)) {preference=pos.viewPosition;f7Selected_=pos.f7Selected;fxOrder_.custom=pos.customView && fxOrder_.storedCustomOrder();break;}
+        if(guidSame(&pos.fxGuid,fxGuid_)) {
+            restoredFromSession=true;
+            preference=pos.viewPosition;
+            f7Selected_=pos.f7Selected;
+            fxOrder_.custom=pos.customView && fxOrder_.storedCustomOrder();
+            // Restore the actual group before rebuilding the grid. F7 is an
+            // editor, not a persistent landing view; do not reopen F7.
+            if(pos.groupSlot>0) {
+                const auto group=fxOrder_.groups.find(pos.groupSlot);
+                if(group!=fxOrder_.groups.end() && !group->second.empty()) {
+                    groupSlot_=pos.groupSlot;
+                    groupReturnActive_=false;
+                }
+            }
+            break;
+        }
+    if (!restoredFromSession) {
+        // When REAPER starts again, read the last visited group from the
+        // plugin's .fx profile. Invalid/deleted/empty groups fall back to
+        // Plugin/Custom Order rather than creating a phantom group.
+        if (const auto last=fxOrder_.lastView()) {
+            preference=last->viewPosition;
+            if (last->groupSlot>0) {
+                const auto group=fxOrder_.groups.find(last->groupSlot);
+                if (group!=fxOrder_.groups.end() && !group->second.empty()) {
+                    groupSlot_=last->groupSlot;
+                    groupReturnActive_=false;
+                } else preference=-1;
+            }
+        }
+    }
     rebuildView(parameter_,preference);
     snapshotDefaultsIfMissing();
     resetMidiContext();

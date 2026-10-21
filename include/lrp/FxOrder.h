@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -17,10 +18,15 @@ public:
               int paramCount, std::function<std::string(int)> paramName,
               const std::vector<int>& nativeOrder = {});
     bool save(); // only called after an intentional structural change
-    // Lua LastParam: persists the last visited parameter in this plugin's .fx
-    // profile, without rewriting CustomOrder, groups, MIDI links or snapshots.
+    // The .fx profile is shared by the plugin definition (as in Lua), not by
+    // each project/FX GUID. Session-specific positions still win while open.
+    // Preserve the Lua LastParam and store group + zero-based occurrence in
+    // an independent, optional [Extra] record. F7 edit mode is not saved.
+    struct LastView { int groupSlot = 0; int viewPosition = 0; };
     std::string lastParameterRecord() const;
-    bool persistLastParameter(int parameter, const std::string& name);
+    std::optional<LastView> lastView() const;
+    bool persistLastParameter(int parameter, const std::string& name,
+                              int groupSlot, int viewPosition);
     // A parked MIDI navigator is a snapshot of a foreground navigator.
     // Rebind callbacks which originally captured that foreground object's this.
     void rebindParamName(std::function<std::string(int)> callback) { paramName_ = std::move(callback); }

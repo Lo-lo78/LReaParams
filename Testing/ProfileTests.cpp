@@ -214,12 +214,15 @@ int main(int argc, char** argv) {
         positionProfile.load(posRoot, "Position test", 6, posNames);
         positionProfile.ccLinks[2] = "1,74";
         positionProfile.groupNames[1] = "Kick";
+        positionProfile.groups[1] = {4, 2, 4}; // duplicate parameter occurrence
         positionProfile.setExtraValue("unknown_future", "leave\nuntouched");
         check(positionProfile.save(), "Cannot create position fixture");
         const auto posDirectory = posRoot / L"LReaParams" / L"Plugins";
         const auto posFile = fs::directory_iterator(posDirectory)->path();
         const auto beforePosition = parseNative(readFile(posFile)).payload;
-        check(positionProfile.persistLastParameter(4,"Parameter 4"), "Cannot persist LastParam");
+        check(!positionProfile.lastView(), "New FX profile must have no saved location");
+        check(positionProfile.persistLastParameter(4,"Parameter 4",1,2),
+              "Cannot persist parameter, group and exact occurrence");
         const auto afterPosition = parseNative(readFile(posFile)).payload;
         std::string expected = beforePosition;
         const auto oldField = expected.find("LastParam=");
@@ -227,26 +230,77 @@ int main(int argc, char** argv) {
         const auto afterField = expected.find('\n', oldField);
         check(afterField != std::string::npos,"Missing field boundary");
         expected.replace(oldField, afterField-oldField, "LastParam=4\tParameter 4");
-        check(afterPosition == expected,"LastParam update changed an unrelated profile byte");
+        const auto extraField=expected.find("[Extra]\n");
+        check(extraField!=std::string::npos,"Missing Extra section");
+        expected.insert(extraField+std::string("[Extra]\n").size(),
+                        "lrp_last_navigation_v1=1,2\n");
+        check(afterPosition==expected,
+              "LastParam update changed an unrelated profile byte (outside navigation record)");
         FxOrder nextSession;
         nextSession.load(posRoot, "Position test", 6, posNames);
         check(nextSession.lastParameterRecord() == "4\tParameter 4", "LastParam not restored after restart");
-        check(nextSession.ccLinks.at(2) == "1,74" && nextSession.groupNames.at(1) == "Kick" &&
+        const auto lastGroup=nextSession.lastView();
+        check(lastGroup && lastGroup->groupSlot==1 && lastGroup->viewPosition==2,
+              "Group or duplicate parameter occurrence not restored across REAPER restarts");
+        check(nextSession.groups.at(1)==std::vector<int>({4,2,4}) &&
+              nextSession.ccLinks.at(2) == "1,74" && nextSession.groupNames.at(1) == "Kick" &&
               nextSession.extraValue("unknown_future") == "leave\nuntouched",
-              "Position update damaged CC, groups or future fields");
-        check(nextSession.persistLastParameter(1,"Parameter 1"), "Cannot update a saved position");
+              "Location write damaged original groups, CC or future fields");
+        check(nextSession.persistLastParameter(1,"Parameter 1",0,0),
+              "Cannot return from group to the root view persistently");
         FxOrder laterSession;
         laterSession.load(posRoot,"Position test",6,posNames);
         check(laterSession.lastParameterRecord()=="1\tParameter 1", "Recent LastParam lost");
+        const auto rootView=laterSession.lastView();
+        check(rootView && rootView->groupSlot==0 && rootView->viewPosition==0,
+              "Root view did not persist after leaving group");
+        // General profile changes must preserve our optional navigation record.
+        laterSession.aliases[2]="Mid";
+        check(laterSession.save(),"Editing an FX profile with a location failed");
+        FxOrder structuralSession;
+        structuralSession.load(posRoot,"Position test",6,posNames);
+        check(structuralSession.lastView() && structuralSession.lastView()->groupSlot==0,
+              "F7/profile editing erased the saved navigation group");
         const auto diskBeforeConflict = readFile(posFile);
         // An external writer wins: never silently overwrite a newer profile.
         FxOrder stale;
         stale.load(posRoot,"Position test",6,posNames);
-        laterSession.persistLastParameter(2,"Parameter 2");
+        check(structuralSession.persistLastParameter(2,"Parameter 2",1,1),
+              "Updating a group location failed");
         const auto externalBytes=readFile(posFile);
-        rejected([&] {stale.persistLastParameter(3,"Parameter 3");});
+        rejected([&] {stale.persistLastParameter(3,"Parameter 3",1,0);});
         check(readFile(posFile)==externalBytes && diskBeforeConflict!=externalBytes,
-              "Stale LastParam save overwrote an external change");
+              "Stale LastParam save overwrote an external change (group position)");
+        // Repeated identical navigation is a true no-op, avoiding disk churn.
+        check(structuralSession.persistLastParameter(2,"Parameter 2",1,1),
+              "Unchanged group save should succeed without rewriting");
+        // Test old .fx profiles without an Extra section and with CRLF encoding.
+        const auto plainRoot = root / L"persistent-group-legacy";
+        FxOrder legacyPosition;
+        legacyPosition.load(plainRoot,"Legacy group test",3,posNames);
+        check(legacyPosition.persistLastParameter(1,"Parameter 1",0,1),
+              "Could not create navigation data in a new FX profile");
+        const auto legacyFile=fs::directory_iterator(plainRoot/L"LReaParams"/L"Plugins")->path();
+        auto plain=parseNative(readFile(legacyFile)).payload;
+        const auto extraStart=plain.find("[Extra]\n");
+        check(extraStart!=std::string::npos,"No Extra section in original test profile");
+        plain.erase(extraStart);
+        std::string crlfProfile;
+        for (char ch:plain) {if(ch=='\n')crlfProfile+='\r';crlfProfile+=ch;}
+        overwrite(legacyFile,serializeNative(parseLegacy(crlfProfile)));
+        FxOrder legacyReopened;
+        legacyReopened.load(plainRoot,"Legacy group test",3,posNames);
+        check(!legacyReopened.lastView(),"Legacy profile unexpectedly has group info");
+        check(legacyReopened.persistLastParameter(2,"Parameter 2",0,2),
+              "Could not extend a legacy .fx file without Extra");
+        const auto restoredLegacy=parseNative(readFile(legacyFile)).payload;
+        check(restoredLegacy.find("LastParam=2\tParameter 2\r\n")!=std::string::npos &&
+              restoredLegacy.find("[Extra]\r\nlrp_last_navigation_v1=0,2\r\n")!=std::string::npos,
+              "Legacy CRLF LastParam or optional navigation Extra corrupted");
+        FxOrder legacyRoundtrip;
+        legacyRoundtrip.load(plainRoot,"Legacy group test",3,posNames);
+        check(legacyRoundtrip.lastView() && legacyRoundtrip.lastView()->viewPosition==2,
+              "Legacy .fx navigation cannot be read on the next launch");
         const auto backupRoot=posRoot/L"LReaParams"/L"Backups"/L"ProfileEdits";
         check(fs::exists(backupRoot) && !fs::is_empty(backupRoot),"LastParam backups missing");
         // 0.0.47: F7/F8 profile persistence with virtual dynamics, duplicate

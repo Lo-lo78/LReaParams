@@ -199,6 +199,7 @@ private:
         int gridHeight = 10;
         int stepScale = 0;
         int viewPosition = 0;
+        int groupSlot = 0;
         bool customView = false;
         std::set<int> f7Selected;
     };

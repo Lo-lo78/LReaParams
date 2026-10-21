@@ -1,3 +1,21 @@
+## TEST61.14 — FX Params: gruppo e posizione sopravvivono al riavvio di REAPER
+
+- Esc dalla griglia di un gruppo chiude FX Params direttamente (come in
+  TEST61.13); ora il gruppo viene ricordato **anche dopo aver riavviato REAPER**.
+- Oltre al parametro `LastParam`, il profilo condiviso del plugin `.fx` salva
+  gruppo e occorrenza esatta della posizione in `[Extra]` usando
+  `lrp_last_navigation_v1=gruppo,posizione` (posizione a base zero).
+- F7 non si riapre come editor. I gruppi cancellati/vuoti ritornano alla
+  griglia normale. La memoria dell'istanza vince finche' dura la sessione.
+- Compatibile con vecchi `.fx`: le altre impostazioni, MIDI, default, ordini
+  e profili non sono modificati dal salvataggio della posizione.
+
+Per i test e i limiti della persistenza per plugin condiviso, vedere
+`Docs/TEST61_14_PERSISTENT_FX_GROUP.md`.
+
+**Non compilare in locale:** usare GitHub Actions per compilare e provare
+la DLL in REAPER con NVDA/OSARA.
+
 ## TEST61.12 — Cartella risorse dinamica e schermata Fine / Finish
 
 - La cartella predefinita **non** contiene un nome utente fisso: NSIS risolve
