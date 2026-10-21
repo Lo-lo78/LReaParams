@@ -200,6 +200,7 @@ std::string FxNavigator::browserSpeech() const {
 }
 void FxNavigator::enterFxBrowser() {
     if (!active_ || entries_.empty()) return;
+    onlineReturnPending_ = false; // F10 is an explicit request to browse.
     rememberPosition(); flushPersistentPosition();
     clearF7Filter(); editF7_ = false;
     fxBrowserMode_ = true;
@@ -225,7 +226,7 @@ void FxNavigator::browserMove(int amount) {
         if (!browserEntryInScope(next + step)) break;
         next += step;
     }
-    if (next != old) {browserCursor_ = next; speech_(browserSpeech());}
+    if (next != old) {onlineReturnPending_ = false; browserCursor_ = next; speech_(browserSpeech());}
 }
 void FxNavigator::browserSwitchColumn(int direction) {
     // Master and Monitor are separate vertical lists, linked only by the
@@ -233,6 +234,7 @@ void FxNavigator::browserSwitchColumn(int direction) {
     if (take_ || track_ != GetMasterTrack(project_) || direction == 0) return;
     const bool targetMonitor = direction > 0;
     if (browserScopeMonitor_ == targetMonitor) return; // quiet at outer edge
+    onlineReturnPending_ = false;
     const int current = browserVisibleIndex();
     int& fromCursor = browserScopeMonitor_ ? browserMonitorCursor_ : browserMasterCursor_;
     if (current >= 0) fromCursor = current;
@@ -251,6 +253,7 @@ void FxNavigator::browserSwitchColumn(int direction) {
 }
 void FxNavigator::browserSelect() {
     if (entries_.empty() || !active_) return;
+    onlineReturnPending_ = false;
     const int index = browserVisibleIndex();
     if (index < 0) return;
     // After an offline/online transition the plugin may have re-created its
@@ -271,7 +274,7 @@ void FxNavigator::browserCycleByInitial(wchar_t character, bool backwards) {
         if (!browserEntryInScope(j)) continue;
         const std::string label = browserDisplayName(entries_[static_cast<size_t>(j)].name);
         if (!label.empty() && std::towlower(static_cast<unsigned char>(label[0])) == std::towlower(character)) {
-            browserCursor_ = j; speech_(browserSpeech()); return;
+            onlineReturnPending_ = false; browserCursor_ = j; speech_(browserSpeech()); return;
         }
     }
 }
@@ -293,6 +296,7 @@ void FxNavigator::browserSwitchTrack(int direction) {
         if (target) break;
     }
     if (!target) return; // Silent boundary.
+    onlineReturnPending_ = false;
     const GUID* id = GetTrackGUID(target);
     if (!id) return;
     // Do not save the old FX under the new track GUID. On failure, put every
@@ -328,6 +332,7 @@ void FxNavigator::browserSwitchTrack(int direction) {
 
 void FxNavigator::browserMoveFx(int direction) {
     if (!direction || entries_.empty()) return;
+    onlineReturnPending_ = false;
     const int srcIndex = fxBrowserMode_ ? browserVisibleIndex() : browserIndex_;
     if (srcIndex < 0 || srcIndex >= static_cast<int>(entries_.size())) return;
     const GUID* current = take_ ? TakeFX_GetFXGUID(take_, entries_[static_cast<size_t>(srcIndex)].index) :
@@ -373,6 +378,53 @@ void FxNavigator::browserMoveFx(int direction) {
     // REAPER replaced the instance rather than moving it. Do not guess.
     end();
 }
+bool FxNavigator::enterOnlineParameters(int entryIndex) {
+    // selectFx() is the same tested path used when reopening FX Params:
+    // it re-reads the new parameter count, reloads the .fx group and restores
+    // the per-instance GUID position (or the persisted LastParam fallback).
+    if (!selectFx(entryIndex)) return false;
+    onlineReturnPending_ = false;
+    fxBrowserMode_ = false;
+    browserCursor_ = browserIndex_;
+    speech_("Online. " + fxContextAnnouncement());
+    return true;
+}
+
+bool FxNavigator::pollOnlineParameters() {
+    if (!onlineReturnPending_) return false;
+    if (!active_ || !fxBrowserMode_ || !track_) {
+        onlineReturnPending_ = false;
+        return false;
+    }
+    const int selected = browserVisibleIndex();
+    if (selected < 0 || selected >= static_cast<int>(entries_.size()) ||
+        !guidEquals(&entries_[static_cast<size_t>(selected)].guid, onlineReturnGuid_)) {
+        // The user chose another FX/chain: never redirect their navigation.
+        onlineReturnPending_ = false;
+        return false;
+    }
+    const auto& entry = entries_[static_cast<size_t>(selected)];
+    const GUID* actual = take_ ? TakeFX_GetFXGUID(take_, entry.index) :
+                                 TrackFX_GetFXGUID(track_, entry.index);
+    if (!guidEquals(actual, onlineReturnGuid_) ||
+        (take_ ? TakeFX_GetOffline(take_, entry.index) : TrackFX_GetOffline(track_, entry.index))) {
+        onlineReturnPending_ = false;
+        return false;
+    }
+    const ULONGLONG now = GetTickCount64();
+    if (now >= onlineReturnUntil_) {
+        // The FX is online but may genuinely have no parameters. Leave the
+        // browser usable, including Enter and Ctrl+Alt+B, without a busy wait.
+        onlineReturnPending_ = false;
+        return false;
+    }
+    if (now < onlineReturnNextCheck_) return false;
+    onlineReturnNextCheck_ = now + 250;
+    const int params = take_ ? TakeFX_GetNumParams(take_, entry.index) :
+                               TrackFX_GetNumParams(track_, entry.index);
+    return params > 0 && enterOnlineParameters(selected);
+}
+
 void FxNavigator::toggleOffline() {
     if (!active_ || !track_ || (fxBrowserMode_ && entries_.empty())) return;
     const int selected = fxBrowserMode_ ? browserVisibleIndex() : browserIndex_;
@@ -384,9 +436,11 @@ void FxNavigator::toggleOffline() {
     if (!guidEquals(actual, entry.guid)) {
         speech_("FX list changed. Reopen FX Params");return;
     }
+    onlineReturnPending_ = false;
     const bool wasOffline = take_ ? TakeFX_GetOffline(take_, entry.index) :
                                     TrackFX_GetOffline(track_, entry.index);
-    // Preserve the last parameter before REAPER unloads an FX's parameters.
+    // Preserve the current group, occurrence and parameter BEFORE REAPER
+    // unloads an FX's parameter list. Both Track FX and Take FX use this path.
     if (!fxBrowserMode_ && !wasOffline) {
         rememberPosition();flushPersistentPosition();
     }
@@ -397,8 +451,8 @@ void FxNavigator::toggleOffline() {
     if (nowOffline == wasOffline) {
         speech_("Offline not changed");return;
     }
-    // The original Lua recreates the FX list after changing Offline; some FX
-    // names change. Keep the cursor by GUID rather than by old numeric slot.
+    // Some plugin names change when unloaded/reloaded. Rebuild entries and
+    // rebind by FX GUID, never by a potentially stale numeric slot.
     if (!rebuildEntries()) {speech_("FX list unavailable");end();return;}
     int newCursor = -1;
     for (int i=0;i<static_cast<int>(entries_.size());++i)
@@ -408,24 +462,32 @@ void FxNavigator::toggleOffline() {
     if (newCursor < 0) {speech_("FX list changed. Reopen FX Params");end();return;}
     browserCursor_ = newCursor;
     if (guidEquals(&entry.guid, fxGuid_)) {
-        // The same FX will need a fresh parameter binding on return online.
+        // Discard the old parameter binding, never reuse a stale index/count.
         count_ = 0;
     }
-    if (!fxBrowserMode_ && nowOffline) {
-        browserScopeMonitor_ = !take_ && track_ == GetMasterTrack(project_) && (entry.index & 0x1000000);
-        // A real offline plugin often has no parameters. Keep the internal FX
-        // browser focused so Ctrl+Alt+B can always make it online again.
+    if (nowOffline) {
+        browserScopeMonitor_ = !take_ && track_ == GetMasterTrack(project_) &&
+                              (entry.index & 0x1000000);
+        // Offline FX may expose zero parameters, but the browser must stay
+        // navigable so the same shortcut can switch the plugin online.
         clearF7Filter();editF7_=false;fxBrowserMode_=true;valueMode_=false;
         speech_("Offline. " + browserSpeech());
         return;
     }
-    if (!fxBrowserMode_) {
-        // Normally unreachable (offline FX has no parameter grid), but retain
-        // a usable grid if REAPER still exposes the effect's parameters.
-        if (!selectFx(newCursor)) {fxBrowserMode_=true;speech_(browserSpeech());return;}
-        speech_(fxContextAnnouncement());return;
-    }
-    speech_(browserSpeech());
+    // REAPER has switched it back online: restore the parameter GRID right
+    // away, including its group and exact saved position. No Enter, Esc or
+    // second invocation of FX Params should be needed.
+    if (enterOnlineParameters(newCursor)) return;
+    if (!active_) return; // selectFx() can abort on a replaced FX GUID.
+    // Some instruments populate their parameters a little after SetOffline.
+    // Keep Ctrl+Alt+B/F10/Enter operational and retry unobtrusively on the
+    // existing REAPER main-thread timer until ready or navigation changes.
+    fxBrowserMode_ = true;
+    onlineReturnPending_ = true;
+    onlineReturnGuid_ = entry.guid;
+    onlineReturnNextCheck_ = GetTickCount64() + 250;
+    onlineReturnUntil_ = GetTickCount64() + 90000;
+    speech_("Online. Loading parameters. " + browserSpeech());
 }
 void FxNavigator::browserKey(const Key& k) {
     if (k.vk==VK_SPACE && !k.shift && !k.alt) {

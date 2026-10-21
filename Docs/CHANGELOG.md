@@ -1,3 +1,8 @@
+## TEST61.15 — Ctrl+Alt+B immediate FX parameter restore (2026-10-21)
+- Rebinding the FX parameters directly after returning online: returns to the same group and parameter, without Escape/Enter or reopening FX Params.
+- For VSTi taking time to load, nonblocking timer-based retry (GUID guarded, 250 ms checks, 90 s limit) returns automatically when parameters become available; browsing a different FX cancels retry.
+- Track/Take/Monitor FX API parity, preserved .fx persistent memory and F7 behavior. Source-only checks; GitHub Actions native build pending.
+
 
 ## TEST61.8 — Consent-first import and accessible keyboard settings (2026-10-19)
 - Startup no longer silently imports or converts old Lua TXT profiles. If legacy files exist, a one-time accessible native question asks **Y** (convert safely) or **N** (leave unchanged); Escape also declines. Answer stored in `LReaParams/Settings/LegacyImportChoice.txt`. The prompt will not recur after an answer; manual import always remains available. No legacy TXT = no startup dialog.

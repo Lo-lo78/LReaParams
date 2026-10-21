@@ -494,6 +494,15 @@ public:
         if (current_ == &trackNavigator_) trackNavigator_.tickMidi();
         if(current_==&navigator_) {
             const auto previous=current_->reviewLine();
+            // An FX may finish loading its parameter list after Ctrl+Alt+B
+            // makes it online. Return to the original group/grid automatically.
+            if (navigator_.pollOnlineParameters() && titleProxyActive_) {
+                titleProxy_.updateTitle(navigator_.windowTitle());
+                titleProxy_.updateReviewLine(navigator_.reviewLine());
+                titleProxy_.syncValueControl(navigator_.nativeValueSlider(),
+                    navigator_.sliderLabel(), navigator_.valueFraction());
+                titleProxy_.reassertFocusAfterNavigationKey();
+            }
             navigator_.pollMidi();
             navigator_.pollCompare(); // Resolve single F8 after double-press window.
             const auto next=current_->reviewLine();

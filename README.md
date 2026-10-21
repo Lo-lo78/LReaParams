@@ -1,3 +1,17 @@
+## TEST61.15 — Ctrl+Alt+B ripristina subito il gruppo e i parametri FX
+
+- Quando metti un FX o strumento **offline**, LReaParams ricorda gruppo,
+  parametro e posizione e passa a FX Browser, dove Ctrl+Alt+B rimane attivo.
+- Quando rimetti lo stesso FX **online** con Ctrl+Alt+B, ritorna subito alla
+  griglia dei parametri nello stesso gruppo e nello stesso punto, senza dover
+  uscire e rientrare con l'azione FX Params.
+- Se uno strumento espone i parametri con ritardo, la DLL riprova sul timer
+  nativo REAPER senza bloccare l'interfaccia; il ripristino è protetto dal GUID.
+- Memoria persistente TEST61.14, FX diversi, F7, Take e Monitor FX invariati.
+
+Vedere `Docs/TEST61_15_FX_ONLINE_RESTORE.md`. **Non compilare localmente**:
+verifica sorgenti e build nativa tramite GitHub Actions.
+
 ## TEST61.14 — FX Params: gruppo e posizione sopravvivono al riavvio di REAPER
 
 - Esc dalla griglia di un gruppo chiude FX Params direttamente (come in

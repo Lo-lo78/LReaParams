@@ -61,3 +61,5 @@ No local compilation. Full historical static suite not claimed. MSVC and native 
 TEST55.12: targeted source checks PASS (test55_12_static, test55_10_static, test52_static). Full historical suite not completed locally; MSVC and CTest via GitHub Actions.
 
 TEST56.4: TEST55.10/12/13, TEST56.1/2/3/4 and Tools/audit.py PASS (source only); no local build.
+
+TEST61.15 (2026-10-21): 18 targeted TEST46/TEST61 source-only suites PASS (18/18); Tools/audit.py PASS. Previous TEST61.14 persistent FX group static regression PASS. Full historical Tools/run_static.py attempted but did not complete before execution limit; no full-suite success claimed. No native C++ compilation, REAPER/NVDA runtime or CTest executed locally; validate via GitHub Actions.

@@ -23,6 +23,9 @@ public:
     // The FX/take context is authoritative for Ctrl+Tab and the TCP selection.
     MediaTrack* cursorTrack() const noexcept { return active_ ? track_ : nullptr; }
     void pollMidi();
+    // Complete Ctrl+Alt+B online recovery when an FX exposes its parameters
+    // after the REAPER SetOffline call. Called by the existing main-thread timer.
+    bool pollOnlineParameters();
     // A parked navigator is an independent MIDI-only snapshot. No keyboard
     // focus or native window is retained while REAPER's main timer polls it.
     void prepareBackgroundMidi();
@@ -236,6 +239,7 @@ private:
     bool deltaParameter(MediaTrack* track, MediaItem_Take* take, int fx, int& index) const;
     void toggleDeltaSolo();
     void toggleOffline();
+    bool enterOnlineParameters(int entryIndex);
     void clearProjectDeltaSolo();
     void runLuaFunctionAction(int command);
     void chooseSlotAccess(int mode);
@@ -326,6 +330,12 @@ private:
     int browserIndex_ = 0;
     NativeFxWindow nativeFxWindowRequest_ = NativeFxWindow::none;
     bool fxBrowserMode_ = false;
+    // Pending return from offline to the parameter grid, bound to the same FX
+    // GUID (never a numeric slot that might later refer to another plugin).
+    bool onlineReturnPending_ = false;
+    GUID onlineReturnGuid_{};
+    ULONGLONG onlineReturnNextCheck_ = 0;
+    ULONGLONG onlineReturnUntil_ = 0;
     bool pinAudioMode_ = false;
     int pinAudioInputs_ = 0, pinAudioOutputs_ = 0;
     int pinAudioChannels_ = 2, pinAudioColumn_ = 0, pinAudioChannel_ = 0;

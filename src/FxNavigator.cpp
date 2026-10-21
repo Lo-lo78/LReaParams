@@ -50,7 +50,7 @@ void FxNavigator::end() noexcept {
     // Keep per-instance Original/Compare snapshots across navigator exits and
     // Ctrl+Tab. Original is captured only on first entry to the FX; a double
     // F8 is the sole user command which updates that reference.
-    active_ = false; fxBrowserMode_ = false; pinAudioMode_ = false; browserScopeMonitor_ = false; browserCursor_ = 0; browserMasterCursor_ = browserMonitorCursor_ = -1;
+    active_ = false; fxBrowserMode_ = false; onlineReturnPending_ = false; onlineReturnNextCheck_ = 0; onlineReturnUntil_ = 0; pinAudioMode_ = false; browserScopeMonitor_ = false; browserCursor_ = 0; browserMasterCursor_ = browserMonitorCursor_ = -1;
     recentMode_ = false; numericEdit_ = false; learnCc_ = false;
     floatingCc_ = false; floatingWaiting_ = false; pickup_.clear();
     valueMode_ = false; searchMode_ = false; editF7_ = false;
