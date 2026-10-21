@@ -1,3 +1,11 @@
+## TEST61.16.1 — Correzione del controllo GitHub Actions
+
+Il vecchio test statico TEST48 si aspettava due istruzioni C++ consecutive.
+TEST61.16 aggiunge correttamente `captureViewCursor()` fra loro per ricordare
+separatamente le griglie dei gruppi. Il test TEST48 e' aggiornato per verificare
+tutte e tre le istruzioni nell'ordine corretto. **Sorgenti C++ invariati**;
+compilazione DLL esclusivamente tramite GitHub Actions.
+
 ## TEST61.16 — FX Params: 14 griglie indipendenti
 
 **Plugin Order, Custom Order e ciascuno dei 12 Group** ora conservano individualmente la larghezza F1/F2 e la posizione dell'ultimo parametro, anche senza editare. Le preferenze sono immediate nella sessione e persistenti nel `.fx` condiviso al cambio contesto o all'uscita; sono compatibili con le vecchie chiavi Lua. Esc, F7 e Ctrl+Alt+B della TEST61.15 rimangono operativi. Dettagli e prove: `Docs/TEST61_16_INDEPENDENT_FX_GRIDS.md`. **Compilazione solo tramite GitHub Actions.**

@@ -1,3 +1,8 @@
+## TEST61.16.1 — GitHub Actions TEST48 static regression repair (2026-10-21)
+- Fixed obsolete TEST48 source-only assertion: it now accepts and requires `captureViewCursor()` between `syncParameterStep()` and `ensureContextMemory()`.
+- This is a test contract update only. The C++ code, 14 independent grids, F1/F2, persistent `.fx`, F7, Esc and offline/online restoration are unchanged.
+- No local native compilation. Windows DLL build remains GitHub Actions only.
+
 ## TEST61.16 — Memoria FX per contesto (2026-10-21)
 - F1/F2 memorizza la larghezza di griglia **del contesto corrente**, non una larghezza globale per il plugin: Plugin Order, Custom Order e 12 Group distinti.
 - Ogni contesto conserva anche parametro e posizione/occorrenza, indipendentemente da F7 e dalle modifiche dei valori.

@@ -32,7 +32,10 @@ assert 'if(parameterStepsDirty_)stageParameterSteps();' in order
 assert 'parameterStepsDirty_=false;' in order
 # No disk write on every value nudge: write only when leaving a changed param,
 # switching FX/context, or closing the navigator.
-assert 'syncParameterStep();\n    auto& state = ensureContextMemory();' in nav
+# TEST61.16 captures the outgoing grid and parameter cursor between step syncing
+# and acquiring the per-instance session state. Preserve this ordering so both
+# the original Step memory and the independent group grids are maintained.
+assert 'syncParameterStep();\n    captureViewCursor();\n    auto& state = ensureContextMemory();' in nav
 assert 'flushParameterSteps();\n        flushPersistentPosition();' in nav
 assert 'flushParameterSteps();\n    flushPersistentPosition();' in ctx
 assert 'flushParameterSteps();\n        // end() is noexcept' in nav
