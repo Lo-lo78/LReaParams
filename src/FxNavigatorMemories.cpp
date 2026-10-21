@@ -18,6 +18,7 @@ bool FxNavigator::openFxMemories(bool standalone) {
     // TEST55.5: Ctrl+Shift+M is the independent memory-manager entry point in
     // FX Grid, Value and F7. The dedicated REAPER action uses this same UI.
     // Preserve the exact origin to return correctly after Escape.
+    rememberPosition(); // Preserve the ordering being left, even without edits.
     memoryReturnF7_=editF7_;
     memoryReturnF7Filter_=f7FilterQuery_;
     memoryReturnParam_=parameter_;
@@ -124,7 +125,12 @@ void FxNavigator::memoryExit(bool announceReturn) {
     editF7_=memoryReturnF7_;
     groupSlot_=memoryReturnGroup_;
     clearF7Filter();
-    rebuildView(memoryReturnParam_,memoryReturnPosition_);
+    // F8 Group/Custom selection restores its independent grid unless the
+    // memory entry requests an explicit parameter/occurrence jump.
+    if (!editF7_ && (memoryReturnGroup_ > 0) &&
+        memoryReturnPosition_ <= 0)
+        restoreViewCursor(memoryReturnParam_, memoryReturnPosition_);
+    else rebuildView(memoryReturnParam_,memoryReturnPosition_);
     if(editF7_ && !memoryReturnF7Filter_.empty())applyF7Filter(memoryReturnF7Filter_,false);
     rememberPosition();
     if(standalone) {end();return;}

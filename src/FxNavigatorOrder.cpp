@@ -172,6 +172,105 @@ std::string FxNavigator::displayName() const {
     auto label=fxOrder_.label(parameter_);
     return label.empty()?parameterName_:label;
 }
+// Each ordering has its own grid width and exact occurrence. Unlike F7
+// selection/editing these are ordinary navigation preferences, saved even if
+// no parameter value or order was ever modified.
+int FxNavigator::currentViewIndex() const noexcept {
+    return groupSlot_ >= 1 && groupSlot_ <= 12 ? groupSlot_ + 1 : fxOrder_.custom ? 1 : 0;
+}
+void FxNavigator::captureViewCursor() {
+    if (visible_.empty() || viewPos_ < 0 ||
+        viewPos_ >= static_cast<int>(visible_.size())) return;
+    auto& cursor = viewCursors_[static_cast<size_t>(currentViewIndex())];
+    cursor.columns = std::clamp(columns_, 1, 200);
+    cursor.remembered = true;
+    // F7 edits the same group's grid width, but its transient editor
+    // selection must not replace the last NORMAL navigation position.
+    if (editF7_) return;
+    cursor.position = f7FilterActive_ ? f7OriginalPosition(viewPos_) : viewPos_;
+    cursor.parameter = parameter_;
+}
+std::string FxNavigator::serializeViewCursors() const {
+    std::string value;
+    for (int i = 0; i < static_cast<int>(viewCursors_.size()); ++i) {
+        const auto& cursor = viewCursors_[static_cast<size_t>(i)];
+        if (!cursor.remembered) continue;
+        if (!value.empty()) value += ';';
+        value += std::to_string(i) + ',' + std::to_string(cursor.columns) + ',' +
+                 std::to_string(cursor.position) + ',' + std::to_string(cursor.parameter);
+    }
+    return value;
+}
+void FxNavigator::loadViewCursors() {
+    viewCursors_ = {};
+    // Lua's separate grid keys remain readable, including .fx imported from
+    // TXT before the native per-context record first gets written.
+    auto luaGrid = [&](int i) {
+        if (i == 0) return std::string("grid_size_v1");
+        if (i == 1) return std::string("custom_order_grid_size_v1");
+        return std::string("group_grid_size_v1::slot::") + std::to_string(i - 1);
+    };
+    for (int i = 0; i < 14; ++i) {
+        std::string text = fxOrder_.extraValue(luaGrid(i));
+        if (text.empty() && i != 0) text = fxOrder_.extraValue(luaGrid(0));
+        try {
+            size_t used = 0;
+            int n = std::stoi(text, &used, 10);
+            if (used == text.size() && n >= 1 && n <= 200) {
+                viewCursors_[static_cast<size_t>(i)].columns = n;
+                viewCursors_[static_cast<size_t>(i)].remembered = true;
+            }
+        } catch (...) {}
+    }
+    for (int slot = 1; slot <= 12; ++slot) {
+        auto& cursor = viewCursors_[static_cast<size_t>(slot + 1)];
+        std::istringstream legacy(fxOrder_.extraValue(
+            "group_last_position_v1::slot::" + std::to_string(slot)));
+        int position = 0, parameter = 0;
+        if (legacy >> position >> parameter && position > 0 && position <= 1000000) {
+            cursor.position = position - 1; // Lua coordinates are 1-based.
+            cursor.parameter = parameter;
+            cursor.remembered = true;
+        }
+    }
+    // Native v1 takes precedence over legacy grid values. Malformed entries
+    // are ignored individually, with strict limits for untrusted profile data.
+    const std::string data = fxOrder_.extraValue("lrp_context_grids_v1");
+    if (data.size() > 2048) return;
+    std::istringstream rows(data);
+    std::string row;
+    while (std::getline(rows, row, ';')) {
+        std::istringstream fields(row);
+        int i = 0, width = 0, pos = 0, param = 0;
+        char a = 0, b = 0, c = 0, trailing = 0;
+        if ((fields >> i >> a >> width >> b >> pos >> c >> param) &&
+            a == ',' && b == ',' && c == ',' && !(fields >> trailing) &&
+            i >= 0 && i < 14 && width >= 1 && width <= 200 &&
+            pos >= -1 && pos <= 1000000) {
+            viewCursors_[static_cast<size_t>(i)] = {width, pos, param, true};
+        }
+    }
+}
+void FxNavigator::restoreViewCursor(int fallbackParam, int fallbackPosition) {
+    const auto& cursor = viewCursors_[static_cast<size_t>(currentViewIndex())];
+    columns_ = cursor.remembered ? std::clamp(cursor.columns, 1, 200) : 10;
+    if (cursor.remembered && cursor.position >= 0) {
+        // A duplicated parameter must reopen at its exact occurrence.
+        rebuildView(cursor.parameter, cursor.position);
+    } else if (fallbackPosition >= 0) {
+        rebuildView(fallbackParam, fallbackPosition);
+    } else {
+        // A newly visited group/order starts at the first parameter, instead
+        // of inheriting the cursor from the group being left.
+        const auto group = groupSlot_ ? fxOrder_.groups.find(groupSlot_)
+                                      : fxOrder_.groups.end();
+        const auto& list = group != fxOrder_.groups.end() ? group->second
+                                                         : fxOrder_.visibleOrder();
+        if (!list.empty()) rebuildView(list.front(), 0);
+        else rebuildView(fallbackParam);
+    }
+}
+
 void FxNavigator::loadFxOrder() {
     flushParameterSteps();
     // Raw REAPER name corresponds to Lua get_fx_raw_label(), not its stripped
@@ -189,6 +288,7 @@ void FxNavigator::loadFxOrder() {
     },nativeOrder);
     loadParameterSteps();
     groupSlot_=0;groupEditAll_=false;searchMode_=false;editF7_=false;
+    loadViewCursors(); // Shared persistent defaults, before the per-GUID overlay.
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
     slotMode_=fxOrder_.groupSlotMode?0:1;
     visible_=fxOrder_.visibleOrder();
@@ -197,6 +297,7 @@ void FxNavigator::loadFxOrder() {
     if(auto* memory=contextMemory())for(const auto& pos:memory->positions)
         if(guidSame(&pos.fxGuid,fxGuid_)) {
             restoredFromSession=true;
+            viewCursors_ = pos.viewCursors; // Per-instance positions win while open.
             preference=pos.viewPosition;
             f7Selected_=pos.f7Selected;
             fxOrder_.custom=pos.customView && fxOrder_.storedCustomOrder();
@@ -226,7 +327,9 @@ void FxNavigator::loadFxOrder() {
             }
         }
     }
-    rebuildView(parameter_,preference);
+    if (viewCursors_[static_cast<size_t>(currentViewIndex())].remembered)
+        restoreViewCursor(parameter_, preference);
+    else rebuildView(parameter_,preference);
     snapshotDefaultsIfMissing();
     resetMidiContext();
 }
@@ -572,6 +675,7 @@ void FxNavigator::openGroup(int slot) {
     // Plugin/Custom Order, F7 edit state, selection and optional search filter.
     // A different Ctrl+Fn changes groups without replacing that source view.
     if(groupSlot_==slot) {
+        rememberPosition(); // Do not lose this group's cursor or F1/F2 width.
         const bool haveOrigin=groupReturnActive_;
         // Keep the CURRENT editing mode: F7 may have been entered or exited
         // after loading the group. An editor outside any group is Custom Order.
@@ -592,7 +696,7 @@ void FxNavigator::openGroup(int slot) {
             fxOrder_.custom=wasCustom;
             editF7_=wasEditing;
             f7Selected_=oldSelection;
-            rebuildView(oldParam,oldPos);
+            restoreViewCursor(oldParam,oldPos);
             if(!oldFilter.empty()) {
                 applyF7Filter(oldFilter,false);
                 // Restore the precise occurrence in the filtered grid too,
@@ -607,9 +711,10 @@ void FxNavigator::openGroup(int slot) {
             }
         } else {
             editF7_=false;
-            rebuildView(parameter_);
+            restoreViewCursor(parameter_);
         }
         rememberPosition();
+        flushPersistentPosition();
         speech_(std::string(editF7_?"Edit: ":"")+
                 (fxOrder_.custom?"Custom Order":"Plugin Order")+
                 (f7FilterActive_?". Search results":"")+". "+
@@ -619,6 +724,7 @@ void FxNavigator::openGroup(int slot) {
     if(it==fxOrder_.groups.end()||it->second.empty()){
         speech_("Group "+std::to_string(slot)+" empty");return;
     }
+    rememberPosition(); // Capture the outgoing group's independent grid.
     if(!groupSlot_) {
         // Capture ONCE, before entering the first group; do not overwrite it
         // while switching Group 1 -> Group 2 -> Group 3.
@@ -635,8 +741,9 @@ void FxNavigator::openGroup(int slot) {
     // Preserve F7 while changing groups. The group list is independent of
     // Plugin/Custom Order and is never redirected to Plugin Order here.
     f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
-    rebuildView(parameter_);
+    restoreViewCursor(parameter_);
     rememberPosition();
+    flushPersistentPosition();
     speech_(std::string(editF7_?"Edit: ":"")+groupLabel(slot)+". "+
             (editF7_?editorParameterSpeech():currentParameterSpeech()));
 }

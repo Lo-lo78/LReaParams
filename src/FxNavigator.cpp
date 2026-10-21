@@ -28,7 +28,8 @@ void FxNavigator::flushPersistentPosition() noexcept {
         parameterName_.empty()) return;
     try {
         if (!fxOrder_.persistLastParameter(parameter_, parameterName_, groupSlot_,
-                                           f7FilterActive_ ? f7OriginalPosition(viewPos_) : viewPos_))
+                                           f7FilterActive_ ? f7OriginalPosition(viewPos_) : viewPos_,
+                                           serializeViewCursors()))
             OutputDebugStringW(L"LReaParams: FX position was not saved.\n");
     } catch (const std::exception&) {
         // Navigation/REAPER shutdown must never fail due to a read-only or
@@ -66,6 +67,8 @@ void FxNavigator::restorePersistedParameter() {
     if (const auto* state = contextMemory())
         for (const auto& position : state->positions)
             if (same(&position.fxGuid, fxGuid_)) return;
+    // The per-view saved cursor has priority over the legacy global LastParam.
+    if (viewCursors_[static_cast<size_t>(currentViewIndex())].position >= 0) return;
     const std::string saved = fxOrder_.lastParameterRecord();
     const auto tab = saved.find('\t');
     if (tab == std::string::npos || tab == 0) return;
@@ -449,6 +452,7 @@ void FxNavigator::rememberPosition() {
     if (!active_ || !track_ || count_ <= 0 || (parameter_ < 0 && parameter_!=compareParamIndex && !eqVirtualValid(parameter_) && !dynamicsVirtualValid(parameter_)) || parameter_ >= count_ ||
         browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size())) return;
     syncParameterStep();
+    captureViewCursor();
     auto& state = ensureContextMemory();
     state.hasLastFx = true;
     state.lastFxGuid = fxGuid_;
@@ -463,6 +467,7 @@ void FxNavigator::rememberPosition() {
     state.observedVisibleFx = visibleFxIndex();
     for (auto& pos : state.positions) {
         if (same(&pos.fxGuid, fxGuid_)) {
+            pos.viewCursors = viewCursors_;
             pos.parameter = parameter_;
             pos.parameterName = parameterName_;
             pos.gridHeight = columns_;
@@ -476,6 +481,7 @@ void FxNavigator::rememberPosition() {
     }
     StoredFxPosition pos{};
     pos.fxGuid = fxGuid_;
+    pos.viewCursors = viewCursors_;
     pos.parameter = parameter_;
     pos.parameterName = parameterName_;
     pos.gridHeight = columns_;
@@ -1558,10 +1564,12 @@ void FxNavigator::handle(const Key& k) {
         if (editF7_) {speech_("Exit F7 first");return;}
         if (!fxOrder_.storedCustomOrder()) {speech_("No Custom Order. Press F7");return;}
         clearF7Filter();
+        rememberPosition(); // Save the outgoing Plugin/Custom cursor and grid.
         const int old=parameter_;
         fxOrder_.custom=!fxOrder_.custom;
-        rebuildView(old);
-        saveStructure(); // Persist only the view preference; F7 is the creation boundary.
+        restoreViewCursor(old);
+        saveStructure(); // Persist the view preference, and both independent grids.
+        flushPersistentPosition();
         // Ctrl+L never creates a previously absent Custom Order.
         speech_(std::string(fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech());
         return;

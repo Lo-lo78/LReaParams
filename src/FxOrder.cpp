@@ -363,7 +363,8 @@ std::optional<FxOrder::LastView> FxOrder::lastView() const {
 }
 
 bool FxOrder::persistLastParameter(int parameter, const std::string& parameterName,
-                                   int groupSlot, int viewPosition) {
+                                   int groupSlot, int viewPosition,
+                                   const std::string& contextGrids) {
     if (!loaded_ || resource_.empty() || file_.empty() || parameterName.empty()) return false;
     if (groupSlot < 0 || groupSlot > 12 || viewPosition < 0) return false;
     // This is a navigation-only write. Preserve every user-authored CustomOrder,
@@ -373,7 +374,9 @@ bool FxOrder::persistLastParameter(int parameter, const std::string& parameterNa
     const auto oldView = lastView();
     if (lastParameterRecord() == newRecord && oldView &&
         oldView->groupSlot == newView.groupSlot &&
-        oldView->viewPosition == newView.viewPosition && existed_) return true;
+        oldView->viewPosition == newView.viewPosition &&
+        (contextGrids.empty() || extraValue("lrp_context_grids_v1") == contextGrids) &&
+        existed_) return true;
     std::string payload = profile_.payload;
     const std::string prefix = "LastParam=";
     std::size_t begin = 0;
@@ -435,6 +438,38 @@ bool FxOrder::persistLastParameter(int parameter, const std::string& parameterNa
             const std::string newline = payload.find("\r\n") == std::string::npos ? "\n" : "\r\n";
             if (!payload.empty() && payload.back() != '\n') payload += newline;
             payload += "[Extra]" + newline + locationLine + newline;
+        }
+    }
+    // Independent Plugin/Custom/12 Group cursors are one optional [Extra]
+    // record. Patch just this record: do not serialize/normalize the user's
+    // Custom Order, group membership, or MIDI data for navigation alone.
+    if (!contextGrids.empty()) {
+        const std::string key = "lrp_context_grids_v1=";
+        const std::string line = key + contextGrids;
+        bool inSection = false, replaced = false;
+        std::size_t insertAt = std::string::npos;
+        for (std::size_t at = 0; at < payload.size();) {
+            const auto newline = payload.find('\n', at);
+            const auto end = newline == std::string::npos ? payload.size() : newline;
+            const auto logical = end > at && payload[end - 1] == '\r' ? end - 1 : end;
+            if (payload.compare(at, logical - at, "[Extra]") == 0) {
+                inSection = true;
+                insertAt = newline == std::string::npos ? end : newline + 1;
+            } else if (inSection && logical > at && payload[at] == '[' && payload[logical - 1] == ']') {
+                break;
+            } else if (inSection && payload.compare(at, key.size(), key) == 0) {
+                payload.replace(at, logical - at, line);
+                replaced = true;
+                break;
+            }
+            if (newline == std::string::npos) break;
+            at = newline + 1;
+        }
+        if (!replaced) {
+            if (insertAt == std::string::npos)
+                throw ProfileError("Cannot find FX Extra section for view cursors");
+            const std::string newline = payload.find("\r\n") == std::string::npos ? "\n" : "\r\n";
+            payload.insert(insertAt, line + newline);
         }
     }
     // Full parser and native envelope checks before touching the original.

@@ -26,7 +26,8 @@ public:
     std::string lastParameterRecord() const;
     std::optional<LastView> lastView() const;
     bool persistLastParameter(int parameter, const std::string& name,
-                              int groupSlot, int viewPosition);
+                              int groupSlot, int viewPosition,
+                              const std::string& contextGrids = {});
     // A parked MIDI navigator is a snapshot of a foreground navigator.
     // Rebind callbacks which originally captured that foreground object's this.
     void rebindParamName(std::function<std::string(int)> callback) { paramName_ = std::move(callback); }

@@ -14,6 +14,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - name: TEST61.16 independent FX grids per ordering and group (source only)
+        run: python Testing/test61_16_fx_view_context_static.py
       - name: Verify source and synthetic fixtures
         run: python Tools/audit.py
       - name: Verify TEST21 shortcut and title contracts (source only)

@@ -1,3 +1,9 @@
+## TEST61.16 — Memoria FX per contesto (2026-10-21)
+- F1/F2 memorizza la larghezza di griglia **del contesto corrente**, non una larghezza globale per il plugin: Plugin Order, Custom Order e 12 Group distinti.
+- Ogni contesto conserva anche parametro e posizione/occorrenza, indipendentemente da F7 e dalle modifiche dei valori.
+- Memoria per istanza durante la sessione, fallback condiviso persistente nel `.fx`; lettura dei vecchi campi Lua; salvataggio protetto senza riscrivere Custom Order o CC.
+- TEST61.15 offline/online e TEST61.14 Esc/riapertura conservati. Fonte `Docs/TEST61_16_INDEPENDENT_FX_GRIDS.md`. Build Windows solo GitHub Actions.
+
 ## TEST61.15 — Ctrl+Alt+B immediate FX parameter restore (2026-10-21)
 - Rebinding the FX parameters directly after returning online: returns to the same group and parameter, without Escape/Enter or reopening FX Params.
 - For VSTi taking time to load, nonblocking timer-based retry (GUID guarded, 250 ms checks, 90 s limit) returns automatically when parameters become available; browsing a different FX cancels retry.

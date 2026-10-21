@@ -195,7 +195,16 @@ private:
     bool rebuildEntries();
     // Session-only memory (no files, no REAPER ExtState and no RPP changes).
     // A context is identified by project, track GUID and optional take.
+    // 0 Plugin Order, 1 Custom Order, 2..13 Group 1..12.
+    // Separate grid WIDTH and cursor per view, independently of F7 edits.
+    struct ViewCursor {
+        int columns = 10;
+        int position = -1;
+        int parameter = 0;
+        bool remembered = false;
+    };
     struct StoredFxPosition {
+        std::array<ViewCursor, 14> viewCursors{};
         GUID fxGuid{};
         int parameter = 0;
         std::string parameterName;
@@ -225,6 +234,11 @@ private:
     int rememberedFxIndex(const StoredContext& state) const;
     void restoreParameterPosition();
     void restorePersistedParameter();
+    int currentViewIndex() const noexcept;
+    void captureViewCursor();
+    void loadViewCursors();
+    void restoreViewCursor(int fallbackParam, int fallbackPosition = -1);
+    std::string serializeViewCursors() const;
     void flushPersistentPosition() noexcept;
     void rememberPosition();
     std::string contextName() const;
@@ -355,6 +369,7 @@ private:
     FxOrder fxOrder_;
     std::filesystem::path resourceRoot_;
     std::vector<int> visible_;
+    std::array<ViewCursor, 14> viewCursors_{};
     int viewPos_ = 0;
     // The view from which the first group was loaded (also across group switches).
     bool groupReturnActive_ = false, groupReturnCustom_ = false, groupReturnEdit_ = false;
