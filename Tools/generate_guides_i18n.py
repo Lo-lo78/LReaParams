@@ -582,9 +582,13 @@ def localized_manual(tag,which):
     content+='<nav aria-label="'+escape(ui[5],quote=True)+'"><h2>'+escape(ui[5])+'</h2><ol>'
     for i,(head,body) in enumerate(parts,1):
         content+='<li>'+link(f'#section-{i}',head)+'</li>'
+    if which == 'fx': content+='<li>'+link('#fx-context-test61',FX_CONTEXT_UPDATES[tag][0])+'</li>'
     content+='<li>'+link('#shortcuts',ui[6])+'</li></ol></nav>'
     for i,(head,body) in enumerate(parts,1):
         content+=f'<section aria-labelledby="section-{i}"><h2 id="section-{i}">{i}. {escape(head)}</h2><p>{escape(body)}</p></section>'
+    if which == 'fx':
+        head, body = FX_CONTEXT_UPDATES[tag]
+        content += '<section aria-labelledby="fx-context-test61"><h2 id="fx-context-test61">'+escape(head)+'</h2><p>'+escape(body)+'</p></section>'
     content+='<section aria-labelledby="shortcuts"><h2 id="shortcuts">'+escape(ui[6])+'</h2>'
     content+='<table><thead><tr><th scope="col">'+escape(ui[6])+'</th><th scope="col">'+escape(ui[7])+'</th></tr></thead><tbody>'
     for key,desc in zip(keyset,labels):
@@ -594,6 +598,17 @@ def localized_manual(tag,which):
     (ROOT/tag/(which+'.html')).write_text(html_page(tag,'LReaParams — '+title,content),encoding='utf-8')
 
 
+
+# TEST61.14–61.16.1: generated appendix, retained across guide regeneration.
+FX_CONTEXT_UPDATES = {
+ 'it': ('Novità TEST61: griglie, gruppi e ripristino', 'Plugin Order, Custom Order e ciascuno dei 12 gruppi hanno una griglia indipendente: F1/F2 ne regolano la larghezza, e ciascuna vista ricorda parametro e occorrenza selezionata, anche senza usare F7. Ctrl+L cambia tra Plugin Order e Custom Order; Ctrl+F1–Ctrl+F12 entra nei gruppi nella modalità Gruppo e ripremendo lo stesso comando ne esce. Esc dalla griglia di un gruppo chiude direttamente FX Params, mentre Esc dentro F7 chiude prima l’editor. La posizione e il gruppo sono conservati nella sessione per la singola istanza dell’FX; alla chiusura o al cambio di vista si salvano anche nel profilo .fx. Dopo il riavvio, il profilo è un riferimento condiviso fra istanze dello stesso tipo di plugin, non una memoria separata per GUID. Le griglie sono memorizzate in [Extra] come lrp_context_grids_v1, la vista attiva in lrp_last_navigation_v1 e il parametro in LastParam. Profili precedenti restano compatibili. Ctrl+Alt+B mette l’FX offline e mostra il browser; premendolo nuovamente, quando l’FX torna online, FX Params riprende automaticamente gruppo, griglia e parametro, senza riaprire il navigatore. Se i parametri non sono subito disponibili, il recupero viene tentato senza bloccare l’interfaccia (fino a 90 secondi); un cambio volontario di FX annulla il recupero. F7 non viene riaperto automaticamente.'),
+ 'es': ('Novedades TEST61: cuadrículas, grupos y restauración', 'Plugin Order, Custom Order y los 12 grupos recuerdan por separado el ancho de la cuadrícula (F1/F2) y la posición exacta del parámetro, incluso sin editar con F7. Ctrl+L cambia entre Plugin y Custom; Ctrl+F1–Ctrl+F12 accede a los grupos en modo Grupo. Esc desde un grupo cierra FX Params directamente; en F7, Esc primero cierra el editor. La memoria es individual por instancia durante la sesión y también se guarda en el perfil .fx, compartido entre instancias del mismo tipo de plugin tras reiniciar REAPER. Se conservan los perfiles anteriores. Ctrl+Alt+B pone el FX fuera de línea y abre el navegador; al volver a ponerlo en línea, se recuperan automáticamente grupo, cuadrícula y parámetro, incluso si tardan en aparecer (hasta 90 segundos). Cambiar de FX cancela esta recuperación. F7 no se reabre automáticamente.'),
+ 'fr': ('Nouveautés TEST61 : grilles, groupes et restauration', 'Plugin Order, Custom Order et les 12 groupes mémorisent chacun leur largeur de grille (F1/F2) et la position exacte du paramètre, même sans utiliser F7. Ctrl+L bascule entre Plugin et Custom ; Ctrl+F1–Ctrl+F12 ouvre les groupes en mode Groupe. Échap depuis une grille de groupe ferme directement FX Params ; dans F7, Échap ferme d’abord l’éditeur. Chaque instance conserve son état pendant la session ; le profil .fx partagé par type de plug-in sert de restauration après redémarrage. Les anciens profils restent compatibles. Ctrl+Alt+B met le FX hors ligne et affiche le navigateur ; lors du retour en ligne, groupe, grille et paramètre sont automatiquement restaurés, avec une vérification non bloquante jusqu’à 90 secondes si nécessaire. Changer volontairement de FX annule cette restauration. F7 ne se rouvre pas automatiquement.'),
+ 'ru': ('Новое в TEST61: сетки, группы и восстановление', 'Plugin Order, Custom Order и все 12 групп независимо сохраняют ширину сетки (F1/F2) и точную позицию параметра, даже без редактирования F7. Ctrl+L переключает Plugin/Custom; Ctrl+F1–Ctrl+F12 открывают группы в режиме групп. Esc в сетке группы сразу закрывает FX Params; в F7 сначала закрывается редактор. Во время сеанса память отдельная для каждого экземпляра FX; после перезапуска используется общий профиль .fx для данного типа плагина. Старые профили поддерживаются. Ctrl+Alt+B переводит FX в offline и показывает браузер; при возврате online группа, сетка и параметр восстанавливаются автоматически. Для медленно загружаемых параметров выполняется неблокирующая проверка до 90 секунд. Смена FX отменяет восстановление; F7 автоматически не открывается.'),
+ 'zh-CN': ('TEST61 新功能：独立网格、分组和恢复', 'Plugin Order、Custom Order 和 12 个分组分别记住自己的网格列数（F1/F2）以及准确的参数位置，无须进入 F7 编辑器。Ctrl+L 在 Plugin 和 Custom 间切换；在分组模式下使用 Ctrl+F1–Ctrl+F12 进入分组。在分组网格中按 Esc 会直接关闭 FX Params；在 F7 中则先关闭编辑器。当前会话按 FX 实例分别保存状态，重启 REAPER 后从同类型插件共享的 .fx 配置文件恢复。旧配置仍兼容。Ctrl+Alt+B 将 FX 设为离线并显示浏览器；重新上线后自动恢复分组、网格和参数。参数加载缓慢时最多进行 90 秒非阻塞检查。主动切换 FX 将取消恢复，F7 不会自动重新打开。'),
+ 'ja': ('TEST61 の新機能：独立グリッド、グループ、復元', 'Plugin Order、Custom Order、12 個のグループが、それぞれグリッド幅（F1/F2）と正確なパラメータ位置を記憶します。F7 で編集する必要はありません。Ctrl+L で Plugin/Custom を切り替え、グループモードでは Ctrl+F1～Ctrl+F12 でグループを開きます。グループのグリッドで Esc を押すと FX Params を直接閉じます。F7 内では先にエディターを閉じます。セッション中は FX インスタンスごとに記憶し、REAPER 再起動後は同種プラグインで共有する .fx プロファイルから復元します。旧プロファイルも利用できます。Ctrl+Alt+B で FX をオフラインにするとブラウザーへ移動し、オンラインに戻すとグループ、グリッド、パラメータが自動復元されます。読み込みが遅い場合は最大 90 秒間、操作を妨げず確認します。別の FX に切り替えると復元は中止され、F7 は自動的に開きません。')
+}
+
 def patch_originals():
     for filename in ('LReaParams - FX Params.html','LReaParams - Track Params.html'):
         file=ROOT/filename
@@ -601,6 +616,17 @@ def patch_originals():
         # Do not rewrite the detailed original guide; add a language selector link.
         if 'Select language</a>' not in s:
             s=s.replace('<header><p>', '<header><p><a href="index.html">Select language</a> · ', 1)
+        if filename == 'LReaParams - FX Params.html' and 'id="test61-independent-context-grids"' not in s:
+            detail = ("<h2 id=\"test61-independent-context-grids\">TEST61.14–61.16: independent FX grids and restoration</h2>"
+              "<p><strong>Fourteen independent grids:</strong> Plugin Order, Custom Order, and all 12 groups independently remember their F1/F2 column count, selected parameter and precise occurrence, including duplicate entries. You do not need to enter F7 or change a parameter to save a grid position. Ctrl+L toggles Plugin/Custom; in Group mode Ctrl+F1–Ctrl+F12 selects a group, and repeating the same shortcut exits it back to its originating view.</p>"
+              "<p><strong>Escape:</strong> Esc from a group grid closes FX Params immediately, retaining that group. Esc in F7 first exits its editor; F7 itself is not reopened automatically. Invalid, empty or removed groups fall back to the main grid.</p>"
+              "<p><strong>Persistence:</strong> Each FX GUID keeps its own context during the REAPER session. On exit or context switch, the shared per-plugin <code>.fx</code> profile stores <code>LastParam</code>, <code>lrp_last_navigation_v1</code> (active group and zero-based grid position) and <code>lrp_context_grids_v1</code> (independent grid settings) in the optional <code>[Extra]</code> section. Older Lua keys and older profiles remain readable. After restarting REAPER the shared per-plugin profile is a fallback, not a per-GUID history of instances.</p>"
+              "<p><strong>Offline/online:</strong> Ctrl+Alt+B sends the FX offline and shows FX Browser; repeating it to bring the same FX online automatically returns to its group, grid and parameter without reopening FX Params. Parameter loading is checked non-blockingly every 250 ms for up to 90 seconds. Voluntarily selecting another FX cancels that return. If no parameters appear, the browser remains usable.</p>"
+              "<p>Documentation: <a href=\"../Docs/TEST61_16_INDEPENDENT_FX_GRIDS.md\">TEST61.16 test details</a> (available in the source repository); see also README and CHANGELOG. Release TEST61.16.1 only corrects a source-only static test; it does not change the C++ runtime behavior.</p>")
+            # source guide may be distributed without Docs, so avoid broken offline link
+            detail = detail.replace('<a href=\"../Docs/TEST61_16_INDEPENDENT_FX_GRIDS.md\">TEST61.16 test details</a> (available in the source repository)', 'See Docs/TEST61_16_INDEPENDENT_FX_GRIDS.md in the source repository')
+            s=s.replace('</main>',detail+'</main>',1)
+            s=s.replace('</ul></nav>', '<li><a href=\"#test61-independent-context-grids\">TEST61 independent grids and restoration</a></li></ul></nav>',1)
         file.write_text(s,encoding='utf-8')
 
 

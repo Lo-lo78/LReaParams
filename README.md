@@ -1,3 +1,7 @@
+## User guide update for TEST61.16.1 (2026-10-27)
+
+The accessible English FX guide and all six localized FX references now document TEST61.14–61.16: per-instance session memory, shared `.fx` persistence, independent Plugin/Custom/Group grids, group Escape behavior, and automatic Ctrl+Alt+B offline/online restoration. The multilingual guide generator has been updated as well. **Documentation update only; no C++ runtime changes.** See `Docs/RELEASE_NOTES_TEST61_16_1.md`.
+
 ## TEST61.16.1 — Correzione del controllo GitHub Actions
 
 Il vecchio test statico TEST48 si aspettava due istruzioni C++ consecutive.
