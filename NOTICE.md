@@ -1,3 +1,5 @@
+LReaParams 0.0.62 (2026-10-27) — public release of TEST61.16.1. Updated user-visible About, CMake and NSIS version, GitHub Actions artifact labels, and multilingual guide. No navigation/runtime behavior changes in this release-only update. Historical TEST61 notes follow. Windows native compilation pending.
+
 LReaParams 0.0.61 TEST61.10 — NSIS path fix.
 
 GitHub Actions TEST61.9 compiled the C++ DLL but failed in NSIS because the

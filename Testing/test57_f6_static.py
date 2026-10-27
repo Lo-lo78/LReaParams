@@ -6,7 +6,8 @@ No native compilation and no device/REAPER/NVDA execution.
 # rather than requiring the old F5 source file and obsolete page numbering.
 from pathlib import Path as _LegacyPath
 import runpy as _runpy
-if 'VERSION 0.0.61' in (_LegacyPath(__file__).resolve().parents[1] / 'CMakeLists.txt').read_text():
+from version_contract import version_at_least as _version_at_least
+if _version_at_least(_LegacyPath(__file__).resolve().parents[1], (0, 0, 61)):
     _runpy.run_path(str(_LegacyPath(__file__).with_name('test61_pin_connector_migration_static.py')))
     raise SystemExit(0)
 

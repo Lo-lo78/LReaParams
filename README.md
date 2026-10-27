@@ -1,6 +1,6 @@
-## User guide update for TEST61.16.1 (2026-10-27)
+## LReaParams 0.0.62 — release (2026-10-27)
 
-The accessible English FX guide and all six localized FX references now document TEST61.14–61.16: per-instance session memory, shared `.fx` persistence, independent Plugin/Custom/Group grids, group Escape behavior, and automatic Ctrl+Alt+B offline/online restoration. The multilingual guide generator has been updated as well. **Documentation update only; no C++ runtime changes.** See `Docs/RELEASE_NOTES_TEST61_16_1.md`.
+The accessible English FX guide and all six localized FX references now document TEST61.14–61.16: per-instance session memory, shared `.fx` persistence, independent Plugin/Custom/Group grids, group Escape behavior, and automatic Ctrl+Alt+B offline/online restoration. The multilingual guide generator has been updated as well. **Release 0.0.62** includes these documented TEST61.14–61.16.1 capabilities. The native runtime behavior is unchanged from the supplied TEST61.16.1 source; About now identifies 0.0.62 and summarizes the FX context changes. Installer, source archives, GitHub Actions artifacts and all seven guide languages are labelled 0.0.62. See `Docs/RELEASE_NOTES_0_0_62.md`. All 95 source-only regression scripts and `Tools/audit.py` passed; the Windows DLL and installer still require GitHub Actions compilation and REAPER/NVDA runtime verification.
 
 ## TEST61.16.1 — Correzione del controllo GitHub Actions
 
@@ -108,8 +108,8 @@ evita regressioni. Nessuna modifica alle funzioni della DLL o ai dati utente.
 ## TEST61.9 — Installer EXE GitHub Actions e licenza
 
 GitHub Actions adesso genera un quarto artefatto:
-**`LReaParams-0.0.61-Windows-x64-SETUP-EXE`**. Dopo avere estratto lo ZIP
-scaricato da Actions, eseguire **`LReaParams-0.0.61-Windows-x64-Setup.exe`**.
+**`LReaParams-0.0.62-Windows-x64-SETUP-EXE`**. Dopo avere estratto lo ZIP
+scaricato da Actions, eseguire **`LReaParams-0.0.62-Windows-x64-Setup.exe`**.
 
 L'installer NSIS (Windows x64, per utente, senza privilegi amministrativi per
 la cartella predefinita) propone la selezione di 7 lingue e della cartella

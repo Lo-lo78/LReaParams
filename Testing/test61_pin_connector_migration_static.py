@@ -9,7 +9,8 @@ f4=read('src/TrackNavigatorFxTcp.cpp'); fl=read('src/TrackNavigatorFxTcpList.cpp
 midi=read('src/TrackNavigatorTrackMidi.cpp');hw=read('src/TrackNavigatorHardwareOutputs.cpp');rr=read('src/TrackNavigatorReaRoute.cpp')
 ctx=read('src/FxNavigatorContexts.cpp');cmake=read('CMakeLists.txt')
 peak=read('include/lrp/PeakWatcher.h')
-assert 'project(LReaParams VERSION 0.0.61' in cmake
+from version_contract import version_at_least
+assert version_at_least(root, (0, 0, 61))
 assert 'src/FxNavigatorPinAudio.cpp' in cmake and 'src/TrackNavigatorPinAudio.cpp' not in cmake
 assert 'TrackNavigatorPinAudio.cpp' not in '\n'.join(p.name for p in (root/'src').glob('*.cpp'))
 assert 'fxTcp, trackMidi, hardwareOutputs, reaRoute' in th and 'Page::pinAudio' not in nav

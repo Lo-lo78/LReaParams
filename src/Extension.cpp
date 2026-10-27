@@ -204,10 +204,12 @@ public:
         case about:
             exitNavigation(false);
             ShowMessageBox(
-                "LReaParams 0.0.61 - Native REAPER extension\n\n"
+                "LReaParams 0.0.62 - Native REAPER extension\n\n"
                 "Accessible FX Params and Track Params for NVDA and OSARA.\n"
                 "Developed by Lo-lo and contributors.\n\n"
-                "FX Params: F7 structural edit; F8 Compare A/B (double F8 updates Original); "
+                "FX Params: 14 independent grids (Plugin, Custom, 12 Groups) retain width and position.\n"
+                "FX group and position persist in .fx profiles; Ctrl+Alt+B restores the FX view on return online.\n"
+                "F7 structural edit; F8 Compare A/B (double F8 updates Original); "
                 "F10 FX Browser/Grid; F11 Audio Pin Connector (up to 128 channels).\n"
                 "Track Params: F1 Tracks; F2 Sends; F3 Receives; F4 FX TCP; "
                 "F5 Track MIDI; F6 Hardware Outputs (includes Add); F7 ReaRoute. "

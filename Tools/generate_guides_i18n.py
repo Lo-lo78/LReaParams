@@ -24,7 +24,7 @@ def sections(s):
         out.append((title.strip(),body.strip()))
     return out
 
-I18N = {'en': {'ui': ('LReaParams User Guide', 'Choose a language', 'Choose a guide', 'FX Params', 'Track Params', 'Contents', 'Shortcut', 'Action', 'Change language', 'Full reference', 'Native REAPER extension 0.0.61', 'Back to language selection')}}
+I18N = {'en': {'ui': ('LReaParams User Guide', 'Choose a language', 'Choose a guide', 'FX Params', 'Track Params', 'Contents', 'Shortcut', 'Action', 'Change language', 'Full reference', 'Native REAPER extension 0.0.62', 'Back to language selection')}}
 
 def locale(tag, ui, fx, tr, fkeys, tkeys):
     if len(lines(fkeys)) != len(FX_KEYS) or len(lines(tkeys)) != len(TR_KEYS):
@@ -37,7 +37,7 @@ locale('it', (
  'Guida di LReaParams', 'Seleziona una lingua', 'Scegli una guida',
  'FX Params', 'Track Params', 'Indice', 'Scorciatoia', 'Funzione',
  'Cambia lingua', 'Riferimento completo in inglese',
- 'Estensione nativa REAPER 0.0.61. Guide accessibili con NVDA e OSARA.', 'Torna alla scelta della lingua'),
+ 'Estensione nativa REAPER 0.0.62. Guide accessibili con NVDA e OSARA.', 'Torna alla scelta della lingua'),
  '''
 Installazione e accessibilità|Copia reaper_lreaparams.dll nella cartella UserPlugins delle risorse di REAPER e l’intera cartella Guide in LReaParams/Guide. Riavvia REAPER, cerca le azioni LReaParams: FX Params, Track Params e Open User Guide e assegna le scorciatoie preferite. I vecchi launcher Lua non servono più. OSARA gestisce gli annunci; NVDA legge titolo, griglia e campi di modifica. Tab legge il contesto esteso e NVDA+freccia su il controllo corrente.
 Navigazione e modifica dei parametri|Le frecce percorrono la griglia. F1 e F2 modificano il numero di colonne; F3 riassume griglia e Step. Invio entra o esce dalla modalità Valore, dove le frecce verticali cambiano il valore. Alt+frecce verticali modifica direttamente dalla griglia; Alt+Pagina su/giù usa passi più grandi; Alt+Home/Fine imposta gli estremi. Alt+frecce orizzontali regola lo Step del singolo parametro da -10 a +10. Ctrl+E apre un campo numerico standard; Invio conferma ed Esc annulla. Ctrl+Backspace ripristina Grid 10 e Step 0.
@@ -49,7 +49,7 @@ MIDI CC e automazioni|Ctrl+Alt+C apprende un MIDI CC fisso per il parametro; Shi
 ReaEQ e altri FX|Sono gestiti i controlli specifici di ReaEQ, ReaComp e ReaGate, compresi i parametri virtuali quando supportati. Alt+F1/F2 cambia preset dell’host; Alt+F3/F4 passa ai parametri automatizzati. Ctrl+B bypassa e Ctrl+D gestisce Delta Solo. I parametri reali e quelli virtuali possono avere regole diverse: verifica sempre il nome e l’unità letti da NVDA.
 Ricerca, appunti e ripristino|Lettere, numeri e punteggiatura cercano ciclicamente i nomi visibili; Maiusc inverte la direzione. Ctrl+F apre la ricerca, Ctrl+R richiama le ricerche recenti. Backspace ripristina il parametro, mentre Ctrl+Shift+Backspace ripristina il Default memorizzato dove disponibile. In F7 gli appunti modificano l’ordine visivo; nella normale modalità Valore le azioni dipendono dal contesto. Ctrl+E resta la scelta per inserire numeri precisi.
 Trasporto, marcatori e ascolto|Spazio controlla Play/Stop; Ctrl+Spazio Play/Pausa. Ctrl+I/O percorre i marcatori precedenti/successivi e Ctrl+1–0 richiama i marcatori 1–10. Alt+F10/F11/F12 e Alt+Shift+F10/F11/F12 gestiscono i due misuratori Peak Watcher di OSARA. I tasti non devono interferire con campi EDIT o finestre REAPER esterne.
-Profili e migrazione dal Lua|I profili specifici degli FX sono conservati nella cartella LReaParams/Plugins come file .fx. La DLL può importare dati TXT storici compatibili; non eseguire i vecchi navigatori Lua insieme alla DLL. Le impostazioni del Pin Connector si applicano tramite le API native di REAPER e non modificano automaticamente il numero di canali della traccia. Questa guida riguarda la versione 0.0.61 e non lo script Stretch Marker.
+Profili e migrazione dal Lua|I profili specifici degli FX sono conservati nella cartella LReaParams/Plugins come file .fx. La DLL può importare dati TXT storici compatibili; non eseguire i vecchi navigatori Lua insieme alla DLL. Le impostazioni del Pin Connector si applicano tramite le API native di REAPER e non modificano automaticamente il numero di canali della traccia. Questa guida riguarda la versione 0.0.62 e non lo script Stretch Marker.
 ''',
  '''
 Installazione e orientamento|Installa la DLL in UserPlugins e la cartella Guide sotto LReaParams/Guide nella directory delle risorse di REAPER. Le azioni Track Params e FX Params sono separate; Ctrl+Tab passa dall’una all’altra quando il contesto lo permette. OSARA annuncia i valori, NVDA legge il controllo corrente, Tab fornisce informazioni estese. Esc torna alla pagina precedente oppure chiude il navigatore.
@@ -119,7 +119,7 @@ Marcatore precedente/successivo
 locale('es', (
  'Guía de LReaParams','Seleccionar idioma','Elegir una guía','FX Params','Track Params',
  'Índice','Atajo','Función','Cambiar idioma','Referencia completa en inglés',
- 'Extensión nativa de REAPER 0.0.61. Guías accesibles para NVDA y OSARA.', 'Volver a la selección de idioma'),
+ 'Extensión nativa de REAPER 0.0.62. Guías accesibles para NVDA y OSARA.', 'Volver a la selección de idioma'),
  '''
 Instalación y accesibilidad|Copia reaper_lreaparams.dll a UserPlugins y toda la carpeta Guide a LReaParams/Guide dentro de los recursos de REAPER. Reinicia REAPER y busca las acciones LReaParams: FX Params, Track Params y Open User Guide. Asigna los atajos que prefieras. Los lanzadores Lua antiguos ya no son necesarios. OSARA comunica los mensajes y NVDA lee la ventana de navegación. Tab lee el contexto completo; NVDA+flecha arriba permite revisar el control.
 Navegación y valores|Las flechas recorren la cuadrícula. F1/F2 reducen o aumentan las columnas y F3 anuncia la cuadrícula y el paso. Intro cambia entre cuadrícula y modo Valor. Alt+arriba/abajo ajusta desde la cuadrícula y Alt+Re Pág/Av Pág cambia más deprisa. Alt+Inicio/Fin fija los extremos; Alt+izquierda/derecha ajusta el paso individual entre -10 y +10. Ctrl+E abre una edición numérica accesible; Intro confirma y Esc cancela. Ctrl+Retroceso restablece la cuadrícula a 10 y el paso a 0.
@@ -131,7 +131,7 @@ MIDI CC y automatización|Ctrl+Alt+C inicia aprendizaje de CC fijo; Mayús+C hab
 ReaEQ y otros efectos|Hay controles adaptados para ReaEQ, ReaComp y ReaGate, incluidos parámetros virtuales cuando existen. Alt+F1/F2 cambia preajustes del anfitrión y Alt+F3/F4 recorre parámetros automatizados. Ctrl+B activa bypass y Ctrl+D controla Delta Solo. Comprueba siempre las unidades anunciadas: un valor normalizado no necesariamente representa Hz o dB.
 Búsqueda, portapapeles y restauración|Las letras y los números recorren nombres visibles; Mayús busca hacia atrás. Ctrl+F abre búsqueda y Ctrl+R revisa búsquedas recientes. Retroceso recupera el valor predeterminado del parámetro; Ctrl+Mayús+Retroceso ejecuta la restauración de Default guardado cuando está disponible. Los comandos de portapapeles en F7 modifican la disposición visual, no el orden real del plugin.
 Reproducción y marcadores|Espacio inicia o detiene; Ctrl+Espacio alterna reproducción/pausa. Ctrl+I/O busca marcadores anteriores/siguientes y Ctrl+1–0 salta a los marcadores 1–10. Alt+F10/F11/F12 y Alt+Mayús+F10/F11/F12 controlan los dos Peak Watchers de OSARA. Las teclas no deben capturarse en campos de texto ordinarios.
-Perfiles y migración Lua|Los perfiles FX se guardan como archivos .fx en LReaParams/Plugins. La DLL puede importar algunos perfiles TXT antiguos compatibles; no hace falta mantener los lanzadores Lua activos. La asignación de pines modifica REAPER mediante sus API pero no aumenta el número de canales de la pista. Esta guía cubre la versión 0.0.61 y no incluye Stretch Marker.
+Perfiles y migración Lua|Los perfiles FX se guardan como archivos .fx en LReaParams/Plugins. La DLL puede importar algunos perfiles TXT antiguos compatibles; no hace falta mantener los lanzadores Lua activos. La asignación de pines modifica REAPER mediante sus API pero no aumenta el número de canales de la pista. Esta guía cubre la versión 0.0.62 y no incluye Stretch Marker.
 ''',
  '''
 Instalación y conceptos básicos|Instala la DLL en UserPlugins y la carpeta Guide dentro de LReaParams/Guide. Las acciones FX Params y Track Params son independientes; Ctrl+Tab cambia entre ellas cuando existe el contexto adecuado. OSARA pronuncia los mensajes; NVDA revisa los controles. Tab anuncia detalles; Esc sale de la edición o del navegador.
@@ -201,7 +201,7 @@ Marcador anterior/siguiente
 locale('fr', (
  'Guide LReaParams','Choisir une langue','Choisir un guide','FX Params','Track Params',
  'Sommaire','Raccourci','Fonction','Changer de langue','Référence complète en anglais',
- 'Extension native REAPER 0.0.61. Guides accessibles avec NVDA et OSARA.', 'Retour au choix de langue'),
+ 'Extension native REAPER 0.0.62. Guides accessibles avec NVDA et OSARA.', 'Retour au choix de langue'),
  '''
 Installation et accessibilité|Placez reaper_lreaparams.dll dans le dossier UserPlugins de REAPER, puis copiez l’intégralité du dossier Guide dans LReaParams/Guide sous le répertoire des ressources. Redémarrez REAPER et attribuez des raccourcis aux actions LReaParams: FX Params, Track Params et Open User Guide. Les anciens lanceurs Lua ne sont plus nécessaires. OSARA annonce les changements ; NVDA lit la fenêtre de navigation. Tab fournit une description complète et NVDA+flèche haut permet de relire le contrôle.
 Navigation et réglage des valeurs|Les flèches parcourent la grille. F1/F2 modifient le nombre de colonnes ; F3 annonce la grille et le pas. Entrée alterne entre Grille et Valeur. Alt+haut/bas règle la valeur depuis la grille ; Alt+Page précédente/suivante effectue de plus grands changements. Alt+Début/Fin atteint les limites ; Alt+gauche/droite modifie le pas du paramètre entre -10 et +10. Ctrl+E ouvre un champ numérique accessible, validé par Entrée ou annulé par Échap. Ctrl+Retour arrière rétablit Grille 10 et Pas 0.
@@ -213,7 +213,7 @@ MIDI CC et automation|Ctrl+Alt+C lance l’apprentissage d’un CC MIDI fixe ; M
 ReaEQ et autres effets|Des adaptations existent pour ReaEQ, ReaComp et ReaGate, y compris leurs paramètres virtuels pris en charge. Alt+F1/F2 change les presets de l’hôte ; Alt+F3/F4 parcourt les paramètres automatisés. Ctrl+B gère le bypass et Ctrl+D le Delta Solo. Vérifiez l’unité annoncée : une valeur normalisée n’est pas forcément exprimée en Hz ou en dB.
 Recherche, presse-papiers et défauts|Les lettres, chiffres et signes parcourent les noms visibles ; Maj inverse le sens. Ctrl+F recherche et Ctrl+R rappelle les recherches récentes. Retour arrière restaure le paramètre ; Ctrl+Maj+Retour arrière restaure les valeurs Default sauvegardées si possible. Les opérations du presse-papiers en F7 portent sur les occurrences visuelles, pas sur l’ordre réel du plugin.
 Lecture, marqueurs et niveaux|Espace démarre/arrête ; Ctrl+Espace alterne lecture/pause. Ctrl+I/O parcourt les marqueurs et Ctrl+1–0 saute aux marqueurs 1–10. Alt+F10/F11/F12 et Alt+Maj+F10/F11/F12 commandent les deux Peak Watchers d’OSARA. Les raccourcis ne doivent pas perturber les champs de texte natifs.
-Profils et migration Lua|Les profils FX résident dans LReaParams/Plugins sous forme .fx. La DLL sait importer certaines anciennes données TXT compatibles, sans exécuter les lanceurs Lua. Les broches sont modifiées par les API de REAPER mais le nombre de canaux de la piste n’augmente pas automatiquement. Ce guide couvre 0.0.61 ; le script Stretch Marker est exclu.
+Profils et migration Lua|Les profils FX résident dans LReaParams/Plugins sous forme .fx. La DLL sait importer certaines anciennes données TXT compatibles, sans exécuter les lanceurs Lua. Les broches sont modifiées par les API de REAPER mais le nombre de canaux de la piste n’augmente pas automatiquement. Ce guide couvre 0.0.62 ; le script Stretch Marker est exclu.
 ''',
  '''
 Installation et principes|Installez la DLL dans UserPlugins et le dossier Guide sous LReaParams/Guide. FX Params et Track Params sont deux actions distinctes ; Ctrl+Tab passe de l’une à l’autre lorsque c’est possible. OSARA prononce les états, NVDA relit les contrôles, Tab donne les détails et Échap ferme l’édition ou la navigation.
@@ -283,7 +283,7 @@ Marqueur précédent/suivant
 locale('ru', (
  'Руководство LReaParams','Выберите язык','Выберите руководство','FX Params','Track Params',
  'Содержание','Клавиши','Действие','Изменить язык','Полная справка на английском',
- 'Нативное расширение REAPER 0.0.61. Доступные руководства для NVDA и OSARA.', 'Вернуться к выбору языка'),
+ 'Нативное расширение REAPER 0.0.62. Доступные руководства для NVDA и OSARA.', 'Вернуться к выбору языка'),
  '''
 Установка и доступность|Скопируйте reaper_lreaparams.dll в каталог UserPlugins ресурсов REAPER, а всю папку Guide — в LReaParams/Guide. Перезапустите REAPER и найдите в списке действий LReaParams: FX Params, Track Params и Open User Guide. Назначьте удобные горячие клавиши. Старые Lua-скрипты запуска больше не нужны. OSARA озвучивает сообщения, а NVDA читает элементы окна. Tab сообщает подробный контекст; NVDA+стрелка вверх повторяет текущий элемент.
 Навигация и изменение значений|Стрелки перемещают курсор по таблице параметров. F1/F2 изменяют число столбцов; F3 сообщает настройки таблицы и шага. Enter переключает режимы Grid и Value. Alt+вверх/вниз меняет значение прямо в таблице, Alt+Page Up/Down — крупным шагом; Alt+Home/End устанавливает крайние значения. Alt+влево/вправо меняет индивидуальный шаг от -10 до +10. Ctrl+E открывает доступное числовое поле; Enter подтверждает, Esc отменяет. Ctrl+Backspace восстанавливает Grid 10 и Step 0.
@@ -295,7 +295,7 @@ MIDI CC и автоматизация|Ctrl+Alt+C запускает обучен
 ReaEQ и другие плагины|Предусмотрена специальная поддержка ReaEQ, ReaComp и ReaGate, включая виртуальные параметры, если они доступны. Alt+F1/F2 переключает пресеты хоста; Alt+F3/F4 переходит между автоматизированными параметрами. Ctrl+B управляет обходом, Ctrl+D — Delta Solo. Проверяйте озвученные единицы измерения: нормализованное значение не обязательно означает дБ или Гц.
 Поиск, буфер обмена и сброс|Буквы, цифры и символы ищут по видимым именам по кругу; Shift меняет направление. Ctrl+F открывает поиск, Ctrl+R — историю. Backspace сбрасывает отдельный параметр, Ctrl+Shift+Backspace восстанавливает сохранённый Default, если он есть. В F7 копирование и вставка изменяют отображаемые позиции, а не исходный порядок параметров плагина.
 Воспроизведение и маркеры|Пробел запускает/останавливает, Ctrl+пробел переключает воспроизведение/паузу. Ctrl+I/O переходит к предыдущему/следующему маркеру; Ctrl+1–0 выбирает маркеры 1–10. Alt+F10/F11/F12 и Alt+Shift+F10/F11/F12 управляют двумя измерителями OSARA Peak Watcher. В стандартных текстовых полях эти сочетания не должны перехватываться.
-Профили и переход с Lua|Профили FX сохраняются в LReaParams/Plugins с расширением .fx. DLL умеет импортировать совместимые старые TXT, но запускать прежние Lua-навигаторы больше не нужно. Матрица аудиопинов использует API REAPER и сама по себе не увеличивает число каналов дорожки. Руководство описывает версию 0.0.61 и не относится к скрипту Stretch Marker.
+Профили и переход с Lua|Профили FX сохраняются в LReaParams/Plugins с расширением .fx. DLL умеет импортировать совместимые старые TXT, но запускать прежние Lua-навигаторы больше не нужно. Матрица аудиопинов использует API REAPER и сама по себе не увеличивает число каналов дорожки. Руководство описывает версию 0.0.62 и не относится к скрипту Stretch Marker.
 ''',
  '''
 Установка и начало работы|Установите DLL в UserPlugins, а всю папку Guide — в LReaParams/Guide ресурсов REAPER. Для FX Params и Track Params существуют разные действия; Ctrl+Tab переключает их, если контекст позволяет. OSARA произносит сообщения, NVDA читает элементы, Tab выводит подробности, Esc выходит из редактирования или навигатора.
@@ -365,7 +365,7 @@ FX-параметры, показанные в TCP
 locale('zh-CN', (
  'LReaParams 使用指南','选择语言','选择指南','FX Params','Track Params',
  '目录','快捷键','功能','切换语言','完整英文参考指南',
- 'REAPER 0.0.61 原生扩展。支持 NVDA 和 OSARA 的无障碍指南。','返回语言选择'),
+ 'REAPER 0.0.62 原生扩展。支持 NVDA 和 OSARA 的无障碍指南。','返回语言选择'),
  '''
 安装与无障碍支持|将 reaper_lreaparams.dll 放入 REAPER 资源目录的 UserPlugins 文件夹，并将完整的 Guide 文件夹复制到 LReaParams/Guide。重启 REAPER，在动作列表中查找 LReaParams: FX Params、Track Params 和 Open User Guide，并设置快捷键。不需要再运行旧版 Lua 启动脚本。OSARA 提供语音提示，NVDA 读取导航窗口及编辑控件。Tab 朗读完整上下文，NVDA+上箭头复读当前控件。
 参数网格与数值编辑|使用方向键浏览参数网格。F1/F2 减少或增加网格列数，F3 朗读网格和步进信息。Enter 在网格与数值模式之间切换；数值模式中上下箭头改变数值。Alt+上/下可直接在网格中调整，Alt+Page Up/Down 大幅调整，Alt+Home/End 设置最大或最小值。Alt+左/右调整当前参数的步进级别（-10 至 +10）。Ctrl+E 打开可访问的数字输入框；Enter 确认，Esc 取消。Ctrl+Backspace 恢复 Grid 10 和 Step 0。
@@ -377,7 +377,7 @@ MIDI CC 与自动化|Ctrl+Alt+C 学习固定 MIDI CC；Shift+C 开关固定映�
 ReaEQ 等效果的特殊支持|ReaEQ、ReaComp、ReaGate 具有专用支持，在适当情况下包括虚拟参数。Alt+F1/F2 切换主机预设；Alt+F3/F4 浏览已自动化的参数。Ctrl+B 切换旁通，Ctrl+D 控制 Delta Solo。请检查 NVDA 朗读的单位，标准化数值并不一定代表 Hz 或 dB。
 搜索、剪贴板与恢复默认值|输入字母、数字或标点可循环查找当前可见的参数名称；按住 Shift 反向搜索。Ctrl+F 打开搜索，Ctrl+R 查看最近搜索。Backspace 恢复单个参数的默认值；Ctrl+Shift+Backspace 在可用时恢复已保存的 Default。F7 中的复制与粘贴修改显示项目，不会改变插件的真实参数顺序。
 播放、标记与电平监测|空格控制播放/停止；Ctrl+空格控制播放/暂停。Ctrl+I/O 跳转前一个/下一个标记，Ctrl+1–0 跳转标记 1–10。Alt+F10/F11/F12 和 Alt+Shift+F10/F11/F12 操作 OSARA 的两个 Peak Watcher。普通文本输入框中不应拦截这些快捷键。
-配置文件与 Lua 迁移|FX 配置以 .fx 文件保存在 LReaParams/Plugins。DLL 能导入部分兼容的旧 TXT 配置，但不需要同时运行旧 Lua 导航脚本。引脚修改通过 REAPER 原生 API 执行，不会自动增加轨道声道数。本指南对应 0.0.61，不包括独立的 Stretch Marker 脚本。
+配置文件与 Lua 迁移|FX 配置以 .fx 文件保存在 LReaParams/Plugins。DLL 能导入部分兼容的旧 TXT 配置，但不需要同时运行旧 Lua 导航脚本。引脚修改通过 REAPER 原生 API 执行，不会自动增加轨道声道数。本指南对应 0.0.62，不包括独立的 Stretch Marker 脚本。
 ''',
  '''
 安装与基本操作|将 DLL 安装到 UserPlugins，并将完整 Guide 文件夹放到 REAPER 资源路径中的 LReaParams/Guide。FX Params 与 Track Params 有各自的动作；条件允许时使用 Ctrl+Tab 切换。OSARA 提供语音，NVDA 读取控件；Tab 朗读详细信息，Esc 取消编辑或退出导航。
@@ -447,7 +447,7 @@ ReaRoute 虚拟输入和输出
 locale('ja', (
  'LReaParams ユーザーガイド','言語を選択','ガイドを選択','FX Params','Track Params',
  '目次','ショートカット','機能','言語を変更','英語版の詳細リファレンス',
- 'REAPER 用ネイティブ拡張 0.0.61。NVDA と OSARA に対応したアクセシブルなガイドです。','言語選択に戻る'),
+ 'REAPER 用ネイティブ拡張 0.0.62。NVDA と OSARA に対応したアクセシブルなガイドです。','言語選択に戻る'),
  '''
 インストールとアクセシビリティ|reaper_lreaparams.dll を REAPER リソースフォルダー内の UserPlugins に配置し、Guide フォルダー全体を LReaParams/Guide にコピーしてください。REAPER を再起動し、アクション一覧から LReaParams: FX Params、Track Params、Open User Guide を見つけてキーを割り当てます。従来の Lua 起動スクリプトは不要です。OSARA が操作を読み上げ、NVDA はナビゲーション画面を読み取れます。Tab で詳細を確認し、NVDA+上矢印で現在の項目を再確認できます。
 パラメーターの移動と編集|矢印キーでパラメーターのグリッドを移動します。F1/F2 は列数の減少・増加、F3 はグリッドとステップの確認です。Enter で Grid と Value モードを切り替えます。Alt+上/下でグリッドから値を変更し、Alt+Page Up/Down で大きく変更します。Alt+Home/End は最小・最大値、Alt+左/右は個別のステップを -10 ～ +10 で調整します。Ctrl+E はアクセシブルな数値入力欄です。Enter で確定、Esc でキャンセル。Ctrl+Backspace で Grid 10 と Step 0 に戻します。
@@ -459,7 +459,7 @@ MIDI CC とオートメーション|Ctrl+Alt+C は固定 MIDI CC の学習、Shi
 ReaEQ とその他の FX|ReaEQ、ReaComp、ReaGate には専用処理があり、対応する仮想パラメーターも扱えます。Alt+F1/F2 はホストプリセット、Alt+F3/F4 はオートメーション付きパラメーターの切り替え。Ctrl+B はバイパス、Ctrl+D は Delta Solo です。正規化された値は必ずしも dB や Hz ではないため、NVDA が読み上げる単位を確認してください。
 検索・クリップボード・初期値|文字、数字、記号を押すと表示中のパラメーター名を循環検索します。Shift を押すと逆方向。Ctrl+F は検索、Ctrl+R は履歴です。Backspace は現在のパラメーターの初期値を復元し、Ctrl+Shift+Backspace は利用可能な場合に保存済み Default を復元します。F7 でのコピーと貼り付けは表示項目を変更し、プラグイン本来のパラメーター番号は変更しません。
 再生・マーカー・ピーク監視|スペースは再生/停止、Ctrl+スペースは再生/一時停止です。Ctrl+I/O は前後のマーカー、Ctrl+1～0 はマーカー 1～10 にジャンプします。Alt+F10/F11/F12 と Alt+Shift+F10/F11/F12 は OSARA の 2 系統の Peak Watcher を操作します。通常の文字入力欄ではこれらのキーを奪いません。
-プロファイルと Lua からの移行|FX プロファイルは LReaParams/Plugins に .fx ファイルとして保存されます。DLL は互換性のある古い TXT データの一部を読み込めますが、旧 Lua ナビゲーターの起動は不要です。ピンの割り当ては REAPER の API を通じて行われ、トラックのチャンネル数は自動的には増えません。このガイドは 0.0.61 が対象です。Stretch Marker スクリプトは含みません。
+プロファイルと Lua からの移行|FX プロファイルは LReaParams/Plugins に .fx ファイルとして保存されます。DLL は互換性のある古い TXT データの一部を読み込めますが、旧 Lua ナビゲーターの起動は不要です。ピンの割り当ては REAPER の API を通じて行われ、トラックのチャンネル数は自動的には増えません。このガイドは 0.0.62 が対象です。Stretch Marker スクリプトは含みません。
 ''',
  '''
 インストールと基本操作|DLL を UserPlugins に、Guide フォルダー全体を REAPER リソースフォルダー内の LReaParams/Guide に配置します。FX Params と Track Params は別々のアクションです。利用可能な状況では Ctrl+Tab で切り替えます。OSARA が音声を出力し、NVDA がコントロールを読み上げます。Tab は詳細確認、Esc は編集の取り消しや終了です。
@@ -547,8 +547,8 @@ def make_main_index():
     entries=language_list('')
     blurb='Choose a language, then open the FX Params or Track Params user guide. All links work with NVDA, Tab and Enter. / Scegli una lingua, poi la guida FX Params o Track Params.'
     # English is the default language: its full-length originals remain in Guide/.
-    content='<h1>LReaParams 0.0.61 — User guide / Guida utente</h1><h2>Choose a language / Seleziona una lingua</h2><p>'+escape(blurb)+'</p><nav aria-label="Languages">'+entries+'</nav>'
-    content+='<p>NVDA / OSARA · REAPER 0.0.61 · FX Params / Track Params.</p>'
+    content='<h1>LReaParams 0.0.62 — User guide / Guida utente</h1><h2>Choose a language / Seleziona una lingua</h2><p>'+escape(blurb)+'</p><nav aria-label="Languages">'+entries+'</nav>'
+    content+='<p>NVDA / OSARA · REAPER 0.0.62 · FX Params / Track Params.</p>'
     # Use explicit English: our canonical home page is bilingual by design.
     (ROOT/'index.html').write_text(html_page('en','LReaParams — Language selection',content),encoding='utf-8')
 
@@ -564,7 +564,7 @@ def english_index():
 
 def localized_index(tag):
     ui=I18N[tag]['ui']
-    content='<h1>'+escape(ui[0])+' — 0.0.61</h1><p>'+escape(ui[10])+'</p>'
+    content='<h1>'+escape(ui[0])+' — 0.0.62</h1><p>'+escape(ui[10])+'</p>'
     content+='<h2>'+escape(ui[2])+'</h2><nav aria-label="'+escape(ui[2],quote=True)+'"><ul>'
     content+='<li>'+link('fx.html',ui[3])+'</li><li>'+link('track.html',ui[4])+'</li></ul></nav>'
     content+='<h2>'+escape(ui[1])+'</h2>'+language_list('../')
@@ -613,6 +613,15 @@ def patch_originals():
     for filename in ('LReaParams - FX Params.html','LReaParams - Track Params.html'):
         file=ROOT/filename
         s=file.read_text(encoding='utf-8')
+        # Keep detailed English guides versioned too, without replacing historical
+        # "introduced in 0.0.61" descriptions or stable 0-0-61 anchors.
+        s=s.replace('<title>LReaParams 0.0.61', '<title>LReaParams 0.0.62')
+        s=s.replace('<strong>Version 0.0.61', '<strong>Version 0.0.62')
+        s=s.replace('<footer><p>LReaParams 0.0.61', '<footer><p>LReaParams 0.0.62')
+        s=s.replace('aligned to the <strong>0.0.61 TEST61.4 source</strong>',
+                    'updated for the <strong>0.0.62 release (TEST61.16.1 source)</strong>')
+        s=s.replace('reflects <strong>0.0.61 TEST61.4 source code</strong>',
+                    'reflects the <strong>0.0.62 release (TEST61.16.1 source code)</strong>')
         # Do not rewrite the detailed original guide; add a language selector link.
         if 'Select language</a>' not in s:
             s=s.replace('<header><p>', '<header><p><a href="index.html">Select language</a> · ', 1)
@@ -631,7 +640,7 @@ def patch_originals():
 
 
 def write_install():
-    (ROOT/'INSTALL.txt').write_text('''LReaParams 0.0.61 — multilingual user guides
+    (ROOT/'INSTALL.txt').write_text('''LReaParams 0.0.62 — multilingual user guides
 
 Install the DLL and ALL Guide files into the REAPER resource directory:
 

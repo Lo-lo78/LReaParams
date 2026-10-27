@@ -1,4 +1,4 @@
-LReaParams 0.0.61 — multilingual user guides
+LReaParams 0.0.62 — multilingual user guides
 
 Install the DLL and ALL Guide files into the REAPER resource directory:
 

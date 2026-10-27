@@ -21,7 +21,7 @@ assert 'LReaParams\\Guide' in nsis
 assert 'LReaParams\\Plugins' in nsis and 'LReaParams\\Tracks' in nsis
 assert 'LReaParams\\Settings' in nsis and 'LReaParams\\Backups' in nsis
 assert 'UserPlugins\\reaper_lreaparams.dll' in nsis
-assert 'LReaParams-0.0.61-Source.zip' in nsis
+assert 'LReaParams-0.0.62-Source.zip' in nsis
 assert 'Uninstall-LReaParams.exe' in nsis
 assert 'MUI_UNPAGE_CONFIRM' in nsis
 assert 'MUI_PAGE_DIRECTORY' in nsis
@@ -34,12 +34,12 @@ for profile in ('Plugins', 'Tracks', 'Settings', 'Backups', 'Params'):
     assert not re.search(r'(?:Delete|RMDir)\s+[^\n]*\\LReaParams\\'+profile+r'(?:\\|"|\s)', nsis, re.I)
 assert 'File /r "${PROJECT_ROOT}\\Guide\\*.*"' in nsis
 assert 'CreateDirectory "$INSTDIR\\LReaParams\\Plugins"' in nsis
-assert workflow.count('LReaParams-0.0.61-Windows-x64-SETUP-EXE') == 1
-assert 'git archive --format=zip --output=dist/LReaParams-0.0.61-Source.zip HEAD' in workflow
+assert workflow.count('LReaParams-0.0.62-Windows-x64-SETUP-EXE') == 1
+assert 'git archive --format=zip --output=dist/LReaParams-0.0.62-Source.zip HEAD' in workflow
 assert 'choco install nsis' in workflow
 assert 'makensis.exe' in workflow
 assert 'test61_8_legacy_import_choices_static.py' in workflow
-assert 'LReaParams-0.0.61-Windows-x64-MULTILINGUAL' in workflow
+assert 'LReaParams-0.0.62-Windows-x64-MULTILINGUAL' in workflow
 assert 'LReaParams-Windows-x64-NATIVE-TEST' in workflow
 subprocess.run([sys.executable, str(manifest_script)], cwd=root, check=True)
 manifest = (root/'Installer'/'Guide-Uninstall.nsh').read_text(encoding='utf-8')

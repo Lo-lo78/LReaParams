@@ -1,3 +1,9 @@
+## 0.0.62 — public release of TEST61.16.1 (2026-10-27)
+- Bumped the public version in the native About, CMake, NSIS, Windows installer metadata, GitHub Actions and the accessible guides.
+- The release includes the TEST61.14–61.16 FX context persistence, online restoration and 14 independent grids detailed below; no new FX navigation behavior introduced in this version-only bump.
+- Historical TEST61 labels, persistent file format versions and `PageLayoutVersion=61` are unchanged for compatibility. See [0.0.62 release notes](RELEASE_NOTES_0_0_62.md).
+- Native build and REAPER/NVDA testing via GitHub Actions and installed DLL still required.
+
 ## TEST61.16.1 — GitHub Actions TEST48 static regression repair (2026-10-21)
 - Fixed obsolete TEST48 source-only assertion: it now accepts and requires `captureViewCursor()` between `syncParameterStep()` and `ensureContextMemory()`.
 - This is a test contract update only. The C++ code, 14 independent grids, F1/F2, persistent `.fx`, F7, Esc and offline/online restoration are unchanged.
