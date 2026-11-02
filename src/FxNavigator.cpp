@@ -1627,7 +1627,8 @@ void FxNavigator::handle(const Key& k) {
         return;
     }
     if (k.ctrl && !k.alt && !k.shift && k.vk=='L') {
-        if (groupSlot_) {speech_("Group active. Ctrl+L unavailable");return;}
+        if (k.repeat) return; // Holding the key must not cycle through views.
+        if (groupSlot_) {leaveGroupToCustomOrder();return;}
         if (searchMode_) { searchMode_=false;search_.clear();speech_("Find cancelled");return; }
         if (textEdit_) return;
         if (editF7_) {speech_("Exit F7 first");return;}

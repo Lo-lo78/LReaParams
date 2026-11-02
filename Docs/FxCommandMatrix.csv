@@ -25,7 +25,7 @@ default_snapshot_confirm_commit_yes,F8 Default Enter/Y,F8,Restore then clear nav
 plugin_default_snapshot_delete_and_arm_regenerate,F8 Default Delete,F8,Delete snapshot; Enter/F8 recaptures,memoryDelete/memoryNavigate,Implemented,22
 toggle_f7_or_previous_grid,F7,Grid/F7,Structural editor and return,enterF7/exitF7,"TEST30 preserved, Compare added","6,7"
 toggle_memory_manager_or_grid,F8,F7/Action List,Seven memory columns,openFxMemories/memoryNavigate,TEST30 preserved and expanded; not full rare-case audit,"8,22"
-toggle_custom_order_or_plugin_order,Ctrl+L,Grid,"Switch order, preserve current context",FxNavigator::handle,"TEST30 behavior preserved, group exit differs from Lua",6
+toggle_custom_order_or_plugin_order,Ctrl+L,Grid,"In group: return to Custom (close F7); otherwise toggle Custom/Plugin",FxNavigator::handle,"TEST62.7, Ctrl+Fn return-to-origin unchanged",6
 reaeq_set_virtual_raw,Band Enabled/Type,ReaEQ,Named config controls,None,Missing,25
 reaeq_perform_band_action,Target/Action,ReaEQ,Real band add/remove,None,Missing,25
 reacomp_set_detector_user_index,Detector input,ReaComp,Sparse raw combo values,Generic host controls only,Missing specialized adapter,25

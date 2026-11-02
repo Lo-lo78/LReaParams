@@ -319,6 +319,7 @@ private:
     void positionChanged(int position, bool announcePosition = true);
     void enterF7();
     void exitF7();
+    void leaveGroupToCustomOrder(); // Ctrl+L: leave any group, including F7, for Custom Order
     void selectF7(bool shift, int target, const std::string& direction = "", bool sweep = false);
     void selectF7ToGlobalEdge(bool toEnd);
     bool handleF7(const Key& key);

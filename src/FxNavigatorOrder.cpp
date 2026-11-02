@@ -839,6 +839,39 @@ std::string FxNavigator::groupLabel(int slot) const {
     return "Group "+(it!=fxOrder_.groupNames.end() && !it->second.empty()
                     ?it->second:std::to_string(slot));
 }
+// TEST62.7: Ctrl+L is an explicit escape from ANY group to Custom Order.
+// Ctrl+Fn on the active group retains the old return-to-origin behavior.
+// Close F7 as well so the very next Ctrl+L can use the unchanged
+// Custom Order <-> Plugin Order toggle (which is deliberately unavailable
+// while the F7 editor is open).
+void FxNavigator::leaveGroupToCustomOrder() {
+    if(!groupSlot_)return;
+    // A group can be restored directly from a legacy .fx or session even
+    // when its Custom Order was never explicitly initialized.
+    if(!fxOrder_.storedCustomOrder() && !fxOrder_.createCustomOrder()) {
+        speech_("Cannot create Custom Order");return;
+    }
+    rememberPosition(); // Retain the departing group's independent grid.
+    const bool haveOrigin=groupReturnActive_;
+    const int fallbackParam=haveOrigin?groupReturnParam_:parameter_;
+    const int fallbackPosition=haveOrigin?groupReturnPosition_:-1;
+    const auto originalSelection=haveOrigin && groupReturnCustom_
+                                ?groupReturnSelection_:std::set<int>{};
+    clearF7Filter();
+    groupSlot_=0;
+    groupReturnActive_=false;
+    editF7_=false;
+    f7ReturnGroup_=0;
+    groupEditAll_=false;
+    valueMode_=false;
+    f7Selected_=originalSelection;
+    f7SnakePath_.clear();f7SnakeDirections_.clear();
+    fxOrder_.custom=true; // Always Custom, even if the group began in Plugin Order.
+    restoreViewCursor(fallbackParam,fallbackPosition);
+    saveStructure(); // Persist Custom view and independent grids.
+    flushPersistentPosition();
+    speech_("Custom order. "+currentParameterSpeech());
+}
 void FxNavigator::openGroup(int slot) {
     const auto it=fxOrder_.groups.find(slot);
     // The same Ctrl+Fn closes this group and restores the EXACT source view:

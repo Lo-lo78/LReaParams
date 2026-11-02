@@ -1,3 +1,7 @@
+## TEST62.7 — Ctrl+L: uscita rapida dal gruppo a Custom Order
+
+In FX Params, **Ctrl+L** da qualsiasi gruppo (anche dentro F7) torna **sempre a Custom Order**; chiude F7, se aperto, per permettere subito il successivo Ctrl+L, che alterna Custom/Plugin come prima. La pressione dello stesso Ctrl+Fn sul gruppo rimane invariata e riporta al contesto di provenienza. Rimangono indipendenti gli Step, le griglie e tutte le memorie TEST62.1–TEST62.6. [Guida di prova TEST62.7](Docs/TEST62_7_CTRL_L_GROUP_TO_CUSTOM.md). La compilazione della DLL è affidata a GitHub Actions.
+
 ## TEST62.6 — Memorie FX e Track: salta tra le righe selezionate
 
 Dentro Ctrl+Maiusc+M, **Alt+Maiusc+Freccia su/giù** passa alla memoria selezionata precedente/successiva della **stessa colonna**, annunciando «Selected» prima del contenuto; ai bordi è silenzioso. **Alt+Maiusc+Freccia sinistra/destra** viene ignorato senza cambiare colonna o Step. Si mantiene la selezione multipla di TEST62.5 e tutte le modifiche precedenti. [Prova TEST62.6](Docs/TEST62_6_MEMORY_SELECTED_ONLY_NAVIGATION.md). Compilazione Windows tramite GitHub Actions; verifica NVDA/OSARA in REAPER ancora necessaria.

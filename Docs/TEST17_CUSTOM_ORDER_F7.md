@@ -25,8 +25,8 @@ eseguite. Conservare una copia esterna dei profili importanti prima del test.
 6. In F7 prova Ctrl+Invio per cambiare alias. Usa anche una parola
    accentata con tastiera italiana. Invio conferma, Esc annulla.
 7. Premi Ctrl+G e salva con Ctrl+Maiusc+F1 un gruppo selezionato.
-   Ctrl+F1 lo richiama. Ctrl+L esce dal gruppo senza cambiare il tipo
-   d'ordine sottostante. Ctrl+M seleziona i memory positions.
+   Ctrl+F1 lo richiama. Ctrl+L esce dal gruppo e torna sempre a Custom Order;
+   un secondo Ctrl+L passa a Plugin Order. Ctrl+M seleziona i memory positions.
 8. Cambia FX e traccia e torna indietro: memoria FX e parametro per GUID,
    Custom Order per plugin, ordine e nomi dei parametri devono tornare.
 9. Chiudi/reinserisci la DLL e verifica che il profilo `.fx` persista.
