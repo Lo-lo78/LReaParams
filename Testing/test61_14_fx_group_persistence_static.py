@@ -16,7 +16,7 @@ assert 'fxOrder_.persistLastParameter(parameter_, parameterName_, groupSlot_' in
 assert 'f7OriginalPosition(viewPos_)' in nav
 assert 'const auto last=fxOrder_.lastView()' in view
 assert 'if (!restoredFromSession)' in view and 'groupSlot_=last->groupSlot' in view
-assert 'group!=fxOrder_.groups.end() && !group->second.empty()' in view
+assert 'if(group!=fxOrder_.groups.end())' in view  # saved empty groups also persist
 assert 'lastView()->viewPosition==2' in tests and 'viewPosition==2' in tests
 assert 'Group or duplicate parameter occurrence not restored' in tests
 assert 'Stale LastParam save overwrote an external change' in tests

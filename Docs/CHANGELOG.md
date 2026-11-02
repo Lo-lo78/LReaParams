@@ -1,3 +1,10 @@
+## TEST62.1 — FX group clipboard and memory contexts (2026-11-02, source-only)
+- Seven FX Memories columns retained. Copied Parameters now identifies Custom Order copies plus each group occurrence, its exact raw position and its group label: `Group Bass` when named, `Group 2` when unnamed.
+- Ctrl+C/V supports copying from Custom to multiple groups and between groups; Ctrl+X/V moves atomically between groups, or reorders inside its original list. Inter-environment cuts involving Custom are blocked.
+- One global Hidden memory applies to Custom and all groups; native Plugin Order stays unchanged. Removing inside a group never globally hides.
+- Visible/raw occurrence mapping fixed for hidden parameters and duplicates; empty groups are paste destinations in F7; per-occurrence Enter/Delete in FX Memories.
+- Windows GitHub Actions build and host accessibility testing still required. See [TEST62.1 instructions](TEST62_1_FX_GROUP_CLIPBOARD_AND_MEMORIES.md).
+
 ## 0.0.62 — public release of TEST61.16.1 (2026-10-27)
 - Bumped the public version in the native About, CMake, NSIS, Windows installer metadata, GitHub Actions and the accessible guides.
 - The release includes the TEST61.14–61.16 FX context persistence, online restoration and 14 independent grids detailed below; no new FX navigation behavior introduced in this version-only bump.

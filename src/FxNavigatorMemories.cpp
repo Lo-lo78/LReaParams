@@ -48,13 +48,10 @@ void FxNavigator::rebuildMemoryColumns() {
     }
     for(const auto& pair:fxOrder_.groups) {
         const int activeCount=static_cast<int>(std::count_if(pair.second.begin(),pair.second.end(),
-            [](int id){return id!=compareParamIndex;}));
-        if(activeCount==0)continue;
+            [&](int id){return id!=compareParamIndex && !fxOrder_.hidden.count(id);}));
+        // An intentionally saved empty group is a real memory, not a missing slot.
         MemoryEntry e;e.slot=pair.first;
-        const auto it=fxOrder_.groupNames.find(e.slot);
-        const std::string groupName=it!=fxOrder_.groupNames.end()?it->second:std::string();
-        e.label=(groupName.empty()?std::string():groupName+". ")+
-                std::to_string(activeCount)+" parameters";
+        e.label=groupLabel(e.slot)+". "+std::to_string(activeCount)+" visible parameters";
         memoryColumns_[1].push_back(std::move(e));
     }
     for(int id:fxOrder_.hidden)if(eqVirtualValid(id) || dynamicsVirtualValid(id) || (id>=0&&id<count_)){
@@ -87,7 +84,26 @@ void FxNavigator::rebuildMemoryColumns() {
         if (id == compareParamIndex) continue;
         if(++counts[id] > 1) {
             MemoryEntry e;e.param=id;e.rawPos=pos;e.occurrence=counts[id];
-            e.label=fxOrder_.label(id)+". Copy "+std::to_string(e.occurrence);
+            e.label=fxOrder_.label(id)+". Custom Order. Copy "+std::to_string(e.occurrence);
+            memoryColumns_[5].push_back(std::move(e));
+        }
+    }
+    // A group's complete list is itself a collection of pasted occurrences.
+    // Include the FIRST occurrence too, and identify group + position.
+    // Group entries retain their identity even if Hidden makes them temporarily
+    // invisible in its grid; they can still be removed here if desired.
+    for(const auto& group:fxOrder_.groups) {
+        std::map<int,int> occurrences;
+        for(int pos=0;pos<static_cast<int>(group.second.size());++pos) {
+            const int id=group.second[static_cast<size_t>(pos)];
+            if(id==compareParamIndex)continue;
+            if(!(eqVirtualValid(id) || dynamicsVirtualValid(id) || (id>=0 && id<count_)))continue;
+            MemoryEntry e;e.slot=group.first;e.param=id;e.rawPos=pos;
+            e.occurrence=++occurrences[id];
+            e.label=fxOrder_.label(id)+". "+groupLabel(group.first)+
+                ". Occurrence "+std::to_string(e.occurrence)+
+                ". Position "+std::to_string(pos+1)+
+                (fxOrder_.hidden.count(id)?". Hidden":std::string());
             memoryColumns_[5].push_back(std::move(e));
         }
     }
@@ -111,7 +127,7 @@ std::string FxNavigator::memoryReview() const {
     if(entries.empty())return memoryColumnName()+". Empty";
     const auto& entry=entries[static_cast<size_t>(std::clamp(memoryRow_,0,static_cast<int>(entries.size())-1))];
     if(memoryCol_==0)return "Memory positions. "+entry.label;
-    if(memoryCol_==1)return "Groups. "+std::to_string(entry.slot)+" "+entry.label;
+    if(memoryCol_==1)return "Groups. "+entry.label;
     return memoryColumnName()+". "+entry.label;
 }
 void FxNavigator::speakMemory(const std::string& prefix) {
@@ -128,7 +144,7 @@ void FxNavigator::memoryExit(bool announceReturn) {
     // F8 Group/Custom selection restores its independent grid unless the
     // memory entry requests an explicit parameter/occurrence jump.
     if (!editF7_ && (memoryReturnGroup_ > 0) &&
-        memoryReturnPosition_ <= 0)
+        memoryReturnPosition_ < 0)
         restoreViewCursor(memoryReturnParam_, memoryReturnPosition_);
     else rebuildView(memoryReturnParam_,memoryReturnPosition_);
     if(editF7_ && !memoryReturnF7Filter_.empty())applyF7Filter(memoryReturnF7Filter_,false);
@@ -136,8 +152,11 @@ void FxNavigator::memoryExit(bool announceReturn) {
     if(standalone) {end();return;}
     if(!announceReturn)return;
     if(editF7_)
-        speech_("Edit Custom order. "+std::to_string(f7Selected_.size())+" selected. "+currentParameterSpeech());
-    else if(groupSlot_)speech_(groupLabel(groupSlot_)+". "+currentParameterSpeech());
+        speech_(std::string("Edit ")+(groupSlot_?groupLabel(groupSlot_):"Custom Order")+
+                ". "+std::to_string(f7Selected_.size())+" selected. "+
+                (visible_.empty()?"Empty":currentParameterSpeech()));
+    else if(groupSlot_)speech_(groupLabel(groupSlot_)+". "+
+                               (visible_.empty()?"No visible parameters":currentParameterSpeech()));
     else announce();
 }
 bool FxNavigator::memorySelectColumn(int direction) {
@@ -213,6 +232,9 @@ void FxNavigator::memoryLoad(bool toEdit) {
     }
     if(memoryCol_==0 || memoryCol_==2 || memoryCol_==3 || memoryCol_==5) {
         if((entry.param<0 && entry.param!=compareParamIndex && !eqVirtualValid(entry.param) && !dynamicsVirtualValid(entry.param)) || entry.param>=count_){speech_("Missing parameter");return;}
+        if(memoryCol_==5 && entry.slot>0 && fxOrder_.hidden.count(entry.param)) {
+            speech_("Hidden parameter. Restore it from Hidden parameters first");return;
+        }
         if(memoryCol_==2) {
             fxOrder_.hidden.erase(entry.param);
             saveStructure();
@@ -220,26 +242,32 @@ void FxNavigator::memoryLoad(bool toEdit) {
             if(fxOrder_.hasRealModifications())saveStructure();
             rebuildMemoryColumns();
         }
-        if(memoryCol_==5)fxOrder_.custom=true;
+        if(memoryCol_==5 && entry.slot==0)fxOrder_.custom=true;
         // A position pointing to a hidden Custom Order parameter can still be
         // reached in Plugin Order, which always exposes every native FX param.
         if((memoryCol_==0 || memoryCol_==3) && fxOrder_.hidden.count(entry.param))
             fxOrder_.custom=false;
         // Escape/Enter returns to the FX grid at the requested parameter;
         // duplicates retain the selected raw occurrence, not just the ID.
-        memoryReturnGroup_=0;
+        memoryReturnGroup_=memoryCol_==5?entry.slot:0;
         memoryReturnParam_=entry.param;
         memoryReturnPosition_=-1;
         if(entry.rawPos>=0) {
             int visiblePosition=0;
-            for(int i=0;i<=entry.rawPos && i<static_cast<int>(fxOrder_.order.size());++i)
-                if(!fxOrder_.hidden.count(fxOrder_.order[static_cast<size_t>(i)]))++visiblePosition;
+            const auto& source=entry.slot>0?fxOrder_.groups.at(entry.slot):fxOrder_.order;
+            for(int i=0;i<=entry.rawPos && i<static_cast<int>(source.size());++i)
+                if(source[static_cast<size_t>(i)]!=compareParamIndex &&
+                   !fxOrder_.hidden.count(source[static_cast<size_t>(i)]))++visiblePosition;
             memoryReturnPosition_=visiblePosition-1;
         }
     } else if(memoryCol_==1) {
         memoryReturnGroup_=entry.slot;
-        memoryReturnPosition_=0;
-        memoryReturnParam_=fxOrder_.groups[entry.slot].front();
+        memoryReturnPosition_=-1;
+        const auto& group=fxOrder_.groups.at(entry.slot);
+        const auto firstVisible=std::find_if(group.begin(),group.end(),[&](int id){
+            return id!=compareParamIndex && !fxOrder_.hidden.count(id);
+        });
+        memoryReturnParam_=firstVisible!=group.end()?*firstVisible:parameter_;
     } else if(memoryCol_==4) {
         fxOrder_.custom=true;
         saveStructure();
@@ -257,7 +285,8 @@ void FxNavigator::memoryLoad(bool toEdit) {
         rebuildView(parameter_,viewPos_);
         enterF7();
     } else if(standalone) {
-        speech_("FX Params. "+(groupSlot_?groupLabel(groupSlot_)+". ":"")+currentParameterSpeech());
+        speech_("FX Params. "+(groupSlot_?groupLabel(groupSlot_)+". ":"")+
+                (visible_.empty()?"No visible parameters":currentParameterSpeech()));
     }
 }
 void FxNavigator::memoryDelete() {
@@ -280,7 +309,16 @@ void FxNavigator::memoryDelete() {
             break;
         case 4: fxOrder_.deleteCustomOrder();groupSlot_=0;memoryReturnGroup_=0;memoryReturnF7_=false;break;
         case 5: {
-            if(entry.rawPos<0 || entry.rawPos>=static_cast<int>(fxOrder_.order.size()))return;
+            if(entry.slot>0) {
+                auto found=fxOrder_.groups.find(entry.slot);
+                if(found==fxOrder_.groups.end() || entry.rawPos<0 ||
+                   entry.rawPos>=static_cast<int>(found->second.size()) ||
+                   found->second[static_cast<size_t>(entry.rawPos)]!=entry.param)return;
+                found->second.erase(found->second.begin()+entry.rawPos);
+                saveStructure();break;
+            }
+            if(entry.rawPos<0 || entry.rawPos>=static_cast<int>(fxOrder_.order.size()) ||
+               fxOrder_.order[static_cast<size_t>(entry.rawPos)]!=entry.param)return;
             const int id=entry.param;
             if(std::count(fxOrder_.order.begin(),fxOrder_.order.end(),id)<=1)return;
             fxOrder_.order.erase(fxOrder_.order.begin()+entry.rawPos);

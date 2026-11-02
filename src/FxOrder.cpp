@@ -130,6 +130,9 @@ std::string patchProfile(const std::string& input,const std::string& view,
             const auto eq=row.find('=');if(eq==std::string::npos)continue;
             int slot=0;try {slot=std::stoi(row.substr(0,eq));}catch(...) {continue;}
             if(groups.count(slot))continue;
+            // A deleted EMPTY group must not reappear from the previous
+            // profile. Preserve truly opaque old references as before.
+            if(unescape(row.substr(eq+1)).empty())continue;
             bool allOpaque=true;const auto refs=split(unescape(row.substr(eq+1)),'\n');
             for(const auto& ref:refs)if(!ref.empty()&&!unsupported(ref))allOpaque=false;
             if(allOpaque)out.push_back(row);
@@ -300,9 +303,12 @@ void FxOrder::load(const std::filesystem::path& resource,const std::string& rawN
         auto p=row.find('=');if(p==std::string::npos)continue;
         int slot=0;try {slot=std::stoi(row.substr(0,p));}catch(...){continue;}
         if(slot<1||slot>12)continue;
+        // A slot with `N=` in [GroupSlots] is intentionally saved even when
+        // it has zero parameters. Distinguish it from a missing slot.
+        auto& savedGroup=groups[slot];
         for(auto& line:split(unescape(row.substr(p+1)),'\n')) {
             int id=0;std::string name,alias;
-            if(parseIndex(line,id,name,alias)&&(permitted(id)))groups[slot].push_back(id);
+            if(parseIndex(line,id,name,alias)&&(permitted(id)))savedGroup.push_back(id);
         }
     }
     // Lua Plugin Order interleaves virtual Enabled/Type before the physical

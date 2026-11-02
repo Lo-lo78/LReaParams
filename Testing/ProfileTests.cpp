@@ -210,6 +210,40 @@ int main(int argc, char** argv) {
             return id == compareParamIndex ? std::string("Compare") :
                 std::string("Parameter ") + std::to_string(id);
         };
+        // TEST62.2: a saved group with ZERO parameters must survive a full
+        // .fx save/load cycle, accept paste later and be deletable without a
+        // ghost empty GroupSlots record reappearing on the next reload.
+        const auto emptyRoot = root / L"fx-empty-group";
+        FxOrder emptyGroup;
+        emptyGroup.load(emptyRoot, "Empty group profile", 6, posNames);
+        emptyGroup.groups[2] = {};
+        emptyGroup.groupNames[2] = "Bass";
+        check(emptyGroup.save(), "Cannot save empty FX group");
+        FxOrder reopenedEmpty;
+        reopenedEmpty.load(emptyRoot, "Empty group profile", 6, posNames);
+        check(reopenedEmpty.groups.count(2) == 1 && reopenedEmpty.groups.at(2).empty() &&
+              reopenedEmpty.groupNames.at(2) == "Bass",
+              "Saved empty group or custom name lost after reload");
+        reopenedEmpty.groups[2].push_back(3);
+        check(reopenedEmpty.save(), "Cannot fill previously empty FX group");
+        FxOrder filledGroup;
+        filledGroup.load(emptyRoot, "Empty group profile", 6, posNames);
+        check(filledGroup.groups.at(2) == std::vector<int>{3},
+              "Pasted parameter lost in previously empty group");
+        filledGroup.groups[2].clear();
+        check(filledGroup.save(), "Cannot retain empty FX group after removing last parameter");
+        FxOrder emptyAgain;
+        emptyAgain.load(emptyRoot, "Empty group profile", 6, posNames);
+        check(emptyAgain.groups.count(2) == 1 && emptyAgain.groups.at(2).empty(),
+              "Removing last parameter deleted empty group memory");
+        emptyAgain.groups.erase(2);
+        emptyAgain.groupNames.erase(2);
+        check(emptyAgain.save(), "Cannot delete saved empty group");
+        FxOrder afterEmptyDelete;
+        afterEmptyDelete.load(emptyRoot, "Empty group profile", 6, posNames);
+        check(afterEmptyDelete.groups.count(2) == 0 && afterEmptyDelete.groupNames.count(2) == 0,
+              "Deleted empty group resurrected after reload");
+
         FxOrder positionProfile;
         positionProfile.load(posRoot, "Position test", 6, posNames);
         positionProfile.ccLinks[2] = "1,74";

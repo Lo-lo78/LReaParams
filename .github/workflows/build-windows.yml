@@ -16,6 +16,10 @@ jobs:
           persist-credentials: false
       - name: Verify public release version and package consistency (source only)
         run: python Testing/test_release_version_static.py
+      - name: TEST62.1 FX group transfer and seven-column memory (source only)
+        run: python Testing/test62_1_fx_group_memories_static.py
+      - name: TEST62.2 persistent empty FX groups, bulk/group paste (source only)
+        run: python Testing/test62_2_fx_empty_groups_static.py
       - name: TEST61.16 independent FX grids per ordering and group (source only)
         run: python Testing/test61_16_fx_view_context_static.py
       - name: Verify source and synthetic fixtures

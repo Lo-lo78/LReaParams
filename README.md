@@ -485,3 +485,13 @@ git add . && git commit -m "0.0.44.3: add cyclic FX parameter navigation by init
 ## TEST55.11 — conferma automazioni accessibile
 
 Ctrl+Maiusc+Alt+A ora espone la domanda e la scelta Yes/No anche a NVDA+Freccia Su. No e predefinito; Freccia Sinistra sceglie Yes, Destra No; Invio conferma la scelta, Y conferma subito, N o Esc annulla. Vedere Docs/TEST55_11_AUTOMATION_CONFIRM_NVDA.md.
+
+### TEST62.2 — FX Params: saved empty groups (source-only test)
+
+With Alt+G active, **Ctrl+Shift+F1..F12 in F7** still saves an entire selected
+batch as a group. With **no selection**, the same shortcut now saves a real
+empty group, which is accessible via Ctrl+F1..F12 and FX Memories (Groups).
+Alternatively, **Ctrl+V in F7** creates an unsaved group on first successful
+paste. Empty saved groups persist across restarts, retain custom names with
+`Group` as a prefix and remain valid after deleting their last parameter.
+See `Docs/TEST62_2_FX_EMPTY_GROUPS_AND_BULK_SAVE.md` for accessible test steps.

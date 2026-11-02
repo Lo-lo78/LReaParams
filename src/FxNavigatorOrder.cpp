@@ -305,7 +305,7 @@ void FxNavigator::loadFxOrder() {
             // editor, not a persistent landing view; do not reopen F7.
             if(pos.groupSlot>0) {
                 const auto group=fxOrder_.groups.find(pos.groupSlot);
-                if(group!=fxOrder_.groups.end() && !group->second.empty()) {
+                if(group!=fxOrder_.groups.end()) {
                     groupSlot_=pos.groupSlot;
                     groupReturnActive_=false;
                 }
@@ -314,8 +314,8 @@ void FxNavigator::loadFxOrder() {
         }
     if (!restoredFromSession) {
         // When REAPER starts again, read the last visited group from the
-        // plugin's .fx profile. Invalid/deleted/empty groups fall back to
-        // Plugin/Custom Order rather than creating a phantom group.
+        // plugin's .fx profile. Only invalid/deleted groups fall back to
+        // Plugin/Custom Order. Intentionally saved empty groups are valid.
         if (const auto last=fxOrder_.lastView()) {
             preference=last->viewPosition;
             if (last->groupSlot>0) {
@@ -335,8 +335,13 @@ void FxNavigator::loadFxOrder() {
 }
 void FxNavigator::rebuildView(int preferParam,int preferPosition) {
     if(groupSlot_ && !groupEditAll_) {
-        visible_=fxOrder_.groups[groupSlot_];
-        visible_.erase(std::remove(visible_.begin(),visible_.end(),compareParamIndex),visible_.end());
+        // Hidden is global to Custom Order and ALL groups, but Plugin Order
+        // always shows the native, unmodified parameter list.
+        const auto group=fxOrder_.groups.find(groupSlot_);
+        visible_=group==fxOrder_.groups.end()?std::vector<int>{}:group->second;
+        visible_.erase(std::remove_if(visible_.begin(),visible_.end(),[&](int id){
+            return id==compareParamIndex || fxOrder_.hidden.count(id)!=0;
+        }),visible_.end());
     } else visible_=fxOrder_.visibleOrder();
     if(visible_.empty()) {
         // Even when all parameters are hidden, retain a valid host param for
@@ -443,7 +448,7 @@ void FxNavigator::enterF7() {
     f7SnakePath_.clear();f7SnakeDirections_.clear();f7BaseSelection_=f7Selected_;
     speech_(std::string(groupSlot_?"Edit: "+groupLabel(groupSlot_):"Edit: Custom Order")+
         ". "+std::to_string(f7Selected_.size())+" selected. "+
-        viewPositionSpeech()+". "+editorParameterSpeech());
+        viewPositionSpeech()+". "+(visible_.empty()?"Empty":editorParameterSpeech()));
 }
 void FxNavigator::exitF7() {
     clearF7Filter();
@@ -551,98 +556,174 @@ void FxNavigator::selectF7ToGlobalEdge(bool toEnd) {
 
 void FxNavigator::doCopy(bool cut) {
     if(!editF7_)return;
-    clip_.clear();
     const auto& source=f7FilterActive_?f7FullView_:visible_;
-    for(int p:f7Selected_)if(p>=0&&p<static_cast<int>(source.size()))clip_.push_back(source[static_cast<size_t>(p)]);
-    if(clip_.empty()&&!source.empty())clip_.push_back(source[static_cast<size_t>(f7OriginalPosition(viewPos_))]);
-    clipCut_=cut;clipPlugin_=entries_[browserIndex_].name;
-    clipFxGuid_=fxGuid_;clipSourceGroup_=groupSlot_;clipPositions_.clear();
+    const int cursor=f7OriginalPosition(viewPos_);
+    std::set<int> chosen=f7Selected_;
+    if(chosen.empty() && cursor>=0 && cursor<static_cast<int>(source.size()))
+        chosen.insert(cursor);
+    if(chosen.empty()){speech_("No parameters to copy");return;}
+    std::vector<int> copied;
+    for(int pos:chosen)if(pos>=0 && pos<static_cast<int>(source.size()))
+        copied.push_back(source[static_cast<size_t>(pos)]);
+    if(copied.empty()){speech_("No parameters to copy");return;}
+
+    // Record the RAW occurrence positions (not just IDs). Both Custom and
+    // groups may contain duplicate IDs and globally hidden group entries.
     const auto& sourceList=groupSlot_?fxOrder_.groups.at(groupSlot_):fxOrder_.order;
-    // F7 positions are in the VISIBLE view. The Custom list can also contain
-    // hidden parameters, so map selected OCCURRENCES to true list positions.
+    std::set<int> positions;
     int visibleIndex=0;
-    for(int sourceIndex=0;sourceIndex<static_cast<int>(sourceList.size());++sourceIndex) {
-        const int id=sourceList[static_cast<size_t>(sourceIndex)];
-        if(!groupSlot_ && fxOrder_.hidden.count(id))continue;
-        if((f7Selected_.empty() && visibleIndex==f7OriginalPosition(viewPos_))||
-           f7Selected_.count(visibleIndex))clipPositions_.insert(sourceIndex);
+    for(int rawIndex=0;rawIndex<static_cast<int>(sourceList.size());++rawIndex) {
+        const int id=sourceList[static_cast<size_t>(rawIndex)];
+        if(id==compareParamIndex || fxOrder_.hidden.count(id))continue;
+        if(chosen.count(visibleIndex))positions.insert(rawIndex);
         ++visibleIndex;
     }
-    speech_(std::string(cut?"Cut ":"Copied ")+std::to_string(clip_.size())+" parameters");
+    if(positions.size()!=copied.size()) {speech_("Selection changed. Copy cancelled");return;}
+    clip_=std::move(copied);
+    clipCut_=cut;clipPlugin_=entries_[browserIndex_].name;
+    clipFxGuid_=fxGuid_;clipSourceGroup_=groupSlot_;clipPositions_=std::move(positions);
+    speech_(std::string(cut?"Cut pending. ":"Copied ")+std::to_string(clip_.size())+
+            " parameters from "+(groupSlot_?groupLabel(groupSlot_):"Custom Order"));
 }
 void FxNavigator::doPaste() {
-    if(!editF7_||clip_.empty()){speech_("Clipboard empty");return;}
+    if(!editF7_ || clip_.empty()){speech_("Clipboard empty");return;}
     if(clipPlugin_!=entries_[browserIndex_].name){speech_("Clipboard belongs to another FX");return;}
     if(groupEditAll_){speech_("Return to group before paste");return;}
-    if(clipCut_ && (!guidSame(&clipFxGuid_,fxGuid_) || clipSourceGroup_!=groupSlot_)) {
-        speech_("Cut belongs to its original FX and group");return;
+    if(!groupSlot_ && !fxOrder_.custom){speech_("Plugin Order is read only");return;}
+    if(std::any_of(clip_.begin(),clip_.end(),[&](int id){return fxOrder_.hidden.count(id)!=0;})) {
+        speech_("Clipboard contains hidden parameters. Restore them in Custom Order first");return;
+    }
+    if(clipCut_) {
+        if(!guidSame(&clipFxGuid_,fxGuid_)){
+            speech_("Cut belongs to another FX instance");return;
+        }
+        // Custom is the catalogue: Ctrl+X only reorders inside Custom.
+        // Groups may move occurrences atomically to another group.
+        if(clipSourceGroup_!=groupSlot_ && (!clipSourceGroup_ || !groupSlot_)){
+            speech_("Cannot cut between Custom Order and groups. Use Copy");return;
+        }
     }
     clearF7Filter();
-    std::vector<int>* list=groupSlot_?&fxOrder_.groups[groupSlot_]:&fxOrder_.order;
-    if(!groupSlot_&&!fxOrder_.custom){speech_("Plugin order. Read only");return;}
-    // Map visible insertion point back into raw Custom order; hidden entries
-    // must never shift or cause the cut of a different occurrence.
-    int targetPos=static_cast<int>(list->size());
-    if(!list->empty()) {
-        if(groupSlot_)targetPos=std::clamp(viewPos_,0,static_cast<int>(list->size())-1);
-        else {
-            int visibleIndex=0;
-            for(int rawIndex=0;rawIndex<static_cast<int>(list->size());++rawIndex) {
-                if(fxOrder_.hidden.count((*list)[static_cast<size_t>(rawIndex)]))continue;
-                if(visibleIndex==viewPos_) {targetPos=rawIndex;break;}
-                ++visibleIndex;
+    // Do NOT create a group before validating the clipboard and capturing
+    // Undo. A successful paste into a missing slot creates it; a failed paste
+    // or Undo must not leave behind an unintended empty memory.
+    const bool createGroup=groupSlot_ && fxOrder_.groups.find(groupSlot_)==fxOrder_.groups.end();
+    std::vector<int> newGroupStaging;
+    std::vector<int>* target=!groupSlot_?&fxOrder_.order:
+        createGroup?&newGroupStaging:&fxOrder_.groups.at(groupSlot_);
+    const bool acrossGroups=clipCut_ && clipSourceGroup_!=groupSlot_;
+    std::vector<int>* origin=target;
+    if(acrossGroups) {
+        const auto found=fxOrder_.groups.find(clipSourceGroup_);
+        if(found==fxOrder_.groups.end()){
+            speech_("Source group no longer exists. Cut cancelled");return;
+        }
+        origin=&found->second;
+    }
+    // Never move a stale occurrence: deletion/reorder between Ctrl+X and
+    // Ctrl+V must not delete another parameter with the same numeric ID.
+    if(clipCut_) {
+        if(clipPositions_.size()!=clip_.size()){
+            speech_("Source selection changed. Cut cancelled");return;
+        }
+        size_t copiedIndex=0;
+        for(int pos:clipPositions_) {
+            if(pos<0 || pos>=static_cast<int>(origin->size()) ||
+               (*origin)[static_cast<size_t>(pos)]!=clip_[copiedIndex++]) {
+                speech_("Source group changed. Cut cancelled");return;
             }
         }
     }
-    // Cut stores RAW occurrence positions at Ctrl+X, not the cursor position
-    // after moving to the insertion target.
-    if(clipCut_ && clipPositions_.count(targetPos)) {
+    // Cursor is a visible position. Convert it back to RAW coordinates in
+    // either environment; hidden elements never alter the target occurrence.
+    int targetPos=static_cast<int>(target->size());
+    int visibleIndex=0;
+    for(int rawIndex=0;rawIndex<static_cast<int>(target->size());++rawIndex) {
+        const int id=(*target)[static_cast<size_t>(rawIndex)];
+        if(id==compareParamIndex || fxOrder_.hidden.count(id))continue;
+        if(visibleIndex==viewPos_) {targetPos=rawIndex;break;}
+        ++visibleIndex;
+    }
+    if(clipCut_ && !acrossGroups && clipPositions_.count(targetPos)) {
         speech_("Move to another position before paste");return;
     }
     std::vector<int> reduced;
+    reduced.reserve(target->size()+clip_.size());
     int insertionIndex=targetPos;
-    for(int i=0;i<static_cast<int>(list->size());++i) {
-        if(clipCut_ && clipPositions_.count(i)) {
+    for(int i=0;i<static_cast<int>(target->size());++i) {
+        if(clipCut_ && !acrossGroups && clipPositions_.count(i)) {
             if(i<targetPos)--insertionIndex;
-        } else reduced.push_back((*list)[static_cast<size_t>(i)]);
+        } else reduced.push_back((*target)[static_cast<size_t>(i)]);
     }
     insertionIndex=std::clamp(insertionIndex,0,static_cast<int>(reduced.size()));
     reduced.insert(reduced.begin()+insertionIndex,clip_.begin(),clip_.end());
-    saveUndo();
-    list->swap(reduced);
-    if(!groupSlot_)fxOrder_.normalize();
+    const int firstId=clip_.front();
     const size_t inserted=clip_.size();
+    saveUndo(); // One Undo captures BOTH groups before an inter-group move.
+    if(acrossGroups) {
+        std::vector<int> remainder;
+        remainder.reserve(origin->size());
+        for(int i=0;i<static_cast<int>(origin->size());++i)
+            if(!clipPositions_.count(i))remainder.push_back((*origin)[static_cast<size_t>(i)]);
+        origin->swap(remainder);
+    }
+    if(createGroup) {
+        auto result=fxOrder_.groups.emplace(groupSlot_,std::move(reduced));
+        target=&result.first->second;
+    } else target->swap(reduced);
+    if(!groupSlot_)fxOrder_.normalize();
     saveStructure();
-    const int old=clip_.front();
     f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
-    rebuildView(old,insertionIndex);
+    // The insertion position must be in VISIBLE coordinates, even when there
+    // are hidden entries preceding the pasted element.
+    int firstVisiblePos=-1;
+    int nth=0;
+    for(int i=0;i<static_cast<int>(target->size());++i) {
+        const int id=(*target)[static_cast<size_t>(i)];
+        if(id==compareParamIndex || fxOrder_.hidden.count(id))continue;
+        if(i==insertionIndex)firstVisiblePos=nth;
+        ++nth;
+    }
+    rebuildView(firstId,firstVisiblePos);
     if(clipCut_) {clip_.clear();clipPositions_.clear();}
     speech_(std::string(clipCut_?"Moved ":"Pasted ")+std::to_string(inserted)+
-            " parameters. "+currentParameterSpeech());
+            " parameters into "+(groupSlot_?groupLabel(groupSlot_):"Custom Order")+
+            ". "+(visible_.empty()?"No visible parameters":currentParameterSpeech()));
 }
 void FxNavigator::hideSelected() {
     if(!editF7_)return;
     const int actualPos=f7OriginalPosition(viewPos_);
     clearF7Filter();
-    saveUndo();
     if(groupSlot_&&!groupEditAll_) {
         auto& rows=fxOrder_.groups[groupSlot_];
-        if(rows.empty())return;
-        std::set<int> toRemove=f7Selected_;
-        if(toRemove.empty())toRemove.insert(actualPos);
-        for(auto it=toRemove.rbegin();it!=toRemove.rend();++it)
-            if(*it>=0&&*it<static_cast<int>(rows.size()))rows.erase(rows.begin()+*it);
+        std::set<int> selected=f7Selected_;
+        if(selected.empty())selected.insert(actualPos);
+        std::set<int> rawToRemove;
+        int visibleIndex=0;
+        for(int rawIndex=0;rawIndex<static_cast<int>(rows.size());++rawIndex) {
+            const int id=rows[static_cast<size_t>(rawIndex)];
+            if(id==compareParamIndex || fxOrder_.hidden.count(id))continue;
+            if(selected.count(visibleIndex))rawToRemove.insert(rawIndex);
+            ++visibleIndex;
+        }
+        if(rawToRemove.empty()){speech_("No group parameters selected");return;}
+        saveUndo();
+        for(auto it=rawToRemove.rbegin();it!=rawToRemove.rend();++it)
+            rows.erase(rows.begin()+*it);
         saveStructure();f7Selected_.clear();rebuildView(parameter_);
-        speech_("Removed from group");return;
+        speech_("Removed from "+groupLabel(groupSlot_));return;
     }
     if(groupEditAll_){speech_("Return to group before remove");return;}
-    if(!fxOrder_.custom){speech_("Plugin order. Read only");return;}
+    if(!fxOrder_.custom){speech_("Plugin Order. Read only");return;}
     int newlyHidden=0;
     std::set<int> toHide=f7Selected_;
     if(toHide.empty())toHide.insert(actualPos);
     for(int pos:toHide)if(pos>=0&&pos<static_cast<int>(visible_.size()))
-        if(fxOrder_.hidden.insert(visible_[static_cast<size_t>(pos)]).second)++newlyHidden;
+        if(!fxOrder_.hidden.count(visible_[static_cast<size_t>(pos)]))++newlyHidden;
     if(newlyHidden==0){speech_("No new parameters hidden");return;}
+    saveUndo();
+    for(int pos:toHide)if(pos>=0&&pos<static_cast<int>(visible_.size()))
+        fxOrder_.hidden.insert(visible_[static_cast<size_t>(pos)]);
     saveStructure();f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
     rebuildView(parameter_);
     speech_("Hidden "+std::to_string(newlyHidden)+" parameters"+
@@ -654,20 +735,24 @@ void FxNavigator::saveGroup(int slot) {
     const auto& reference=f7FilterActive_?f7FullView_:visible_;
     for(int pos:f7Selected_)if(pos>=0&&pos<static_cast<int>(reference.size()))
         saved.push_back(reference[static_cast<size_t>(pos)]);
-    if(saved.empty()){speech_("No selected parameters");return;}
-    if(fxOrder_.groups.count(slot)&&!fxOrder_.groups[slot].empty()) {
-        speech_("Slot occupied. Group "+std::to_string(slot));return;
+    // Ctrl+Shift+F1..F12 in F7 supports both workflows:
+    // selected parameters => save the entire selection as a group;
+    // no selection => reserve a real, persistable EMPTY group for later paste.
+    // A saved empty group is occupied just like a populated group.
+    if(fxOrder_.groups.count(slot)) {
+        speech_("Slot occupied. "+groupLabel(slot));return;
     }
     saveUndo();
     fxOrder_.groups[slot]=std::move(saved);
     saveStructure();
-    speech_("Saved Group "+std::to_string(slot)+". "+std::to_string(fxOrder_.groups[slot].size())+" parameters");
+    speech_("Saved "+groupLabel(slot)+". "+std::to_string(fxOrder_.groups[slot].size())+
+            " parameters"+(fxOrder_.groups[slot].empty()?". Empty group ready for paste":""));
 }
 std::string FxNavigator::groupLabel(int slot) const {
-    std::string label="Group "+std::to_string(slot);
-    auto it=fxOrder_.groupNames.find(slot);
-    if(it!=fxOrder_.groupNames.end() && !it->second.empty())label+=". "+it->second;
-    return label;
+    const auto it=fxOrder_.groupNames.find(slot);
+    // Spoken naming: "Group Bass" when named, "Group 2" by default.
+    return "Group "+(it!=fxOrder_.groupNames.end() && !it->second.empty()
+                    ?it->second:std::to_string(slot));
 }
 void FxNavigator::openGroup(int slot) {
     const auto it=fxOrder_.groups.find(slot);
@@ -721,9 +806,12 @@ void FxNavigator::openGroup(int slot) {
                 (editF7_?editorParameterSpeech():currentParameterSpeech()));
         return;
     }
-    if(it==fxOrder_.groups.end()||it->second.empty()){
-        speech_("Group "+std::to_string(slot)+" empty");return;
+    if(it==fxOrder_.groups.end() && !editF7_) {
+        speech_(groupLabel(slot)+" not saved");return;
     }
+    // In F7 an unsaved slot is a temporary paste target. Keep it ABSENT
+    // from the group map until a successful Ctrl+V (or Ctrl+Shift+Fn)
+    // explicitly creates it. Saved empty groups work inside/outside F7.
     rememberPosition(); // Capture the outgoing group's independent grid.
     if(!groupSlot_) {
         // Capture ONCE, before entering the first group; do not overwrite it
@@ -745,7 +833,9 @@ void FxNavigator::openGroup(int slot) {
     rememberPosition();
     flushPersistentPosition();
     speech_(std::string(editF7_?"Edit: ":"")+groupLabel(slot)+". "+
-            (editF7_?editorParameterSpeech():currentParameterSpeech()));
+            (visible_.empty()?(editF7_?"Empty. Press Ctrl+V to paste parameters":
+                                     "Empty. Press F7 to edit and paste parameters"):
+                editF7_?editorParameterSpeech():currentParameterSpeech()));
 }
 
 namespace {
@@ -854,6 +944,7 @@ bool FxNavigator::handleF7(const Key& k) {
     if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){hideSelected();return true;}
     // Recovery until the Lua F8 hidden-parameter manager is migrated.
     if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE) {
+        if(groupSlot_){speech_("Restore hidden parameters from Custom Order");return true;}
         if(!fxOrder_.custom){speech_("Plugin order. Read only");return true;}
         const auto count=fxOrder_.hidden.size();
         if(!count){speech_("No hidden parameters");return true;}
@@ -867,6 +958,7 @@ bool FxNavigator::handleF7(const Key& k) {
         rememberPosition();speech_("Unselected all. 0 selected");return true;
     }
     if(k.shift&&!k.ctrl&&!k.alt&&k.vk==VK_SPACE){
+        if(visible_.empty()){speech_("Group empty");return true;}
         const int selected=f7OriginalPosition(viewPos_);
         if(f7Selected_.count(selected))f7Selected_.erase(selected);else f7Selected_.insert(selected);
         f7SnakePath_.clear();f7SnakeDirections_.clear();rememberPosition();
