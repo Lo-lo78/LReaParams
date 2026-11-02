@@ -99,6 +99,7 @@ bool TrackNavigator::openTrackMemories(bool standalone) {
     valueMode_ = false;
     memoryStandalone_ = standalone;
     memoryManager_ = true;
+    for(auto& selection:memorySelected_)selection.clear();
     memoryColumn_ = memoryRow_ = 0;
     rebuildMemoryList();
     // Mirror FX Memories: open on the first populated column rather than
@@ -263,12 +264,14 @@ void TrackNavigator::speakMemory(const std::string& prefix) const {
         speech_(any ? header + columnNames[col] + ". No memories" : "Track Memories. No memories");
         return;
     }
-    speech_(header + columnNames[col] + ". " + memoryItems_[static_cast<size_t>(memoryRow_)].label);
+    const auto selected=memorySelected_[col].count(memoryRow_) ? "Selected. " : "";
+    speech_(header + selected + columnNames[col] + ". " + memoryItems_[static_cast<size_t>(memoryRow_)].label);
 }
 void TrackNavigator::memoryExit() {
     const bool standalone = memoryStandalone_;
     memoryManager_ = memoryStandalone_ = false;
     memoryItems_.clear();
+    for(auto& selection:memorySelected_)selection.clear();
     if (standalone) end();
     else announceTitle();
 }
@@ -281,59 +284,95 @@ void TrackNavigator::memoryAdjustStep(int delta) {
     memory_.setStep(id, next);
     memory_.flush();
     stepScale_ = memory_.step(parameterKey());
+    for(auto& selection:memorySelected_)selection.clear();
     rebuildMemoryList();
     speakMemory();
 }
 void TrackNavigator::memoryDelete() {
-    if (memoryItems_.empty()) { speakMemory(); return; }
-    const auto item = memoryItems_[static_cast<size_t>(memoryRow_)];
-    const int removedColumn = memoryColumn_;
-    if (memoryColumn_ == 0) {
-        if (item.key.rfind("S:", 0) == 0)
-            memory_.setFixedCcLink(item.key.substr(2), "");
-        else if (item.key.rfind("L:", 0) == 0) {
-            const auto legacy = item.key.substr(2);
-            const auto dot = legacy.find('.');
-            if (dot == std::string::npos) return;
-            memory_.setCcLink(legacy.substr(0, dot), legacy.substr(dot + 1), "");
-        } else return;
-        midiPickup_.clear();
-    } else if (memoryColumn_ == 1) {
-        memory_.setStep(item.key, 0);
-        stepScale_ = memory_.step(parameterKey());
-    } else if (memoryColumn_ == 2) {
-        // Restore the default behavior (value speech on, CC speech off).
-        if (item.key.rfind("V:", 0) == 0) memory_.setValueSpeech(item.key.substr(2), true);
-        else if (item.key.rfind("C:", 0) == 0)
-            memory_.setFixedCcSpeech(item.key.substr(2), false);
-    } else if (memoryColumn_ == 3) {
-        if (item.value.empty()) { speech_("Slot already empty"); return; }
-        memory_.setTrackSlot(item.slot, "");
-    } else if (memoryColumn_ == 4) {
-        memory_.clearVolumeRange(item.key);
-    }
-    memory_.flush();
-    const auto label = item.label;
-    rebuildMemoryList();
-    if (memoryItems_.empty()) {
-        const int oldColumn = memoryColumn_;
-        bool moved = false;
-        for (int c = oldColumn + 1; c < 5; ++c) {
-            memoryColumn_ = c; memoryRow_ = 0; rebuildMemoryList();
-            if (!memoryItems_.empty()) { moved = true; break; }
+    if(memoryItems_.empty()){speakMemory();return;}
+    const int removedColumn=memoryColumn_;
+    auto indexes=memorySelected_[static_cast<size_t>(memoryColumn_)];
+    if(indexes.empty())indexes.insert(memoryRow_);
+    int focusRow=memoryRow_;
+    if(indexes.count(focusRow)) {
+        int next=focusRow+1;
+        while(next<static_cast<int>(memoryItems_.size()) && indexes.count(next))++next;
+        if(next==static_cast<int>(memoryItems_.size())) {
+            next=focusRow-1;
+            while(next>=0 && indexes.count(next))--next;
         }
-        if (!moved) {
-            for (int c = oldColumn - 1; c >= 0; --c) {
-                memoryColumn_ = c; memoryRow_ = 0; rebuildMemoryList();
-                if (!memoryItems_.empty()) { moved = true; break; }
+        focusRow=next;
+    }
+    if(focusRow>=0)
+        focusRow-=static_cast<int>(std::count_if(indexes.begin(),indexes.end(),
+            [focusRow](int row){return row<focusRow;}));
+    std::vector<MemoryItem> items;
+    for(int i:indexes) {
+        if(i<0 || i>=static_cast<int>(memoryItems_.size())) {
+            speech_("Memory selection changed. Select again");return;
+        }
+        items.push_back(memoryItems_[static_cast<size_t>(i)]);
+    }
+    // Snapshot identities before mutating the .tp profile: a deleted entry
+    // must never shift the meaning of a later selected row.
+    for(const auto& item:items) {
+        if(removedColumn==0) {
+            if(item.key.rfind("S:",0)!=0 && item.key.rfind("L:",0)!=0) {
+                speech_("Memory selection changed. Select again");return;
+            }
+            if(item.key.rfind("L:",0)==0 && item.key.substr(2).find('.')==std::string::npos) {
+                speech_("Memory selection changed. Select again");return;
             }
         }
-        if (!moved) { memoryColumn_ = oldColumn; memoryRow_ = 0; rebuildMemoryList(); }
     }
-    speech_((removedColumn == 0 || removedColumn == 3 ? "Deleted. " : "Reset. ") +
-        label + ". " + (memoryItems_.empty() ? "No memories" :
-        std::string(columnNames[static_cast<size_t>(memoryColumn_)]) + ". " +
-        memoryItems_[static_cast<size_t>(memoryRow_)].label));
+    int removed=0;
+    for(const auto& item:items) {
+        if(removedColumn==0) {
+            if(item.key.rfind("S:",0)==0)memory_.setFixedCcLink(item.key.substr(2), "");
+            else {
+                const auto legacy=item.key.substr(2);
+                const auto dot=legacy.find('.');
+                memory_.setCcLink(legacy.substr(0,dot),legacy.substr(dot+1),"");
+            }
+            midiPickup_.clear();
+        } else if(removedColumn==1) {
+            memory_.setStep(item.key,0);
+        } else if(removedColumn==2) {
+            if(item.key.rfind("V:",0)==0)memory_.setValueSpeech(item.key.substr(2),true);
+            else if(item.key.rfind("C:",0)==0)memory_.setFixedCcSpeech(item.key.substr(2), false);
+            else continue;
+        } else if(removedColumn==3) {
+            if(item.value.empty())continue;
+            memory_.setTrackSlot(item.slot,"");
+        } else if(removedColumn==4)memory_.clearVolumeRange(item.key);
+        else continue;
+        ++removed;
+    }
+    if(!removed){speech_("No memories deleted");return;}
+    memory_.flush();
+    stepScale_=memory_.step(parameterKey());
+    for(auto& selection:memorySelected_)selection.clear();
+    rebuildMemoryList();
+    if(!memoryItems_.empty())
+        memoryRow_=std::clamp(focusRow,0,static_cast<int>(memoryItems_.size())-1);
+    if(memoryItems_.empty()) {
+        const int oldColumn=memoryColumn_;
+        bool moved=false;
+        for(int c=oldColumn+1;c<5;++c) {
+            memoryColumn_=c;memoryRow_=0;rebuildMemoryList();
+            if(!memoryItems_.empty()){moved=true;break;}
+        }
+        if(!moved)for(int c=oldColumn-1;c>=0;--c) {
+            memoryColumn_=c;memoryRow_=0;rebuildMemoryList();
+            if(!memoryItems_.empty()){moved=true;break;}
+        }
+        if(!moved){memoryColumn_=oldColumn;memoryRow_=0;rebuildMemoryList();}
+    }
+    speech_((removedColumn==0||removedColumn==3 ? "Deleted " : "Reset ")+
+        std::to_string(removed)+(removed==1?" memory. ":" memories. ")+
+        (memoryItems_.empty()?"No memories":
+            std::string(columnNames[static_cast<size_t>(memoryColumn_)]) + ". " +
+            memoryItems_[static_cast<size_t>(memoryRow_)].label));
 }
 void TrackNavigator::memoryActivate() {
     if (memoryItems_.empty()) { speakMemory(); return; }
@@ -348,7 +387,9 @@ void TrackNavigator::memoryActivate() {
             const auto target = item.key.substr(2);
             memory_.setFixedCcSpeech(target, !memory_.fixedCcSpeech(target));
         }
-        memory_.flush(); rebuildMemoryList(); speakMemory(); return;
+        memory_.flush();
+        for(auto& selection:memorySelected_)selection.clear();
+        rebuildMemoryList(); speakMemory(); return;
     }
     if (memoryColumn_ == 3) {
         if (item.value.empty()) {
@@ -357,6 +398,7 @@ void TrackNavigator::memoryActivate() {
         // Exit manager before recall: it updates the real TCP selection.
         memoryManager_ = memoryStandalone_ = false;
         memoryItems_.clear();
+        for(auto& selection:memorySelected_)selection.clear();
         recallTrackSlot(item.slot);
         return;
     }
@@ -366,11 +408,54 @@ void TrackNavigator::memoryActivate() {
 }
 void TrackNavigator::handleMemory(const Key& k) {
     if (k.repeat && (k.vk == VK_RETURN || k.vk == VK_DELETE || k.vk == VK_ESCAPE ||
+        (k.shift && k.vk == VK_SPACE) || (k.ctrl && k.vk == 'A') ||
         (k.ctrl && k.shift && !k.alt && k.vk == 'M'))) return;
     if (k.vk == VK_ESCAPE || (k.ctrl && k.shift && !k.alt && k.vk == 'M')) {
         memoryExit(); return;
     }
     if (k.vk == VK_TAB) { speakMemory(); return; }
+    if (k.shift && !k.ctrl && !k.alt && k.vk == VK_SPACE) {
+        if(memoryItems_.empty()){speakMemory();return;}
+        auto& selected=memorySelected_[static_cast<size_t>(memoryColumn_)];
+        if(!selected.erase(memoryRow_))selected.insert(memoryRow_);
+        speech_(std::string(selected.count(memoryRow_)?"Selected. ":"Not selected. ")+
+            columnNames[memoryColumn_]+". "+memoryItems_[static_cast<size_t>(memoryRow_)].label);
+        return;
+    }
+    if(k.ctrl && !k.shift && !k.alt && k.vk=='A') {
+        if(memoryItems_.empty()){speakMemory();return;}
+        auto& selected=memorySelected_[static_cast<size_t>(memoryColumn_)];
+        selected.clear();
+        for(int i=0;i<static_cast<int>(memoryItems_.size());++i)selected.insert(i);
+        speech_(std::to_string(selected.size())+" memories selected. "+
+            std::string(columnNames[memoryColumn_])+". "+
+            memoryItems_[static_cast<size_t>(memoryRow_)].label);
+        return;
+    }
+    if (k.alt && k.shift && !k.ctrl &&
+        (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_LEFT || k.vk == VK_RIGHT)) {
+        // TEST62.6: horizontal shortcuts are intentionally inert; do not
+        // accidentally change category or adjust a parameter Step.
+        if(k.vk == VK_LEFT || k.vk == VK_RIGHT)return;
+        const auto& selected=memorySelected_[static_cast<size_t>(memoryColumn_)];
+        if(selected.empty()){speech_("0 selected");return;}
+        if(k.vk==VK_DOWN) {
+            const auto next=selected.upper_bound(memoryRow_);
+            if(next!=selected.end() && *next>=0 && *next<static_cast<int>(memoryItems_.size())) {
+                memoryRow_=*next;speakMemory();
+            }
+        } else {
+            auto previous=selected.lower_bound(memoryRow_);
+            if(previous!=selected.begin()) {
+                --previous;
+                if(*previous>=0 && *previous<static_cast<int>(memoryItems_.size())) {
+                    memoryRow_=*previous;speakMemory();
+                }
+            }
+        }
+        // Silent at selected-list boundaries, exactly like F7.
+        return;
+    }
     if (k.ctrl && !k.shift && !k.alt && (k.vk == VK_HOME || k.vk == VK_END)) {
         const int step = k.vk == VK_HOME ? 1 : -1;
         for (int c = step > 0 ? 0 : 4; c >= 0 && c < 5; c += step) {

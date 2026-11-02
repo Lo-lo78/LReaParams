@@ -5,6 +5,8 @@
 #include <climits>
 #include <cmath>
 #include <cstring>
+#include <iterator>
+#include <utility>
 #include <cwchar>
 #include <stdexcept>
 #include <sstream>
@@ -168,6 +170,39 @@ bool FxNavigator::flushParameterSteps() noexcept {
         return false;
     }
 }
+// Convert F7 occurrence selection to stable FX parameter identities.
+// Selection is stored against the unfiltered grid, not the search results;
+// duplicate Custom/Group occurrences must be processed only once per value edit.
+std::vector<int> FxNavigator::selectedF7Parameters() const {
+    std::vector<int> ids;
+    if(!editF7_)return ids;
+    const auto& source=f7FilterActive_?f7FullView_:visible_;
+    std::set<int> unique;
+    for(int pos:f7Selected_) {
+        if(pos<0 || pos>=static_cast<int>(source.size()))continue;
+        const int id=source[static_cast<size_t>(pos)];
+        if(id==compareParamIndex || !(eqVirtualValid(id) || dynamicsVirtualValid(id) || (id>=0 && id<count_)))continue;
+        if(unique.insert(id).second)ids.push_back(id);
+    }
+    return ids;
+}
+void FxNavigator::stepSelectedF7(int delta) {
+    const auto ids=selectedF7Parameters();
+    if(ids.empty())return;
+    const int next=std::clamp(stepScale_+delta,-10,10);
+    if(next==stepScale_)return;
+    // Match the step of the focused parameter on ALL selected identities.
+    // A non-zero selection is deliberate; unselected steps are untouched.
+    for(int id:ids) {
+        const auto name=stepParameterName(id);
+        if(name.empty())continue;
+        parameterSteps_[id]={name,next};
+    }
+    stepScale_=next;stepActiveParameter_=parameter_;
+    parameterStepsDirty_=true;lastControl_=LastControl::step;
+    rememberPosition();
+    speech_("Step "+std::to_string(next)+". "+std::to_string(ids.size())+" selected parameters");
+}
 std::string FxNavigator::displayName() const {
     auto label=fxOrder_.label(parameter_);
     return label.empty()?parameterName_:label;
@@ -320,7 +355,7 @@ void FxNavigator::loadFxOrder() {
             preference=last->viewPosition;
             if (last->groupSlot>0) {
                 const auto group=fxOrder_.groups.find(last->groupSlot);
-                if (group!=fxOrder_.groups.end() && !group->second.empty()) {
+                if (group!=fxOrder_.groups.end()) {
                     groupSlot_=last->groupSlot;
                     groupReturnActive_=false;
                 } else preference=-1;
@@ -690,43 +725,93 @@ void FxNavigator::doPaste() {
             " parameters into "+(groupSlot_?groupLabel(groupSlot_):"Custom Order")+
             ". "+(visible_.empty()?"No visible parameters":currentParameterSpeech()));
 }
-void FxNavigator::hideSelected() {
+void FxNavigator::hideSelected(bool globalHide) {
     if(!editF7_)return;
-    const int actualPos=f7OriginalPosition(viewPos_);
+    // Two different operations have two different keys. Ctrl+Delete is
+    // group-only removal; Ctrl+Shift+Delete is global hiding in Custom and
+    // every group (never in the original, read-only Plugin Order).
+    if(!globalHide && (!groupSlot_ || groupEditAll_)) {
+        speech_("Ctrl+Delete removes parameters from a group only. Use Ctrl+Shift+Delete to hide");
+        return;
+    }
+    if(globalHide && groupEditAll_) {
+        speech_("Return to group before hiding parameters");return;
+    }
+    if(globalHide && !groupSlot_ && !fxOrder_.custom) {
+        speech_("Plugin Order. Read only");return;
+    }
+    const int originalCursor=f7OriginalPosition(viewPos_);
     clearF7Filter();
-    if(groupSlot_&&!groupEditAll_) {
-        auto& rows=fxOrder_.groups[groupSlot_];
-        std::set<int> selected=f7Selected_;
-        if(selected.empty())selected.insert(actualPos);
-        std::set<int> rawToRemove;
+    std::set<int> selected=f7Selected_;
+    if(selected.empty() && originalCursor>=0 && originalCursor<static_cast<int>(visible_.size()))
+        selected.insert(originalCursor);
+
+    // Keep focus on the same surviving occurrence, or on the next surviving
+    // occurrence if the cursor was removed. Only at the end go to the previous
+    // one. Never search by parameter ID: IDs may occur multiple times.
+    const auto focusAfterRemoval=[&](const std::set<int>& removed)->std::pair<int,int> {
+        if(visible_.empty())return {parameter_,-1};
+        const int cursor=std::clamp(viewPos_,0,static_cast<int>(visible_.size())-1);
+        int anchor=-1;
+        if(!removed.count(cursor))anchor=cursor;
+        else {
+            for(int pos=cursor+1;pos<static_cast<int>(visible_.size());++pos)
+                if(!removed.count(pos)){anchor=pos;break;}
+            if(anchor<0)for(int pos=cursor-1;pos>=0;--pos)
+                if(!removed.count(pos)){anchor=pos;break;}
+        }
+        if(anchor<0)return {parameter_,-1};
+        const int before=static_cast<int>(std::distance(removed.begin(),removed.lower_bound(anchor)));
+        return {visible_[static_cast<size_t>(anchor)],anchor-before};
+    };
+
+    if(!globalHide) {
+        const auto group=fxOrder_.groups.find(groupSlot_);
+        if(group==fxOrder_.groups.end() || group->second.empty()) {
+            speech_("No group parameters selected");return;
+        }
+        auto& rows=group->second;
+        std::set<int> rawToRemove, visibleToRemove;
         int visibleIndex=0;
         for(int rawIndex=0;rawIndex<static_cast<int>(rows.size());++rawIndex) {
             const int id=rows[static_cast<size_t>(rawIndex)];
             if(id==compareParamIndex || fxOrder_.hidden.count(id))continue;
-            if(selected.count(visibleIndex))rawToRemove.insert(rawIndex);
+            if(selected.count(visibleIndex)) {
+                rawToRemove.insert(rawIndex);
+                visibleToRemove.insert(visibleIndex);
+            }
             ++visibleIndex;
         }
         if(rawToRemove.empty()){speech_("No group parameters selected");return;}
+        const auto [nextParam,nextPosition]=focusAfterRemoval(visibleToRemove);
         saveUndo();
         for(auto it=rawToRemove.rbegin();it!=rawToRemove.rend();++it)
             rows.erase(rows.begin()+*it);
-        saveStructure();f7Selected_.clear();rebuildView(parameter_);
-        speech_("Removed from "+groupLabel(groupSlot_));return;
+        f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
+        rebuildView(nextParam,nextPosition);
+        saveStructure();
+        speech_("Removed from "+groupLabel(groupSlot_)+". "+
+                (visible_.empty()?"No visible parameters":currentParameterSpeech()));
+        return;
     }
-    if(groupEditAll_){speech_("Return to group before remove");return;}
-    if(!fxOrder_.custom){speech_("Plugin Order. Read only");return;}
-    int newlyHidden=0;
-    std::set<int> toHide=f7Selected_;
-    if(toHide.empty())toHide.insert(actualPos);
-    for(int pos:toHide)if(pos>=0&&pos<static_cast<int>(visible_.size()))
-        if(!fxOrder_.hidden.count(visible_[static_cast<size_t>(pos)]))++newlyHidden;
-    if(newlyHidden==0){speech_("No new parameters hidden");return;}
+
+    // Hiding an ID affects all copies in Custom and every group. Keep their
+    // stored memberships; Hidden Parameters in FX Memories restores them.
+    std::set<int> idsToHide;
+    for(int pos:selected)if(pos>=0 && pos<static_cast<int>(visible_.size()))
+        if(!fxOrder_.hidden.count(visible_[static_cast<size_t>(pos)]))
+            idsToHide.insert(visible_[static_cast<size_t>(pos)]);
+    if(idsToHide.empty()){speech_("No new parameters hidden");return;}
+    std::set<int> visibleToRemove;
+    for(int pos=0;pos<static_cast<int>(visible_.size());++pos)
+        if(idsToHide.count(visible_[static_cast<size_t>(pos)]))visibleToRemove.insert(pos);
+    const auto [nextParam,nextPosition]=focusAfterRemoval(visibleToRemove);
     saveUndo();
-    for(int pos:toHide)if(pos>=0&&pos<static_cast<int>(visible_.size()))
-        fxOrder_.hidden.insert(visible_[static_cast<size_t>(pos)]);
-    saveStructure();f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
-    rebuildView(parameter_);
-    speech_("Hidden "+std::to_string(newlyHidden)+" parameters"+
+    fxOrder_.hidden.insert(idsToHide.begin(),idsToHide.end());
+    f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
+    rebuildView(nextParam,nextPosition);
+    saveStructure();
+    speech_("Hidden "+std::to_string(idsToHide.size())+" parameters"+
             (visible_.empty()?". No visible parameters":". "+currentParameterSpeech()));
 }
 void FxNavigator::saveGroup(int slot) {
@@ -941,18 +1026,8 @@ bool FxNavigator::handleF7(const Key& k) {
         f7SnakePath_.clear();f7SnakeDirections_.clear();rememberPosition();
         speech_("Selected all. "+std::to_string(f7Selected_.size())+" selected");return true;
     }
-    if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){hideSelected();return true;}
-    // Recovery until the Lua F8 hidden-parameter manager is migrated.
-    if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE) {
-        if(groupSlot_){speech_("Restore hidden parameters from Custom Order");return true;}
-        if(!fxOrder_.custom){speech_("Plugin order. Read only");return true;}
-        const auto count=fxOrder_.hidden.size();
-        if(!count){speech_("No hidden parameters");return true;}
-        clearF7Filter();saveUndo();
-        fxOrder_.hidden.clear();saveStructure();f7Selected_.clear();
-        rebuildView(parameter_);
-        speech_("Restored "+std::to_string(count)+" hidden parameters");return true;
-    }
+    if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(false);return true;}
+    if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(true);return true;}
     if(!k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){
         f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
         rememberPosition();speech_("Unselected all. 0 selected");return true;

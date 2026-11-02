@@ -169,12 +169,18 @@ Le azioni FX Params, Track Params e FX Memories si assegnano nella Action List. 
 | Ctrl+Shift+Home/End in F7 | Selezione fino al bordo globale |
 | Alt+Shift+frecce in F7 | Solo selezionati, geometria griglia |
 | Ctrl+A/C/X/V/Z/Y in F7 | Selezione, copia/taglia/incolla, undo/redo struttura |
-| Ctrl+Delete in F7 | Nasconde/rimuove secondo il recinto |
+| Ctrl+Delete in F7, dentro un gruppo | Rimuove le occorrenze selezionate solo dal gruppo, mantenendo il cursore sulla successiva |
+| Ctrl+Shift+Delete in F7, Custom Order o gruppo | Rende invisibili globalmente i parametri selezionati (mai in Plugin Order) |
 | Alt+G / Alt+M | Groups / Memory Positions |
 | Ctrl+F1..F12 | Richiamo gruppo/posizione; stesso gruppo ritorna |
 | Ctrl+Shift+F1..F12 | Salva gruppo/posizione |
 | Ctrl+Enter in F7 | Rinomina gruppo o parametro, anche Compare |
-| Ctrl+Maiusc+M / azione FX Memories | Gestore a sette colonne (F8 libero per il futuro) |
+| Ctrl+Maiusc+M / azione FX Memories | Gestore a otto colonne (F8 libero per il futuro) |
+| Maiusc+Spazio nelle memorie FX/Track | Seleziona/deseleziona una memoria nella colonna corrente |
+| Ctrl+A nelle memorie FX/Track | Seleziona tutte le memorie della colonna corrente |
+| Alt+Maiusc+Su/Giù nelle memorie FX/Track | Vai alla memoria selezionata precedente/successiva, senza cambiare colonna |
+| Alt+Maiusc+Sinistra/Destra nelle memorie FX/Track | Nessuna operazione: non cambia colonna né Step |
+| Canc nelle memorie FX/Track | Elimina le memorie selezionate nella colonna corrente, altrimenti la riga attuale |
 | Ctrl+Alt+C | Learn del primo CC nuovo; Esc o stesso gesto annulla |
 | Tab / Delete durante Learn | Legge stato / rimuove associazione |
 | Shift+C | Fixed CC on/off, pickup |

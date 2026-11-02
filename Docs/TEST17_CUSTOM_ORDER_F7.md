@@ -1,4 +1,4 @@
-> Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
+> Documento storico TEST30. **Le scorciatoie Ctrl+Canc e Ctrl+Maiusc+Canc descritte in questo documento sono superate dalla TEST62.4**: per la regola aggiornata consultare `Docs/TEST62_4_FX_F7_DELETE_AND_FOCUS.md`.
 
 # TEST17 — Custom Order e F7 (verifica richiesta in REAPER)
 

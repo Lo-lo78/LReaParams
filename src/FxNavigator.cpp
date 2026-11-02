@@ -1062,8 +1062,12 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk == 'M') return true;
         if(defaultConfirm_)return !k.ctrl&&!k.alt&&!k.shift&&(k.vk=='Y'||k.vk=='N'||k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_UP||k.vk==VK_DOWN);
         if(k.vk==VK_F12)return false;
-        if(k.ctrl)return !k.alt && !k.shift && (k.vk==VK_HOME||k.vk==VK_END);
-        if(k.shift)return false;
+        // TEST62.6: selected-only vertical navigation. Horizontal gestures
+        // are deliberately consumed but inert: they cannot change columns.
+        if(k.alt && k.shift && !k.ctrl && !k.altGr)
+            return k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT;
+        if(k.ctrl)return !k.alt && !k.shift && (k.vk==VK_HOME||k.vk==VK_END||k.vk=='A');
+        if(k.shift)return !k.alt && !k.ctrl && k.vk==VK_SPACE;
         if(k.alt)return k.vk==VK_LEFT||k.vk==VK_RIGHT;
         return k.vk==VK_ESCAPE||k.vk==VK_F7||
                k.vk==VK_TAB||k.vk==VK_RETURN||k.vk==VK_DELETE||
@@ -1311,6 +1315,71 @@ void FxNavigator::setValue(double value) {
     if (take_) TakeFX_EndParamEdit(take_, fx_, parameter_); else TrackFX_EndParamEdit(track_, fx_, parameter_);
     if (!ok) throw std::runtime_error("Host refused parameter value");
     speech_(formattedValue());
+}
+// F7 multi-edit: one REAPER undo point, one accessibility announcement.
+// Host parameter IDs are deduplicated because a copied occurrence is still
+// the same underlying FX parameter, not another DSP control.
+void FxNavigator::nudgeSelectedF7(int direction,bool big) {
+    const auto ids=selectedF7Parameters();
+    if(ids.empty())return;
+    struct Change { int id; double next; bool extendedGain; };
+    std::vector<Change> changes;
+    int unsupported=0;
+    for(int id:ids) {
+        // Virtual band actions and detector modes need their own transactional
+        // setters. Never write blindly to a synthetic negative or enum ID.
+        if(id<0 || dynamicsVirtualValid(id) || dynamicsDetectorInput(id)) {++unsupported;continue;}
+        const int scale=savedStepForParameter(id);
+        if(eqBandParam(id,1)) {
+            const double old=eqGainNorm(id);
+            double db=-150+186.1*old;
+            double next=db+(big?10:1)*std::pow(2.0,scale)*direction;
+            if(db<=-149.9 && direction>0)next=big?-36:-60;
+            const double normalized=std::clamp((std::clamp(next,-150.0,36.1)+150)/186.1,0.0,1.0);
+            if(std::abs(normalized-old)>1e-12)changes.push_back({id,normalized,true});
+            continue;
+        }
+        if(id>=count_) {++unsupported;continue;}
+        double normal=0,small=0,large=0;bool toggle=false;
+        const bool known=take_?TakeFX_GetParameterStepSizes(take_,fx_,id,&normal,&small,&large,&toggle):
+                               TrackFX_GetParameterStepSizes(track_,fx_,id,&normal,&small,&large,&toggle);
+        const double old=take_?TakeFX_GetParamNormalized(take_,fx_,id):TrackFX_GetParamNormalized(track_,fx_,id);
+        if(!std::isfinite(old)) {++unsupported;continue;}
+        double next;
+        if(known && toggle)next=direction>0?1.0:0.0;
+        else {
+            double step=known?(big?large:normal):0;
+            if(!std::isfinite(step)||step<=0||step>1)step=big?0.01:0.001;
+            next=old+direction*step*std::pow(2.0,scale);
+        }
+        next=std::clamp(next,0.0,1.0);
+        if(std::abs(next-old)>1e-12)changes.push_back({id,next,false});
+    }
+    if(unsupported) {
+        // Atomic selection contract: do not silently leave some selected
+        // parameters unchanged while changing others.
+        speech_("Selection contains "+std::to_string(unsupported)+
+                " unsupported parameter types. No values changed");return;
+    }
+    if(changes.empty())return;
+    Undo_BeginBlock2(project_);
+    int changed=0,failed=0;
+    for(const auto& change:changes) {
+        bool ok=false;
+        if(change.extendedGain)ok=writeEqGain(change.id,change.next);
+        else {
+            ok=take_?TakeFX_SetParamNormalized(take_,fx_,change.id,change.next):
+                     TrackFX_SetParamNormalized(track_,fx_,change.id,change.next);
+            if(take_)TakeFX_EndParamEdit(take_,fx_,change.id);
+            else TrackFX_EndParamEdit(track_,fx_,change.id);
+        }
+        if(ok) {++changed;pickup_.erase(change.id);}else ++failed;
+    }
+    Undo_EndBlock2(project_,"LReaParams: selected FX parameter values",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
+    speech_(std::to_string(changed)+" selected parameter values adjusted"+
+        (failed?". "+std::to_string(failed)+" failed":std::string())+
+        (unsupported?". "+std::to_string(unsupported)+" unsupported":std::string())+
+        ". "+currentParameterSpeech());
 }
 void FxNavigator::nudge(int direction, bool big) {
     if(eqVirtualValid(parameter_)){eqVirtualNudge(direction,big);return;}
@@ -1702,12 +1771,20 @@ void FxNavigator::handle(const Key& k) {
     }
     if(k.alt||valueMode_) {
         if(k.vk==VK_LEFT||k.vk==VK_RIGHT){
+            if(editF7_ && !f7Selected_.empty()) {stepSelectedF7(k.vk==VK_LEFT?-1:1);return;}
             const int next=std::clamp(stepScale_+(k.vk==VK_LEFT?-1:1),-10,10);
             if(next!=stepScale_){stepScale_=next;lastControl_=LastControl::step;markParameterStepChanged();rememberPosition();speech_("Step "+std::to_string(stepScale_));}
         }else if (k.vk == VK_HOME) setValue(1);
         else if (k.vk == VK_END) setValue(0);
-        else if(k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_PRIOR||k.vk==VK_NEXT)
-            nudge(k.vk==VK_UP||k.vk==VK_PRIOR?1:-1,k.vk==VK_PRIOR||k.vk==VK_NEXT);
+        else if(k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_PRIOR||k.vk==VK_NEXT) {
+            const int direction=k.vk==VK_UP||k.vk==VK_PRIOR?1:-1;
+            const bool big=k.vk==VK_PRIOR||k.vk==VK_NEXT;
+            if(editF7_ && !f7Selected_.empty()) {
+                const auto selection=selectedF7Parameters();
+                if(selection.size()==1 && selection.front()==parameter_)nudge(direction,big);
+                else nudgeSelectedF7(direction,big);
+            } else nudge(direction,big);
+        }
         return;
     }
     if(visible_.empty())return;

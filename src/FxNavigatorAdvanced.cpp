@@ -379,9 +379,117 @@ void FxNavigator::numericBegin() {
     numericBuffer_=text.str();numericEdit_=true;
     speech_(numericFormatted_?"Parameter value. "+numericUnit_:"Parameter value. Host raw units");
 }
+// Apply one exact numeric value to an F7 selection, not merely the same
+// number of arrow nudges. Refuse mixed ReaEQ bands or incompatible display
+// units before touching the host. A single Undo covers the entire selection.
+bool FxNavigator::numericCommitSelectedF7(double requested) {
+    const auto ids=selectedF7Parameters();
+    if(ids.size()<2)return false;
+    if(std::find(ids.begin(),ids.end(),parameter_)==ids.end()) {
+        speech_("Select the focused parameter to edit the selection");return true;
+    }
+    struct RestoreParam { int& field; int original; ~RestoreParam(){field=original;} } restore{parameter_,parameter_};
+    const bool reaeq=eqBandParam(parameter_,0)||eqBandParam(parameter_,1)||eqBandParam(parameter_,2);
+    if(reaeq) {
+        const int type=parameter_%3;
+        const double lo=type==0?20:type==1?-150:0.01;
+        const double hi=type==0?24000:type==1?36.1:4;
+        if(requested<lo || requested>hi) {speech_("Outside parameter range");return true;}
+        for(int id:ids)if(!eqBandParam(id,type)) {
+            speech_("Selection contains incompatible EQ parameters");return true;
+        }
+        try {
+            ReaEqChunk chunk(namedConfig("vst_chunk"));
+            const double target=type==1?(requested<=-149.5?0:std::min(64.0,std::pow(10.0,requested/20))):requested;
+            for(int id:ids)chunk.value(id/3,type,target);
+            Undo_BeginBlock2(project_);
+            const bool ok=writeNamedConfig("vst_chunk",chunk.text());
+            Undo_EndBlock2(project_,"LReaParams: selected EQ numeric values",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
+            if(!ok){speech_("EQ numeric selection update failed. Use REAPER Undo");return true;}
+            for(int id:ids)pickup_.erase(id);
+            numericEdit_=false;
+            speech_(std::to_string(ids.size())+" selected EQ parameters set to "+numericBuffer_+" "+numericUnit_);
+        } catch(const std::exception&) {speech_("EQ selection changed; no values written");}
+        return true;
+    }
+    struct HostChange {int id; double target; double old; bool formatted;};
+    std::vector<HostChange> changes;
+    for(int id:ids) {
+        if(id<0 || id>=count_ || dynamicsDetectorInput(id)) {
+            speech_("Selection contains parameters without compatible numeric editing");return true;
+        }
+        parameter_=id;
+        if(numericFormatted_) {
+            double first=0,last=0;std::string firstUnit,lastUnit;
+            if(!numericFormat(0,first,firstUnit)||!numericFormat(1,last,lastUnit)||
+               firstUnit!=lastUnit || firstUnit!=numericUnit_ || first==last ||
+               requested<std::min(first,last)||requested>std::max(first,last)) {
+                speech_("Selected parameter unit or range differs. No values changed");return true;
+            }
+            double previous=first;
+            for(int i=1;i<=64;++i) {
+                double current=0;std::string unit;
+                if(!numericFormat(i/64.0,current,unit) || unit!=firstUnit ||
+                   (last>first?current<previous:current>previous)) {
+                    speech_("Selected parameter numeric format is not monotonic");return true;
+                }
+                previous=current;
+            }
+            double left=0,right=1;
+            for(int i=0;i<48;++i) {
+                const double mid=(left+right)*0.5;double shown=0;std::string unit;
+                if(!numericFormat(mid,shown,unit)) {speech_("Formatter unavailable");return true;}
+                if((last>first)==(shown<requested))left=mid;else right=mid;
+            }
+            const double before=take_?TakeFX_GetParamNormalized(take_,fx_,id):TrackFX_GetParamNormalized(track_,fx_,id);
+            changes.push_back({id,(left+right)*0.5,before,true});
+        } else {
+            double lo=0,hi=1;
+            const double before=take_?TakeFX_GetParam(take_,fx_,id,&lo,&hi):TrackFX_GetParam(track_,fx_,id,&lo,&hi);
+            if(!std::isfinite(lo)||!std::isfinite(hi)||requested<lo||requested>hi||!std::isfinite(before)) {
+                speech_("Selected parameter raw range differs. No values changed");return true;
+            }
+            changes.push_back({id,requested,before,false});
+        }
+    }
+    parameter_=restore.original;
+    Undo_BeginBlock2(project_);
+    int written=0;
+    bool complete=true;
+    for(const auto& c:changes) {
+        const bool ok=c.formatted?
+            (take_?TakeFX_SetParamNormalized(take_,fx_,c.id,c.target):TrackFX_SetParamNormalized(track_,fx_,c.id,c.target)):
+            (take_?TakeFX_SetParam(take_,fx_,c.id,c.target):TrackFX_SetParam(track_,fx_,c.id,c.target));
+        if(!ok) {complete=false;break;}
+        if(take_)TakeFX_EndParamEdit(take_,fx_,c.id);else TrackFX_EndParamEdit(track_,fx_,c.id);
+        ++written;
+    }
+    if(!complete) {
+        // Best-effort rollback, including the parameter whose setter failed.
+        for(int i=std::min(written,static_cast<int>(changes.size())-1);i>=0;--i){
+            const auto& c=changes[static_cast<size_t>(i)];
+            if(c.formatted) {
+                if(take_)TakeFX_SetParamNormalized(take_,fx_,c.id,c.old);
+                else TrackFX_SetParamNormalized(track_,fx_,c.id,c.old);
+            } else {
+                if(take_)TakeFX_SetParam(take_,fx_,c.id,c.old);
+                else TrackFX_SetParam(track_,fx_,c.id,c.old);
+            }
+            if(take_)TakeFX_EndParamEdit(take_,fx_,c.id);else TrackFX_EndParamEdit(track_,fx_,c.id);
+        }
+    }
+    Undo_EndBlock2(project_,"LReaParams: selected FX numeric values",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
+    if(!complete){speech_("Numeric selection update failed. Check values or use REAPER Undo");return true;}
+    for(int id:ids)pickup_.erase(id);
+    numericEdit_=false;
+    speech_(std::to_string(ids.size())+" selected parameters set to "+numericBuffer_+
+        (numericUnit_.empty()?std::string():" "+numericUnit_));
+    return true;
+}
 void FxNavigator::numericCommit() {
     std::istringstream text(numericBuffer_);text.imbue(std::locale::classic());double value=0;
     if(!(text>>value) || !(text>>std::ws).eof() || !std::isfinite(value)) {speech_("Invalid number");return;}
+    if(numericCommitSelectedF7(value))return;
     bool ok=false;
     if(numericFormatted_ && (eqBandParam(parameter_,0)||eqBandParam(parameter_,1)||eqBandParam(parameter_,2))) {
         const int type=parameter_%3;

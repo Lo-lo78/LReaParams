@@ -44,7 +44,7 @@ public:
         const int cursor = fxBrowserMode_ ? browserVisibleIndex() : -1;
         return cursor >= 0 ? entries_[static_cast<size_t>(cursor)].index : fx_;
     }
-    bool isMemoryManager() const noexcept { return memoryManager_; } // seven-column Lua F8 navigator
+    bool isMemoryManager() const noexcept { return memoryManager_; } // FX Memories with Parameter Steps
     void end() noexcept override;
     bool active() const noexcept override { return active_; }
     bool valid() const;
@@ -80,6 +80,7 @@ private:
     void navigatePreset(int direction);
     void numericBegin();
     void numericCommit();
+    bool numericCommitSelectedF7(double requested);
     TrackEnvelope* envelope(int param,bool create) const;
     bool envelopeActive(int param) const;
     bool setEnvelope(int param,bool active);
@@ -273,6 +274,9 @@ private:
     void stageParameterSteps();
     bool flushParameterSteps() noexcept;
     int savedStepForParameter(int param) const;
+    std::vector<int> selectedF7Parameters() const;
+    void stepSelectedF7(int delta);
+    void nudgeSelectedF7(int direction, bool big);
     std::string stepParameterName(int param) const;
     void queueCcSpeech(int param,const std::string& formatted);
 
@@ -329,7 +333,7 @@ private:
     std::vector<EditHistory> undoStack_, redoStack_;
     void doCopy(bool cut);
     void doPaste();
-    void hideSelected();
+    void hideSelected(bool globalHide);
     void openGroup(int slot);
     void saveGroup(int slot);
     void handleTextEdit(const Key& key);
@@ -394,7 +398,9 @@ private:
     std::string memoryReturnF7Filter_;
     int memoryReturnParam_ = 0, memoryReturnPosition_ = 0, memoryReturnGroup_ = 0;
     int memoryCol_ = 0, memoryRow_ = 0;
-    std::array<std::vector<MemoryEntry>,7> memoryColumns_{};
+    std::array<std::vector<MemoryEntry>,8> memoryColumns_{};
+    // Ephemeral per-column selection, never written to the .fx profile.
+    std::array<std::set<int>,8> memorySelected_{};
 
     int f7ReturnPos_ = 0, f7ReturnGroup_ = 0, f7ReturnParam_ = 0;
     std::set<int> f7Selected_, f7BaseSelection_;

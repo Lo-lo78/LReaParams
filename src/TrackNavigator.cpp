@@ -135,8 +135,13 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
         isTransportMarkerShortcut(k)) return true;
     if (memoryManager_) {
         if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
-        if (k.shift) return false;
-        if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END);
+        // TEST62.6: Alt+Shift+Up/Down moves among selected memory rows;
+        // Alt+Shift+Left/Right is reserved and must not switch columns.
+        if (k.alt && k.shift && !k.ctrl)
+            return k.vk == VK_UP || k.vk == VK_DOWN ||
+                   k.vk == VK_LEFT || k.vk == VK_RIGHT;
+        if (k.shift) return !k.ctrl && !k.alt && k.vk == VK_SPACE;
+        if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END || k.vk == 'A');
         if (k.alt) return k.vk == VK_LEFT || k.vk == VK_RIGHT;
         switch (k.vk) {
             case VK_ESCAPE: case VK_TAB: case VK_RETURN: case VK_DELETE:
@@ -889,7 +894,8 @@ std::string TrackNavigator::reviewLine() const {
         const int col = std::clamp(memoryColumn_, 0, 4);
         static constexpr const char* labels[] = {"MIDI CC", "Parameter Steps", "Parameter Speech",
             "Track Positions", "Volume Ranges"};
-        return std::string(labels[col]) + ". " + item.label;
+        return (memorySelected_[static_cast<size_t>(col)].count(memoryRow_) ? "Selected. " : "") +
+            std::string(labels[col]) + ". " + item.label;
     }
     if (page_ == Page::trackMidi) return trackMidiReview(false);
     if (page_ == Page::hardwareOutputs) return hardwareOutputReview(false);

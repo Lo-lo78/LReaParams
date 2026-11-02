@@ -20,6 +20,14 @@ jobs:
         run: python Testing/test62_1_fx_group_memories_static.py
       - name: TEST62.2 persistent empty FX groups, bulk/group paste (source only)
         run: python Testing/test62_2_fx_empty_groups_static.py
+      - name: TEST62.3 F7 multiple FX Steps and values plus FX Step memory (source only)
+        run: python Testing/test62_3_fx_bulk_steps_static.py
+      - name: TEST62.4 F7 separate group removal/global hiding and cursor continuity (source only)
+        run: python Testing/test62_4_fx_f7_delete_static.py
+      - name: TEST62.5 selected FX/Track memories and batch Delete (source only)
+        run: python Testing/test62_5_memory_selection_static.py
+      - name: TEST62.6 Alt Shift selected-only vertical memory navigation (source only)
+        run: python Testing/test62_6_memory_selected_navigation_static.py
       - name: TEST61.16 independent FX grids per ordering and group (source only)
         run: python Testing/test61_16_fx_view_context_static.py
       - name: Verify source and synthetic fixtures

@@ -9,7 +9,7 @@ mem=(r/'src/FxNavigatorMemories.cpp').read_text(encoding='utf-8')
 fx=(r/'src/FxOrder.cpp').read_text(encoding='utf-8')
 workflow=(r/'.github/workflows/build-windows.yml').read_text(encoding='utf-8')
 header=(r/'include/lrp/FxNavigator.h').read_text(encoding='utf-8')
-assert 'std::array<std::vector<MemoryEntry>,7>' in header
+assert 'std::array<std::vector<MemoryEntry>,8>' in header
 for s in (
     'Hidden is global to Custom Order and ALL groups',
     'fxOrder_.hidden.count(id)!=0',
@@ -23,7 +23,8 @@ for s in (
     'saveUndo(); // One Undo captures BOTH groups',
     'if(clipCut_) {clip_.clear();clipPositions_.clear();}',
     'const bool createGroup=groupSlot_ && fxOrder_.groups.find(groupSlot_)==fxOrder_.groups.end();',
-    'Restore hidden parameters from Custom Order',
+    'if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(false);return true;}',
+    'if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(true);return true;}',
     'return "Group "+(it!=fxOrder_.groupNames.end() && !it->second.empty()',
 ):assert s in cpp,s
 assert 'for(int id:source)if(id!=compareParamIndex && (!custom||!hidden.count(id)))' in fx
@@ -38,9 +39,9 @@ for s in (
     '(fxOrder_.hidden.count(id)?". Hidden":std::string())',
     'memoryReturnGroup_=memoryCol_==5?entry.slot:0;',
     'const auto& source=entry.slot>0?fxOrder_.groups.at(entry.slot):fxOrder_.order;',
-    'found->second.erase(found->second.begin()+entry.rawPos);',
+    'group.erase(group.begin()+entry.rawPos);',
     'if(memoryCol_==5 && entry.slot>0 && fxOrder_.hidden.count(entry.param))',
-    'if(memoryCol_==1)return "Groups. "+entry.label;',
+    'if(memoryCol_==1)return selected+"Groups. "+entry.label;',
 ):assert s in mem,s
 assert 'python Testing/test62_1_fx_group_memories_static.py' in workflow
 # Illustrate that the visible index is NOT the raw index when one or more

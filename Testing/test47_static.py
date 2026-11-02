@@ -18,7 +18,7 @@ assert 'memoryReturnPosition_=visiblePosition-1' in mem
 # The user intentionally chose no Enter for hidden parameters; Delete unhides
 # one element without leaving the manager.  Do not adopt the newer Lua Enter.
 assert 'if(memoryCol_==2 && !toEdit)' in mem
-assert 'case 2: fxOrder_.hidden.erase(entry.param);saveStructure();break;' in mem
+assert 'case 2: fxOrder_.hidden.erase(entry.param);structureChanged=true;break;' in mem
 assert 'dynamicsVirtualValid(id)' in mem
 # F7-from-F8 may select only the four Lua editor-compatible columns.
 assert 'if(toEdit && memoryCol_!=0 && memoryCol_!=1 && memoryCol_!=3 && memoryCol_!=4)' in mem
@@ -26,8 +26,9 @@ assert 'memoryLoad(true)' in mem
 assert 'if(editF7_ && !memoryReturnF7Filter_.empty())applyF7Filter' in mem
 # Default Delete must never destroy or regenerate the snapshot without the
 # same modal Yes/No confirmation used for Enter. No must be the default.
-case = mem[mem.index('        case 6:',mem.index('void FxNavigator::memoryDelete()')):
-           mem.index('        default:return;',mem.index('void FxNavigator::memoryDelete()'))]
+case = mem[mem.index('void FxNavigator::memoryDelete()'):
+           mem.index('void FxNavigator::memoryNavigate(const Key& k)')]
+assert 'if(targetColumn==6)' in case
 assert 'defaultConfirm_=true;' in case and 'defaultYes_=false;' in case
 assert 'saveDefaultRows({})' not in case
 assert 'if(k.vk==\'Y\'||defaultYes_)' in mem
@@ -39,7 +40,7 @@ assert 'fxOrder_.deleteCustomOrder();' in mem
 # remain in the same C++ controller as in 0.0.46.5.
 for marker in ('f7OriginalPosition(', 'f7SnakePath_', 'saveUndo()',
                'undoStack_', 'redoStack_', 'doCopy(', 'doPaste(',
-               'hideSelected()', 'textEditParam_', 'fxOrder_.groupNames[groupSlot_]'):
+               'hideSelected(bool globalHide)', 'textEditParam_', 'fxOrder_.groupNames[groupSlot_]'):
     assert marker in order or marker in (root/'include/lrp/FxNavigator.h').read_text(), marker
 assert 'nativeTextField()' in (root/'include/lrp/FxNavigator.h').read_text()
 for marker in ('function memory_manager_delete_current()',

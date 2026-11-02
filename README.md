@@ -1,3 +1,15 @@
+## TEST62.6 — Memorie FX e Track: salta tra le righe selezionate
+
+Dentro Ctrl+Maiusc+M, **Alt+Maiusc+Freccia su/giù** passa alla memoria selezionata precedente/successiva della **stessa colonna**, annunciando «Selected» prima del contenuto; ai bordi è silenzioso. **Alt+Maiusc+Freccia sinistra/destra** viene ignorato senza cambiare colonna o Step. Si mantiene la selezione multipla di TEST62.5 e tutte le modifiche precedenti. [Prova TEST62.6](Docs/TEST62_6_MEMORY_SELECTED_ONLY_NAVIGATION.md). Compilazione Windows tramite GitHub Actions; verifica NVDA/OSARA in REAPER ancora necessaria.
+
+## TEST62.5 — FX Memories e Track Memories: selezione multipla
+
+Su entrambe le finestre delle memorie, **Maiusc+Spazio** seleziona/deseleziona la riga, **Ctrl+A** seleziona l’intera colonna e **Canc** rimuove le memorie selezionate nella colonna corrente (o la sola riga sotto il cursore se nulla è selezionato). Durante la navigazione le righe selezionate sono annunciate iniziando con **Selected.**; il cursore rimane sulla riga logica corretta dopo la cancellazione. La memoria FX **Default values** mantiene la conferma esplicita. Sono incluse tutte le modifiche di TEST62.4. Guida e prove: [TEST62.5](Docs/TEST62_5_FX_TRACK_MEMORY_MULTI_SELECTION.md). Solo sorgente C++, non compilato localmente su Windows.
+
+## TEST62.4 — FX Params F7: rimozione dei gruppi e invisibilità distinte
+
+Sorgente sperimentale basato su TEST62.3: **Ctrl+Delete in F7 rimuove solo dal gruppo**, mentre **Ctrl+Shift+Delete nasconde globalmente** in Custom Order e gruppi, senza alterare Plugin Order. In Custom Order Ctrl+Delete non elimina nulla. Dopo la rimozione il cursore mantiene l'occorrenza logica (successiva, oppure precedente in fondo), senza saltare all'inizio; supporta selezioni multiple, duplicati e hidden intercalati. Il recupero degli hidden avviene in **FX Memories / Hidden Parameters** con Delete. Comprese tutte le funzioni precedenti di TEST62.1–62.3, inclusa l'ottava colonna Parameter Steps. Test del sorgente e Windows CI: [istruzioni TEST62.4](Docs/TEST62_4_FX_F7_DELETE_AND_FOCUS.md). **DLL non compilata localmente.**
+
 ## LReaParams 0.0.62 — release (2026-10-27)
 
 The accessible English FX guide and all six localized FX references now document TEST61.14–61.16: per-instance session memory, shared `.fx` persistence, independent Plugin/Custom/Group grids, group Escape behavior, and automatic Ctrl+Alt+B offline/online restoration. The multilingual guide generator has been updated as well. **Release 0.0.62** includes these documented TEST61.14–61.16.1 capabilities. The native runtime behavior is unchanged from the supplied TEST61.16.1 source; About now identifies 0.0.62 and summarizes the FX context changes. Installer, source archives, GitHub Actions artifacts and all seven guide languages are labelled 0.0.62. See `Docs/RELEASE_NOTES_0_0_62.md`. All 95 source-only regression scripts and `Tools/audit.py` passed; the Windows DLL and installer still require GitHub Actions compilation and REAPER/NVDA runtime verification.

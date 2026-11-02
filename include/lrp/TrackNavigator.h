@@ -7,6 +7,8 @@
 #include <map>
 #include <vector>
 #include <unordered_set>
+#include <array>
+#include <set>
 
 namespace lrp {
 // F1: one track per row, nine parameter columns.
@@ -294,6 +296,8 @@ private:
     bool memoryManager_ = false, memoryStandalone_ = false;
     int memoryColumn_ = 0, memoryRow_ = 0;
     std::vector<MemoryItem> memoryItems_;
+    // Ephemeral per-column selection, never written to the .tp profile.
+    std::array<std::set<int>,5> memorySelected_{};
     std::vector<TrackRow> rows_;
     std::vector<Entry> entries_;
     std::string filterQuery_; // scoped to this Track Params session (Lua runtime state)

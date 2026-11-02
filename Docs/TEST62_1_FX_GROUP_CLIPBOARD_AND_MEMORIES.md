@@ -11,15 +11,16 @@ Usare un plugin e una copia di sicurezza dei profili `.fx` prima di provare.
   Mai applicare `hidden`, copie, riordino o rimozione; restano indipendenti
   griglia, Step e altre impostazioni di navigazione già previste.
 - **Custom Order**: elenco di partenza con tutti i parametri originali, più
-  eventuali duplicati. **Ctrl+Canc** nasconde globalmente l'ID selezionato.
+  eventuali duplicati. **Ctrl+Maiusc+Canc** nasconde globalmente l'ID selezionato.
 - **Group 1..12**: ciascuno mantiene un elenco *di occorrenze* autonomo.
   **Ctrl+Canc** elimina dal solo gruppo le occorrenze selezionate, senza
   nasconderle nella Custom Order né negli altri gruppi.
 - `hidden` è una sola memoria comune a Custom Order e ai 12 gruppi. Le
   appartenenze dei parametri nascosti ai gruppi NON vengono cancellate:
   riappaiono quando si toglie il parametro da Hidden Parameters.
-- **Ctrl+Shift+Canc** per ripristinare tutti gli invisibili agisce soltanto
-  dalla Custom Order, non dai gruppi.
+- **Ctrl+Maiusc+Canc** nasconde globalmente sia dalla Custom Order sia dai gruppi;
+  il recupero avviene dalla colonna Hidden Parameters di Ctrl+Maiusc+M.
+  **Ctrl+Canc** dalla Custom Order non nasconde e non rimuove nulla.
 
 ## Ctrl+C, Ctrl+X, Ctrl+V in F7
 
@@ -76,7 +77,7 @@ Le **sette colonne rimangono sette**. Cambia la sesta, «Copied parameters»:
 4. In Group 5 premi Ctrl+Canc su un parametro: scompare solo dal Group 5,
    ma resta in Custom e in Group 7. Provare anche con duplicati dello stesso
    parametro presenti e con altri parametri nascosti in mezzo.
-5. In Custom F7 Ctrl+Canc su Cutoff: scompare da Custom e da tutti i gruppi,
+5. In Custom F7 Ctrl+Maiusc+Canc su Cutoff: scompare da Custom e da tutti i gruppi,
    resta visibile in **Plugin Order**. Ripristina Cutoff da Hidden Parameters:
    deve tornare automaticamente nei gruppi che lo contenevano.
 6. In Ctrl+Shift+M, sesta colonna, controlla `Group Bass` (nome

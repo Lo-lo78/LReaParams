@@ -1,3 +1,10 @@
+## TEST62.4 — FX F7: nascondi/rimuovi separati e focus dopo eliminazione (2026-11-02, source-only)
+- Ctrl+Shift+Delete nasconde globalmente Custom Order e tutti i gruppi; Plugin Order resta intatto. Il ripristino è nella terza colonna Hidden Parameters di FX Memories.
+- Ctrl+Delete rimuove solo occorrenze del gruppo; in Custom Order non modifica nulla e fornisce un annuncio esplicativo.
+- Il focus passa alla prossima occorrenza superstite (o alla precedente alla fine), senza tornare al primo; duplicati e invisibili intercalati gestiti per posizione.
+- Nessuna regressione prevista sulle modifiche multiple F7 e sulla ottava colonna Parameter Steps di TEST62.3. La TEST62.2 ora conserva la riapertura dell'ultimo gruppo anche quando è vuoto.
+- Verifica statica; build Windows e prova NVDA/REAPER ancora necessarie. Vedere [guida TEST62.4](TEST62_4_FX_F7_DELETE_AND_FOCUS.md).
+
 ## TEST62.1 — FX group clipboard and memory contexts (2026-11-02, source-only)
 - Seven FX Memories columns retained. Copied Parameters now identifies Custom Order copies plus each group occurrence, its exact raw position and its group label: `Group Bass` when named, `Group 2` when unnamed.
 - Ctrl+C/V supports copying from Custom to multiple groups and between groups; Ctrl+X/V moves atomically between groups, or reorders inside its original list. Inter-environment cuts involving Custom are blocked.

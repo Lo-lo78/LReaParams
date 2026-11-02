@@ -14,7 +14,7 @@ assert 'if (k.vk == VK_HOME) setValue(1)' in fx
 assert 'if (k.vk == VK_END) setValue(0)' in fx
 assert 'else if(k.vk==VK_HOME)target=start;' in f7
 assert 'else if(k.vk==VK_END)target=end;' in f7
-assert 'for(int c=k.vk==VK_HOME?0:6;c>=0&&c<7;c+=(k.vk==VK_HOME?1:-1))' in f8
+assert 'for(int c=k.vk==VK_HOME?0:7;c>=0&&c<8;c+=(k.vk==VK_HOME?1:-1))' in f8
 assert 'memoryCol_=c;memoryRow_=k.vk==VK_HOME?0:' in f8
 assert 'if(k.vk==VK_HOME)target=0;' in f8
 assert 'else if(k.vk==VK_END)target=size-1;' in f8
