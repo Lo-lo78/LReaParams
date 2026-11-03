@@ -1,3 +1,10 @@
+## 0.0.63 — public release of TEST62.9.2 (2026-11-03)
+
+- Publishes the TEST62.1–TEST62.9.2 FX group/memory/editing changes, selective TXT import, incremental search and FX Chain Alt+P; includes the number-row Shift reverse-search adjustment for European keyboard layouts.
+- Updates About, CMake, installer and GitHub Actions artifacts; regenerates accessible guides in seven languages and detailed English references, without changing historical TEST labels or .fx/.tp profile formats.
+- Adds the TEST62.9.2 regression test to Windows GitHub Actions. Source-only verification does not replace Windows build, CTest or NVDA/OSARA testing.
+- See [0.0.63 release notes](RELEASE_NOTES_0_0_63.md).
+
 ## TEST62.9.2 — Ricerca all’indietro con Maiusc+numeri (3 novembre 2026)
 
 - Corretto il caso dei layout europei (es. italiano), in cui Maiusc+numero produce un simbolo. La ricerca incrementale usa la cifra fisica per cercare all’indietro in FX Params, F7, FX/Track Memories e Track Params.

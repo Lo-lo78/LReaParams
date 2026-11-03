@@ -1,0 +1,20 @@
+LReaParams 0.0.63 — source-only release validation (2026-11-03)
+Source baseline: LReaParams 0.0.62 TEST62.9.2.
+
+PASS: 105 of 105 Python Testing/test*_static.py regressions.
+PASS: Tools/audit.py SDK, Lua reference integrity and profile fixtures.
+PASS: Testing/test_release_version_static.py: About, CMake, NSIS,
+      GitHub Actions and all 7 documentation languages identify 0.0.63.
+PASS: Testing/test61_6_multilingual_guides_static.py verifies 22 HTML
+      pages and all offline links.
+PASS: HTML heading anchors are unique and internal navigation links resolve.
+PASS: Tools/generate_guides_i18n.py reproduces all 23 Guide files byte-for-byte.
+PASS: Standalone C++17 TypeAheadTests.cpp compiled with g++ and executed.
+PASS: GitHub Actions includes TEST62.9.2 physical-digit reverse-search check.
+
+NOT RUN locally: Windows/MSVC DLL build, full MSVC/CTest suite,
+NSIS executable build, REAPER behavior, NVDA/OSARA accessibility testing.
+These must be checked after pushing the GitHub Actions build.
+
+Do not reinterpret legacy TEST labels or internal format PageLayoutVersion=61
+as the public software version. Existing .fx and .tp formats are unchanged.

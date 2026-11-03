@@ -11,12 +11,14 @@ cmake = read('CMakeLists.txt')
 m = re.search(r'project\(LReaParams VERSION (\d+\.\d+\.\d+) LANGUAGES CXX\)', cmake)
 assert m, 'Missing CMake project version'
 version = m.group(1)
-assert version == '0.0.62', f'Unexpected release version: {version}'
+assert version == '0.0.63', f'Unexpected release version: {version}'
 
 about = read('src/Extension.cpp')
 assert f'LReaParams {version} - Native REAPER extension' in about
 assert '14 independent grids' in about and 'Ctrl+Alt+B restores the FX view' in about
 assert 'F12 alone is reserved' in about
+assert 'Alt+P opens FX Params' in about and 'Import selected TXT files' in about
+assert 'Ctrl+Shift+Delete hides globally' in about
 
 nsi = read('Installer/LReaParams.nsi')
 for fragment in (f'!define APP_VERSION "{version}"',
@@ -36,7 +38,7 @@ for filename in (f'LReaParams-{version}-Windows-x64-MULTILINGUAL',
 assert 'LReaParams-0.0.61-' not in workflow
 assert 'LReaParams-0.0.61-' not in nsi
 assert f'LReaParams {version}' in read('README.md')
-assert f'LReaParams {version}' in read('Docs/RELEASE_NOTES_0_0_62.md')
+assert f'LReaParams {version}' in read('Docs/RELEASE_NOTES_0_0_63.md')
 
 for guide in ['Guide/index.html','Guide/LReaParams - FX Params.html',
               'Guide/LReaParams - Track Params.html','Guide/INSTALL.txt']:
@@ -45,7 +47,15 @@ for language in ['it','es','fr','ru','zh-CN','ja']:
     for file in ['index.html','fx.html','track.html']:
         assert version in read(f'Guide/{language}/{file}'), (language,file)
 
+for language in ['it','es','fr','ru','zh-CN','ja']:
+    fx = read(f'Guide/{language}/fx.html')
+    tr = read(f'Guide/{language}/track.html')
+    for term in ('Alt+P', 'Ctrl+L', 'Ctrl+Shift+M', 'TEST62'):
+        assert term in fx, (language, 'FX', term)
+    for term in ('Shift+Space', 'Alt+Shift+Up/Down', 'TEST62'):
+        assert term in tr, (language, 'Track', term)
+
 # These are compatibility/data format identifiers, not user-visible version labels.
 assert 'PageLayoutVersion' in read('src/TrackNavigator.cpp')
 assert '"61"' in read('src/TrackNavigator.cpp')
-print('Release version consistency PASS: 0.0.62 About, CMake, installer, Actions and 7 guide languages')
+print('Release version consistency PASS: 0.0.63 About, CMake, installer, Actions and 7 guide languages')

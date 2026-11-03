@@ -1,3 +1,7 @@
+## LReaParams 0.0.63 — release (2026-11-03)
+
+Public update based on TEST62.9.2. Updated 7-language accessible HTML guides, About dialog, Windows installer identity, GitHub Actions artifacts and source-validation workflow. New features: independent FX group occurrences and hidden-state management; group copy/move and Ctrl+L; F7 multi-edit/Step memories; selected FX/Track memory operations; selective Lua TXT import; 1000 ms type-ahead with Shift+digit backward search; context-specific native FX Chain Alt+P. See [0.0.63 release notes](Docs/RELEASE_NOTES_0_0_63.md). **Native MSVC build and REAPER/NVDA runtime verification are performed through GitHub Actions and user testing, not claimed here.**
+
 TEST62.9.2 (ricerca incrementale: Maiusc+numeri sui layout italiani/europei): vedi Docs/TEST62_9_2_SHIFT_DIGIT_SEARCH.md.
 
 ## TEST62.9 — Ricerca incrementale e Alt+P nella FX Chain
@@ -134,8 +138,8 @@ evita regressioni. Nessuna modifica alle funzioni della DLL o ai dati utente.
 ## TEST61.9 — Installer EXE GitHub Actions e licenza
 
 GitHub Actions adesso genera un quarto artefatto:
-**`LReaParams-0.0.62-Windows-x64-SETUP-EXE`**. Dopo avere estratto lo ZIP
-scaricato da Actions, eseguire **`LReaParams-0.0.62-Windows-x64-Setup.exe`**.
+**`LReaParams-0.0.63-Windows-x64-SETUP-EXE`**. Dopo avere estratto lo ZIP
+scaricato da Actions, eseguire **`LReaParams-0.0.63-Windows-x64-Setup.exe`**.
 
 L'installer NSIS (Windows x64, per utente, senza privilegi amministrativi per
 la cartella predefinita) propone la selezione di 7 lingue e della cartella

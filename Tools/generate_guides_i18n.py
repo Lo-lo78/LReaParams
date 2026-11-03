@@ -24,7 +24,7 @@ def sections(s):
         out.append((title.strip(),body.strip()))
     return out
 
-I18N = {'en': {'ui': ('LReaParams User Guide', 'Choose a language', 'Choose a guide', 'FX Params', 'Track Params', 'Contents', 'Shortcut', 'Action', 'Change language', 'Full reference', 'Native REAPER extension 0.0.62', 'Back to language selection')}}
+I18N = {'en': {'ui': ('LReaParams User Guide', 'Choose a language', 'Choose a guide', 'FX Params', 'Track Params', 'Contents', 'Shortcut', 'Action', 'Change language', 'Full reference', 'Native REAPER extension 0.0.63', 'Back to language selection')}}
 
 def locale(tag, ui, fx, tr, fkeys, tkeys):
     if len(lines(fkeys)) != len(FX_KEYS) or len(lines(tkeys)) != len(TR_KEYS):
@@ -37,7 +37,7 @@ locale('it', (
  'Guida di LReaParams', 'Seleziona una lingua', 'Scegli una guida',
  'FX Params', 'Track Params', 'Indice', 'Scorciatoia', 'Funzione',
  'Cambia lingua', 'Riferimento completo in inglese',
- 'Estensione nativa REAPER 0.0.62. Guide accessibili con NVDA e OSARA.', 'Torna alla scelta della lingua'),
+ 'Estensione nativa REAPER 0.0.63. Guide accessibili con NVDA e OSARA.', 'Torna alla scelta della lingua'),
  '''
 Installazione e accessibilità|Copia reaper_lreaparams.dll nella cartella UserPlugins delle risorse di REAPER e l’intera cartella Guide in LReaParams/Guide. Riavvia REAPER, cerca le azioni LReaParams: FX Params, Track Params e Open User Guide e assegna le scorciatoie preferite. I vecchi launcher Lua non servono più. OSARA gestisce gli annunci; NVDA legge titolo, griglia e campi di modifica. Tab legge il contesto esteso e NVDA+freccia su il controllo corrente.
 Navigazione e modifica dei parametri|Le frecce percorrono la griglia. F1 e F2 modificano il numero di colonne; F3 riassume griglia e Step. Invio entra o esce dalla modalità Valore, dove le frecce verticali cambiano il valore. Alt+frecce verticali modifica direttamente dalla griglia; Alt+Pagina su/giù usa passi più grandi; Alt+Home/Fine imposta gli estremi. Alt+frecce orizzontali regola lo Step del singolo parametro da -10 a +10. Ctrl+E apre un campo numerico standard; Invio conferma ed Esc annulla. Ctrl+Backspace ripristina Grid 10 e Step 0.
@@ -49,7 +49,7 @@ MIDI CC e automazioni|Ctrl+Alt+C apprende un MIDI CC fisso per il parametro; Shi
 ReaEQ e altri FX|Sono gestiti i controlli specifici di ReaEQ, ReaComp e ReaGate, compresi i parametri virtuali quando supportati. Alt+F1/F2 cambia preset dell’host; Alt+F3/F4 passa ai parametri automatizzati. Ctrl+B bypassa e Ctrl+D gestisce Delta Solo. I parametri reali e quelli virtuali possono avere regole diverse: verifica sempre il nome e l’unità letti da NVDA.
 Ricerca, appunti e ripristino|Lettere, numeri e punteggiatura cercano ciclicamente i nomi visibili; Maiusc inverte la direzione. Ctrl+F apre la ricerca, Ctrl+R richiama le ricerche recenti. Backspace ripristina il parametro, mentre Ctrl+Shift+Backspace ripristina il Default memorizzato dove disponibile. In F7 gli appunti modificano l’ordine visivo; nella normale modalità Valore le azioni dipendono dal contesto. Ctrl+E resta la scelta per inserire numeri precisi.
 Trasporto, marcatori e ascolto|Spazio controlla Play/Stop; Ctrl+Spazio Play/Pausa. Ctrl+I/O percorre i marcatori precedenti/successivi e Ctrl+1–0 richiama i marcatori 1–10. Alt+F10/F11/F12 e Alt+Shift+F10/F11/F12 gestiscono i due misuratori Peak Watcher di OSARA. I tasti non devono interferire con campi EDIT o finestre REAPER esterne.
-Profili e migrazione dal Lua|I profili specifici degli FX sono conservati nella cartella LReaParams/Plugins come file .fx. La DLL può importare dati TXT storici compatibili; non eseguire i vecchi navigatori Lua insieme alla DLL. Le impostazioni del Pin Connector si applicano tramite le API native di REAPER e non modificano automaticamente il numero di canali della traccia. Questa guida riguarda la versione 0.0.62 e non lo script Stretch Marker.
+Profili e migrazione dal Lua|I profili specifici degli FX sono conservati nella cartella LReaParams/Plugins come file .fx. La DLL può importare dati TXT storici compatibili; non eseguire i vecchi navigatori Lua insieme alla DLL. Le impostazioni del Pin Connector si applicano tramite le API native di REAPER e non modificano automaticamente il numero di canali della traccia. Questa guida riguarda la versione 0.0.63 e non lo script Stretch Marker.
 ''',
  '''
 Installazione e orientamento|Installa la DLL in UserPlugins e la cartella Guide sotto LReaParams/Guide nella directory delle risorse di REAPER. Le azioni Track Params e FX Params sono separate; Ctrl+Tab passa dall’una all’altra quando il contesto lo permette. OSARA annuncia i valori, NVDA legge il controllo corrente, Tab fornisce informazioni estese. Esc torna alla pagina precedente oppure chiude il navigatore.
@@ -119,7 +119,7 @@ Marcatore precedente/successivo
 locale('es', (
  'Guía de LReaParams','Seleccionar idioma','Elegir una guía','FX Params','Track Params',
  'Índice','Atajo','Función','Cambiar idioma','Referencia completa en inglés',
- 'Extensión nativa de REAPER 0.0.62. Guías accesibles para NVDA y OSARA.', 'Volver a la selección de idioma'),
+ 'Extensión nativa de REAPER 0.0.63. Guías accesibles para NVDA y OSARA.', 'Volver a la selección de idioma'),
  '''
 Instalación y accesibilidad|Copia reaper_lreaparams.dll a UserPlugins y toda la carpeta Guide a LReaParams/Guide dentro de los recursos de REAPER. Reinicia REAPER y busca las acciones LReaParams: FX Params, Track Params y Open User Guide. Asigna los atajos que prefieras. Los lanzadores Lua antiguos ya no son necesarios. OSARA comunica los mensajes y NVDA lee la ventana de navegación. Tab lee el contexto completo; NVDA+flecha arriba permite revisar el control.
 Navegación y valores|Las flechas recorren la cuadrícula. F1/F2 reducen o aumentan las columnas y F3 anuncia la cuadrícula y el paso. Intro cambia entre cuadrícula y modo Valor. Alt+arriba/abajo ajusta desde la cuadrícula y Alt+Re Pág/Av Pág cambia más deprisa. Alt+Inicio/Fin fija los extremos; Alt+izquierda/derecha ajusta el paso individual entre -10 y +10. Ctrl+E abre una edición numérica accesible; Intro confirma y Esc cancela. Ctrl+Retroceso restablece la cuadrícula a 10 y el paso a 0.
@@ -131,7 +131,7 @@ MIDI CC y automatización|Ctrl+Alt+C inicia aprendizaje de CC fijo; Mayús+C hab
 ReaEQ y otros efectos|Hay controles adaptados para ReaEQ, ReaComp y ReaGate, incluidos parámetros virtuales cuando existen. Alt+F1/F2 cambia preajustes del anfitrión y Alt+F3/F4 recorre parámetros automatizados. Ctrl+B activa bypass y Ctrl+D controla Delta Solo. Comprueba siempre las unidades anunciadas: un valor normalizado no necesariamente representa Hz o dB.
 Búsqueda, portapapeles y restauración|Las letras y los números recorren nombres visibles; Mayús busca hacia atrás. Ctrl+F abre búsqueda y Ctrl+R revisa búsquedas recientes. Retroceso recupera el valor predeterminado del parámetro; Ctrl+Mayús+Retroceso ejecuta la restauración de Default guardado cuando está disponible. Los comandos de portapapeles en F7 modifican la disposición visual, no el orden real del plugin.
 Reproducción y marcadores|Espacio inicia o detiene; Ctrl+Espacio alterna reproducción/pausa. Ctrl+I/O busca marcadores anteriores/siguientes y Ctrl+1–0 salta a los marcadores 1–10. Alt+F10/F11/F12 y Alt+Mayús+F10/F11/F12 controlan los dos Peak Watchers de OSARA. Las teclas no deben capturarse en campos de texto ordinarios.
-Perfiles y migración Lua|Los perfiles FX se guardan como archivos .fx en LReaParams/Plugins. La DLL puede importar algunos perfiles TXT antiguos compatibles; no hace falta mantener los lanzadores Lua activos. La asignación de pines modifica REAPER mediante sus API pero no aumenta el número de canales de la pista. Esta guía cubre la versión 0.0.62 y no incluye Stretch Marker.
+Perfiles y migración Lua|Los perfiles FX se guardan como archivos .fx en LReaParams/Plugins. La DLL puede importar algunos perfiles TXT antiguos compatibles; no hace falta mantener los lanzadores Lua activos. La asignación de pines modifica REAPER mediante sus API pero no aumenta el número de canales de la pista. Esta guía cubre la versión 0.0.63 y no incluye Stretch Marker.
 ''',
  '''
 Instalación y conceptos básicos|Instala la DLL en UserPlugins y la carpeta Guide dentro de LReaParams/Guide. Las acciones FX Params y Track Params son independientes; Ctrl+Tab cambia entre ellas cuando existe el contexto adecuado. OSARA pronuncia los mensajes; NVDA revisa los controles. Tab anuncia detalles; Esc sale de la edición o del navegador.
@@ -201,7 +201,7 @@ Marcador anterior/siguiente
 locale('fr', (
  'Guide LReaParams','Choisir une langue','Choisir un guide','FX Params','Track Params',
  'Sommaire','Raccourci','Fonction','Changer de langue','Référence complète en anglais',
- 'Extension native REAPER 0.0.62. Guides accessibles avec NVDA et OSARA.', 'Retour au choix de langue'),
+ 'Extension native REAPER 0.0.63. Guides accessibles avec NVDA et OSARA.', 'Retour au choix de langue'),
  '''
 Installation et accessibilité|Placez reaper_lreaparams.dll dans le dossier UserPlugins de REAPER, puis copiez l’intégralité du dossier Guide dans LReaParams/Guide sous le répertoire des ressources. Redémarrez REAPER et attribuez des raccourcis aux actions LReaParams: FX Params, Track Params et Open User Guide. Les anciens lanceurs Lua ne sont plus nécessaires. OSARA annonce les changements ; NVDA lit la fenêtre de navigation. Tab fournit une description complète et NVDA+flèche haut permet de relire le contrôle.
 Navigation et réglage des valeurs|Les flèches parcourent la grille. F1/F2 modifient le nombre de colonnes ; F3 annonce la grille et le pas. Entrée alterne entre Grille et Valeur. Alt+haut/bas règle la valeur depuis la grille ; Alt+Page précédente/suivante effectue de plus grands changements. Alt+Début/Fin atteint les limites ; Alt+gauche/droite modifie le pas du paramètre entre -10 et +10. Ctrl+E ouvre un champ numérique accessible, validé par Entrée ou annulé par Échap. Ctrl+Retour arrière rétablit Grille 10 et Pas 0.
@@ -213,7 +213,7 @@ MIDI CC et automation|Ctrl+Alt+C lance l’apprentissage d’un CC MIDI fixe ; M
 ReaEQ et autres effets|Des adaptations existent pour ReaEQ, ReaComp et ReaGate, y compris leurs paramètres virtuels pris en charge. Alt+F1/F2 change les presets de l’hôte ; Alt+F3/F4 parcourt les paramètres automatisés. Ctrl+B gère le bypass et Ctrl+D le Delta Solo. Vérifiez l’unité annoncée : une valeur normalisée n’est pas forcément exprimée en Hz ou en dB.
 Recherche, presse-papiers et défauts|Les lettres, chiffres et signes parcourent les noms visibles ; Maj inverse le sens. Ctrl+F recherche et Ctrl+R rappelle les recherches récentes. Retour arrière restaure le paramètre ; Ctrl+Maj+Retour arrière restaure les valeurs Default sauvegardées si possible. Les opérations du presse-papiers en F7 portent sur les occurrences visuelles, pas sur l’ordre réel du plugin.
 Lecture, marqueurs et niveaux|Espace démarre/arrête ; Ctrl+Espace alterne lecture/pause. Ctrl+I/O parcourt les marqueurs et Ctrl+1–0 saute aux marqueurs 1–10. Alt+F10/F11/F12 et Alt+Maj+F10/F11/F12 commandent les deux Peak Watchers d’OSARA. Les raccourcis ne doivent pas perturber les champs de texte natifs.
-Profils et migration Lua|Les profils FX résident dans LReaParams/Plugins sous forme .fx. La DLL sait importer certaines anciennes données TXT compatibles, sans exécuter les lanceurs Lua. Les broches sont modifiées par les API de REAPER mais le nombre de canaux de la piste n’augmente pas automatiquement. Ce guide couvre 0.0.62 ; le script Stretch Marker est exclu.
+Profils et migration Lua|Les profils FX résident dans LReaParams/Plugins sous forme .fx. La DLL sait importer certaines anciennes données TXT compatibles, sans exécuter les lanceurs Lua. Les broches sont modifiées par les API de REAPER mais le nombre de canaux de la piste n’augmente pas automatiquement. Ce guide couvre 0.0.63 ; le script Stretch Marker est exclu.
 ''',
  '''
 Installation et principes|Installez la DLL dans UserPlugins et le dossier Guide sous LReaParams/Guide. FX Params et Track Params sont deux actions distinctes ; Ctrl+Tab passe de l’une à l’autre lorsque c’est possible. OSARA prononce les états, NVDA relit les contrôles, Tab donne les détails et Échap ferme l’édition ou la navigation.
@@ -283,7 +283,7 @@ Marqueur précédent/suivant
 locale('ru', (
  'Руководство LReaParams','Выберите язык','Выберите руководство','FX Params','Track Params',
  'Содержание','Клавиши','Действие','Изменить язык','Полная справка на английском',
- 'Нативное расширение REAPER 0.0.62. Доступные руководства для NVDA и OSARA.', 'Вернуться к выбору языка'),
+ 'Нативное расширение REAPER 0.0.63. Доступные руководства для NVDA и OSARA.', 'Вернуться к выбору языка'),
  '''
 Установка и доступность|Скопируйте reaper_lreaparams.dll в каталог UserPlugins ресурсов REAPER, а всю папку Guide — в LReaParams/Guide. Перезапустите REAPER и найдите в списке действий LReaParams: FX Params, Track Params и Open User Guide. Назначьте удобные горячие клавиши. Старые Lua-скрипты запуска больше не нужны. OSARA озвучивает сообщения, а NVDA читает элементы окна. Tab сообщает подробный контекст; NVDA+стрелка вверх повторяет текущий элемент.
 Навигация и изменение значений|Стрелки перемещают курсор по таблице параметров. F1/F2 изменяют число столбцов; F3 сообщает настройки таблицы и шага. Enter переключает режимы Grid и Value. Alt+вверх/вниз меняет значение прямо в таблице, Alt+Page Up/Down — крупным шагом; Alt+Home/End устанавливает крайние значения. Alt+влево/вправо меняет индивидуальный шаг от -10 до +10. Ctrl+E открывает доступное числовое поле; Enter подтверждает, Esc отменяет. Ctrl+Backspace восстанавливает Grid 10 и Step 0.
@@ -295,7 +295,7 @@ MIDI CC и автоматизация|Ctrl+Alt+C запускает обучен
 ReaEQ и другие плагины|Предусмотрена специальная поддержка ReaEQ, ReaComp и ReaGate, включая виртуальные параметры, если они доступны. Alt+F1/F2 переключает пресеты хоста; Alt+F3/F4 переходит между автоматизированными параметрами. Ctrl+B управляет обходом, Ctrl+D — Delta Solo. Проверяйте озвученные единицы измерения: нормализованное значение не обязательно означает дБ или Гц.
 Поиск, буфер обмена и сброс|Буквы, цифры и символы ищут по видимым именам по кругу; Shift меняет направление. Ctrl+F открывает поиск, Ctrl+R — историю. Backspace сбрасывает отдельный параметр, Ctrl+Shift+Backspace восстанавливает сохранённый Default, если он есть. В F7 копирование и вставка изменяют отображаемые позиции, а не исходный порядок параметров плагина.
 Воспроизведение и маркеры|Пробел запускает/останавливает, Ctrl+пробел переключает воспроизведение/паузу. Ctrl+I/O переходит к предыдущему/следующему маркеру; Ctrl+1–0 выбирает маркеры 1–10. Alt+F10/F11/F12 и Alt+Shift+F10/F11/F12 управляют двумя измерителями OSARA Peak Watcher. В стандартных текстовых полях эти сочетания не должны перехватываться.
-Профили и переход с Lua|Профили FX сохраняются в LReaParams/Plugins с расширением .fx. DLL умеет импортировать совместимые старые TXT, но запускать прежние Lua-навигаторы больше не нужно. Матрица аудиопинов использует API REAPER и сама по себе не увеличивает число каналов дорожки. Руководство описывает версию 0.0.62 и не относится к скрипту Stretch Marker.
+Профили и переход с Lua|Профили FX сохраняются в LReaParams/Plugins с расширением .fx. DLL умеет импортировать совместимые старые TXT, но запускать прежние Lua-навигаторы больше не нужно. Матрица аудиопинов использует API REAPER и сама по себе не увеличивает число каналов дорожки. Руководство описывает версию 0.0.63 и не относится к скрипту Stretch Marker.
 ''',
  '''
 Установка и начало работы|Установите DLL в UserPlugins, а всю папку Guide — в LReaParams/Guide ресурсов REAPER. Для FX Params и Track Params существуют разные действия; Ctrl+Tab переключает их, если контекст позволяет. OSARA произносит сообщения, NVDA читает элементы, Tab выводит подробности, Esc выходит из редактирования или навигатора.
@@ -365,7 +365,7 @@ FX-параметры, показанные в TCP
 locale('zh-CN', (
  'LReaParams 使用指南','选择语言','选择指南','FX Params','Track Params',
  '目录','快捷键','功能','切换语言','完整英文参考指南',
- 'REAPER 0.0.62 原生扩展。支持 NVDA 和 OSARA 的无障碍指南。','返回语言选择'),
+ 'REAPER 0.0.63 原生扩展。支持 NVDA 和 OSARA 的无障碍指南。','返回语言选择'),
  '''
 安装与无障碍支持|将 reaper_lreaparams.dll 放入 REAPER 资源目录的 UserPlugins 文件夹，并将完整的 Guide 文件夹复制到 LReaParams/Guide。重启 REAPER，在动作列表中查找 LReaParams: FX Params、Track Params 和 Open User Guide，并设置快捷键。不需要再运行旧版 Lua 启动脚本。OSARA 提供语音提示，NVDA 读取导航窗口及编辑控件。Tab 朗读完整上下文，NVDA+上箭头复读当前控件。
 参数网格与数值编辑|使用方向键浏览参数网格。F1/F2 减少或增加网格列数，F3 朗读网格和步进信息。Enter 在网格与数值模式之间切换；数值模式中上下箭头改变数值。Alt+上/下可直接在网格中调整，Alt+Page Up/Down 大幅调整，Alt+Home/End 设置最大或最小值。Alt+左/右调整当前参数的步进级别（-10 至 +10）。Ctrl+E 打开可访问的数字输入框；Enter 确认，Esc 取消。Ctrl+Backspace 恢复 Grid 10 和 Step 0。
@@ -377,7 +377,7 @@ MIDI CC 与自动化|Ctrl+Alt+C 学习固定 MIDI CC；Shift+C 开关固定映�
 ReaEQ 等效果的特殊支持|ReaEQ、ReaComp、ReaGate 具有专用支持，在适当情况下包括虚拟参数。Alt+F1/F2 切换主机预设；Alt+F3/F4 浏览已自动化的参数。Ctrl+B 切换旁通，Ctrl+D 控制 Delta Solo。请检查 NVDA 朗读的单位，标准化数值并不一定代表 Hz 或 dB。
 搜索、剪贴板与恢复默认值|输入字母、数字或标点可循环查找当前可见的参数名称；按住 Shift 反向搜索。Ctrl+F 打开搜索，Ctrl+R 查看最近搜索。Backspace 恢复单个参数的默认值；Ctrl+Shift+Backspace 在可用时恢复已保存的 Default。F7 中的复制与粘贴修改显示项目，不会改变插件的真实参数顺序。
 播放、标记与电平监测|空格控制播放/停止；Ctrl+空格控制播放/暂停。Ctrl+I/O 跳转前一个/下一个标记，Ctrl+1–0 跳转标记 1–10。Alt+F10/F11/F12 和 Alt+Shift+F10/F11/F12 操作 OSARA 的两个 Peak Watcher。普通文本输入框中不应拦截这些快捷键。
-配置文件与 Lua 迁移|FX 配置以 .fx 文件保存在 LReaParams/Plugins。DLL 能导入部分兼容的旧 TXT 配置，但不需要同时运行旧 Lua 导航脚本。引脚修改通过 REAPER 原生 API 执行，不会自动增加轨道声道数。本指南对应 0.0.62，不包括独立的 Stretch Marker 脚本。
+配置文件与 Lua 迁移|FX 配置以 .fx 文件保存在 LReaParams/Plugins。DLL 能导入部分兼容的旧 TXT 配置，但不需要同时运行旧 Lua 导航脚本。引脚修改通过 REAPER 原生 API 执行，不会自动增加轨道声道数。本指南对应 0.0.63，不包括独立的 Stretch Marker 脚本。
 ''',
  '''
 安装与基本操作|将 DLL 安装到 UserPlugins，并将完整 Guide 文件夹放到 REAPER 资源路径中的 LReaParams/Guide。FX Params 与 Track Params 有各自的动作；条件允许时使用 Ctrl+Tab 切换。OSARA 提供语音，NVDA 读取控件；Tab 朗读详细信息，Esc 取消编辑或退出导航。
@@ -447,7 +447,7 @@ ReaRoute 虚拟输入和输出
 locale('ja', (
  'LReaParams ユーザーガイド','言語を選択','ガイドを選択','FX Params','Track Params',
  '目次','ショートカット','機能','言語を変更','英語版の詳細リファレンス',
- 'REAPER 用ネイティブ拡張 0.0.62。NVDA と OSARA に対応したアクセシブルなガイドです。','言語選択に戻る'),
+ 'REAPER 用ネイティブ拡張 0.0.63。NVDA と OSARA に対応したアクセシブルなガイドです。','言語選択に戻る'),
  '''
 インストールとアクセシビリティ|reaper_lreaparams.dll を REAPER リソースフォルダー内の UserPlugins に配置し、Guide フォルダー全体を LReaParams/Guide にコピーしてください。REAPER を再起動し、アクション一覧から LReaParams: FX Params、Track Params、Open User Guide を見つけてキーを割り当てます。従来の Lua 起動スクリプトは不要です。OSARA が操作を読み上げ、NVDA はナビゲーション画面を読み取れます。Tab で詳細を確認し、NVDA+上矢印で現在の項目を再確認できます。
 パラメーターの移動と編集|矢印キーでパラメーターのグリッドを移動します。F1/F2 は列数の減少・増加、F3 はグリッドとステップの確認です。Enter で Grid と Value モードを切り替えます。Alt+上/下でグリッドから値を変更し、Alt+Page Up/Down で大きく変更します。Alt+Home/End は最小・最大値、Alt+左/右は個別のステップを -10 ～ +10 で調整します。Ctrl+E はアクセシブルな数値入力欄です。Enter で確定、Esc でキャンセル。Ctrl+Backspace で Grid 10 と Step 0 に戻します。
@@ -459,7 +459,7 @@ MIDI CC とオートメーション|Ctrl+Alt+C は固定 MIDI CC の学習、Shi
 ReaEQ とその他の FX|ReaEQ、ReaComp、ReaGate には専用処理があり、対応する仮想パラメーターも扱えます。Alt+F1/F2 はホストプリセット、Alt+F3/F4 はオートメーション付きパラメーターの切り替え。Ctrl+B はバイパス、Ctrl+D は Delta Solo です。正規化された値は必ずしも dB や Hz ではないため、NVDA が読み上げる単位を確認してください。
 検索・クリップボード・初期値|文字、数字、記号を押すと表示中のパラメーター名を循環検索します。Shift を押すと逆方向。Ctrl+F は検索、Ctrl+R は履歴です。Backspace は現在のパラメーターの初期値を復元し、Ctrl+Shift+Backspace は利用可能な場合に保存済み Default を復元します。F7 でのコピーと貼り付けは表示項目を変更し、プラグイン本来のパラメーター番号は変更しません。
 再生・マーカー・ピーク監視|スペースは再生/停止、Ctrl+スペースは再生/一時停止です。Ctrl+I/O は前後のマーカー、Ctrl+1～0 はマーカー 1～10 にジャンプします。Alt+F10/F11/F12 と Alt+Shift+F10/F11/F12 は OSARA の 2 系統の Peak Watcher を操作します。通常の文字入力欄ではこれらのキーを奪いません。
-プロファイルと Lua からの移行|FX プロファイルは LReaParams/Plugins に .fx ファイルとして保存されます。DLL は互換性のある古い TXT データの一部を読み込めますが、旧 Lua ナビゲーターの起動は不要です。ピンの割り当ては REAPER の API を通じて行われ、トラックのチャンネル数は自動的には増えません。このガイドは 0.0.62 が対象です。Stretch Marker スクリプトは含みません。
+プロファイルと Lua からの移行|FX プロファイルは LReaParams/Plugins に .fx ファイルとして保存されます。DLL は互換性のある古い TXT データの一部を読み込めますが、旧 Lua ナビゲーターの起動は不要です。ピンの割り当ては REAPER の API を通じて行われ、トラックのチャンネル数は自動的には増えません。このガイドは 0.0.63 が対象です。Stretch Marker スクリプトは含みません。
 ''',
  '''
 インストールと基本操作|DLL を UserPlugins に、Guide フォルダー全体を REAPER リソースフォルダー内の LReaParams/Guide に配置します。FX Params と Track Params は別々のアクションです。利用可能な状況では Ctrl+Tab で切り替えます。OSARA が音声を出力し、NVDA がコントロールを読み上げます。Tab は詳細確認、Esc は編集の取り消しや終了です。
@@ -547,8 +547,8 @@ def make_main_index():
     entries=language_list('')
     blurb='Choose a language, then open the FX Params or Track Params user guide. All links work with NVDA, Tab and Enter. / Scegli una lingua, poi la guida FX Params o Track Params.'
     # English is the default language: its full-length originals remain in Guide/.
-    content='<h1>LReaParams 0.0.62 — User guide / Guida utente</h1><h2>Choose a language / Seleziona una lingua</h2><p>'+escape(blurb)+'</p><nav aria-label="Languages">'+entries+'</nav>'
-    content+='<p>NVDA / OSARA · REAPER 0.0.62 · FX Params / Track Params.</p>'
+    content='<h1>LReaParams 0.0.63 — User guide / Guida utente</h1><h2>Choose a language / Seleziona una lingua</h2><p>'+escape(blurb)+'</p><nav aria-label="Languages">'+entries+'</nav>'
+    content+='<p>NVDA / OSARA · REAPER 0.0.63 · FX Params / Track Params.</p>'
     # Use explicit English: our canonical home page is bilingual by design.
     (ROOT/'index.html').write_text(html_page('en','LReaParams — Language selection',content),encoding='utf-8')
 
@@ -564,7 +564,7 @@ def english_index():
 
 def localized_index(tag):
     ui=I18N[tag]['ui']
-    content='<h1>'+escape(ui[0])+' — 0.0.62</h1><p>'+escape(ui[10])+'</p>'
+    content='<h1>'+escape(ui[0])+' — 0.0.63</h1><p>'+escape(ui[10])+'</p>'
     content+='<h2>'+escape(ui[2])+'</h2><nav aria-label="'+escape(ui[2],quote=True)+'"><ul>'
     content+='<li>'+link('fx.html',ui[3])+'</li><li>'+link('track.html',ui[4])+'</li></ul></nav>'
     content+='<h2>'+escape(ui[1])+'</h2>'+language_list('../')
@@ -583,12 +583,17 @@ def localized_manual(tag,which):
     for i,(head,body) in enumerate(parts,1):
         content+='<li>'+link(f'#section-{i}',head)+'</li>'
     if which == 'fx': content+='<li>'+link('#fx-context-test61',FX_CONTEXT_UPDATES[tag][0])+'</li>'
+    for i, (head,body) in enumerate(TEST62_UPDATES[tag][which], 1):
+        content += '<li>'+link(f'#test62-{which}-{i}',head)+'</li>'
     content+='<li>'+link('#shortcuts',ui[6])+'</li></ol></nav>'
     for i,(head,body) in enumerate(parts,1):
         content+=f'<section aria-labelledby="section-{i}"><h2 id="section-{i}">{i}. {escape(head)}</h2><p>{escape(body)}</p></section>'
     if which == 'fx':
         head, body = FX_CONTEXT_UPDATES[tag]
         content += '<section aria-labelledby="fx-context-test61"><h2 id="fx-context-test61">'+escape(head)+'</h2><p>'+escape(body)+'</p></section>'
+    for i,(head,body) in enumerate(TEST62_UPDATES[tag][which],1):
+        anchor=f'test62-{which}-{i}'
+        content+='<section aria-labelledby="'+anchor+'"><h2 id="'+anchor+'">'+escape(head)+'</h2><p>'+escape(body)+'</p></section>'
     content+='<section aria-labelledby="shortcuts"><h2 id="shortcuts">'+escape(ui[6])+'</h2>'
     content+='<table><thead><tr><th scope="col">'+escape(ui[6])+'</th><th scope="col">'+escape(ui[7])+'</th></tr></thead><tbody>'
     for key,desc in zip(keyset,labels):
@@ -598,6 +603,156 @@ def localized_manual(tag,which):
     (ROOT/tag/(which+'.html')).write_text(html_page(tag,'LReaParams — '+title,content),encoding='utf-8')
 
 
+
+
+# TEST62.1–62.9.2: localized release notes generated with the manuals.
+TEST62_UPDATES = {'it': {'fx': [('TEST62: ordini, gruppi, invisibilità e F7',
+                'Plugin Order mostra sempre tutti i parametri nell’ordine nativo, anche quelli nascosti altrove. Custom Order e i 12 gruppi mantengono '
+                'occorrenze e griglie indipendenti; si possono salvare anche gruppi vuoti. In F7 Ctrl+C copia anche in gruppi diversi; Ctrl+X sposta tra '
+                'gruppi o riordina nello stesso ambiente, ma non taglia tra Custom e gruppi. Ctrl+Canc elimina soltanto le occorrenze selezionate dal gruppo '
+                'corrente; Ctrl+Maiusc+Canc nasconde globalmente i parametri in Custom e nei gruppi, senza modificarne la presenza in Plugin Order. Recupera i '
+                'nascosti dalla colonna Hidden Parameters di Ctrl+Maiusc+M. Canc semplice in F7 deseleziona. Da un gruppo Ctrl+L torna sempre a Custom Order, '
+                'anche se F7 è aperto; un secondo Ctrl+L passa a Plugin Order.'),
+               ('TEST62: modifica multipla, Step e memorie FX',
+                'In F7 seleziona i parametri con Maiusc+Spazio, Ctrl+A o Maiusc+frecce. Alt+sinistra/destra imposta lo Step dei parametri selezionati; Alt+su/giù '
+                'modifica tutti i valori usando lo Step individuale; Ctrl+E permette l’inserimento numerico multiplo solo tra parametri compatibili. Le sette '
+                'colonne di FX Memories (Ctrl+Maiusc+M) comprendono Hidden Parameters, Copied Parameters con gruppo e posizione esatti e Parameter Steps. '
+                'Alt+sinistra/destra cambia lo Step direttamente nella riga della memoria; Canc lo azzera. In entrambe le memorie Maiusc+Spazio seleziona una '
+                'riga, Ctrl+A seleziona la colonna, Alt+Maiusc+su/giù salta tra le righe selezionate, Canc agisce sulla selezione corrente. Le operazioni '
+                'Default pericolose mantengono la richiesta di conferma.'),
+               ('TEST62: ricerca incrementale, FX Chain e importazione TXT',
+                'Digita in rapida sequenza lettere, cifre o punteggiatura: entro un secondo si compone un prefisso, cercato anche all’inizio delle parole '
+                'successive. Ripetere una lettera percorre le corrispondenze. Con Maiusc la ricerca avviene all’indietro, e Maiusc+numero usa la cifra del '
+                'tasto fisico anche sulla tastiera italiana. La ricerca non modifica la selezione. Nella lista nativa FX Chain, Alt+P apre FX Params sull’FX '
+                'evidenziato; P resta a REAPER. Per convertire uno o più vecchi TXT Lua usa LReaParams: Import selected legacy TXT files dall’Action List o '
+                'dal menu Extensions; gli originali non vengono modificati e i conflitti non sovrascrivono i profili esistenti.')],
+        'track': [('TEST62: selezione nelle memorie Track',
+                   'Apri Track Memories con Ctrl+Maiusc+M. Maiusc+Spazio (Shift+Space) seleziona o deseleziona la riga corrente; Ctrl+A seleziona le righe della sola '
+                   'colonna attiva. Le frecce non eliminano la selezione. Alt+Maiusc+freccia su/giù (Alt+Shift+Up/Down) passa tra le memorie selezionate nella stessa colonna; '
+                   'Alt+Maiusc+sinistra/destra non cambia colonna. Canc agisce sulle righe selezionate oppure, se nessuna è selezionata, solo su quella '
+                   'corrente. La selezione temporanea non viene salvata.'),
+                  ('TEST62: ricerca Track e importazione TXT selettiva',
+                   'Digitando caratteri entro un secondo, F1 cerca prefissi nei nomi delle tracce e F2/F3 cerca soltanto nei campi della colonna send/receive '
+                   'attiva. Maiusc inverte la ricerca, anche con le cifre della riga numerica. Per importare uno o più vecchi file TXT Lua usa l’azione '
+                   'LReaParams: Import selected legacy TXT files. Seleziona i TXT nella cartella Plugins o Tracks; i file originari non vengono cancellati e '
+                   'un profilo Track con un vecchio GUID non viene collegato automaticamente al progetto corrente.')]},
+ 'es': {'fx': [('TEST62: órdenes, grupos, ocultación y F7',
+                'Plugin Order muestra siempre todos los parámetros originales, incluso los ocultos en otras vistas. Custom Order y los 12 grupos conservan '
+                'listas, duplicados y cuadrículas independientes, incluidos los grupos vacíos guardados. En F7, Ctrl+C copia entre grupos; Ctrl+X reordena o '
+                'mueve entre grupos, pero no corta entre Custom y un grupo. Ctrl+Supr elimina solo las ocurrencias seleccionadas del grupo; Ctrl+Mayús+Supr '
+                'oculta globalmente en Custom y todos los grupos, nunca en Plugin Order. Recupera los parámetros ocultos desde Hidden Parameters en '
+                'Ctrl+Shift+M. Supr solo deselecciona en F7. Ctrl+L desde un grupo vuelve siempre a Custom Order, también dentro de F7.'),
+               ('TEST62: edición múltiple, pasos y memorias FX',
+                'En F7, Shift+Space, Ctrl+A y Shift+flechas seleccionan parámetros. Alt+izquierda/derecha cambia los Steps seleccionados; Alt+arriba/abajo '
+                'cambia sus valores con el Step individual. Ctrl+E permite valores exactos múltiples únicamente para controles compatibles. Las siete columnas '
+                'de FX Memories incluyen Hidden Parameters, Copied Parameters (grupo y posición exacta) y Parameter Steps. Alt+izquierda/derecha edita un Step '
+                'de memoria y Supr lo restablece. En las memorias FX y Track: Shift+Space selecciona, Ctrl+A selecciona la columna, Alt+Shift+Up/Down recorre '
+                'lo seleccionado y Supr opera sobre la selección. Los Defaults peligrosos siguen requiriendo confirmación.'),
+               ('TEST62: búsqueda incremental, Alt+P e importación TXT',
+                'Teclea letras, dígitos o signos en menos de un segundo para formar un prefijo, incluso al inicio de otras palabras del nombre. Repetir una '
+                'letra recorre coincidencias; con Shift se busca hacia atrás y Shift+dígito usa la tecla numérica física. La selección no cambia. Solo en la '
+                'lista nativa FX Chain, Alt+P abre FX Params sobre el efecto seleccionado; P conserva su función de búsqueda en REAPER. La acción LReaParams: '
+                'Import selected legacy TXT files convierte uno o varios archivos Lua antiguos sin borrar originales ni sobrescribir perfiles existentes en '
+                'caso de conflicto.')],
+        'track': [('TEST62: selección de memorias Track',
+                   'Abre Track Memories con Ctrl+Shift+M. Shift+Space selecciona la fila; Ctrl+A selecciona solo la columna actual; las flechas mantienen la '
+                   'selección. Alt+Shift+Up/Down salta entre filas seleccionadas de la misma columna; Alt+Shift+izquierda/derecha no cambia columna. Supr '
+                   'actúa sobre las filas seleccionadas, o solo sobre la fila actual si no hay selección. La selección temporal no se almacena.'),
+                  ('TEST62: búsqueda e importación TXT en Track',
+                   'Las pulsaciones consecutivas en menos de un segundo buscan por prefijo: F1 entre nombres de pistas y F2/F3 únicamente en campos de la '
+                   'columna send/receive actual. Shift invierte la dirección también con números físicos. LReaParams: Import selected legacy TXT files permite '
+                   'escoger varios TXT antiguos en Plugins o Tracks; conserva los originales y los GUID de Track históricos no se asocian automáticamente al '
+                   'proyecto actual.')]},
+ 'fr': {'fx': [('TEST62 : ordres, groupes, masquage et F7',
+                'Plugin Order affiche toujours tous les paramètres natifs, même ceux masqués dans les autres vues. Custom Order et les 12 groupes possèdent '
+                'leurs propres occurrences et grilles; les groupes vides enregistrés sont conservés. Dans F7, Ctrl+C copie entre groupes; Ctrl+X réordonne ou '
+                'déplace entre groupes, mais pas entre Custom et un groupe. Ctrl+Suppr retire uniquement les occurrences choisies du groupe; Ctrl+Maj+Suppr '
+                'masque globalement dans Custom et tous les groupes, jamais dans Plugin Order. Restaurez-les avec Hidden Parameters dans Ctrl+Shift+M. Suppr '
+                'simple désélectionne dans F7. Depuis un groupe, Ctrl+L revient toujours à Custom Order, même dans F7.'),
+               ('TEST62 : édition multiple, Steps et mémoires FX',
+                'Dans F7, Shift+Space, Ctrl+A et Shift+flèches sélectionnent plusieurs paramètres. Alt+gauche/droite modifie leur Step, Alt+haut/bas applique '
+                'la valeur selon le Step individuel et Ctrl+E permet une saisie groupée seulement pour des paramètres compatibles. Les sept colonnes de FX '
+                'Memories incluent Hidden Parameters, Copied Parameters avec groupe/position exacte et Parameter Steps. Alt+gauche/droite change un Step '
+                'mémorisé; Suppr le réinitialise. Dans les mémoires FX et Track, Shift+Space sélectionne, Ctrl+A sélectionne la colonne, Alt+Shift+Up/Down '
+                'parcourt les lignes sélectionnées et Suppr les traite. Les opérations dangereuses sur Default demandent toujours confirmation.'),
+               ('TEST62 : recherche progressive, Alt+P et import TXT',
+                'Tapez lettres, chiffres ou ponctuation à moins d’une seconde d’intervalle pour rechercher un préfixe, y compris au début des mots suivants du '
+                'nom. Répéter une lettre parcourt les résultats; Shift inverse la direction, y compris pour les chiffres de la rangée physique. La sélection '
+                'reste intacte. Dans la liste FX Chain native uniquement, Alt+P ouvre FX Params sur l’effet sélectionné et P reste à REAPER. L’action '
+                'LReaParams: Import selected legacy TXT files convertit un ou plusieurs anciens TXT Lua sans modifier les originaux ni écraser les profils '
+                'existants en cas de conflit.')],
+        'track': [('TEST62 : sélection dans Track Memories',
+                   'Ouvrez Track Memories avec Ctrl+Shift+M. Shift+Space sélectionne la ligne, Ctrl+A sélectionne seulement la colonne active et les flèches '
+                   'conservent la sélection. Alt+Shift+Up/Down parcourt les lignes sélectionnées dans la même colonne; Alt+Shift+gauche/droite ne change pas '
+                   'de colonne. Suppr agit sur les lignes sélectionnées, ou sur la ligne courante s’il n’y a pas de sélection. Ces sélections temporaires ne '
+                   'sont pas mémorisées.'),
+                  ('TEST62 : recherche Track et import TXT',
+                   'Les caractères tapés en moins d’une seconde forment un préfixe : F1 cherche parmi les noms de pistes et F2/F3 uniquement dans les champs '
+                   'de la colonne send/receive active. Shift inverse la direction, même avec les touches numériques physiques. L’action LReaParams: Import '
+                   'selected legacy TXT files permet de choisir plusieurs TXT anciens dans Plugins ou Tracks; les fichiers restent intacts et les anciens GUID '
+                   'Track ne sont pas reliés automatiquement au projet actuel.')]},
+ 'ru': {'fx': [('TEST62: порядок, группы, скрытие и F7',
+                'Plugin Order всегда показывает все исходные параметры, включая скрытые в других представлениях. Custom Order и 12 групп имеют отдельные '
+                'списки, копии и сетки; сохранённые пустые группы остаются доступны. В F7 Ctrl+C копирует между группами; Ctrl+X переставляет или переносит '
+                'между группами, но не между Custom и группой. Ctrl+Delete удаляет только выбранные в текущей группе вхождения; Ctrl+Shift+Delete скрывает '
+                'параметр глобально в Custom и группах, но не в Plugin Order. Восстановление — столбец Hidden Parameters в Ctrl+Shift+M. Обычный Delete в F7 '
+                'снимает выделение. Ctrl+L из любой группы возвращает в Custom Order даже из F7.'),
+               ('TEST62: групповое редактирование, Step и память FX',
+                'В F7 Shift+Space, Ctrl+A и Shift+стрелки выделяют параметры. Alt+влево/вправо изменяет Step выделенных; Alt+вверх/вниз меняет значения с '
+                'индивидуальным Step; Ctrl+E вводит общее значение только для совместимых параметров. Семь столбцов FX Memories включают Hidden Parameters, '
+                'Copied Parameters с точными группой и позицией и Parameter Steps. Alt+влево/вправо изменяет Step записи памяти; Delete сбрасывает его. В '
+                'обеих памятях: Shift+Space выделяет, Ctrl+A выделяет текущий столбец, Alt+Shift+Up/Down перемещается по выделенным, Delete обрабатывает '
+                'выделение. Опасное восстановление Default по-прежнему требует подтверждения.'),
+               ('TEST62: быстрый поиск, Alt+P и импорт TXT',
+                'Символы, цифры и знаки, введённые с интервалом менее секунды, образуют поисковый префикс, в том числе в начале слов внутри названия. Повтор '
+                'буквы перебирает совпадения; Shift ищет назад, включая физические цифровые клавиши. Выделение не меняется. Alt+P открывает FX Params для '
+                'выбранного эффекта только в стандартном списке FX Chain; клавиша P остаётся REAPER. Команда LReaParams: Import selected legacy TXT files '
+                'преобразует один или несколько старых Lua TXT, сохраняя исходники и не перезаписывая существующие профили при конфликте.')],
+        'track': [('TEST62: выделение в Track Memories',
+                   'Откройте Track Memories через Ctrl+Shift+M. Shift+Space выделяет строку, Ctrl+A выделяет лишь текущий столбец, стрелки сохраняют '
+                   'выделение. Alt+Shift+Up/Down переходит между выделенными строками того же столбца; Alt+Shift+влево/вправо столбец не меняет. Delete '
+                   'применяется ко всем выбранным строкам, а без выделения — только к текущей. Временное выделение не сохраняется.'),
+                  ('TEST62: поиск Track и выборочный импорт TXT',
+                   'Последовательные символы за одну секунду ищут префикс: F1 — в названиях дорожек, F2/F3 — только среди полей текущего столбца send/receive. '
+                   'Shift меняет направление, включая физические цифровые клавиши. Команда LReaParams: Import selected legacy TXT files позволяет выбрать '
+                   'несколько старых TXT в Plugins или Tracks; исходники остаются нетронутыми, а старые GUID дорожек не связываются автоматически с текущим '
+                   'проектом.')]},
+ 'zh-CN': {'fx': [('TEST62：顺序、分组、隐藏及 F7',
+                   'Plugin Order 始终显示全部原始参数，包括在其他视图中隐藏的参数。Custom Order 与 12 个分组分别保存条目、副本和网格；已保存的空分组仍可使用。在 F7 中，Ctrl+C 可跨组复制，Ctrl+X 可在组间移动或在同一视图内排序，但不能在 Custom '
+                   '与组之间剪切。Ctrl+Delete 仅删除当前组中选中的条目；Ctrl+Shift+Delete 在 Custom 和所有组中全局隐藏参数，但不影响 Plugin Order。通过 Ctrl+Shift+M 的 Hidden Parameters 列恢复。F7 中单独按 '
+                   'Delete 只取消选择。从任何组按 Ctrl+L 始终返回 Custom Order，即使 F7 已打开。'),
+                  ('TEST62：批量编辑、Step 与 FX 记忆',
+                   '在 F7 中用 Shift+Space、Ctrl+A 或 Shift+方向键选中多个参数。Alt+左右改变所选参数的 Step，Alt+上下按各自 Step 修改参数值，Ctrl+E 仅对兼容参数执行批量精确输入。FX Memories 的七列包括 Hidden '
+                   'Parameters、带准确组名及位置的 Copied Parameters 和 Parameter Steps。Alt+左右可调整记忆项的 Step；Delete 将其复位。FX 与 Track 两种记忆中，Shift+Space 选择行，Ctrl+A '
+                   '选择当前列，Alt+Shift+Up/Down 在已选行间移动，Delete 作用于选中项。危险的 Default 恢复操作仍需确认。'),
+                  ('TEST62：增量搜索、Alt+P 和 TXT 导入',
+                   '在一秒内连续输入字母、数字或标点可构成搜索前缀，也可匹配名称内部单词的开头。重复一个字母可浏览匹配项；按住 Shift 反向搜索，包括物理数字键。搜索不会改变现有选择。仅在原生 FX Chain 列表中，Alt+P 对选中效果打开 FX Params；字母 P 仍由 '
+                   'REAPER 使用。LReaParams: Import selected legacy TXT files 操作可选择一个或多个旧 Lua TXT 文件进行转换，不更改原件，也不会在冲突时覆盖现有配置。')],
+           'track': [('TEST62：Track Memories 多选',
+                      '用 Ctrl+Shift+M 打开 Track Memories。Shift+Space 选择或取消选择当前行，Ctrl+A 只选择当前列；方向键不会清除选择。Alt+Shift+Up/Down 在同列已选行间移动，Alt+Shift+左右不会切换列。Delete '
+                      '删除或重置选中行；未选择时仅作用于当前行。临时选择不会被保存。'),
+                     ('TEST62：Track 搜索和选择性 TXT 导入',
+                      '一秒内连续输入字符即可按前缀搜索：F1 搜索轨道名称，F2/F3 只搜索当前 send/receive 列中的字段。Shift 可反向搜索，包括物理数字键。LReaParams: Import selected legacy TXT files 可在 Plugins 或 '
+                      'Tracks 文件夹中选择多个旧 TXT；原文件保持不变，旧 Track GUID 不会自动绑定至当前工程。')]},
+ 'ja': {'fx': [('TEST62：表示順、グループ、非表示、F7',
+                'Plugin Order は、他のビューで非表示にしたものを含め、元のパラメータを常にすべて表示します。Custom Order と 12 のグループは、重複項目やグリッドを個別に保存します。保存した空のグループも残ります。F7 の Ctrl+C '
+                'はグループ間でコピーでき、Ctrl+X は同じビュー内の並べ替えやグループ間の移動に使えますが、Custom とグループの間での切り取りはできません。Ctrl+Delete は現在のグループで選択した項目だけを削除し、Ctrl+Shift+Delete は Custom '
+                'とすべてのグループで一括非表示にします。Plugin Order には影響しません。Ctrl+Shift+M の Hidden Parameters 列で戻せます。F7 の Delete 単独は選択解除です。グループからの Ctrl+L は F7 内でも必ず Custom '
+                'Order に戻ります。'),
+               ('TEST62：複数編集、Step、FX メモリー',
+                'F7 では Shift+Space、Ctrl+A、Shift+矢印で複数のパラメータを選択します。Alt+左右は選択項目の Step を変更し、Alt+上下は個別の Step で値を調整します。Ctrl+E の一括数値入力は互換パラメータだけに使えます。FX Memories の '
+                '7 列には Hidden Parameters、正確なグループと位置を示す Copied Parameters、Parameter Steps が含まれます。Alt+左右で記憶項目の Step を編集し、Delete でリセットします。FX/Track のメモリーでは '
+                'Shift+Space で選択、Ctrl+A で現在の列を全選択、Alt+Shift+Up/Down で選択行間を移動、Delete で選択項目を処理します。Default の危険な復元操作には確認が必要です。'),
+               ('TEST62：インクリメンタル検索、Alt+P、TXT 取込',
+                '1 秒以内に続けて入力した文字・数字・記号で接頭辞検索します。名前の途中にある単語の先頭にも一致します。同じ文字の繰り返しで候補を巡回し、Shift を押すと逆方向に検索します。数字キーも物理キー番号を使います。選択は変更しません。REAPER 標準の FX Chain 一覧でのみ '
+                'Alt+P が選択中の FX を FX Params で開き、P キーは REAPER の検索に残ります。LReaParams: Import selected legacy TXT files では複数の旧 Lua TXT '
+                'を選択して変換でき、元ファイルを変更せず、競合時も既存プロファイルを上書きしません。')],
+        'track': [('TEST62：Track Memories の複数選択',
+                   'Ctrl+Shift+M で Track Memories を開きます。Shift+Space で現在行を選択、Ctrl+A で現在の列だけを全選択します。矢印移動では選択が維持されます。Alt+Shift+Up/Down '
+                   'は同じ列の選択行間を移動し、Alt+Shift+左右は列を変更しません。Delete は選択行を削除またはリセットし、選択がない場合は現在行だけに作用します。一時的な選択は保存されません。'),
+                  ('TEST62：Track 検索と TXT の選択取込',
+                   '1 秒以内に連続して入力した文字で接頭辞検索できます。F1 はトラック名、F2/F3 は現在の send/receive 列の項目だけを検索します。Shift は数字の物理キーも含め逆方向検索になります。LReaParams: Import selected legacy '
+                   'TXT files から Plugins または Tracks 内の複数の旧 TXT を選択できます。元ファイルは変更されず、旧 Track GUID は現在のプロジェクトへ自動的には関連付けられません。')]}}
 
 # TEST61.14–61.16.1: generated appendix, retained across guide regeneration.
 FX_CONTEXT_UPDATES = {
@@ -609,19 +764,27 @@ FX_CONTEXT_UPDATES = {
  'ja': ('TEST61 の新機能：独立グリッド、グループ、復元', 'Plugin Order、Custom Order、12 個のグループが、それぞれグリッド幅（F1/F2）と正確なパラメータ位置を記憶します。F7 で編集する必要はありません。Ctrl+L で Plugin/Custom を切り替え、グループモードでは Ctrl+F1～Ctrl+F12 でグループを開きます。グループのグリッドで Esc を押すと FX Params を直接閉じます。F7 内では先にエディターを閉じます。セッション中は FX インスタンスごとに記憶し、REAPER 再起動後は同種プラグインで共有する .fx プロファイルから復元します。旧プロファイルも利用できます。Ctrl+Alt+B で FX をオフラインにするとブラウザーへ移動し、オンラインに戻すとグループ、グリッド、パラメータが自動復元されます。読み込みが遅い場合は最大 90 秒間、操作を妨げず確認します。別の FX に切り替えると復元は中止され、F7 は自動的に開きません。')
 }
 
+FX_RELEASE_063_HTML = '<h2 id="release-0-0-63-fx">LReaParams 0.0.63: TEST62 FX updates</h2>\n<p><strong>Plugin Order, Custom Order and 12 Groups:</strong> Plugin Order always lists the complete original native parameters, unaffected by global hiding, copies and group editing. Custom Order and each group have separate occurrences and navigation grids. You can save and recall an empty group. From any group, Ctrl+L returns directly to Custom Order, including when F7 was open (which is closed); Ctrl+L again switches to Plugin Order. Repeating a group\'s Ctrl+F1–F12 shortcut returns to the originating context instead.</p>\n<p><strong>F7 structural commands:</strong> Ctrl+C copies occurrences to Custom or other groups; Ctrl+X moves within or between groups and reorders within the same context. Cutting between Custom and groups is blocked. Ctrl+Delete removes only selected occurrences from the current group; it does nothing in Custom. Ctrl+Shift+Delete hides selected parameter IDs globally in Custom and all groups, never Plugin Order, without erasing group membership. Restore individual IDs from Hidden Parameters in FX Memories. Plain Delete deselects in F7. Ctrl+Z/Y undo and redo structural edits.</p>\n<p><strong>F7 bulk parameter edits:</strong> Shift+Space, Ctrl+A and Shift+arrows select parameters. Alt+Left/Right sets their shared Step adjustment (-10 to +10); Alt+Up/Down and Alt+Page Up/Down update unique selected parameters using each parameter\'s own Step. Ctrl+E applies an exact numeric value to multiple selected parameters only when types, ranges, and formatting are compatible; incompatible sets are rejected without a partial intentional edit. ReaEQ multi-band editing requires the same band property. The normal single-parameter operations remain available.</p>\n<p><strong>FX Memories seven columns:</strong> Ctrl+Shift+M opens the separate manager. Copied Parameters identifies the exact group, occurrence and position, or additional Custom Order copy. Hidden Parameters holds the shared invisibility list; restoring one ID makes its preserved group entries visible again. Parameter Steps lists nonzero FX Steps; Alt+Left/Right edits the selected memory\'s Step and Delete resets it to zero. Shift+Space toggles selection, Ctrl+A selects the current column, Alt+Shift+Up/Down navigates selected entries in that column and Delete acts on selected entries (or current row if nothing selected). Default snapshot restore still requires explicit confirmation.</p>\n<p><strong>Incremental search:</strong> Quickly type letters, digits or punctuation within 1000 ms to find a prefix at the start of a parameter name or any subsequent word; repeated letters cycle matches. Shift searches backward. Shift+number searches by the physical digit key even on Italian keyboard layouts, rather than the shifted symbol. Selection is preserved. Ctrl+F still opens explicit search.</p>\n<p><strong>Native FX Chain:</strong> With focus on the FX Chain\'s own FX list, Alt+P opens FX Params for the selected plugin; plain P remains REAPER\'s list search, and Alt+P is untouched outside that list. <strong>Selective TXT import:</strong> From REAPER\'s Action List choose “LReaParams: Import selected legacy TXT files” (also in Extensions &gt; LReaParams). Choose one or multiple compatible legacy Lua TXT files under Plugins or Tracks. Originals and existing native profiles remain intact; a differing existing destination produces an import-conflict copy instead of an overwrite.</p>'
+TRACK_RELEASE_063_HTML = '<h2 id="release-0-0-63-track">LReaParams 0.0.63: TEST62 Track updates</h2>\n<p><strong>Track Memories:</strong> Ctrl+Shift+M opens the memory manager. Shift+Space selects or deselects the current row; Ctrl+A selects all rows in the current column only. Arrow and page navigation preserves selected entries. Alt+Shift+Up/Down goes to the previous/next selected row in that column; Alt+Shift+Left/Right leaves the column unchanged. Delete acts on selected rows or the current row when none are selected. Selection is temporary and clears when the manager closes.</p>\n<p><strong>Incremental search:</strong> Typing consecutive printable characters within 1000 ms searches track names on F1, and only fields of the current send/receive column on F2/F3. Shift searches backward, including number-row keys on keyboard layouts where Shift produces symbols. Search does not change track selection or routing; Ctrl+F remains the explicit search control.</p>\n<p><strong>Selective legacy TXT import:</strong> Choose “LReaParams: Import selected legacy TXT files” from REAPER\'s actions or Extensions &gt; LReaParams. Select one or multiple original Lua TXT files inside the old Plugins or Tracks folders. Original files are never modified, existing .fx/.tp files are not overwritten, and historic track GUID settings are not automatically attached to the current project.</p>'
+
 def patch_originals():
     for filename in ('LReaParams - FX Params.html','LReaParams - Track Params.html'):
         file=ROOT/filename
         s=file.read_text(encoding='utf-8')
         # Keep detailed English guides versioned too, without replacing historical
         # "introduced in 0.0.61" descriptions or stable 0-0-61 anchors.
-        s=s.replace('<title>LReaParams 0.0.61', '<title>LReaParams 0.0.62')
-        s=s.replace('<strong>Version 0.0.61', '<strong>Version 0.0.62')
-        s=s.replace('<footer><p>LReaParams 0.0.61', '<footer><p>LReaParams 0.0.62')
+        s=s.replace('<title>LReaParams 0.0.61', '<title>LReaParams 0.0.63')
+        s=s.replace('<title>LReaParams 0.0.62', '<title>LReaParams 0.0.63')
+        s=s.replace('<strong>Version 0.0.61', '<strong>Version 0.0.63')
+        s=s.replace('<strong>Version 0.0.62', '<strong>Version 0.0.63')
+        s=s.replace('<footer><p>LReaParams 0.0.61', '<footer><p>LReaParams 0.0.63')
+        s=s.replace('<footer><p>LReaParams 0.0.62', '<footer><p>LReaParams 0.0.63')
         s=s.replace('aligned to the <strong>0.0.61 TEST61.4 source</strong>',
-                    'updated for the <strong>0.0.62 release (TEST61.16.1 source)</strong>')
+                    'updated for the <strong>0.0.63 release (TEST62.9.2 source)</strong>')
         s=s.replace('reflects <strong>0.0.61 TEST61.4 source code</strong>',
-                    'reflects the <strong>0.0.62 release (TEST61.16.1 source code)</strong>')
+                    'reflects the <strong>0.0.63 release (TEST62.9.2 source code)</strong>')
+        s=s.replace('0.0.62 release (TEST61.16.1 source)', '0.0.63 release (TEST62.9.2 source)')
+        s=s.replace('0.0.62 release (TEST61.16.1 source code)', '0.0.63 release (TEST62.9.2 source code)')
         # Do not rewrite the detailed original guide; add a language selector link.
         if 'Select language</a>' not in s:
             s=s.replace('<header><p>', '<header><p><a href="index.html">Select language</a> · ', 1)
@@ -636,11 +799,19 @@ def patch_originals():
             detail = detail.replace('<a href=\"../Docs/TEST61_16_INDEPENDENT_FX_GRIDS.md\">TEST61.16 test details</a> (available in the source repository)', 'See Docs/TEST61_16_INDEPENDENT_FX_GRIDS.md in the source repository')
             s=s.replace('</main>',detail+'</main>',1)
             s=s.replace('</ul></nav>', '<li><a href=\"#test61-independent-context-grids\">TEST61 independent grids and restoration</a></li></ul></nav>',1)
+        if filename == 'LReaParams - FX Params.html':
+            if 'id="release-0-0-63-fx"' not in s:
+                s=s.replace('</main>', FX_RELEASE_063_HTML+'</main>',1)
+                s=s.replace('</ul></nav>', '<li><a href="#release-0-0-63-fx">0.0.63 new FX features</a></li></ul></nav>',1)
+        else:
+            if 'id="release-0-0-63-track"' not in s:
+                s=s.replace('</main>', TRACK_RELEASE_063_HTML+'</main>',1)
+                s=s.replace('</ul></nav>', '<li><a href="#release-0-0-63-track">0.0.63 new Track features</a></li></ul></nav>',1)
         file.write_text(s,encoding='utf-8')
 
 
 def write_install():
-    (ROOT/'INSTALL.txt').write_text('''LReaParams 0.0.62 — multilingual user guides
+    (ROOT/'INSTALL.txt').write_text('''LReaParams 0.0.63 — multilingual user guides
 
 Install the DLL and ALL Guide files into the REAPER resource directory:
 

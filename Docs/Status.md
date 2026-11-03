@@ -1,3 +1,5 @@
+Current public release source: **LReaParams 0.0.63** (2026-11-03), based on TEST62.9.2. About, CMake, installer, GitHub Actions artifacts and seven-language guide generator are updated. New TEST62 features are documented in `Docs/RELEASE_NOTES_0_0_63.md`. Windows build and REAPER/NVDA runtime verification pending; test after compiling on GitHub Actions.
+
 Current public release: **LReaParams 0.0.62** (2026-10-27), based on TEST61.16.1. About, project version, installer metadata, build artifact names and guides updated. Runtime behavior unchanged by this version bump; Windows build and REAPER/NVDA tests pending. See `Docs/RELEASE_NOTES_0_0_62.md`.
 
 TEST61.4: F6 ora consente di creare hardware outputs direttamente dalla DLL anche con zero uscite; colonna Add sempre disponibile, destinazioni fisiche dal driver audio, Undo e rollback, separazione da ReaRoute. Nessun cambiamento a F10/F11 o alle altre pagine. Solo sorgente.
