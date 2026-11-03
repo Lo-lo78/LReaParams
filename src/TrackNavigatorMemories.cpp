@@ -408,7 +408,7 @@ void TrackNavigator::memoryActivate() {
 }
 void TrackNavigator::memoryTypeAhead(const Key& k) {
     if (memoryItems_.empty()) return;
-    const int next = typeAhead_.find(k.character, k.time, k.repeat,
+    const int next = typeAhead_.find(typeAheadCharacter(k.vk, k.shift, k.character), k.time, k.repeat,
         memoryRow_, static_cast<int>(memoryItems_.size()), k.shift,
         [this](int i) {return typeAheadWide(memoryItems_[static_cast<size_t>(i)].label);});
     if (next >= 0) {memoryRow_ = next; speakMemory();}
@@ -417,7 +417,8 @@ void TrackNavigator::handleMemory(const Key& k) {
     if (k.repeat && (k.vk == VK_RETURN || k.vk == VK_DELETE || k.vk == VK_ESCAPE ||
         (k.shift && k.vk == VK_SPACE) || (k.ctrl && k.vk == 'A') ||
         (k.ctrl && k.shift && !k.alt && k.vk == 'M'))) return;
-    if (!k.ctrl && !k.alt && k.character && std::iswalnum(static_cast<wint_t>(k.character))) {
+    if (!k.ctrl && !k.alt &&
+        std::iswalnum(static_cast<wint_t>(typeAheadCharacter(k.vk, k.shift, k.character)))) {
         memoryTypeAhead(k);return;
     }
     if (k.vk == VK_ESCAPE || (k.ctrl && k.shift && !k.alt && k.vk == 'M')) {

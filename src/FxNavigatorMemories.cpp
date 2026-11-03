@@ -424,7 +424,7 @@ void FxNavigator::memoryDelete() {
 void FxNavigator::memoryTypeAhead(const Key& k) {
     const auto& entries = memoryColumns_[static_cast<size_t>(memoryCol_)];
     if (entries.empty()) return;
-    const int next = typeAhead_.find(k.character, k.time, k.repeat,
+    const int next = typeAhead_.find(typeAheadCharacter(k.vk, k.shift, k.character), k.time, k.repeat,
         memoryRow_, static_cast<int>(entries.size()), k.shift,
         [&entries](int i) { return typeAheadWide(entries[static_cast<size_t>(i)].label); });
     if (next >= 0) { memoryRow_ = next; speakMemory(); }
@@ -458,7 +458,7 @@ void FxNavigator::memoryNavigate(const Key& k) {
     }
     if(k.repeat && (k.vk==VK_F7||k.vk==VK_RETURN||k.vk==VK_DELETE||
                     (k.shift && k.vk==VK_SPACE)||(k.ctrl && k.vk=='A')))return;
-    if(!k.ctrl && !k.alt && k.character >= L'!') {
+    if(!k.ctrl && !k.alt && typeAheadCharacter(k.vk, k.shift, k.character) >= L'!') {
         memoryTypeAhead(k); return;
     }
     if(k.vk==VK_ESCAPE) {memoryExit();return;}

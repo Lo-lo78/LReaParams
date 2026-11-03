@@ -16,11 +16,11 @@ assert 'function grid_jump_by_initial_in_current_column' in lua
 # The keyboard event timestamp and repeat flag are now forwarded to the
 # same shared matcher used by FX Params and the memory managers.
 type_ahead = (r/'include/lrp/TypeAhead.h').read_text(encoding='utf-8')
-assert 'void TrackNavigator::jumpByInitial(wchar_t letter, DWORD eventTime, bool repeated)' in nav
-assert 'jumpByInitial(k.character, k.time, k.repeat);' in nav
+assert 'void TrackNavigator::jumpByInitial(wchar_t letter, DWORD eventTime, bool repeated, bool backwards)' in nav
+assert 'jumpByInitial(typeAheadCharacter(k.vk, k.shift, k.character),' in nav
 assert 'std::iswalnum' in nav
-assert 'typeAhead_.find(letter, eventTime, repeated, row_, count, false,' in nav
-assert 'typeAhead_.find(letter, eventTime, repeated, parameter_, detailHeight, false,' in nav
+assert 'typeAhead_.find(letter, eventTime, repeated, row_, count, backwards,' in nav
+assert 'typeAhead_.find(letter, eventTime, repeated, parameter_, detailHeight, backwards,' in nav
 assert 'static constexpr std::uint32_t intervalMs = 1000;' in type_ahead
 assert 'sameLetterCycle' in type_ahead
 

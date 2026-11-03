@@ -1,3 +1,9 @@
+## TEST62.9.2 — Ricerca all’indietro con Maiusc+numeri (3 novembre 2026)
+
+- Corretto il caso dei layout europei (es. italiano), in cui Maiusc+numero produce un simbolo. La ricerca incrementale usa la cifra fisica per cercare all’indietro in FX Params, F7, FX/Track Memories e Track Params.
+- Nessuna modifica a caratteri nei campi EDIT, FX Chain, profili `.fx`/`.tp` e azioni di editing.
+- Test di regressione C++ per Maiusc+1, Maiusc+6, ricerca `16` all’indietro; aggiornati test statici storici per la nuova firma della ricerca.
+
 ## TEST62.9.1 — Riparazione test GitHub Actions dopo la ricerca incrementale (source-only)
 
 - Risolto il blocco del workflow nel vecchio `Testing/test55_13_static.py`: cercava `jumpByInitial(wchar_t letter)` e le posizioni del precedente navigatore a singola iniziale, sostituiti in TEST62.9.

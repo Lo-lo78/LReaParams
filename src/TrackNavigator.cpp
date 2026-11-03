@@ -135,7 +135,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
         isTransportMarkerShortcut(k)) return true;
     if (memoryManager_) {
         if (!k.ctrl && !k.alt && k.character &&
-            std::iswalnum(static_cast<wint_t>(k.character))) return true;
+            std::iswalnum(static_cast<wint_t>(typeAheadCharacter(k.vk, k.shift, k.character)))) return true;
         if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
         // TEST62.6: Alt+Shift+Up/Down moves among selected memory rows;
         // Alt+Shift+Left/Right is reserved and must not switch columns.
@@ -274,7 +274,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     // Printable letters and digits cycle the Lua column/track initial search.
     // InputRouter supplies the character in the active keyboard layout.
     if (!k.ctrl && !k.alt && !k.altGr && !valueMode_ && k.character &&
-        std::iswalnum(static_cast<wint_t>(k.character))) return true;
+        std::iswalnum(static_cast<wint_t>(typeAheadCharacter(k.vk, k.shift, k.character)))) return true;
     if (page_ == Page::tracks && !k.alt && k.ctrl &&
         k.vk >= VK_F1 && k.vk <= VK_F12) return true;
     const bool f1 = page_ == Page::tracks;
@@ -1139,12 +1139,12 @@ void TrackNavigator::moveToFolder(int direction) {
     }
     // Silent boundary, same as ordinary F1 movement.
 }
-void TrackNavigator::jumpByInitial(wchar_t letter, DWORD eventTime, bool repeated) {
+void TrackNavigator::jumpByInitial(wchar_t letter, DWORD eventTime, bool repeated, bool backwards) {
     if (!active_ || valueMode_ || !std::iswalnum(static_cast<wint_t>(letter))) return;
     if (page_ == Page::tracks) {
         const int count = static_cast<int>(rows_.size());
         if (!count) return;
-        const int next = typeAhead_.find(letter, eventTime, repeated, row_, count, false,
+        const int next = typeAhead_.find(letter, eventTime, repeated, row_, count, backwards,
             [this](int i) {
                 char name[2048]{};
                 if (!GetTrackName(rows_[static_cast<size_t>(i)].track, name, sizeof(name))) return std::wstring{};
@@ -1161,7 +1161,7 @@ void TrackNavigator::jumpByInitial(wchar_t letter, DWORD eventTime, bool repeate
         return;
     }
     // F2/F3: search only within the 14 fields of the current send/receive.
-    const int next = typeAhead_.find(letter, eventTime, repeated, parameter_, detailHeight, false,
+    const int next = typeAhead_.find(letter, eventTime, repeated, parameter_, detailHeight, backwards,
         [this](int i) {
             const int index = detailIndex_ * detailHeight + i;
             if (index < 0 || index >= static_cast<int>(entries_.size())) return std::wstring{};
@@ -1581,9 +1581,10 @@ void TrackNavigator::handle(const Key& k) {
     }
     if (k.vk == VK_HOME) { moveParameter(-parameter_); return; }
     if (k.vk == VK_END) { moveParameter((page_ == Page::tracks ? 8 : detailHeight - 1) - parameter_); return; }
-    if (!k.ctrl && !k.alt && !k.altGr && !valueMode_ && k.character &&
-        std::iswalnum(static_cast<wint_t>(k.character))) {
-        jumpByInitial(k.character, k.time, k.repeat);
+    if (!k.ctrl && !k.alt && !k.altGr && !valueMode_ &&
+        std::iswalnum(static_cast<wint_t>(typeAheadCharacter(k.vk, k.shift, k.character)))) {
+        jumpByInitial(typeAheadCharacter(k.vk, k.shift, k.character),
+                      k.time, k.repeat, k.shift);
         return;
     }
     // F1: left/right = parameters, up/down = tracks.

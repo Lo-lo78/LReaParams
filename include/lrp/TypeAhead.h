@@ -8,6 +8,20 @@
 #include <utility>
 
 namespace lrp {
+// Shift+digits become punctuation on layouts such as Italian (Shift+1 -> !).
+// Only type-ahead navigation interprets the physical number-row key as its
+// digit. Native edit boxes, parameter values and other shortcuts retain the
+// layout-translated character supplied by InputRouter.
+inline wchar_t typeAheadCharacter(std::uint32_t virtualKey, bool shift,
+                                  wchar_t translated) noexcept {
+    if (shift && virtualKey >= static_cast<std::uint32_t>('0') &&
+                 virtualKey <= static_cast<std::uint32_t>('9'))
+        return static_cast<wchar_t>(virtualKey);
+    // Also support numeric keypad VK_NUMPAD0..9 when Windows sends those VKs.
+    if (shift && virtualKey >= 0x60U && virtualKey <= 0x69U)
+        return static_cast<wchar_t>(L'0' + (virtualKey - 0x60U));
+    return translated;
+}
 // Ephemeral keyboard navigation, never part of a .fx/.tp profile.
 // Keyboard event times must be captured when REAPER receives the key,
 // not when OSARA/NVDA has finished speaking the previous result.

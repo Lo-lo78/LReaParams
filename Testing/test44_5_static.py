@@ -9,7 +9,8 @@ rtr=(r/'src/InputRouter.cpp').read_text(encoding='utf-8')
 a=(r/'include/lrp/TypeAhead.h').read_text(encoding='utf-8')
 assert 'void cycleByInitial(wchar_t character, DWORD eventTime, bool repeated, bool backwards = false);' in h
 assert 'void FxNavigator::cycleByInitial(wchar_t character, DWORD eventTime, bool repeated, bool backwards)' in s
-assert s.count('cycleByInitial(k.character, k.time, k.repeat, k.shift);') == 2
+assert s.count('cycleByInitial(k.character, k.time, k.repeat, k.shift);') == 1
+assert 'cycleByInitial(typeAheadCharacter(k.vk, k.shift, k.character),' in s
 assert 'const int index = backwards ?' in a and 'sameLetterCycle' in a
 assert 'if (editF7_ && handleF7(k)) return;' in s
 assert 'if (k.altGr && k.character)' in s

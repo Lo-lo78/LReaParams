@@ -49,5 +49,26 @@ int main() {
     search.reset();
     next = search.find(L'f', 9000, false, 4, static_cast<int>(names.size()), true, label);
     CHECK(next == 3); // Shift+F searches backward
+    // Italian and other layouts: shifted number-row keys produce punctuation.
+    // Search must use physical digits so Shift+1 then Shift+6 can find "16".
+    CHECK(lrp::typeAheadCharacter('1', true, L'!') == L'1');
+    CHECK(lrp::typeAheadCharacter('6', true, L'&') == L'6');
+    CHECK(lrp::typeAheadCharacter('2', false, L'2') == L'2');
+    CHECK(lrp::typeAheadCharacter('A', true, L'A') == L'A');
+    CHECK(lrp::typeAheadCharacter(0x61, true, L'1') == L'1');
+    CHECK(lrp::typeAheadCharacter(0xBF, true, L'?') == L'?'); // real punctuation intact
+    std::vector<std::wstring> numbered{L"1 Mode", L"2 Frequency", L"7 Gain", L"16 Detector Source"};
+    auto numberLabel = [&](int i) {return numbered.at(static_cast<std::size_t>(i));};
+    search.reset();
+    next=search.find(lrp::typeAheadCharacter('1',true,L'!'),10000,false,0,4,true,numberLabel);
+    CHECK(next==3); // previous numeric result wraps to 16
+    next=search.find(lrp::typeAheadCharacter('6',true,L'&'),10100,false,next,4,true,numberLabel);
+    CHECK(next==3 && search.text()==L"16"); // keep current matching 16
+    search.reset();
+    next=search.find(lrp::typeAheadCharacter('7',true,L'/'),12000,false,3,4,true,numberLabel);
+    CHECK(next==2); // Shift+7 searches backward, not punctuation
+    search.reset();
+    next=search.find(lrp::typeAheadCharacter('2',false,L'2'),14000,false,0,4,false,numberLabel);
+    CHECK(next==1); // forward numeric search unchanged
     std::cout << "Type-ahead C++ tests passed\n";
 }

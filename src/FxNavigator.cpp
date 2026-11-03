@@ -1062,7 +1062,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk == 'M') return true;
         if(defaultConfirm_)return !k.ctrl&&!k.alt&&!k.shift&&(k.vk=='Y'||k.vk=='N'||k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_UP||k.vk==VK_DOWN);
         if(k.vk==VK_F12)return false;
-        if(!k.ctrl && !k.alt && k.character >= L'!')return true;
+        if(!k.ctrl && !k.alt && typeAheadCharacter(k.vk, k.shift, k.character) >= L'!')return true;
         // TEST62.6: selected-only vertical navigation. Horizontal gestures
         // are deliberately consumed but inert: they cannot change columns.
         if(k.alt && k.shift && !k.ctrl && !k.altGr)
@@ -1122,7 +1122,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     // Lua list_cycle_by_initial: printable letters, digits and punctuation
     // are navigation keys in the parameter grid, also in the F7 editor.
     // Do not treat them as search input inside Value, FX Memories or EDIT.
-    if (!k.ctrl && !k.alt && k.character) return true;
+    if (!k.ctrl && !k.alt && typeAheadCharacter(k.vk, k.shift, k.character)) return true;
     if (k.shift) return false;
     if (k.ctrl) {
         if (k.alt) return false;
@@ -1735,9 +1735,10 @@ void FxNavigator::handle(const Key& k) {
     }
     // TEST62.9: incrementally match typed words, while Ctrl+F remains
     // the separate full substring search with a native editing field.
-    if (!k.ctrl && !k.alt && k.character) {
+    if (!k.ctrl && !k.alt && typeAheadCharacter(k.vk, k.shift, k.character)) {
         if (!valueMode_) {
-            cycleByInitial(k.character, k.time, k.repeat, k.shift);
+            cycleByInitial(typeAheadCharacter(k.vk, k.shift, k.character),
+                           k.time, k.repeat, k.shift);
         }
         return; // Value remains open; characters do not modify its slider.
     }

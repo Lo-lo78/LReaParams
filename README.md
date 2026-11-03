@@ -1,3 +1,5 @@
+TEST62.9.2 (ricerca incrementale: Maiusc+numeri sui layout italiani/europei): vedi Docs/TEST62_9_2_SHIFT_DIGIT_SEARCH.md.
+
 ## TEST62.9 — Ricerca incrementale e Alt+P nella FX Chain
 
 Nella griglia FX Params (anche F7 e gruppi), in Track Params F1–F3 e nei due gestori di memorie, digitare rapidamente più lettere cerca il prefisso del parametro o di una sua parola. Il tempo tra pressioni è 1000 ms; numeri, punteggiatura e la selezione multipla rimangono disponibili dove già previsti. Nella lista FX Chain **Alt+P** apre FX Params sul plugin selezionato, mentre **P** resta libera per cercare i plugin e fuori dalla FX Chain **Alt+P** non viene toccata. Tutte le modifiche TEST62.1–62.8 sono conservate. [Guida e prove](Docs/TEST62_9_INCREMENTAL_SEARCH_AND_FX_CHAIN_ALT_P.md). Compilazione nativa Windows via GitHub Actions.

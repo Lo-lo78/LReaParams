@@ -270,7 +270,7 @@ private:
     void resetPendingRouting() noexcept;
     std::string pendingRoutingStatus() const;
 
-    void jumpByInitial(wchar_t letter, DWORD eventTime, bool repeated);
+    void jumpByInitial(wchar_t letter, DWORD eventTime, bool repeated, bool backwards);
     void memoryTypeAhead(const Key& key);
     TypeAhead typeAhead_; // shared per-session buffer; cleared by every non-text navigation key
     void moveTrack(int delta);
