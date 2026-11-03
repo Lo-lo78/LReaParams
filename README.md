@@ -1,3 +1,7 @@
+## TEST62.8 — Import selettivo TXT storici (FX + Track)
+
+Dalla Action List: **LReaParams: Import selected legacy TXT files**; dal menu Extensions > LReaParams > Import selected TXT files. Apre il selettore Windows/REAPER nella cartella storica dei Lua (sottocartelle Plugins e Tracks), permette di scegliere uno o più TXT e converte in `.fx` o `.tp` secondo il contenuto. I TXT originali rimangono invariati, i conflitti non sovrascrivono le memorie native, i backup sono verificati. L’azione precedente di importazione completa è conservata. Vedere [Docs/TEST62_8_SELECTIVE_TXT_IMPORT.md](Docs/TEST62_8_SELECTIVE_TXT_IMPORT.md) per procedure e limiti dei vecchi profili Track basati su GUID.
+
 ## TEST62.7 — Ctrl+L: uscita rapida dal gruppo a Custom Order
 
 In FX Params, **Ctrl+L** da qualsiasi gruppo (anche dentro F7) torna **sempre a Custom Order**; chiude F7, se aperto, per permettere subito il successivo Ctrl+L, che alterna Custom/Plugin come prima. La pressione dello stesso Ctrl+Fn sul gruppo rimane invariata e riporta al contesto di provenienza. Rimangono indipendenti gli Step, le griglie e tutte le memorie TEST62.1–TEST62.6. [Guida di prova TEST62.7](Docs/TEST62_7_CTRL_L_GROUP_TO_CUSTOM.md). La compilazione della DLL è affidata a GitHub Actions.

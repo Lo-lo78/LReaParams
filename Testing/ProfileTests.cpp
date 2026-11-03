@@ -62,6 +62,45 @@ int main(int argc, char** argv) {
         std::atomic_bool cancel{false};
         auto report = importProfiles(root, cancel);
         check(report.errors == 0 && report.imported == 0, "Empty legacy root failed");
+        // TEST62.8: selective FX/Track TXT conversion is non-destructive.
+        const auto selectedRoot = root / L"selected-import-test";
+        const auto oldSelected = selectedRoot / L"Scripts" / L"Lo-lo - Scripts" / L"Utility" / L"Scripts";
+        const auto fxSelected = oldSelected / L"Plugins" / L"Sub" / L"Synth.txt";
+        const auto trackSelected = oldSelected / L"Tracks" / L"Track CC Map.txt";
+        const auto trackTxt = readFile(fixtures / L"Tracks" / L"fixture_004.txt");
+        overwrite(fxSelected, fx);
+        overwrite(trackSelected, trackTxt);
+        std::atomic_bool selectedCancel{false};
+        auto chosenReport = importSelectedProfiles(selectedRoot, {fxSelected, trackSelected, fxSelected}, selectedCancel);
+        check(chosenReport.imported == 2 && chosenReport.fxImported == 1 &&
+              chosenReport.trackImported == 1 && chosenReport.errors == 0 && chosenReport.rejected == 0,
+              "Mixed selected import failed or repeated the same source");
+        const auto fxNative = selectedRoot / L"LReaParams" / L"Plugins" / L"Sub" / L"Synth.fx";
+        const auto trackNative = selectedRoot / L"LReaParams" / L"Tracks" / L"Track CC Map.tp";
+        check(parseNative(readFile(fxNative)).payload == fx && parseNative(readFile(trackNative)).payload == trackTxt,
+              "Mixed selected import lost FX or Track profile data");
+        check(readFile(fxSelected) == fx && readFile(trackSelected) == trackTxt,
+              "Selected TXT was modified or removed");
+        chosenReport = importSelectedProfiles(selectedRoot, {fxSelected, trackSelected}, selectedCancel);
+        check(chosenReport.unchanged == 2 && chosenReport.imported == 0 && chosenReport.errors == 0,
+              "Repeated selected import was not idempotent");
+        const auto changedNative = serializeNative(parseLegacy(fx + "\n# Edited native profile\n"));
+        overwrite(fxNative, changedNative);
+        chosenReport = importSelectedProfiles(selectedRoot, {fxSelected}, selectedCancel);
+        check(chosenReport.conflicts == 1 && chosenReport.errors == 0 && readFile(fxNative) == changedNative,
+              "Selected import overwrote a modified native profile");
+        const auto conflict = selectedRoot / L"LReaParams" / L"Settings" / L"ImportConflicts" / L"Plugins" / L"Sub" /
+            fs::u8path("Synth.txt." + sha256(fx) + ".fx");
+        check(parseNative(readFile(conflict)).payload == fx, "Converted conflict candidate missing");
+        const auto invalidChosen = oldSelected / L"Plugins" / L"bad.txt";
+        overwrite(invalidChosen, "not a Lua profile\n");
+        chosenReport = importSelectedProfiles(selectedRoot, {invalidChosen}, selectedCancel);
+        check(chosenReport.rejected == 1 && chosenReport.errors == 0 && fs::exists(invalidChosen),
+              "Invalid selected TXT was not safely rejected");
+        selectedCancel = true;
+        chosenReport = importSelectedProfiles(selectedRoot, {fxSelected}, selectedCancel);
+        check(chosenReport.cancelled && chosenReport.imported == 0, "Selected import ignored cancellation");
+
         const auto legacy = root / L"Scripts" / L"Lo-lo - Scripts" / L"Utility" / L"Scripts";
         for (const auto& e : fs::recursive_directory_iterator(fixtures)) if (e.is_regular_file()) {
             auto to = legacy / e.path().lexically_relative(fixtures); fs::create_directories(to.parent_path()); fs::copy_file(e.path(), to);

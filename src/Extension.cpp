@@ -8,6 +8,7 @@
 #include <shellapi.h>
 #include <array>
 #include <memory>
+#include <vector>
 #include <string>
 #include <stdexcept>
 #include <system_error>
@@ -148,6 +149,10 @@ public:
         case importLegacy:
             exitNavigation(false);
             requestLegacyImport(false);
+            break;
+        case importSelectedTxt:
+            exitNavigation(false);
+            requestSelectedTxtImport();
             break;
         case openData: {
             exitNavigation(false);
@@ -418,6 +423,47 @@ public:
         return containsLegacyTxt(legacy / L"Plugins") || containsLegacyTxt(legacy / L"Tracks") ||
             containsLegacyTxt(current / L"Plugins") || containsLegacyTxt(current / L"Tracks");
     }
+    void requestSelectedTxtImport() {
+        // The file-picker is modal and keyboard accessible with NVDA. Open at
+        // the common old Lua directory so Plugins and Tracks are both visible.
+        // REAPER's selector returns full UTF-8 filenames separated by '|'.
+        const auto legacy = resource_ / L"Scripts" / L"Lo-lo - Scripts" / L"Utility" / L"Scripts";
+        const auto active = resource_ / L"LReaParams";
+        std::error_code ec;
+        fs::path folder = fs::is_directory(legacy, ec) ? legacy : active;
+        if (!fs::is_directory(folder, ec)) folder = resource_;
+        if (!GetUserFileName) {
+            speak("REAPER file selection API unavailable");
+            return;
+        }
+        std::vector<char> filenames(262144, '\0');
+        const std::string initial = folder.u8string();
+        if (!GetUserFileName(2, "Import legacy FX and Track TXT - select one or multiple",
+                             initial.c_str(), "Legacy TXT profiles|*.txt", filenames.data(),
+                             static_cast<int>(filenames.size()))) {
+            speak("TXT import cancelled. No files changed");
+            return;
+        }
+        std::vector<fs::path> selected;
+        const std::string result(filenames.data());
+        const auto tokens = split(result, '|');
+        // Handle both fully qualified paths and the Windows multi-select
+        // format: directory followed by relative file names.
+        fs::path common;
+        if (tokens.size() > 1 && fs::is_directory(fs::u8path(tokens.front()), ec))
+            common = fs::u8path(tokens.front());
+        for (const auto& token : tokens) {
+            if (token.empty()) continue;
+            const auto path = fs::u8path(token);
+            if (path == common) continue;
+            selected.push_back(common.empty() || path.is_absolute() ? path : common / path);
+        }
+        if (selected.empty()) { speak("No TXT files selected"); return; }
+        const bool started = importer_.startSelected(resource_, selected);
+        if (started) announceImport_ = true;
+        speak(started ? "Selected TXT import started. Originals are kept" :
+            "Legacy profile import already running");
+    }
     void requestLegacyImport(bool atStartup) {
         if (!hasLegacyProfiles()) {
             if (!atStartup) MessageBoxW(info_.hwnd_main,
@@ -654,7 +700,7 @@ public:
             }
             AppendMenuW(sub, MF_SEPARATOR, 0, nullptr);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[stopBackgroundMidi].command), actions_[stopBackgroundMidi].menu);
-            for (int i : {importLegacy, openData, settings})
+            for (int i : {importLegacy, importSelectedTxt, openData, settings})
                 AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[i].command), actions_[i].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[nvdaTitle].command), actions_[nvdaTitle].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[openGuide].command), actions_[openGuide].menu);
@@ -709,11 +755,12 @@ private:
     bool titleModeEnabled_ = true, titleProxyActive_ = false;
     accelerator_register_t fxChainAccel_{};
     bool fxChainAccelRegistered_ = false;
-    enum ActionIndex { fxParams, trackParams, importLegacy, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, openGuide, actionCount };
+    enum ActionIndex { fxParams, trackParams, importLegacy, importSelectedTxt, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, openGuide, actionCount };
     std::array<Action, actionCount> actions_{{
         {"LREAPARAMSFXPARAMS", "LReaParams: FX Params", L"FX Params"},
         {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params", L"Track Params"},
-        {"LREAPARAMSIMPORTLEGACY", "LReaParams: Import legacy profiles", L"Import legacy profiles"},
+        {"LREAPARAMSIMPORTLEGACY", "LReaParams: Import legacy profiles", L"Import legacy profiles (all)"},
+        {"LREAPARAMSIMPORTSELECTEDTXT", "LReaParams: Import selected legacy TXT files", L"Import selected TXT files"},
         {"LREAPARAMSOPENDATAFOLDER", "LReaParams: Open Data Folder", L"Open Data Folder"},
         {"LREAPARAMSSETTINGS", "LReaParams: Settings (Keyboard Input)", L"Keyboard Settings"},
         {"LREAPARAMSABOUT", "LReaParams: About LReaParams", L"About LReaParams"},

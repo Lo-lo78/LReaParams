@@ -25,6 +25,7 @@
 #define REAPERAPI_WANT_CountTakes
 #define REAPERAPI_WANT_GetTake
 #define REAPERAPI_WANT_AddExtensionsMainMenu
+#define REAPERAPI_WANT_GetUserFileName
 #define REAPERAPI_WANT_GetResourcePath
 #define REAPERAPI_WANT_EnumProjects
 #define REAPERAPI_WANT_GetTouchedOrFocusedFX

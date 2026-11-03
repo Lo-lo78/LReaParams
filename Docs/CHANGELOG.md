@@ -1,3 +1,10 @@
+## TEST62.8 — Selective legacy TXT import (FX and Track)
+
+- New native REAPER action and Extensions submenu item `LReaParams: Import selected legacy TXT files`, opening the multi-file picker at the historical Lua Scripts folder.
+- Converts validated legacy FX Version=3 to `.fx` and Track Version=2 to `.tp`; keeps original TXT, verifies native readback and backs up source bytes.
+- Existing modified profiles are never overwritten; conflicting candidates go to Settings/ImportConflicts. Existing full-folder Y/N import remains unchanged.
+- Track GUID-based Lua files can be preserved as `.tp`, but only the old global Track CC Map is a recognized seed for current project Track Params. See Docs/TEST62_8_SELECTIVE_TXT_IMPORT.md.
+
 ## TEST62.4 — FX F7: nascondi/rimuovi separati e focus dopo eliminazione (2026-11-02, source-only)
 - Ctrl+Shift+Delete nasconde globalmente Custom Order e tutti i gruppi; Plugin Order resta intatto. Il ripristino è nella terza colonna Hidden Parameters di FX Memories.
 - Ctrl+Delete rimuove solo occorrenze del gruppo; in Custom Order non modifica nulla e fornisce un annuncio esplicativo.

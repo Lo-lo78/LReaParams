@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <set>
 #include <cwctype>
 
 namespace lrp {
@@ -84,9 +85,14 @@ bool writeNewVerified(const fs::path& path, const std::string& bytes) {
     return readFile(path) == bytes;
 }
 std::string ImportReport::summary() const {
-    return "Import: " + std::to_string(imported) + " converted, " + std::to_string(unchanged) + " unchanged, " +
+    return "Import: " + std::to_string(imported) + " converted (" +
+        std::to_string(fxImported) + " FX, " + std::to_string(trackImported) + " Track), " +
+        std::to_string(unchanged) + " unchanged, " +
         std::to_string(conflicts) + " conflicts, " + std::to_string(rejected) + " unrecognized, " +
-        std::to_string(errors) + " errors, " + std::to_string(removed) + " active TXT removed" + (cancelled ? ". Cancelled" : "");
+        std::to_string(errors) + " errors, " +
+        (selectedOnly ? "selected TXT originals retained" :
+         std::to_string(removed) + " active TXT removed") +
+        (cancelled ? ". Cancelled" : "");
 }
 ImportReport importProfiles(const fs::path& resource, const std::atomic_bool& cancel) {
     ImportReport result;
@@ -144,7 +150,12 @@ ImportReport importProfiles(const fs::path& resource, const std::atomic_bool& ca
                                 throw ProfileError("Converted, but TXT deletion failed");
                             ++result.removed;
                         }
-                        if (existed) ++result.unchanged; else ++result.imported;
+                        if (existed) ++result.unchanged;
+                        else {
+                            ++result.imported;
+                            if (p.kind == ProfileKind::fx) ++result.fxImported;
+                            else ++result.trackImported;
+                        }
                     } catch (...) { ++result.errors; }
                 }
             } catch (...) { ++result.errors; }
@@ -152,6 +163,80 @@ ImportReport importProfiles(const fs::path& resource, const std::atomic_bool& ca
     }
     return result;
 }
+// File-picker import is intentionally non-destructive. Unlike the old bulk
+// importer, selected sources are NEVER deleted, including TXT inside active
+// LReaParams folders. Resolve the destination from the actual Version=3/2
+// profile, not the folder name or a guessed file extension.
+ImportReport importSelectedProfiles(const fs::path& resource,
+                                    const std::vector<fs::path>& sources,
+                                    const std::atomic_bool& cancel) {
+    ImportReport report;
+    report.selectedOnly = true;
+    const auto root = resource / L"LReaParams";
+    const auto oldRoot = resource / L"Scripts" / L"Lo-lo - Scripts" / L"Utility" / L"Scripts";
+    try { for (const auto* name : {L"Plugins", L"Tracks", L"Settings", L"Backups"}) makeDirectory(root / name); }
+    catch (...) { ++report.errors; return report; }
+    std::set<std::wstring> seen;
+    for (const auto& selected : sources) {
+        if (cancel) { report.cancelled = true; break; }
+        try {
+            const auto source = fs::absolute(selected).lexically_normal();
+            if (!seen.insert(lower(source.wstring())).second) continue;
+            if (lower(source.extension().wstring()) != L".txt" || !fs::is_regular_file(source)) {
+                ++report.rejected; continue;
+            }
+            ensurePlainTree(source);
+            // Share read-only; a selected legacy TXT is never removed.
+            Handle handle(CreateFileW(source.c_str(), GENERIC_READ, FILE_SHARE_READ,
+                                      nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr));
+            if (handle.value == INVALID_HANDLE_VALUE) throw ProfileError("Cannot open selected TXT");
+            const auto bytes = readHandle(handle.value);
+            Profile profile;
+            try { profile = parseLegacy(bytes); }
+            catch (const ProfileError&) { ++report.rejected; continue; }
+            const wchar_t* directory = profile.kind == ProfileKind::fx ? L"Plugins" : L"Tracks";
+            fs::path relative = source.filename();
+            // Retain historical subdirectories when the source is in the
+            // corresponding Lua or active LReaParams folder; otherwise use
+            // only the filename, never an absolute user-selected path.
+            for (const auto& branchRoot : {oldRoot / directory, root / directory}) {
+                const auto possible = source.lexically_relative(branchRoot);
+                if (!possible.empty() && !possible.is_absolute() &&
+                    *possible.begin() != L".." && !possible.has_root_path()) {
+                    relative = possible; break;
+                }
+            }
+            auto target = root / directory / relative;
+            target.replace_extension(fs::u8path(extension(profile.kind)));
+            ensurePlainTree(target);
+            const auto native = serializeNative(profile);
+            const auto fingerprint = sha256(bytes);
+            // Protect all legacy files with an immutable content-addressed
+            // backup, even if this is an unchanged target.
+            const auto backup = root / L"Backups" / fs::u8path(fingerprint + ".txt");
+            if (!writeNewVerified(backup, bytes)) throw ProfileError("TXT backup conflict");
+            if (cancel) { report.cancelled = true; break; }
+            if (fs::exists(target)) {
+                if (readFile(target) == native) { ++report.unchanged; continue; }
+                // A differing target may contain the user's newer edits.
+                // Put the converted profile in ImportConflicts, never replace.
+                auto candidate = root / L"Settings" / L"ImportConflicts" / directory / relative;
+                candidate += fs::u8path("." + fingerprint + extension(profile.kind));
+                if (!writeNewVerified(candidate, native)) throw ProfileError("Conflict candidate collision");
+                ++report.conflicts; continue;
+            }
+            if (!writeNewVerified(target, native)) { ++report.conflicts; continue; }
+            const auto verified = parseNative(readFile(target));
+            if (verified.kind != profile.kind || verified.payload != bytes)
+                throw ProfileError("Converted profile readback mismatch");
+            ++report.imported;
+            if (profile.kind == ProfileKind::fx) ++report.fxImported;
+            else ++report.trackImported;
+        } catch (...) { ++report.errors; }
+    }
+    return report;
+}
+
 ImportWorker::~ImportWorker() { stop(); }
 bool ImportWorker::start(const fs::path& root) {
     if (busy_) return false;
@@ -162,6 +247,22 @@ bool ImportWorker::start(const fs::path& root) {
         worker_ = std::thread([this, root] {
             ImportReport report;
             try { report = importProfiles(root, cancel_); } catch (...) { ++report.errors; }
+            { std::lock_guard<std::mutex> lock(mutex_); completed_ = report; }
+            busy_ = false;
+        });
+    } catch (...) { busy_ = false; throw; }
+    return true;
+}
+bool ImportWorker::startSelected(const fs::path& root, const std::vector<fs::path>& sources) {
+    if (busy_) return false;
+    if (worker_.joinable()) worker_.join();
+    { std::lock_guard<std::mutex> lock(mutex_); completed_.reset(); }
+    cancel_ = false; busy_ = true;
+    try {
+        worker_ = std::thread([this, root, sources] {
+            ImportReport report;
+            try { report = importSelectedProfiles(root, sources, cancel_); }
+            catch (...) { ++report.errors; }
             { std::lock_guard<std::mutex> lock(mutex_); completed_ = report; }
             busy_ = false;
         });

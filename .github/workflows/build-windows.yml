@@ -30,6 +30,8 @@ jobs:
         run: python Testing/test62_6_memory_selected_navigation_static.py
       - name: TEST62.7 Ctrl L exits any group to Custom Order (source only)
         run: python Testing/test62_7_ctrl_l_group_exit_static.py
+      - name: TEST62.8 select single or multiple legacy FX and Track TXT files (source only)
+        run: python Testing/test62_8_selective_txt_import_static.py
       - name: TEST61.16 independent FX grids per ordering and group (source only)
         run: python Testing/test61_16_fx_view_context_static.py
       - name: Verify source and synthetic fixtures
