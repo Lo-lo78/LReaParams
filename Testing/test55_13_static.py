@@ -12,11 +12,20 @@ routing = (r/'src/TrackNavigatorRouting.cpp').read_text()
 lua = (r/'Legacy/Speak Track Params - TrackTake Navigator.lua').read_text()
 assert 'function grid_jump_by_initial_in_tracks_row' in lua
 assert 'function grid_jump_by_initial_in_current_column' in lua
-assert 'void TrackNavigator::jumpByInitial(wchar_t letter)' in nav
-assert 'if (!k.repeat) jumpByInitial(k.character);' in nav
-assert 'std::iswalnum' in nav and 'std::towlower' in nav
+# TEST62.9: original initial navigation became incremental type-ahead.
+# The keyboard event timestamp and repeat flag are now forwarded to the
+# same shared matcher used by FX Params and the memory managers.
+type_ahead = (r/'include/lrp/TypeAhead.h').read_text(encoding='utf-8')
+assert 'void TrackNavigator::jumpByInitial(wchar_t letter, DWORD eventTime, bool repeated)' in nav
+assert 'jumpByInitial(k.character, k.time, k.repeat);' in nav
+assert 'std::iswalnum' in nav
+assert 'typeAhead_.find(letter, eventTime, repeated, row_, count, false,' in nav
+assert 'typeAhead_.find(letter, eventTime, repeated, parameter_, detailHeight, false,' in nav
+assert 'static constexpr std::uint32_t intervalMs = 1000;' in type_ahead
+assert 'sameLetterCycle' in type_ahead
+
 assert 'syncCursorToReaper();' in nav
-assert 'detailIndex_ * detailHeight + next' in nav
+assert 'detailIndex_ * detailHeight + i' in nav
 assert 'parameter_ = next;' in nav
 assert 'stepScale_ = memory_.step(parameterKey());' in nav
 assert 'std::string fixedRoutingSignature(const std::string& identity) const' in head
@@ -34,4 +43,4 @@ assert 'stepScale_ = memory_.step(parameterKey());' in nav
 assert 'memory_.setStep(parameterKey(), stepScale_)' in nav
 assert 'StepByTrack' not in mem and 'StepByTrack' not in nav
 assert 'Track|' not in mem.split('int TrackMemory::step(')[1].split('bool TrackMemory::valueSpeech')[0]
-print('TEST55.13 initial cycling, guarded routing and shared steps PASS (static only)')
+print('TEST55.13 incremental navigation, guarded routing and shared steps PASS (static only)')

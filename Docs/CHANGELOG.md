@@ -1,3 +1,10 @@
+## TEST62.9.1 — Riparazione test GitHub Actions dopo la ricerca incrementale (source-only)
+
+- Risolto il blocco del workflow nel vecchio `Testing/test55_13_static.py`: cercava `jumpByInitial(wchar_t letter)` e le posizioni del precedente navigatore a singola iniziale, sostituiti in TEST62.9.
+- Il test verifica ora la firma con timestamp e stato `repeat`, la navigazione incrementale sia in Track F1 sia in F2/F3 e la conservazione di CC routing e Step esistenti.
+- Il workflow esegue esplicitamente anche `test62_9_typeahead_alt_p_static.py` prima della build.
+- Nessuna modifica al codice C++, ai profili `.fx`/`.tp`, alle azioni o alle scorciatoie. I 104 test statici del pacchetto e il test C++ standalone TypeAhead sono passati localmente; build MSVC e REAPER/NVDA da verificare in GitHub Actions e su Windows.
+
 ## TEST62.9 — Ricerca incrementale da tastiera e Alt+P in FX Chain (source-only)
 
 - Nuovo algoritmo di ricerca incrementale basato sull'orario del tasto fisico, attivo in griglia FX/F7, Track F1–F3 e nelle memorie FX/Track; prefissi di parola, ripetizione della stessa iniziale, timeout 1000 ms e stato `Selected` preservato.
