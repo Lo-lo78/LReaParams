@@ -1,8 +1,10 @@
 > Documento storico TEST30. Per stato attuale e limiti prevalgono Status.md e FxCommandMatrix.csv.
 
-# TEST20 — FX Chain P and Ctrl+Shift+P
+# TEST20 — FX Chain P and Ctrl+Shift+P (STORICO, sostituito dal TEST62.9)
 
-## Expected behavior
+Per il comportamento attuale consultare [TEST62.9](TEST62_9_INCREMENTAL_SEARCH_AND_FX_CHAIN_ALT_P.md).
+
+## Expected behavior (solo storico)
 
 - **TCP/Main:** user assigns `P` to FX Params in the Main Action List; it opens FX Params. User assigns `Ctrl+Shift+P` to Track Params; it opens Track Params. The DLL does not hardcode either chord in TCP.
 - **FX Chain native FX list:** `Ctrl+Shift+P` is a dedicated built-in shortcut to open the currently focused FX using FX Params. The only explicit shortcut in the bridge is this chord.

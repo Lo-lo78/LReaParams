@@ -146,7 +146,7 @@ Restano disponibili le combinazioni di selezione F7 e tutte le scorciatoie degli
 
 # Tastiera attuale
 
-Le azioni FX Params, Track Params e FX Memories si assegnano nella Action List. P non è fissato nel codice. Nella lista FX Chain resta Ctrl+Shift+P contestuale.
+Le azioni FX Params, Track Params e FX Memories si assegnano nella Action List. Dal TEST62.9, **Alt+P nella lista FX della FX Chain** apre FX Params sull’effetto selezionato; **P nella lista FX resta libera** per cercare plugin. Fuori dalla FX Chain Alt+P non viene modificata. [Guida TEST62.9](TEST62_9_INCREMENTAL_SEARCH_AND_FX_CHAIN_ALT_P.md).
 
 | Gesto | Funzione FX Params |
 |---|---|
@@ -210,7 +210,7 @@ F10 non ha funzione; F12 singolo riservato, Ctrl+F12 slot 12; Alt+F10/F11/F12 ai
 0.0.43.4: Ctrl+Spazio invoca direttamente l’azione REAPER 40073 (Transport: Play/pause) e riprende dal punto di pausa.
 
 
-## 0.0.44.3 — Navigazione rapida per iniziale (prima di 0.0.45)
+## 0.0.44.3 — Navigazione rapida per iniziale (storica: sostituita dal TEST62.9)
 
 Nella griglia FX Params (Plugin Order, Custom Order, gruppi, risultati filtrati
 e editor F7), premere un carattere stampabile porta al **prossimo parametro

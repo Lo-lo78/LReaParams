@@ -8,14 +8,12 @@ f = (root / 'src/FxNavigator.cpp').read_text()
 a = (root / 'include/lrp/ReaperApi.h').read_text()
 for s in ('<accelerator', '"-accelerator"', 'fxChainShortcutHook', 'isFocusedFxList()',
           'GetDlgCtrlID(focus) != 1076', 'GetTouchedOrFocusedFX(1,',
-          'GetActionShortcutDesc(section, command', 'CountActionShortcuts(section, command)',
-          'kbd_formatKeyName(&accel',
           'shortcutHelp()', 'current_ && current_->active()'):
     assert s in e, f'FX chain shortcut guard missing: {s}'
 for s in ('GetTrackMediaItem(owner, item)', 'GetTake(mediaItem, takeIdx)',
           'GetTouchedOrFocusedFX(1,', 'if (!track_ && masterSelected'):
     assert s in f, f'Focused FX owner not prioritized: {s}'
-for api in ('CountActionShortcuts', 'GetActionShortcutDesc', 'SectionFromUniqueID', 'kbd_formatKeyName'):
+for api in ('GetTouchedOrFocusedFX',):
     assert f'#define REAPERAPI_WANT_{api}' in a, api
 assert 'WM_KEYDOWN' in e and 'WM_SYSKEYDOWN' in e
 assert 'VK_INSERT' in e and 'hwndCaret' in e

@@ -161,6 +161,7 @@ bool InputRouter::route(MSG& message, bool removed) noexcept {
     Key key{vk, (GetKeyState(VK_CONTROL) & 0x8000) != 0, (GetKeyState(VK_MENU) & 0x8000) != 0,
         (GetKeyState(VK_SHIFT) & 0x8000) != 0, (message.lParam & (1LL << 30)) != 0, message.hwnd};
     key.altGr = key.ctrl && key.alt && (GetKeyState(VK_RMENU) & 0x8000);
+    key.time = message.time;
     if ((!key.ctrl && !key.alt) || key.altGr) key.character = printableKey(vk);
     if (!navigator_->accepts(key)) {
         // Phase 0 has a deliberately small map. Exit before handing any other command to REAPER.
@@ -230,6 +231,7 @@ bool InputRouter::enqueueOwnedKey(HWND window, UINT vk, bool repeat) noexcept {
         (GetKeyState(VK_MENU) & 0x8000) != 0,
         (GetKeyState(VK_SHIFT) & 0x8000) != 0, repeat, window};
     key.altGr = key.ctrl && key.alt && (GetKeyState(VK_RMENU) & 0x8000);
+    key.time = static_cast<DWORD>(GetMessageTime());
     if ((!key.ctrl && !key.alt) || key.altGr) key.character = printableKey(vk);
     // A gfx.getchar-style keyboard owner does not close on an unsupported key
     // and never leaks such a key to the TCP, FX or project.

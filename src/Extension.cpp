@@ -55,8 +55,9 @@ public:
         }
         // The FX chain can consume letter keys before the Main section sees them.
         // The key bridge only activates on REAPER's focused FX list (ID 1076).
-        // Ctrl+Shift+P is its explicit context shortcut; all other FX keys
-        // come only from the user's Main Action List bindings for FX Params.
+        // TEST62.9: only Alt+P launches FX Params from the selected FX in
+        // the chain. Bare P remains the FX list's type-ahead key. Outside
+        // the focused list Alt+P belongs to REAPER/OSARA unchanged.
         fxChainAccel_.translateAccel = fxChainShortcutHook;
         fxChainAccel_.isLocal = true;
         fxChainAccel_.user = this;
@@ -290,58 +291,22 @@ public:
         int tr = -1, item = -1, take = -1, fx = -1, state = 0;
         return GetTouchedOrFocusedFX(1, &tr, &item, &take, &fx, &state) && !(state & 1);
     }
-    // Ctrl+Shift+P is the sole hardcoded FX Chain chord. It intentionally
-    // overrides the Track Params assignment only while the focused FX list
-    // owns the keyboard; the same chord still opens Track Params in TCP.
+    // The dedicated accelerator owns Alt+P ONLY when REAPER's native FX
+    // selection list (1076) has focus. Never intercept bare P from the chain,
+    // nor Alt+P in a TCP, plugin UI, edit field, or unrelated window.
     bool fixedFxChainShortcutMatches(MSG* msg) const noexcept {
         return msg && (msg->message == WM_KEYDOWN || msg->message == WM_SYSKEYDOWN) &&
                msg->wParam == 'P' &&
-               (GetKeyState(VK_CONTROL) & 0x8000) &&
-               (GetKeyState(VK_SHIFT) & 0x8000) &&
-               !(GetKeyState(VK_MENU) & 0x8000) &&
+               !(GetKeyState(VK_CONTROL) & 0x8000) &&
+               !(GetKeyState(VK_SHIFT) & 0x8000) &&
+               (GetKeyState(VK_MENU) & 0x8000) &&
+               !(GetKeyState(VK_RMENU) & 0x8000) && // AltGr is text, not Alt+P
                !(GetKeyState(VK_INSERT) & 0x8000) &&
                !(GetKeyState(VK_NUMPAD0) & 0x8000);
     }
-    // Other keys (including P) must be configured by the user in REAPER's
-    // Main Action List for the FX Params action; never hardcode a bare P.
-    bool actionShortcutMatches(MSG* msg) const noexcept {
-        if (!msg || (msg->message != WM_KEYDOWN && msg->message != WM_SYSKEYDOWN) ||
-            msg->wParam > 255) return false;
-        const UINT vk = static_cast<UINT>(msg->wParam);
-        if (vk == VK_CONTROL || vk == VK_SHIFT || vk == VK_MENU ||
-            vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_LSHIFT ||
-            vk == VK_RSHIFT || vk == VK_LMENU || vk == VK_RMENU ||
-            (GetKeyState(VK_INSERT) & 0x8000) || (GetKeyState(VK_NUMPAD0) & 0x8000)) return false;
-        ACCEL accel{};
-        accel.fVirt = FVIRTKEY;
-        if (GetKeyState(VK_CONTROL) & 0x8000) accel.fVirt |= FCONTROL;
-        if (GetKeyState(VK_SHIFT) & 0x8000) accel.fVirt |= FSHIFT;
-        if (GetKeyState(VK_MENU) & 0x8000) accel.fVirt |= FALT;
-        accel.key = static_cast<WORD>(vk);
-        char current[256]{};
-        kbd_formatKeyName(&accel, current);
-        const auto normalize = [](const char* txt) {
-            std::string value;
-            for (const unsigned char* p = reinterpret_cast<const unsigned char*>(txt); *p; ++p)
-                if (!std::isspace(*p)) value.push_back(static_cast<char>(std::tolower(*p)));
-            return value;
-        };
-        const std::string currentDesc = normalize(current);
-        if (currentDesc.empty()) return false;
-        KbdSectionInfo* section = SectionFromUniqueID(0);
-        if (!section) return false;
-        const int command = actions_[fxParams].command; // FX Params ONLY
-        const int count = CountActionShortcuts(section, command);
-        for (int i = 0; i < count; ++i) {
-            char desc[256]{};
-            if (GetActionShortcutDesc(section, command, i, desc, sizeof(desc)) &&
-                currentDesc == normalize(desc)) return true;
-        }
-        return false;
-    }
     int interceptFxChainShortcut(MSG* msg) {
         if (!isFocusedFxList() || shortcutHelp() || current_ && current_->active() ||
-            !(fixedFxChainShortcutMatches(msg) || actionShortcutMatches(msg))) return 0;
+            !fixedFxChainShortcutMatches(msg)) return 0;
         // Use the same normal launch path, shared session memory and access API.
         // Return 1 so REAPER won't also process the original key for search.
         return action(actions_[fxParams].command) ? 1 : 0;

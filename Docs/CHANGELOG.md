@@ -1,3 +1,10 @@
+## TEST62.9 — Ricerca incrementale da tastiera e Alt+P in FX Chain (source-only)
+
+- Nuovo algoritmo di ricerca incrementale basato sull'orario del tasto fisico, attivo in griglia FX/F7, Track F1–F3 e nelle memorie FX/Track; prefissi di parola, ripetizione della stessa iniziale, timeout 1000 ms e stato `Selected` preservato.
+- FX Chain: intercetta **solo Alt+P** nella lista FX nativa; P resta libera e Alt+P fuori dalla lista mantiene la funzione REAPER/OSARA. Rimosso il ponte contesto a Ctrl+Shift+P/P senza toccare gli shortcut Main assegnati dall'utente.
+- Profili .fx/.tp, importatore TXT TEST62.8, gruppi, step e scorciatoie di selezione invariati. CMake include i test C++ per l'algoritmo.
+- Guida: `Docs/TEST62_9_INCREMENTAL_SEARCH_AND_FX_CHAIN_ALT_P.md`. I test automatici non equivalgono a prova Windows/REAPER.
+
 ## TEST62.8 — Selective legacy TXT import (FX and Track)
 
 - New native REAPER action and Extensions submenu item `LReaParams: Import selected legacy TXT files`, opening the multi-file picker at the historical Lua Scripts folder.

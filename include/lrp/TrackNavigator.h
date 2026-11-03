@@ -3,6 +3,7 @@
 #include "TransportMarkers.h"
 #include "ReaperApi.h"
 #include "TrackMemory.h"
+#include "TypeAhead.h"
 #include "MidiControl.h"
 #include <map>
 #include <vector>
@@ -269,7 +270,9 @@ private:
     void resetPendingRouting() noexcept;
     std::string pendingRoutingStatus() const;
 
-    void jumpByInitial(wchar_t letter); // Lua: F1 track names, F2/F3 fields in current column
+    void jumpByInitial(wchar_t letter, DWORD eventTime, bool repeated);
+    void memoryTypeAhead(const Key& key);
+    TypeAhead typeAhead_; // shared per-session buffer; cleared by every non-text navigation key
     void moveTrack(int delta);
     void moveParameter(int delta);
     void moveDetailColumn(int delta);

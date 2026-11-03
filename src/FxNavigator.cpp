@@ -1062,6 +1062,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk == 'M') return true;
         if(defaultConfirm_)return !k.ctrl&&!k.alt&&!k.shift&&(k.vk=='Y'||k.vk=='N'||k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_UP||k.vk==VK_DOWN);
         if(k.vk==VK_F12)return false;
+        if(!k.ctrl && !k.alt && k.character >= L'!')return true;
         // TEST62.6: selected-only vertical navigation. Horizontal gestures
         // are deliberately consumed but inert: they cannot change columns.
         if(k.alt && k.shift && !k.ctrl && !k.altGr)
@@ -1248,38 +1249,14 @@ void FxNavigator::navigate(int delta) {
     if (next == viewPos_) return;
     positionChanged(next);
 }
-void FxNavigator::cycleByInitial(wchar_t character) {
-    cycleByInitial(character, false);
-}
-void FxNavigator::cycleByInitial(wchar_t character, bool backwards) {
+void FxNavigator::cycleByInitial(wchar_t character, DWORD eventTime, bool repeated, bool backwards) {
     if (!character || visible_.empty()) return;
-    // Without Shift: next match, wrapping forwards; with Shift: previous
-    // match, wrapping backwards. Both use the *displayed* parameter label.
-    // Use Windows Unicode case conversion for Italian accents too. No speech
-    // or position change if the current grid has no matching initial.
-    CharLowerBuffW(&character, 1);
-    const int total = static_cast<int>(visible_.size());
-    for (int offset = 1; offset <= total; ++offset) {
-        const int index = backwards ? (viewPos_ + total - (offset % total)) % total
-                                    : (viewPos_ + offset) % total;
-        const std::string label = fxOrder_.label(visible_[static_cast<size_t>(index)]);
-        if (label.empty()) continue;
-        const auto byte0 = static_cast<unsigned char>(label[0]);
-        const int utf8Len = byte0 < 0x80 ? 1 : byte0 < 0xc0 ? 0 :
-                            byte0 < 0xe0 ? 2 : byte0 < 0xf0 ? 3 : 4;
-        if (!utf8Len || label.size() < static_cast<size_t>(utf8Len)) continue;
-        wchar_t first[2]{};
-        if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, label.data(),
-                                utf8Len, first, 2) != 1) continue;
-        CharLowerBuffW(first, 1);
-        if (first[0] == character) {
-            // The Lua repeats the current parameter too if it is the only
-            // matching initial; announce it rather than leaving NVDA silent.
-            if (index == viewPos_) announce();
-            else positionChanged(index);
-            return;
-        }
-    }
+    const int matched = typeAhead_.find(character, eventTime, repeated,
+        viewPos_, static_cast<int>(visible_.size()), backwards,
+        [this](int index) {return wideUtf8(fxOrder_.label(visible_[static_cast<size_t>(index)]));});
+    if (matched < 0) return; // no match is silent
+    if (matched == viewPos_) announce();
+    else positionChanged(matched);
 }
 void FxNavigator::setValue(double value) {
     if(parameter_==compareParamIndex){if(setCompare(value))speech_(compareFormatted());return;}
@@ -1470,6 +1447,7 @@ void FxNavigator::searchPreview() {
     findMatching(true);
 }
 void FxNavigator::handle(const Key& k) {
+    if (!k.character || (k.ctrl && !k.altGr) || (k.alt && !k.altGr)) typeAhead_.reset();
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
     if (clearAutomationConfirm_) {
         if (k.repeat) return;
@@ -1573,8 +1551,7 @@ void FxNavigator::handle(const Key& k) {
     // on many European keyboards, not an FX Ctrl+Alt command.
     if (k.altGr && k.character) {
         if (!valueMode_ && !searchMode_) {
-            if (k.shift) cycleByInitial(k.character, true);
-            else cycleByInitial(k.character);
+            cycleByInitial(k.character, k.time, k.repeat, k.shift);
         }
         return;
     }
@@ -1756,13 +1733,11 @@ void FxNavigator::handle(const Key& k) {
         if(!k.repeat)runLuaFunctionAction(k.vk==VK_F5?40280:k.vk==VK_F6?40281:40282);
         return;
     }
-    // In the grid (including F7 and filtered/group views), typing an initial
-    // cycles through the CURRENT visible entries, exactly like the Lua.
-    // It is not a multi-character filter: Ctrl+F owns that functionality.
+    // TEST62.9: incrementally match typed words, while Ctrl+F remains
+    // the separate full substring search with a native editing field.
     if (!k.ctrl && !k.alt && k.character) {
         if (!valueMode_) {
-            if (k.shift) cycleByInitial(k.character, true);
-            else cycleByInitial(k.character);
+            cycleByInitial(k.character, k.time, k.repeat, k.shift);
         }
         return; // Value remains open; characters do not modify its slider.
     }

@@ -134,6 +134,8 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (!filterEditing_ && !numericEditing_ &&
         isTransportMarkerShortcut(k)) return true;
     if (memoryManager_) {
+        if (!k.ctrl && !k.alt && k.character &&
+            std::iswalnum(static_cast<wint_t>(k.character))) return true;
         if (k.ctrl && k.shift && !k.alt && k.vk == 'M') return true;
         // TEST62.6: Alt+Shift+Up/Down moves among selected memory rows;
         // Alt+Shift+Left/Right is reserved and must not switch columns.
@@ -1137,50 +1139,39 @@ void TrackNavigator::moveToFolder(int direction) {
     }
     // Silent boundary, same as ordinary F1 movement.
 }
-void TrackNavigator::jumpByInitial(wchar_t letter) {
+void TrackNavigator::jumpByInitial(wchar_t letter, DWORD eventTime, bool repeated) {
     if (!active_ || valueMode_ || !std::iswalnum(static_cast<wint_t>(letter))) return;
-    const auto requested = std::towlower(static_cast<wint_t>(letter));
     if (page_ == Page::tracks) {
         const int count = static_cast<int>(rows_.size());
-        for (int offset = 1; offset <= count; ++offset) {
-            const int next = (row_ + offset) % count;
-            char label[2048]{};
-            if (!GetTrackName(rows_[static_cast<size_t>(next)].track, label, sizeof(label))) continue;
-            const auto wide = wideUtf8(label);
-            const auto first = std::find_if_not(wide.begin(), wide.end(), [](wchar_t c) {
-                return std::iswspace(static_cast<wint_t>(c)) != 0;
+        if (!count) return;
+        const int next = typeAhead_.find(letter, eventTime, repeated, row_, count, false,
+            [this](int i) {
+                char name[2048]{};
+                if (!GetTrackName(rows_[static_cast<size_t>(i)].track, name, sizeof(name))) return std::wstring{};
+                return wideUtf8(name);
             });
-            if (first == wide.end() || std::towlower(static_cast<wint_t>(*first)) != requested) continue;
-            if (next == row_) return; // Only one matching track: silent boundary.
-            row_ = next;
-            track_ = rows_[static_cast<size_t>(row_)].track;
-            resetSelectionStroke();
-            syncCursorToReaper();
-            midiPickup_.clear();
-            rememberPosition();
-            announceTrack(); // preserve F1 parameter column
-            return;
-        }
-        return; // No match: do not announce or move.
-    }
-    // F2/F3: one column per connection; cycle through its 14 fields only.
-    for (int offset = 1; offset <= detailHeight; ++offset) {
-        const int next = (parameter_ + offset) % detailHeight;
-        const auto index = detailIndex_ * detailHeight + next;
-        if (index < 0 || index >= static_cast<int>(entries_.size())) continue;
-        const auto& title = entries_[static_cast<size_t>(index)].title;
-        const auto wide = wideUtf8(title);
-        const auto first = std::find_if_not(wide.begin(), wide.end(), [](wchar_t c) {
-            return std::iswspace(static_cast<wint_t>(c)) != 0;
-        });
-        if (first == wide.end() || std::towlower(static_cast<wint_t>(*first)) != requested) continue;
-        if (next == parameter_) return;
-        parameter_ = next;
-        stepScale_ = memory_.step(parameterKey());
+        if (next < 0 || next == row_) return;
+        row_ = next;
+        track_ = rows_[static_cast<size_t>(row_)].track;
+        resetSelectionStroke();
+        syncCursorToReaper();
+        midiPickup_.clear();
         rememberPosition();
-        announce(); // vertical speech: parameter and value only
+        announceTrack();
         return;
     }
+    // F2/F3: search only within the 14 fields of the current send/receive.
+    const int next = typeAhead_.find(letter, eventTime, repeated, parameter_, detailHeight, false,
+        [this](int i) {
+            const int index = detailIndex_ * detailHeight + i;
+            if (index < 0 || index >= static_cast<int>(entries_.size())) return std::wstring{};
+            return wideUtf8(entries_[static_cast<size_t>(index)].title);
+        });
+    if (next < 0 || next == parameter_) return;
+    parameter_ = next;
+    stepScale_ = memory_.step(parameterKey());
+    rememberPosition();
+    announce();
 }
 void TrackNavigator::moveTrack(int delta) {
     if (page_ != Page::tracks) return;
@@ -1273,6 +1264,7 @@ void TrackNavigator::nudge(int direction, bool coarse) {
     put(*e, next);
 }
 void TrackNavigator::handle(const Key& k) {
+    if (!k.character || k.ctrl || k.alt) typeAhead_.reset();
     if (!contextUnchanged()) throw std::runtime_error("Track context changed");
     // This confirmation temporarily owns the navigator's review line. Handle
     // it BEFORE Tab, transport or the memory shortcuts so NVDA can review the
@@ -1591,7 +1583,7 @@ void TrackNavigator::handle(const Key& k) {
     if (k.vk == VK_END) { moveParameter((page_ == Page::tracks ? 8 : detailHeight - 1) - parameter_); return; }
     if (!k.ctrl && !k.alt && !k.altGr && !valueMode_ && k.character &&
         std::iswalnum(static_cast<wint_t>(k.character))) {
-        if (!k.repeat) jumpByInitial(k.character);
+        jumpByInitial(k.character, k.time, k.repeat);
         return;
     }
     // F1: left/right = parameters, up/down = tracks.

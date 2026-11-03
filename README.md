@@ -1,3 +1,7 @@
+## TEST62.9 — Ricerca incrementale e Alt+P nella FX Chain
+
+Nella griglia FX Params (anche F7 e gruppi), in Track Params F1–F3 e nei due gestori di memorie, digitare rapidamente più lettere cerca il prefisso del parametro o di una sua parola. Il tempo tra pressioni è 1000 ms; numeri, punteggiatura e la selezione multipla rimangono disponibili dove già previsti. Nella lista FX Chain **Alt+P** apre FX Params sul plugin selezionato, mentre **P** resta libera per cercare i plugin e fuori dalla FX Chain **Alt+P** non viene toccata. Tutte le modifiche TEST62.1–62.8 sono conservate. [Guida e prove](Docs/TEST62_9_INCREMENTAL_SEARCH_AND_FX_CHAIN_ALT_P.md). Compilazione nativa Windows via GitHub Actions.
+
 ## TEST62.8 — Import selettivo TXT storici (FX + Track)
 
 Dalla Action List: **LReaParams: Import selected legacy TXT files**; dal menu Extensions > LReaParams > Import selected TXT files. Apre il selettore Windows/REAPER nella cartella storica dei Lua (sottocartelle Plugins e Tracks), permette di scegliere uno o più TXT e converte in `.fx` o `.tp` secondo il contenuto. I TXT originali rimangono invariati, i conflitti non sovrascrivono le memorie native, i backup sono verificati. L’azione precedente di importazione completa è conservata. Vedere [Docs/TEST62_8_SELECTIVE_TXT_IMPORT.md](Docs/TEST62_8_SELECTIVE_TXT_IMPORT.md) per procedure e limiti dei vecchi profili Track basati su GUID.
