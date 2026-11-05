@@ -1,0 +1,25 @@
+{
+  "releases": [
+    {
+      "tag_name": "v0.0.63",
+      "draft": false,
+      "prerelease": false,
+      "published_at": "2026-11-03T18:47:00Z",
+      "body": "Initial public package, FX and Track accessibility",
+      "assets": [
+        {
+          "name": "reaper_lreaparams.dll",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/Lo-lo78/LReaParams/releases/download/v0.0.63/reaper_lreaparams.dll"
+        }
+      ]
+    }
+  ],
+  "trees": {
+    "v0.0.63": [
+      "Guide/index.html",
+      "Guide/it/index.html",
+      "Guide/LReaParams - FX Params.html"
+    ]
+  }
+}

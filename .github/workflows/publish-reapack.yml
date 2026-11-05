@@ -1,0 +1,111 @@
+name: Publish LReaParams to ReaPack
+
+# A published GitHub Release triggers the native build and the XML update.
+# Run manually with an existing tag to add ReaPack support to an older release.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing published GitHub release tag (example: v0.0.63)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+# Never let two publishing runs race while changing index.xml.
+concurrency:
+  group: lreaparams-reapack-publisher
+  cancel-in-progress: false
+
+jobs:
+  build-native-release-asset:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Check published release is valid
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?$') {
+            throw "Invalid release tag: $env:RELEASE_TAG"
+          }
+          $releaseInfo = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'Release not found' }
+          if ($releaseInfo.isDraft -or $releaseInfo.isPrerelease) {
+            throw 'Only published stable releases are indexed'
+          }
+      - name: Checkout exact released source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          persist-credentials: false
+
+      - name: Check CMake version matches release tag
+        shell: pwsh
+        run: |
+          $expected = $env:RELEASE_TAG.Substring(1)
+          $cmake = Get-Content CMakeLists.txt -Raw
+          if ($cmake -notmatch 'project\(LReaParams VERSION ([0-9.]+)') {
+            throw 'Cannot determine CMake project version'
+          }
+          if ($Matches[1] -ne $expected) {
+            throw "Version mismatch: release $expected, CMake $($Matches[1])"
+          }
+
+      - name: Configure MSVC x64
+        run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
+      - name: Build DLL
+        run: cmake --build build --config Release --parallel
+      - name: Run native tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Verify DLL exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'build/Release/reaper_lreaparams.dll')) {
+            throw 'Compiled DLL is missing'
+          }
+
+      - name: Add standalone DLL to existing GitHub release
+        shell: pwsh
+        run: |
+          gh release upload $env:RELEASE_TAG 'build/Release/reaper_lreaparams.dll' --clobber --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -ne 0) { throw 'Uploading DLL to release failed' }
+
+  regenerate-reapack-index:
+    needs: build-native-release-asset
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout main (the public index lives here)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Rebuild index.xml from ALL published releases with a standalone DLL
+        run: python3 Tools/generate_reapack_index.py --output index.xml
+
+      - name: Verify generated index
+        run: python3 -m unittest discover -s Testing -p 'test_reapack_index*.py' -v
+
+      - name: Commit index.xml if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add index.xml
+          if git diff --cached --quiet; then
+            echo "index.xml is already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(reapack): update XML release index [skip ci]"
+          git push origin HEAD:main
