@@ -38,3 +38,9 @@ add_executable(keyboard_theme_tests Testing/KeyboardThemeTests.cpp)
 target_include_directories(keyboard_theme_tests PRIVATE include)
 target_compile_options(keyboard_theme_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
 add_test(NAME keyboard_themes COMMAND keyboard_theme_tests)
+# TEST64.3: platform-independent Page/arrow step calibration regression.
+add_executable(parameter_step_tests Testing/ParameterStepSizingTests.cpp)
+target_include_directories(parameter_step_tests PRIVATE include)
+target_compile_options(parameter_step_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
+add_test(NAME parameter_steps COMMAND parameter_step_tests)
+

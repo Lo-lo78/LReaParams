@@ -210,7 +210,7 @@ public:
         case about:
             exitNavigation(false);
             ShowMessageBox(
-                "LReaParams 0.0.64 - Native REAPER extension\nTEST64.2 Keyboard page keys and silent unmapped slots\n\n"
+                "LReaParams 0.0.64 - Native REAPER extension\nTEST64.3 Keyboard and Value Page step calibration\n\n"
                 "Accessible FX Params and Track Params for NVDA and OSARA.\n"
                 "iZotope RX 11: stabilized parameter readback prevents announcing the previous value; minor speech delay on RX only.\n"
                 "Concept and design: Lo-lo. Code developed with ChatGPT.\n\n"

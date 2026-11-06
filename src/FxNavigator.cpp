@@ -1,4 +1,5 @@
 #include "lrp/FxNavigator.h"
+#include "lrp/ParameterStepSizing.h"
 #include "lrp/PeakWatcher.h"
 #include "lrp/ReaEqChunk.h"
 #include "lrp/ReaEqVirtual.h"
@@ -1482,10 +1483,10 @@ void FxNavigator::nudge(int direction, bool big) {
         : TrackFX_GetParameterStepSizes(track_, fx_, parameter_, &normal, &small, &large, &toggle);
     const double old = take_ ? TakeFX_GetParamNormalized(take_, fx_, parameter_) : TrackFX_GetParamNormalized(track_, fx_, parameter_);
     if (known && toggle) { setValue(direction > 0 ? 1 : 0); return; }
-    double step = known ? (big ? large : normal) : 0;
-    if (!std::isfinite(step) || step <= 0 || step > 1) step = big ? 0.01 : 0.001;
-    // Feasibility step control. Full Lua per-plugin/discrete adapters are pending.
-    step *= std::pow(2.0, stepScale_);
+    // TEST64.3: use the same Step calibration in Value and Keyboard. Some
+    // plug-ins return a 'large' step smaller than 'normal'; Page must not
+    // require +4 Step clicks just to match one arrow adjustment.
+    const double step = parameter_step::amount(known, normal, large, big, stepScale_);
     setValue(old + direction * step);
 }
 namespace {

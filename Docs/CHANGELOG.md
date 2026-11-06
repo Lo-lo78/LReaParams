@@ -1,3 +1,10 @@
+## TEST64.3 — Value/Keyboard Page Up/Down step calibration (experimental)
+
+- Corrige un difetto del motore comune `nudge`: alcuni plugin comunicano un incremento Page (`large`) uguale o inferiore all'incremento delle frecce (`normal`).
+- Se il passo Page del plugin e' realmente piu' grande, viene rispettato; se e' mancante, non valido o troppo piccolo, viene ricavato un passo ampio (10x, massimo 1) dallo stesso incremento delle frecce e dallo stesso Step scelto dall'utente.
+- Identico algoritmo per Standard Value e Keyboard; nessuna modifica alla gestione multipla di F7, alle mappature, ai profili o agli altri comandi.
+- TEST automatizzati C++ sul calcolo e verifica statica: resta da provare con combo reali su Windows/REAPER.
+
 ## TEST64.2 — Keyboard page keys and silent unmapped slots (experimental)
 
 - Tasti Keyboard senza parametro: silenzio completo, senza modifiche a selezione o valore.

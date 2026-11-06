@@ -16,6 +16,8 @@ jobs:
           persist-credentials: false
       - name: Verify public release version and package consistency (source only)
         run: python Testing/test_release_version_static.py
+      - name: TEST64.3 shared Value and Keyboard Page step calibration (source only)
+        run: python Testing/test64_3_page_step_static.py
       - name: TEST64.2 Keyboard PageUp/Down and silence for unmapped slots (source only)
         run: python Testing/test64_2_keyboard_page_silence_static.py
       - name: TEST64.1 per-context Keyboard theme and shortcut safety (source only)
