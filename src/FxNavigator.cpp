@@ -1118,6 +1118,10 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_SPACE||
         (k.vk>='A'&&k.vk<='Z')||(k.vk>='0'&&k.vk<='9')||
         (k.ctrl&&k.vk=='F');
+    // TEST64.1: only normal FX Params owns F4. F7/EDIT/search/FX Memories
+    // above never accept it; Track Params has a separate navigator.
+    if (k.vk == VK_F4 && !k.ctrl && !k.alt && !k.shift && !k.altGr &&
+        !editF7_ && !defaultConfirm_ && !clearAutomationConfirm_) return true;
     if (k.vk == VK_F12 && !k.ctrl) return false; // bare F12 is reserved for future LReaParams commands
     if (k.ctrl && !k.alt && k.vk == 'L') return true;
     if (k.vk==VK_BACK && !k.alt) return true;
@@ -1244,8 +1248,9 @@ std::wstring FxNavigator::windowTitle() const {
     if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));
     // Keep Grid out of the title; position Bypassed/Delta BEFORE context/FX.
     return wideUtf8(fxWindowTitleBase()) +
-           (textEdit_ ? L" - Rename" : searchMode_ ? L" - Find Parameter" : valueMode_ ? L" - Value" :
-            editF7_ ? L" - F7 Edit" : L"");
+           (textEdit_ ? L" - Rename" : searchMode_ ? L" - Find Parameter" :
+            editF7_ ? L" - F7 Edit" : keyboardThemeActive() ? L" - Keyboard" :
+            valueMode_ ? L" - Value" : L"");
 }
 std::string FxNavigator::reviewLine() const {
     // NVDA+Up reads the active confirmation rather than the stale FX parameter.
@@ -1264,6 +1269,7 @@ std::string FxNavigator::reviewLine() const {
     if (editF7_ && !valueMode_)
         return editorParameterSpeech() + ". " + viewPositionSpeech() + ". " +
             std::to_string(f7Selected_.size()) + " selected";
+    if (keyboardThemeActive()) return "Keyboard, " + currentParameterSpeech();
     return valueMode_ ? "Value, " + currentParameterSpeech() : currentParameterSpeech();
 }
 void FxNavigator::navigate(int delta) {
@@ -1546,7 +1552,7 @@ void FxNavigator::searchPreview() {
 void FxNavigator::handle(const Key& k) {
     // Do not replay a pending RX value when another command takes over.
     // Consecutive Value/Alt adjustments replace the pending announcement.
-    const bool valueKey = !k.ctrl && (k.alt || valueMode_) &&
+    const bool valueKey = !k.ctrl && (k.alt || valueMode_ || keyboardThemeActive()) &&
         (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
          k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END);
     if(!valueKey) rxValueAnnouncement_.active = false;
@@ -1730,6 +1736,10 @@ void FxNavigator::handle(const Key& k) {
         return;
     }
     if (editF7_ && handleF7(k)) return;
+    if (k.vk == VK_F4 && !k.ctrl && !k.alt && !k.shift && !k.altGr && !editF7_) {
+        if (!k.repeat) toggleKeyboardTheme();
+        return;
+    }
     if(k.ctrl && !k.shift && !k.alt && k.vk==VK_RETURN) {
         speech_("Press F7 to rename");return;
     }
@@ -1836,6 +1846,30 @@ void FxNavigator::handle(const Key& k) {
         if(!k.repeat)runLuaFunctionAction(k.vk==VK_F5?40280:k.vk==VK_F6?40281:40282);
         return;
     }
+    // TEST64.1: the only Keyboard-specific gestures. All earlier Ctrl/Shift/
+    // Alt commands use their ORIGINAL handlers (bypass, Delta, F7, memories,
+    // automation, Ctrl+Page, Ctrl+FX etc.). No Keyboard logic runs inside F7.
+    if (keyboardThemeActive()) {
+        if (!k.ctrl && k.alt && !k.shift && !k.altGr &&
+            (k.vk == VK_UP || k.vk == VK_DOWN)) {
+            const int target = keyboard::pageTarget(viewPos_,
+                k.vk == VK_DOWN ? 1 : -1, static_cast<int>(visible_.size()));
+            if (target >= 0) positionChanged(target); // First item of new page.
+            return; // Quiet at the first/last page; never edit old parameter.
+        }
+        if (!k.ctrl && !k.alt && !k.shift && !k.altGr) {
+            const int keyIndex = keyboard::offset(k.vk);
+            if (keyIndex >= 0) {
+                if (k.repeat) return;
+                const int target = keyboard::keyTarget(viewPos_, keyIndex,
+                                                        static_cast<int>(visible_.size()));
+                if (target < 0) speech_("Empty");
+                else if (target == viewPos_) announce();
+                else positionChanged(target);
+                return;
+            }
+        }
+    }
     // TEST62.9: incrementally match typed words, while Ctrl+F remains
     // the separate full substring search with a native editing field.
     if (!k.ctrl && !k.alt && typeAheadCharacter(k.vk, k.shift, k.character)) {
@@ -1849,7 +1883,7 @@ void FxNavigator::handle(const Key& k) {
         const int next=std::clamp(columns_+(k.vk==VK_F1?-1:1),1,200);
         if(next!=columns_){columns_=next;lastControl_=LastControl::grid;rememberPosition();speech_("Grid "+std::to_string(columns_));}return;
     }
-    if(k.alt||valueMode_) {
+    if(k.alt||valueMode_||keyboardThemeActive()) {
         if(k.vk==VK_LEFT||k.vk==VK_RIGHT){
             if(editF7_ && !f7Selected_.empty()) {stepSelectedF7(k.vk==VK_LEFT?-1:1);return;}
             const int next=std::clamp(stepScale_+(k.vk==VK_LEFT?-1:1),-10,10);

@@ -32,3 +32,9 @@ add_executable(typeahead_tests Testing/TypeAheadTests.cpp)
 target_include_directories(typeahead_tests PRIVATE include)
 target_compile_options(typeahead_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
 add_test(NAME typeahead COMMAND typeahead_tests)
+
+# TEST64.1: platform-independent Keyboard mapping/preferences regression.
+add_executable(keyboard_theme_tests Testing/KeyboardThemeTests.cpp)
+target_include_directories(keyboard_theme_tests PRIVATE include)
+target_compile_options(keyboard_theme_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
+add_test(NAME keyboard_themes COMMAND keyboard_theme_tests)

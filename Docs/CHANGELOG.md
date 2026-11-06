@@ -1,3 +1,9 @@
+## TEST64.1 — FX Params Keyboard theme (experimental)
+
+- 14 temi Standard/Keyboard indipendenti per definizione di plugin (Plugin Order, Custom Order, 12 gruppi), F4 istantaneo, persistenza `.fx`.
+- 36 tasti alfanumerici, blocchi da 36 con Alt+Su/Giù, stesso motore Value; F7 e tutte le altre scorciatoie rimangono inalterati.
+- Test nativi e statici; non è una nuova release.
+
 ## 0.0.64 — stable release preparation: iZotope RX 11 readback (2026-11-06)
 
 - Based on TEST63.1; confirmed by the user in REAPER with iZotope RX 11. Formatted parameter text is read back after settling to avoid announcing the previous value.

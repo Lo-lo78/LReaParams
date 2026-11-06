@@ -1,3 +1,5 @@
+**NOVITÀ TEST64.1:** tema Keyboard opzionale, salvato per ciascuno dei 14 contesti di FX Params, F4 cambia tema solo nel contesto corrente; F7 resta Standard. [Guida TEST64.1](TEST64_1_KEYBOARD_THEMES.md).
+
 **NOTA TEST61:** da LReaParams 0.0.61 le assegnazioni vigenti sono **F10 = Browser/Grid**, **F11 = Audio Pin Connector**; Ctrl+P non cambia più la modalità FX. Le sezioni relative alle versioni precedenti sono **storiche** e possono riportare vecchie combinazioni. Track Params: F1–F7, con F5 MIDI, F6 hardware e F7 ReaRoute.
 
 ## TEST61 — nuova mappa corrente FX/Track

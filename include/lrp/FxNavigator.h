@@ -3,6 +3,7 @@
 #include "Navigator.h"
 #include "TransportMarkers.h"
 #include "FxOrder.h"
+#include "KeyboardTheme.h"
 #include "TypeAhead.h"
 #include "MidiControl.h"
 #include <filesystem>
@@ -60,7 +61,8 @@ public:
     void announceTitle() override;
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
-    bool nativeValueSlider() const override { return active_ && valueMode_ && !clearAutomationConfirm_ && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_; }
+    bool nativeValueSlider() const override { return active_ && !editF7_ && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_ &&
+        ((valueMode_ && !clearAutomationConfirm_) || keyboardThemeActive()); }
     // Native Windows EDIT control for F7 rename and Ctrl+F search.
     bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_) && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_; }
     std::string nativeTextValue() const { return numericEdit_ ? numericBuffer_ : textEdit_ ? textBuffer_ : search_; }
@@ -241,6 +243,9 @@ private:
     void restoreParameterPosition();
     void restorePersistedParameter();
     int currentViewIndex() const noexcept;
+    bool keyboardThemeActive() const noexcept;
+    void loadKeyboardThemes();
+    void toggleKeyboardTheme();
     void captureViewCursor();
     void loadViewCursors();
     void restoreViewCursor(int fallbackParam, int fallbackPosition = -1);
@@ -403,6 +408,9 @@ private:
     std::filesystem::path resourceRoot_;
     std::vector<int> visible_;
     std::array<ViewCursor, 14> viewCursors_{};
+    // Per plugin definition: Plugin Order, Custom Order, Groups 1..12.
+    // F7 is ALWAYS Standard regardless of these persisted theme choices.
+    std::array<bool, keyboard::contextCount> keyboardThemes_{};
     int viewPos_ = 0;
     // The view from which the first group was loaded (also across group switches).
     bool groupReturnActive_ = false, groupReturnCustom_ = false, groupReturnEdit_ = false;

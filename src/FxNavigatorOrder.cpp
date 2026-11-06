@@ -213,6 +213,43 @@ std::string FxNavigator::displayName() const {
 int FxNavigator::currentViewIndex() const noexcept {
     return groupSlot_ >= 1 && groupSlot_ <= 12 ? groupSlot_ + 1 : fxOrder_.custom ? 1 : 0;
 }
+namespace {
+constexpr const char* keyboardThemesProfileKey = "lrp_keyboard_themes_v1";
+}
+bool FxNavigator::keyboardThemeActive() const noexcept {
+    // Only the normal FX Params navigation can use Keyboard. Every editor,
+    // dialog, FX browser, F7 and FX Memories keeps the original shortcuts.
+    return active_ && !editF7_ && !textEdit_ && !numericEdit_ &&
+           !searchMode_ && !recentMode_ && !memoryManager_ &&
+           !fxBrowserMode_ && !pinAudioMode_ && !defaultConfirm_ &&
+           !clearAutomationConfirm_ &&
+           keyboardThemes_[static_cast<std::size_t>(currentViewIndex())];
+}
+void FxNavigator::loadKeyboardThemes() {
+    keyboardThemes_ = keyboard::decode(fxOrder_.extraValue(keyboardThemesProfileKey));
+}
+void FxNavigator::toggleKeyboardTheme() {
+    if (!active_ || editF7_ || memoryManager_ || fxBrowserMode_ ||
+        pinAudioMode_ || textEdit_ || numericEdit_ || searchMode_ ||
+        recentMode_ || defaultConfirm_ || clearAutomationConfirm_) return;
+    const auto context = static_cast<std::size_t>(currentViewIndex());
+    const bool previous = keyboardThemes_[context];
+    keyboardThemes_[context] = !previous;
+    fxOrder_.setExtraValue(keyboardThemesProfileKey, keyboard::encode(keyboardThemes_));
+    try {
+        // Save only this context preference into the same Lua-compatible .fx.
+        // The selected parameter, cursor, Step, grid and Value state stay put.
+        saveStructure();
+        flushPersistentPosition();
+    } catch (const std::exception&) {
+        keyboardThemes_[context] = previous;
+        fxOrder_.setExtraValue(keyboardThemesProfileKey, keyboard::encode(keyboardThemes_));
+        speech_("Unable to save Keyboard theme");
+        return;
+    }
+    speech_(std::string(keyboardThemes_[context] ? "Keyboard. " : "Standard. ") +
+            (visible_.empty() ? "Empty" : currentParameterSpeech()));
+}
 void FxNavigator::captureViewCursor() {
     if (visible_.empty() || viewPos_ < 0 ||
         viewPos_ >= static_cast<int>(visible_.size())) return;
@@ -322,6 +359,7 @@ void FxNavigator::loadFxOrder() {
             (id>=0 && id<count_?([this,id]{auto alias=dynamicsAlias(id);return alias.empty()?originalName(track_,take_,fx_,id):alias;}()):std::string());
     },nativeOrder);
     loadParameterSteps();
+    loadKeyboardThemes();
     groupSlot_=0;groupEditAll_=false;searchMode_=false;editF7_=false;
     loadViewCursors(); // Shared persistent defaults, before the per-GUID overlay.
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
