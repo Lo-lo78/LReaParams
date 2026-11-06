@@ -24,6 +24,10 @@ public:
     // The FX/take context is authoritative for Ctrl+Tab and the TCP selection.
     MediaTrack* cursorTrack() const noexcept { return active_ ? track_ : nullptr; }
     void pollMidi();
+    // Some iZotope RX VST3 parameters publish their formatted display value
+    // one or more REAPER UI cycles after SetParamNormalized. Do not announce
+    // the previous value immediately after a successful write.
+    void pollRxValueSpeech();
     // Complete Ctrl+Alt+B online recovery when an FX exposes its parameters
     // after the REAPER SetOffline call. Called by the existing main-thread timer.
     bool pollOnlineParameters();
@@ -294,6 +298,28 @@ private:
     std::string formattedValue() const;
     void nudge(int direction, bool big);
     void setValue(double value);
+    bool isIzotopeRx() const;
+    void announceParameterWrite(const std::string& prefix = {},
+                                bool valueOnly = false,
+                                const std::string& beforeValue = {},
+                                double beforeNormalized = 0.0);
+    struct RxValueAnnouncement {
+        bool active = false;
+        ReaProject* project = nullptr;
+        MediaTrack* track = nullptr;
+        MediaItem_Take* take = nullptr;
+        GUID fxGuid{};
+        int parameter = -1;
+        ULONGLONG startedAt = 0;
+        ULONGLONG lastSampleAt = 0;
+        int matchingSamples = 0;
+        double beforeNormalized = 0;
+        std::string beforeValue;
+        std::string lastSample;
+        std::string prefix;
+        bool valueOnly = false;
+    };
+    RxValueAnnouncement rxValueAnnouncement_{};
     void navigate(int delta);
     void cycleByInitial(wchar_t character, DWORD eventTime, bool repeated, bool backwards = false);
     void memoryTypeAhead(const Key& key);

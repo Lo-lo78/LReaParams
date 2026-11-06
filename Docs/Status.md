@@ -1,3 +1,5 @@
+TEST63.1 (2026-11-06): correzione source-only per i valori RX 11 annunciati con un aggiornamento in ritardo. Versione pubblica ancora 0.0.63; GitHub Actions/REAPER runtime da verificare. Dettagli: Docs/TEST63_1_RX_SPEECH.md.
+
 Current public release source: **LReaParams 0.0.63** (2026-11-03), based on TEST62.9.2. About, CMake, installer, GitHub Actions artifacts and seven-language guide generator are updated. New TEST62 features are documented in `Docs/RELEASE_NOTES_0_0_63.md`. Windows build and REAPER/NVDA runtime verification pending; test after compiling on GitHub Actions.
 
 Current public release: **LReaParams 0.0.62** (2026-10-27), based on TEST61.16.1. About, project version, installer metadata, build artifact names and guides updated. Runtime behavior unchanged by this version bump; Windows build and REAPER/NVDA tests pending. See `Docs/RELEASE_NOTES_0_0_62.md`.

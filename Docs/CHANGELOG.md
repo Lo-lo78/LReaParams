@@ -1,3 +1,10 @@
+## TEST63.1 — Lettura aggiornata dei valori iZotope RX 11 (2026-11-06, source-only)
+
+- I plugin RX possono aggiornare i testi formattati dopo la scrittura: le regolazioni di combo e slider tramite Alt+frecce, Pagina, Home/End non annunciano più subito il valore precedente.
+- Rilettura sul timer REAPER, doppia conferma del testo RX e cancellazione dei messaggi pendenti quando cambiano parametro/FX/contesto; nessun ritardo introdotto per plugin diversi da RX.
+- Include reset del parametro, modifiche multiple F7 e input numerico. Niente modifiche a profili `.fx`/`.tp`, preset, scorciatoie o versioni pubbliche.
+- `Testing/test63_1_rx_delayed_speech_static.py` integrato in GitHub Actions; vedi `Docs/TEST63_1_RX_SPEECH.md`. Build MSVC e test RX reali non eseguiti localmente.
+
 ## 0.0.63 — public release of TEST62.9.2 (2026-11-03)
 
 - Publishes the TEST62.1–TEST62.9.2 FX group/memory/editing changes, selective TXT import, incremental search and FX Chain Alt+P; includes the number-row Shift reverse-search adjustment for European keyboard layouts.

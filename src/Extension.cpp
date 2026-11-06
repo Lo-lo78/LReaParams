@@ -525,6 +525,7 @@ public:
             }
             navigator_.pollMidi();
             navigator_.pollCompare(); // Resolve single F8 after double-press window.
+            navigator_.pollRxValueSpeech(); // RX formatted text settles asynchronously.
             const auto next=current_->reviewLine();
             if(titleProxyActive_ && next!=previous) {
                 titleProxy_.updateReviewLine(next);

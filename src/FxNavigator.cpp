@@ -46,6 +46,7 @@ void FxNavigator::end() noexcept {
         flushPersistentPosition();
     }
     pendingF8At_ = 0;
+    rxValueAnnouncement_.active = false;
     clearAutomationConfirm_ = false;
     clearAutomationYes_ = false;
     // Keep per-instance Original/Compare snapshots across navigator exits and
@@ -611,6 +612,25 @@ std::string FxNavigator::contextName() const {
     else if (track_ == GetMasterTrack(project_) && (fx_ & 0x1000000)) context = "Monitor FX";
     return context;
 }
+// Restrict deferred speech to the RX family; ordinary VST3/JSFX readback
+// remains immediate. Use the actual REAPER FX label (not the user alias for
+// a parameter). This covers RX 11 De-click and the other RX modules.
+bool FxNavigator::isIzotopeRx() const {
+    if(browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size())) return false;
+    std::string name = entries_[static_cast<size_t>(browserIndex_)].name;
+    for(char& c:name) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    size_t pos = 0;
+    while((pos = name.find("rx ", pos)) != std::string::npos) {
+        if((pos == 0 || !std::isalnum(static_cast<unsigned char>(name[pos-1]))) &&
+           pos + 3 < name.size() && std::isdigit(static_cast<unsigned char>(name[pos+3]))) {
+            // The REAPER caption can omit the maker's name or contain a
+            // user-defined prefix. Require a versioned RX family name.
+            return true;
+        }
+        pos += 3;
+    }
+    return false;
+}
 std::string FxNavigator::fxDisplayName() const {
     if (browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size())) return "FX";
     const auto& name=entries_[browserIndex_].name;
@@ -861,13 +881,15 @@ void FxNavigator::resetCurrentToDefault() {
     if(defaults.size()!=static_cast<size_t>(count_))defaults=fxOrder_.defaultValuesByIndex();
     const auto it=defaults.find(parameter_);
     if(it==defaults.end()) {speech_("No default for this parameter");return;}
+    const double beforeNorm = isIzotopeRx() ? valueFraction() : 0.0;
+    const std::string beforeDisplay = isIzotopeRx() ? formattedValue() : std::string();
     Undo_BeginBlock2(project_);
     const bool ok=take_?TakeFX_SetParamNormalized(take_,fx_,parameter_,it->second):
                        TrackFX_SetParamNormalized(track_,fx_,parameter_,it->second);
     Undo_EndBlock2(project_,"LReaParams: parameter default",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
     if(!ok){speech_("Reset unavailable");return;}
     if(take_)TakeFX_EndParamEdit(take_,fx_,parameter_);else TrackFX_EndParamEdit(track_,fx_,parameter_);
-    speech_("Reset. "+currentParameterSpeech());
+    announceParameterWrite("Reset. ", false, beforeDisplay, beforeNorm);
 }
 bool FxNavigator::resetAllToDefault(bool announceResult) {
     if(!valid())return false;
@@ -947,6 +969,7 @@ bool FxNavigator::selectFx(int index) {
     if (!same(guid, candidate.guid)) { speech_("FX list changed. Reopen FX Params"); end(); return false; }
     const int num = take_ ? TakeFX_GetNumParams(take_, candidate.index) : TrackFX_GetNumParams(track_, candidate.index);
     if (num <= 0) return false;
+    rxValueAnnouncement_.active = false; // Never announce the previous FX.
     fx_ = candidate.index; fxGuid_ = candidate.guid;
     browserIndex_ = index; // ReaEQ virtual validation needs the NEW FX identity.
     eqTargetBand_ = 0; eqActionMidiHigh_ = false;
@@ -1258,6 +1281,77 @@ void FxNavigator::cycleByInitial(wchar_t character, DWORD eventTime, bool repeat
     if (matched == viewPos_) announce();
     else positionChanged(matched);
 }
+// REAPER may accept a write before RX updates the formatted text returned
+// by GetFormattedParamValue. The existing main-thread timer polls it without
+// sleeping, creating threads, or querying the plugin on the audio thread.
+void FxNavigator::announceParameterWrite(const std::string& prefix,
+                                         bool valueOnly,
+                                         const std::string& beforeValue,
+                                         double beforeNormalized) {
+    if(!isIzotopeRx()) {
+        speech_(prefix + (valueOnly ? formattedValue() : currentParameterSpeech()));
+        return;
+    }
+    auto& pending = rxValueAnnouncement_;
+    pending = RxValueAnnouncement{};
+    pending.active = true;
+    pending.project = project_;
+    pending.track = track_;
+    pending.take = take_;
+    pending.fxGuid = fxGuid_;
+    pending.parameter = parameter_;
+    pending.startedAt = GetTickCount64();
+    pending.beforeValue = beforeValue;
+    pending.beforeNormalized = beforeNormalized; // snapshot BEFORE the write
+    pending.prefix = prefix;
+    pending.valueOnly = valueOnly;
+}
+void FxNavigator::pollRxValueSpeech() {
+    auto& pending = rxValueAnnouncement_;
+    if(!pending.active) return;
+    // A pending message must NEVER leak into another FX, parameter, take,
+    // project, browser, or edit dialog after asynchronous REAPER callbacks.
+    if(!active_ || !contextUnchanged() || !valid() ||
+       project_ != pending.project || track_ != pending.track ||
+       take_ != pending.take || parameter_ != pending.parameter ||
+       !same(&fxGuid_, pending.fxGuid) || fxBrowserMode_ || memoryManager_ ||
+       textEdit_ || numericEdit_ || searchMode_ || recentMode_ || pinAudioMode_) {
+        pending.active = false;
+        return;
+    }
+    const auto now = GetTickCount64();
+    const auto elapsed = now - pending.startedAt;
+    // Give RX a chance to run its own parameter and display callbacks.
+    if(elapsed < 65 || now - pending.lastSampleAt < 25) return;
+    pending.lastSampleAt = now;
+    const std::string sample = formattedValue();
+    if(sample == pending.lastSample) ++pending.matchingSamples;
+    else {pending.lastSample = sample; pending.matchingSamples = 1;}
+    // Wait until two successive UI ticks agree. The old formatted value can
+    // remain unchanged after the normalized value has already advanced.
+    const bool newDisplay = sample != pending.beforeValue;
+    if(pending.matchingSamples < 2 || (!newDisplay && elapsed < 300)) {
+        if(elapsed < 750) return;
+    }
+    const auto prefix = pending.prefix;
+    const bool valueOnly = pending.valueOnly;
+    pending.active = false;
+    // Do not announce a demonstrably stale number even after timeout. The
+    // current normalized value may be distinct while RX still lags in text.
+    if(!newDisplay && std::abs(valueFraction() - pending.beforeNormalized) > 1e-6) {
+        speech_(prefix + displayName() + ", value updated. Read parameter again");
+        return;
+    }
+    if(valueOnly) { speech_(prefix + sample); return; }
+    // Reuse the *stabilized* formatted string, rather than asking RX for a
+    // second freshly-formatted result which could itself lag one callback.
+    std::string spoken = displayName() + ", " + sample;
+    const auto cc = currentParameterCcSpeech();
+    if(!cc.empty()) spoken += ". " + cc;
+    if(parameter_ >= 0 && parameter_ < count_ && envelopeActive(parameter_))
+        spoken += ". Auto";
+    speech_(prefix + spoken);
+}
 void FxNavigator::setValue(double value) {
     if(parameter_==compareParamIndex){if(setCompare(value))speech_(compareFormatted());return;}
     if(eqVirtualValid(parameter_)){
@@ -1283,6 +1377,7 @@ void FxNavigator::setValue(double value) {
     value = std::clamp(value, 0.0, 1.0);
     const double before = take_ ? TakeFX_GetParamNormalized(take_, fx_, parameter_) : TrackFX_GetParamNormalized(track_, fx_, parameter_);
     if (value == before) return;
+    const std::string beforeDisplay = isIzotopeRx() ? formattedValue() : std::string();
     struct UndoScope {
         ReaProject* project; int flags;
         explicit UndoScope(ReaProject* p, int f) : project(p), flags(f) { Undo_BeginBlock2(project); }
@@ -1291,7 +1386,7 @@ void FxNavigator::setValue(double value) {
     const bool ok = take_ ? TakeFX_SetParamNormalized(take_, fx_, parameter_, value) : TrackFX_SetParamNormalized(track_, fx_, parameter_, value);
     if (take_) TakeFX_EndParamEdit(take_, fx_, parameter_); else TrackFX_EndParamEdit(track_, fx_, parameter_);
     if (!ok) throw std::runtime_error("Host refused parameter value");
-    speech_(formattedValue());
+    announceParameterWrite({}, true, beforeDisplay, before);
 }
 // F7 multi-edit: one REAPER undo point, one accessibility announcement.
 // Host parameter IDs are deduplicated because a copied occurrence is still
@@ -1339,6 +1434,8 @@ void FxNavigator::nudgeSelectedF7(int direction,bool big) {
                 " unsupported parameter types. No values changed");return;
     }
     if(changes.empty())return;
+    const double beforeNorm = isIzotopeRx() ? valueFraction() : 0.0;
+    const std::string beforeDisplay = isIzotopeRx() ? formattedValue() : std::string();
     Undo_BeginBlock2(project_);
     int changed=0,failed=0;
     for(const auto& change:changes) {
@@ -1353,10 +1450,10 @@ void FxNavigator::nudgeSelectedF7(int direction,bool big) {
         if(ok) {++changed;pickup_.erase(change.id);}else ++failed;
     }
     Undo_EndBlock2(project_,"LReaParams: selected FX parameter values",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
-    speech_(std::to_string(changed)+" selected parameter values adjusted"+
+    announceParameterWrite(std::to_string(changed)+" selected parameter values adjusted"+
         (failed?". "+std::to_string(failed)+" failed":std::string())+
         (unsupported?". "+std::to_string(unsupported)+" unsupported":std::string())+
-        ". "+currentParameterSpeech());
+        ". ", false, beforeDisplay, beforeNorm);
 }
 void FxNavigator::nudge(int direction, bool big) {
     if(eqVirtualValid(parameter_)){eqVirtualNudge(direction,big);return;}
@@ -1447,6 +1544,12 @@ void FxNavigator::searchPreview() {
     findMatching(true);
 }
 void FxNavigator::handle(const Key& k) {
+    // Do not replay a pending RX value when another command takes over.
+    // Consecutive Value/Alt adjustments replace the pending announcement.
+    const bool valueKey = !k.ctrl && (k.alt || valueMode_) &&
+        (k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
+         k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END);
+    if(!valueKey) rxValueAnnouncement_.active = false;
     if (!k.character || (k.ctrl && !k.altGr) || (k.alt && !k.altGr)) typeAhead_.reset();
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
     if (clearAutomationConfirm_) {

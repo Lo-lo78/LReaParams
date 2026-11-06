@@ -16,6 +16,8 @@ jobs:
           persist-credentials: false
       - name: Verify public release version and package consistency (source only)
         run: python Testing/test_release_version_static.py
+      - name: TEST63.1 iZotope RX deferred parameter speech (source only)
+        run: python Testing/test63_1_rx_delayed_speech_static.py
       - name: TEST62.1 FX group transfer and seven-column memory (source only)
         run: python Testing/test62_1_fx_group_memories_static.py
       - name: TEST62.2 persistent empty FX groups, bulk/group paste (source only)

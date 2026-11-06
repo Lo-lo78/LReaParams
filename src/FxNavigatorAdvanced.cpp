@@ -490,6 +490,8 @@ void FxNavigator::numericCommit() {
     std::istringstream text(numericBuffer_);text.imbue(std::locale::classic());double value=0;
     if(!(text>>value) || !(text>>std::ws).eof() || !std::isfinite(value)) {speech_("Invalid number");return;}
     if(numericCommitSelectedF7(value))return;
+    const double beforeNorm = isIzotopeRx() ? valueFraction() : 0.0;
+    const std::string beforeDisplay = isIzotopeRx() ? formattedValue() : std::string();
     bool ok=false;
     if(numericFormatted_ && (eqBandParam(parameter_,0)||eqBandParam(parameter_,1)||eqBandParam(parameter_,2))) {
         const int type=parameter_%3;
@@ -518,7 +520,8 @@ void FxNavigator::numericCommit() {
         Undo_EndBlock2(project_,"LReaParams: formatted numeric value",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
     }else ok=setRawValue(parameter_,value);
     if(!ok){speech_("Value unavailable or outside host range");return;}
-    numericEdit_=false;pickup_.erase(parameter_);speech_(formattedValue());
+    numericEdit_=false;pickup_.erase(parameter_);
+    announceParameterWrite({}, true, beforeDisplay, beforeNorm);
 }
 TrackEnvelope* FxNavigator::envelope(int param,bool create) const {
     if(param<0||param>=count_)return nullptr;
