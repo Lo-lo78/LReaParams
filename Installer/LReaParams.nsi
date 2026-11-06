@@ -16,9 +16,9 @@ Unicode true
 !include "x64.nsh"
 
 !define APP_NAME "LReaParams"
-!define APP_VERSION "0.0.63"
+!define APP_VERSION "0.0.64"
 !define APP_PUBLISHER "Lo-lo78"
-!define APP_URL "https://github.com/Lo-lo78/LReaParamsSwitch"
+!define APP_URL "https://github.com/Lo-lo78/LReaParams"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\LReaParams"
 !define SETTINGS_KEY "Software\Lo-lo78\LReaParams"
 
@@ -40,11 +40,11 @@ AutoCloseWindow true
 ShowUninstDetails show
 BrandingText "LReaParams - free and open-source REAPER extension"
 
-VIProductVersion "0.0.63.0"
+VIProductVersion "0.0.64.0"
 VIAddVersionKey "ProductName" "LReaParams"
 VIAddVersionKey "CompanyName" "Lo-lo78"
 VIAddVersionKey "FileDescription" "LReaParams multilingual installer for REAPER x64"
-VIAddVersionKey "FileVersion" "0.0.63"
+VIAddVersionKey "FileVersion" "0.0.64"
 VIAddVersionKey "LegalCopyright" "Copyright (C) 2026 Lo-lo78"
 
 !define MUI_ABORTWARNING
@@ -176,7 +176,7 @@ Section "LReaParams plugin and offline guides" SEC_LRP
 
   ; Include the source for the EXACT commit built by this workflow.
   SetOutPath "$INSTDIR\LReaParams\Source"
-  File /oname=LReaParams-0.0.63-Source.zip "${PROJECT_ROOT}\dist\LReaParams-0.0.63-Source.zip"
+  File /oname=LReaParams-0.0.64-Source.zip "${PROJECT_ROOT}\dist\LReaParams-0.0.64-Source.zip"
   File "${PROJECT_ROOT}\dist\SOURCE-COMMIT.txt"
 
   SetOutPath "$INSTDIR\LReaParams"
@@ -205,7 +205,7 @@ Section "Uninstall"
   Delete "$INSTDIR\LReaParams\Licenses\GPL-3.0.txt"
   Delete "$INSTDIR\LReaParams\Licenses\THIRD_PARTY_NOTICES.md"
   RMDir "$INSTDIR\LReaParams\Licenses"
-  Delete "$INSTDIR\LReaParams\Source\LReaParams-0.0.63-Source.zip"
+  Delete "$INSTDIR\LReaParams\Source\LReaParams-0.0.64-Source.zip"
   Delete "$INSTDIR\LReaParams\Source\SOURCE-COMMIT.txt"
   RMDir "$INSTDIR\LReaParams\Source"
   Delete "$INSTDIR\LReaParams\Uninstall-LReaParams.exe"

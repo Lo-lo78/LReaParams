@@ -1,49 +1,32 @@
 # LReaParams - Pubblicazione automatica su ReaPack
 
-Questi file si **aggiungono** al repository pubblico `Lo-lo78/LReaParams`.
-Non rimpiazzano il workflow Windows esistente e non modificano il C++.
+Il repository `Lo-lo78/LReaParams` contiene già il workflow di pubblicazione ReaPack.
+Questa consegna 0.0.64 comprende l'intero sorgente e mantiene la
+pubblicazione automatica. Non occorre reinstallare o aggiungere il repository.
 
-## Cosa contiene
+**Attenzione:** lo ZIP 0.0.64 non contiene volutamente `index.xml`.
+La copia locale del repository conserva quello esistente, già popolato
+dalle release pubbliche. Non sostituirlo con un indice vuoto e non cancellarlo.
+Il workflow `publish-reapack.yml` lo rigenererà quando pubblicherai la release.
 
-- `index.xml` (radice): indice ReaPack, inizialmente vuoto.
-- `.github/workflows/publish-reapack.yml`: workflow GitHub Actions.
-- `Tools/generate_reapack_index.py`: generatore dell'XML dalle release.
-- `Testing/test_reapack_index_generator.py`: test offline del formato.
-- `Testing/reapack_fixture.json`: dati di esempio solo per i test.
+## Il repository ReaPack è già attivo
 
-## Prima attivazione (necessaria solo una volta)
+L'utente ha già importato `https://raw.githubusercontent.com/Lo-lo78/LReaParams/main/index.xml` in ReaPack. Non serve reimportare l'URL o creare un secondo catalogo.
 
-1. Copia le cartelle e `index.xml` dalla cartella di questa consegna
-   nella radice del repository LReaParams, rispettando i percorsi.
-   **Unisci** `.github`, `Tools`, `Testing`: non cancellare le cartelle esistenti.
-2. Da Git Bash, nella cartella del progetto, esegui:
+Per aggiornare con la nuova versione 0.0.64:
 
-   `git add . && git commit -m "Add automatic ReaPack publishing" && git push`
+1. Sostituisci i sorgenti del repository con il progetto completo 0.0.64. Esegui `git add . && git commit -m "Release 0.0.64 iZotope RX 11 readback fix" && git push`.
+2. Controlla che **Build LReaParams Windows x64** compili senza errori e produca l'installer `LReaParams-0.0.64-Windows-x64-SETUP-EXE`.
+3. Solo allora crea una **nuova release stabile** (non draft e non prerelease) con il tag `v0.0.64` sul commit di `main` appena compilato.
+4. Pubblica la release. **Questo evento**, non il caricamento di un EXE.zip, avvia il workflow `Publish LReaParams to ReaPack`.
+5. Il job Windows compila la DLL dal tag esatto e la allega alla release come `reaper_lreaparams.dll`; poi il job Linux rigenera e committa l'indice `index.xml` su `main`.
+6. Verifica su GitHub Actions che entrambi i job siano verdi; soltanto allora la nuova versione è disponibile tramite ReaPack > Synchronize packages.
 
-3. Su GitHub entra nel repository, sezione **Actions**.
-   Apri **Publish LReaParams to ReaPack**, poi **Run workflow**.
-4. Come `tag` digita esattamente `v0.0.63`, quindi conferma.
-5. Attendi il completamento del workflow: il job Windows compila e testa
-   la DLL corrispondente al tag, carica `reaper_lreaparams.dll` fra gli
-   asset della release 0.0.63; il job Linux rigenera `index.xml` e lo
-   pubblica nella branch `main`.
-6. Solo dopo il completamento verde, apri e verifica:
-
-   https://raw.githubusercontent.com/Lo-lo78/LReaParams/main/index.xml
-
-   Deve contenere `<version name="0.0.63" ...>` e il collegamento alla DLL.
-7. Da REAPER, con ReaPack già installato:
-   Extensions > ReaPack > Import repositories.
-   Inserisci:
-
-   https://raw.githubusercontent.com/Lo-lo78/LReaParams/main/index.xml
-
-   Poi Extensions > ReaPack > Browse packages, cerca `LReaParams`,
-   seleziona Install e applica la transazione. Riavvia REAPER.
+Il file EXE distribuito nello ZIP di Actions può essere aggiunto manualmente tra gli asset della release per installare LReaParams senza ReaPack, ma **non** aggiorna da solo l'indice. Il file `index.xml` non si modifica a mano.
 
 ## Release future
 
-Pubblica normalmente la release GitHub (per esempio `v0.0.64`), con lo
+Pubblica normalmente la release GitHub (ad esempio `v0.0.65`, per la successiva), con lo
 stesso procedimento di sempre. Il nuovo workflow:
 
 1. Compila/testa il sorgente **esatto del tag** Windows x64 con MSVC.
@@ -65,7 +48,7 @@ ReaPack installa:
 - Guide: `REAPER resource path/UserPlugins/Guide/...`
 
 È un percorso già riconosciuto dall'azione `LReaParams: Open User Guide`
-della versione 0.0.63. La nuova installazione **non** tocca:
+dalla versione 0.0.63 e nella 0.0.64. La nuova installazione **non** tocca:
 - `REAPER resource path/LReaParams/Plugins/*.fx`
 - `REAPER resource path/LReaParams/Tracks/*.tp`
 - `REAPER resource path/LReaParams/Settings`
@@ -76,7 +59,7 @@ disinstallatore. ReaPack installa la DLL e le guide, **non** l'installer
 NSIS né il relativo programma di disinstallazione, e non lo esegue.
 
 Se hai già installato LReaParams con il setup, potrebbe esistere anche
-`REAPER resource path/LReaParams/Guide`. L'azione della guida in 0.0.63
+`REAPER resource path/LReaParams/Guide`. L'azione della guida in 0.0.64
 preferisce quella posizione alla copia sotto `UserPlugins/Guide`, quindi
 in una installazione mista è possibile vedere la guida precedente finché
 non viene aggiornata con l'installer. La DLL resta aggiornata con ReaPack.

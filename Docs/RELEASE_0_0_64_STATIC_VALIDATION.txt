@@ -1,0 +1,8 @@
+LReaParams 0.0.64 — source-only release validation (2026-11-06)
+
+- The RX readback correction from the user-tested TEST63.1 is unchanged.
+- CMake, About, installer metadata, GitHub Actions labels and generated guides must all declare 0.0.64.
+- The new release tag must be v0.0.64 on main after the green Windows build.
+- A GitHub release published under that tag triggers publish-reapack.yml to compile and upload the standalone DLL and regenerate index.xml.
+- An attached installer EXE or ZIP is NOT what drives the ReaPack index.
+- Native Windows compilation is not performed by this source preparation.

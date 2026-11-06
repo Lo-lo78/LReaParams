@@ -1,1 +1,20 @@
-LReaParams / ReaPack automatico\n\nQuesto ZIP è un PACCHETTO DI AGGIUNTA, NON i sorgenti completi.\nEstrai il suo contenuto nella radice del tuo repository LReaParams,\nunendo le cartelle .github, Tools, Testing e Docs, senza eliminare\ngli altri file. Leggi Docs/REAPACK_SETUP_IT.md per i passaggi.\nL'XML è inizialmente vuoto: la prima compilazione viene avviata\nmanualmente da GitHub Actions con il tag v0.0.63.\n
+LReaParams 0.0.64 — sorgente COMPLETO per GitHub Actions
+
+Questo archivio contiene il progetto completo: DLL, installer NSIS, guide,
+workflow di compilazione e pubblicazione ReaPack.
+L'indice ReaPack gia attivo `index.xml` NON va sostituito: questo archivio
+non lo contiene proprio per evitare di cancellare le release esistenti.
+
+1. Estrai l'archivio. Copia il contenuto nella radice del tuo repository
+   LReaParams locale, unendo le cartelle e sostituendo i file precedenti.
+2. Dal prompt aperto nella radice del repository esegui:
+   git add . && git commit -m "Release 0.0.64 iZotope RX 11 readback fix" && git push
+3. Controlla GitHub Actions: Build LReaParams Windows x64,
+   test e generazione di EXE/DLL/guide. Non creare il tag finche non e verde.
+4. Leggi Docs/REAPACK_SETUP_IT.md e Docs/RELEASE_NOTES_0_0_64.md.
+5. Quando pubblicherai una release stabile con tag v0.0.64,
+   Publish LReaParams to ReaPack compilerà una DLL dal tag, la aggiungerà
+   agli asset e aggiornerà index.xml (solo dopo il successo del workflow).
+
+Lo ZIP non include una DLL ne un EXE gia compilati.
+Non pubblicare questo ZIP come se fosse l'installer di Windows.

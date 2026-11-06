@@ -1,3 +1,10 @@
+## 0.0.64 — stable release preparation: iZotope RX 11 readback (2026-11-06)
+
+- Based on TEST63.1; confirmed by the user in REAPER with iZotope RX 11. Formatted parameter text is read back after settling to avoid announcing the previous value.
+- RX-only deferred speech on Alt+arrows, page keys, Home/End, Value mode, reset, F7 selected adjustments, numeric edit. Repeated changes/context switches discard pending announcements. Other plugins keep immediate speech.
+- Updated About, CMake, NSIS, GitHub Actions artifact names, release checks and guides in seven languages. No profile or keyboard format changes.
+- [Release notes 0.0.64](RELEASE_NOTES_0_0_64.md). Native Windows GitHub Actions build must pass before publication.
+
 ## TEST63.1 — Lettura aggiornata dei valori iZotope RX 11 (2026-11-06, source-only)
 
 - I plugin RX possono aggiornare i testi formattati dopo la scrittura: le regolazioni di combo e slider tramite Alt+frecce, Pagina, Home/End non annunciano più subito il valore precedente.

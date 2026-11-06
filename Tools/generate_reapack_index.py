@@ -181,7 +181,7 @@ def main():
     if not versions:
         raise RuntimeError(
             "No published release has a standalone DLL. "
-            "Run the publish-reapack workflow for v0.0.63 first."
+            "Publish a stable GitHub release (and let the ReaPack workflow finish) first."
         )
     output = build_index(versions, args.repo)
     ET.fromstring(output)  # parse-check XML before touching the index

@@ -1,3 +1,5 @@
+0.0.64 release candidate source (2026-11-06): based on user-validated TEST63.1 RX readback. User confirmed the new parameter announcement with RX 11 works, with a minor acceptable speech delay. About, CMake, NSIS, build artifact names and seven HTML-guide languages updated. MSVC/CTest and release/ReaPack workflows must complete on GitHub before publication.
+
 TEST63.1 (2026-11-06): correzione source-only per i valori RX 11 annunciati con un aggiornamento in ritardo. Versione pubblica ancora 0.0.63; GitHub Actions/REAPER runtime da verificare. Dettagli: Docs/TEST63_1_RX_SPEECH.md.
 
 Current public release source: **LReaParams 0.0.63** (2026-11-03), based on TEST62.9.2. About, CMake, installer, GitHub Actions artifacts and seven-language guide generator are updated. New TEST62 features are documented in `Docs/RELEASE_NOTES_0_0_63.md`. Windows build and REAPER/NVDA runtime verification pending; test after compiling on GitHub Actions.

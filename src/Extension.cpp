@@ -210,8 +210,9 @@ public:
         case about:
             exitNavigation(false);
             ShowMessageBox(
-                "LReaParams 0.0.63 - Native REAPER extension\n\n"
+                "LReaParams 0.0.64 - Native REAPER extension\n\n"
                 "Accessible FX Params and Track Params for NVDA and OSARA.\n"
+                "iZotope RX 11: stabilized parameter readback prevents announcing the previous value; minor speech delay on RX only.\n"
                 "Concept and design: Lo-lo. Code developed with ChatGPT.\n\n"
                 "FX Params: 14 independent grids (Plugin, Custom, 12 Groups) retain width and position.\n"
                 "FX group and position persist in .fx profiles; Ctrl+Alt+B restores the FX view on return online.\n"
