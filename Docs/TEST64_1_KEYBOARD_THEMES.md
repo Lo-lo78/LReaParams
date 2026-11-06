@@ -17,7 +17,7 @@ Assegnazione **deterministica secondo la posizione visibile**, inclusi duplicati
 - `ASDFGHJKL` = posizioni 21–29
 - `ZXCVBNM` = posizioni 30–36
 
-I tasti si usano senza Ctrl/Alt/Maiusc. Nella seconda pagina il tasto `1` seleziona la posizione 37, nella terza la 73, ecc. Se la posizione non esiste, il programma annuncia `Empty` senza cambiare selezione. `Alt+Freccia Giù` e `Alt+Freccia Su` vanno al successivo/precedente blocco di 36, selezionando **il primo parametro** del nuovo blocco. Ai limiti restano silenziosi. Passando Standard → Keyboard con F4 si resta sul parametro corrente (e quindi sulla sua pagina); non viene selezionato il primo del blocco.
+I tasti si usano senza Ctrl/Alt/Maiusc. Nella seconda pagina il tasto `1` seleziona la posizione 37, nella terza la 73, ecc. Se la posizione non esiste, non viene annunciato nulla e la selezione rimane invariata (TEST64.2). `Alt+Freccia Giù` e `Alt+Freccia Su` vanno al successivo/precedente blocco di 36, selezionando **il primo parametro** del nuovo blocco. Ai limiti restano silenziosi. Passando Standard → Keyboard con F4 si resta sul parametro corrente (e quindi sulla sua pagina); non viene selezionato il primo del blocco.
 
 ## Valori e scorciatoie
 

@@ -1850,6 +1850,14 @@ void FxNavigator::handle(const Key& k) {
     // Alt commands use their ORIGINAL handlers (bypass, Delta, F7, memories,
     // automation, Ctrl+Page, Ctrl+FX etc.). No Keyboard logic runs inside F7.
     if (keyboardThemeActive()) {
+        // TEST64.2: Page Up/Down are coarse VALUE adjustments in Keyboard,
+        // exactly like Standard Value. They are not 36-key page navigation.
+        // Only unmodified keys: Ctrl+Page still moves the FX as before.
+        if (!k.ctrl && !k.alt && !k.shift && !k.altGr &&
+            (k.vk == VK_PRIOR || k.vk == VK_NEXT)) {
+            nudge(k.vk == VK_PRIOR ? 1 : -1, true);
+            return;
+        }
         if (!k.ctrl && k.alt && !k.shift && !k.altGr &&
             (k.vk == VK_UP || k.vk == VK_DOWN)) {
             const int target = keyboard::pageTarget(viewPos_,
@@ -1863,8 +1871,10 @@ void FxNavigator::handle(const Key& k) {
                 if (k.repeat) return;
                 const int target = keyboard::keyTarget(viewPos_, keyIndex,
                                                         static_cast<int>(visible_.size()));
-                if (target < 0) speech_("Empty");
-                else if (target == viewPos_) announce();
+                // Unassigned key in the last block: absolute silence.
+                // Do not change the selection, its Step or the current page.
+                if (target < 0) return;
+                if (target == viewPos_) announce();
                 else positionChanged(target);
                 return;
             }

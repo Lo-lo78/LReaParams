@@ -1,3 +1,9 @@
+## TEST64.2 — Keyboard page keys and silent unmapped slots (experimental)
+
+- Tasti Keyboard senza parametro: silenzio completo, senza modifiche a selezione o valore.
+- Pagina Su/Giù in Keyboard: regolazione ampia del valore, con ricezione completa dei tasti dal trackbar Windows; Alt+Su/Giù continua a cambiare i blocchi da 36.
+- Nessuna modifica alle 14 preferenze, ai file `.fx` o alle scorciatoie comuni. Test Windows ancora richiesto.
+
 ## TEST64.1 — FX Params Keyboard theme (experimental)
 
 - 14 temi Standard/Keyboard indipendenti per definizione di plugin (Plugin Order, Custom Order, 12 gruppi), F4 istantaneo, persistenza `.fx`.

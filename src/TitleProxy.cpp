@@ -317,6 +317,15 @@ LRESULT CALLBACK TitleProxy::nativeEditProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM 
     return CallWindowProcW(self->originalNativeEditProc_,hwnd,msg,wp,lp);
 }
 LRESULT TitleProxy::dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, WNDPROC original) noexcept {
+    // TEST64.2: Windows' dialog-key arbitration can withhold Page Up/Down
+    // from the native TRACKBAR_CLASSW. Keep the slider as the accessible
+    // focused control, but explicitly request all navigation keys so the
+    // established FX/Track navigator receives them (and no native value
+    // change is performed by the trackbar itself).
+    if (msg == WM_GETDLGCODE && hwnd == slider_) {
+        return CallWindowProcW(original, hwnd, msg, wp, lp) |
+               DLGC_WANTALLKEYS | DLGC_WANTARROWS;
+    }
     // WM_GETTEXT remains a passive review query: no changing captions while
     // the value changes, and no duplicate OSARA/native text-change speech.
     if (msg == WM_GETTEXTLENGTH) return static_cast<LRESULT>(reviewText_.size());

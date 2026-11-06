@@ -27,7 +27,7 @@ assert 'if (!k.repeat) toggleKeyboardTheme();' in fx
 assert 'keyboard::pageTarget(viewPos_' in fx
 assert 'if (target >= 0) positionChanged(target)' in fx
 assert 'keyboard::keyTarget(viewPos_, keyIndex' in fx
-assert 'if (target < 0) speech_("Empty")' in fx
+assert 'if (target < 0) return;' in fx
 assert 'if(k.alt||valueMode_||keyboardThemeActive())' in fx
 assert '(valueMode_ && !clearAutomationConfirm_) || keyboardThemeActive()' in header
 assert 'editF7_ ? L" - F7 Edit" : keyboardThemeActive() ? L" - Keyboard"' in fx
