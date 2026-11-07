@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing published GitHub release tag (example: v0.0.64)'
+        description: 'Existing published GitHub release tag (example: v0.0.65)'
         required: true
         type: string
 

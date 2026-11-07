@@ -16,6 +16,8 @@ jobs:
           persist-credentials: false
       - name: Verify public release version and package consistency (source only)
         run: python Testing/test_release_version_static.py
+      - name: Release 0.0.65 Keyboard and versioned guide integrity (source only)
+        run: python Testing/test65_release_keyboard_static.py
       - name: TEST64.3 shared Value and Keyboard Page step calibration (source only)
         run: python Testing/test64_3_page_step_static.py
       - name: TEST64.2 Keyboard PageUp/Down and silence for unmapped slots (source only)
@@ -254,13 +256,13 @@ jobs:
       - name: Upload ready-to-install multilingual package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: LReaParams-0.0.64-Windows-x64-MULTILINGUAL
+          name: LReaParams-0.0.65-Windows-x64-MULTILINGUAL
           path: package/
           if-no-files-found: error
       - name: Upload accessible HTML guides
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: LReaParams-0.0.64-HTML-Guides
+          name: LReaParams-0.0.65-HTML-Guides
           path: Guide/
           if-no-files-found: error
       - name: Package complete corresponding source from this commit
@@ -269,13 +271,13 @@ jobs:
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           $sha = (git rev-parse HEAD).Trim()
           if ($LASTEXITCODE -ne 0) { throw "Cannot determine source commit" }
-          git archive --format=zip --output=dist/LReaParams-0.0.64-Source.zip HEAD
+          git archive --format=zip --output=dist/LReaParams-0.0.65-Source.zip HEAD
           if ($LASTEXITCODE -ne 0) { throw "Cannot package matching source" }
           @(
-            "LReaParams 0.0.64 complete corresponding source",
+            "LReaParams 0.0.65 complete corresponding source",
             "Built from Git commit: $sha",
             "Source: https://github.com/Lo-lo78/LReaParams/tree/$sha",
-            "The included LReaParams-0.0.64-Source.zip contains the build scripts, C++ source, original Lua references, and the installer source.",
+            "The included LReaParams-0.0.65-Source.zip contains the build scripts, C++ source, original Lua references, and the installer source.",
             "License: GPL-3.0-only for LReaParams-owned code; see LICENSE and THIRD_PARTY_NOTICES.md in that archive."
           ) | Set-Content -Path dist/SOURCE-COMMIT.txt -Encoding utf8
       - name: Install NSIS setup builder
@@ -304,7 +306,7 @@ jobs:
             'Guide/index.html',
             'LICENSE',
             'THIRD_PARTY_NOTICES.md',
-            'dist/LReaParams-0.0.64-Source.zip',
+            'dist/LReaParams-0.0.65-Source.zip',
             'dist/SOURCE-COMMIT.txt',
             'Installer/Guide-Uninstall.nsh'
           )
@@ -317,18 +319,18 @@ jobs:
           $nsis = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
           & $nsis /V3 "/DPROJECT_ROOT=$projectRoot" 'Installer/LReaParams.nsi'
           if ($LASTEXITCODE -ne 0) { throw "NSIS installer build failed" }
-          if (-not (Test-Path 'dist/LReaParams-0.0.64-Windows-x64-Setup.exe')) { throw "EXE was not produced" }
+          if (-not (Test-Path 'dist/LReaParams-0.0.65-Windows-x64-Setup.exe')) { throw "EXE was not produced" }
       - name: Upload one-click Windows x64 installer
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: LReaParams-0.0.64-Windows-x64-SETUP-EXE
-          path: dist/LReaParams-0.0.64-Windows-x64-Setup.exe
+          name: LReaParams-0.0.65-Windows-x64-SETUP-EXE
+          path: dist/LReaParams-0.0.65-Windows-x64-Setup.exe
           if-no-files-found: error
       - name: Upload complete source for GPL distribution
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: LReaParams-0.0.64-COMPLETE-SOURCE
+          name: LReaParams-0.0.65-COMPLETE-SOURCE
           path: |
-            dist/LReaParams-0.0.64-Source.zip
+            dist/LReaParams-0.0.65-Source.zip
             dist/SOURCE-COMMIT.txt
           if-no-files-found: error

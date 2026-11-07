@@ -1,0 +1,20 @@
+LReaParams 0.0.65 — source-only release verification (2026-11-07)
+
+Base: complete TEST64.3 source archive supplied earlier in this conversation.
+Release changes: CMake version, About, NSIS installer and metadata, GitHub Actions artifact names, README, release notes, multilingual guides and version consistency checks. Runtime FX control algorithms retained from TEST64.3.
+
+Results:
+- 111 Python Testing/test*.py scripts returned success (no failures).
+- 3 ReaPack generator unittest cases passed.
+- Tools/audit.py passed source-only audit.
+- KeyboardThemeTests.cpp compiled and ran successfully with g++.
+- ParameterStepSizingTests.cpp compiled and ran successfully with g++.
+- Seven language guides generated; 22 HTML pages and offline internal links checked.
+- Version/installer consistency checks passed; 0.0.65 About confirmed statically.
+
+Not yet verified:
+- The full Windows x64 MSVC/NSIS GitHub Actions build.
+- Installed Windows DLL behavior in REAPER with NVDA and OSARA.
+- Publishing workflow and actual ReaPack index after a new stable GitHub release.
+
+Publish only after the Windows build and tests are successful. The installer ZIP should come from the 0.0.65 GitHub Actions artifact. A stable release tag v0.0.65 should match CMake version 0.0.65. ReaPack publication is a separate automatic workflow triggered by the published release; check its result.
