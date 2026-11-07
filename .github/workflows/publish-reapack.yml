@@ -1,15 +1,17 @@
 name: Publish LReaParams to ReaPack
 
 # A published GitHub Release triggers the native build and the XML update.
-# Run manually with an existing tag to add ReaPack support to an older release.
+# A manual run can repair an existing release; blank tag uses the latest published stable release.
+# The release event remains the primary automatic trigger (no additional release step).
 on:
   release:
     types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing published GitHub release tag (example: v0.0.65)'
-        required: true
+        description: 'Optional release tag (leave blank to use Latest; example: v0.0.65)'
+        required: false
+        default: ''
         type: string
 
 permissions:
@@ -32,14 +34,27 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?$') {
-            throw "Invalid release tag: $env:RELEASE_TAG"
+          $tag = [string]$env:RELEASE_TAG
+          $tag = $tag.Trim()
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            # Avoid manual typing errors (notably v0.0.65. with a trailing dot).
+            # `gh release view` without a tag selects the latest published release.
+            $tag = (gh release view --repo $env:GITHUB_REPOSITORY --json tagName --jq .tagName).Trim()
+            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($tag)) {
+              throw 'Cannot determine the latest release tag'
+            }
           }
-          $releaseInfo = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease | ConvertFrom-Json
-          if ($LASTEXITCODE -ne 0) { throw 'Release not found' }
+          if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?$') {
+            throw "Invalid release tag '$tag'. Use an exact tag such as v0.0.65 (no trailing dot)."
+          }
+          $releaseInfo = gh release view $tag --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw "Release $tag not found" }
           if ($releaseInfo.isDraft -or $releaseInfo.isPrerelease) {
             throw 'Only published stable releases are indexed'
           }
+          # Make the validated tag available to every following step.
+          "RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "ReaPack publisher using release tag $tag"
       - name: Checkout exact released source
         uses: actions/checkout@v4
         with:
@@ -96,16 +111,30 @@ jobs:
       - name: Verify generated index
         run: python3 -m unittest discover -s Testing -p 'test_reapack_index*.py' -v
 
-      - name: Commit index.xml if changed
+      - name: Commit index.xml if changed (retry concurrent main updates)
         shell: bash
         run: |
           set -euo pipefail
-          git add index.xml
-          if git diff --cached --quiet; then
-            echo "index.xml is already up to date."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore(reapack): update XML release index [skip ci]"
-          git push origin HEAD:main
+          # This is an isolated CI checkout, never the user's working tree.
+          # A source push during the DLL build must not make the XML push fail.
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            python3 Tools/generate_reapack_index.py --output index.xml
+            python3 -m unittest discover -s Testing -p 'test_reapack_index*.py' -v
+            git add index.xml
+            if git diff --cached --quiet; then
+              echo "index.xml already up to date."
+              exit 0
+            fi
+            git commit -m "chore(reapack): update XML release index [skip ci]"
+            if git push origin HEAD:main; then
+              echo "ReaPack XML published successfully."
+              exit 0
+            fi
+            echo "Concurrent update to main; retrying XML update ($attempt/3)."
+          done
+          echo "Could not publish index.xml after 3 attempts."
+          exit 1

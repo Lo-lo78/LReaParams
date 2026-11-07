@@ -18,6 +18,10 @@ jobs:
         run: python Testing/test_release_version_static.py
       - name: Release 0.0.65 Keyboard and versioned guide integrity (source only)
         run: python Testing/test65_release_keyboard_static.py
+      - name: TEST65.1 Keyboard Page/arrow parity (source only)
+        run: python Testing/test65_1_keyboard_page_parity_static.py
+      - name: TEST65.1 release automation and local Git safety (source only)
+        run: python Testing/test65_1_reapack_release_automation_static.py
       - name: TEST64.3 shared Value and Keyboard Page step calibration (source only)
         run: python Testing/test64_3_page_step_static.py
       - name: TEST64.2 Keyboard PageUp/Down and silence for unmapped slots (source only)

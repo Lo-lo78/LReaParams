@@ -1851,14 +1851,10 @@ void FxNavigator::handle(const Key& k) {
     // Alt commands use their ORIGINAL handlers (bypass, Delta, F7, memories,
     // automation, Ctrl+Page, Ctrl+FX etc.). No Keyboard logic runs inside F7.
     if (keyboardThemeActive()) {
-        // TEST64.2: Page Up/Down are coarse VALUE adjustments in Keyboard,
-        // exactly like Standard Value. They are not 36-key page navigation.
-        // Only unmodified keys: Ctrl+Page still moves the FX as before.
-        if (!k.ctrl && !k.alt && !k.shift && !k.altGr &&
-            (k.vk == VK_PRIOR || k.vk == VK_NEXT)) {
-            nudge(k.vk == VK_PRIOR ? 1 : -1, true);
-            return;
-        }
+        // TEST65.1: Keyboard has NO private Page Up/Down value handler.
+        // Both Page keys, arrows and Home/End go through the same Standard
+        // Value block below, with the same Step and host coarse-step sizing.
+        // Ctrl+Page and all other shortcut handlers above stay untouched.
         if (!k.ctrl && k.alt && !k.shift && !k.altGr &&
             (k.vk == VK_UP || k.vk == VK_DOWN)) {
             const int target = keyboard::pageTarget(viewPos_,
@@ -1894,6 +1890,8 @@ void FxNavigator::handle(const Key& k) {
         const int next=std::clamp(columns_+(k.vk==VK_F1?-1:1),1,200);
         if(next!=columns_){columns_=next;lastControl_=LastControl::grid;rememberPosition();speech_("Grid "+std::to_string(columns_));}return;
     }
+    // TEST65.1: ONE value-key dispatch for Standard (Alt/Value) and Keyboard.
+    // No Keyboard-specific coarse/fine calculations or secondary adjustment path.
     if(k.alt||valueMode_||keyboardThemeActive()) {
         if(k.vk==VK_LEFT||k.vk==VK_RIGHT){
             if(editF7_ && !f7Selected_.empty()) {stepSelectedF7(k.vk==VK_LEFT?-1:1);return;}
