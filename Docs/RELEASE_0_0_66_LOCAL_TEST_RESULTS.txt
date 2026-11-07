@@ -1,0 +1,16 @@
+LReaParams 0.0.66 — Release source local verification
+Date: 2026-11-07
+Source base: user-confirmed TEST65.1.1
+
+- Python source-only tests and audit: 114/114 passed.
+- C++ isolated KeyboardThemeTests: passed (g++ C++17).
+- C++ isolated ParameterStepSizingTests: passed (g++ C++17).
+- CMake metadata: 0.0.66.
+- About text: LReaParams 0.0.66 - Native REAPER extension, no TEST suffix.
+- NSIS installer and GitHub Actions artifact names: 0.0.66.
+- User guides: seven languages (22 HTML documents) regenerated/verified.
+- ReaPack index.xml is intentionally not included in this SOURCE ZIP: do not delete the existing index.xml in the Git working tree; the safe Tools/push_lreaparams.cmd restores it from origin/main.
+
+Not performed locally: full MSVC Windows DLL/installer build, GitHub Actions run, or validation in the installed REAPER/OSARA environment of THIS 0.0.66 build. A prior TEST65.1.1 runtime was confirmed by the user.
+
+Before publishing: push sources to main, verify Windows Actions Success, download the 0.0.66 setup ZIP, and test About with REAPER fully restarted. Only then create stable tag v0.0.66, attach setup ZIP and publish. Verify ReaPack Actions reports Success for BOTH jobs.
