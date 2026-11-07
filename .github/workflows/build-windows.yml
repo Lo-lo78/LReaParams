@@ -18,6 +18,8 @@ jobs:
         run: python Testing/test_release_version_static.py
       - name: Release 0.0.65 Keyboard and versioned guide integrity (source only)
         run: python Testing/test65_release_keyboard_static.py
+      - name: TEST65.1.1 existing generated ReaPack index compatibility (source only)
+        run: python Testing/test65_1_1_optional_reapack_index_static.py
       - name: TEST65.1 Keyboard Page/arrow parity (source only)
         run: python Testing/test65_1_keyboard_page_parity_static.py
       - name: TEST65.1 release automation and local Git safety (source only)

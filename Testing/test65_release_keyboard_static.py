@@ -1,5 +1,6 @@
 """0.0.65 release package: version, About, docs, theme and step calibration."""
 from pathlib import Path
+from reapack_index_contract import verify_optional_reapack_index
 R=Path(__file__).resolve().parents[1]
 def read(x):return (R/x).read_text(encoding='utf-8')
 assert 'project(LReaParams VERSION 0.0.65' in read('CMakeLists.txt')
@@ -20,5 +21,6 @@ for lang in ['it','es','fr','ru','zh-CN','ja']:
     assert '0.0.65' in g and 'release-0-0-65-keyboard' in g, lang
     for file in ['index.html','track.html']:
         assert '0.0.65' in read(f'Guide/{lang}/{file}'), (lang,file)
-assert not (R/'index.xml').exists(), 'Do not ship a stale index.xml in the source ZIP'
+# The release publisher commits index.xml to main. Its presence is expected in CI.
+verify_optional_reapack_index(R)
 print('TEST65 release metadata and Keyboard docs PASS')

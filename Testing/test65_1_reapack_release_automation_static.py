@@ -1,5 +1,6 @@
 """TEST65.1: release automation and local Git sync guard (source only)."""
 from pathlib import Path
+from reapack_index_contract import verify_optional_reapack_index
 r=Path(__file__).resolve().parents[1]
 w=(r/'.github/workflows/publish-reapack.yml').read_text(encoding='utf-8')
 s=(r/'Tools/push_lreaparams.cmd').read_text(encoding='utf-8')
@@ -19,5 +20,6 @@ assert 'git restore --source=origin/main --staged --worktree -- index.xml' in s
 assert 'git pull --rebase origin main' in s
 assert 'git push origin main' in s
 assert 'git push --force' not in s
-assert not (r/'index.xml').exists()
+# GitHub's main checkout already includes the generated catalog after a release.
+verify_optional_reapack_index(r)
 print('TEST65.1 automatic ReaPack publishing, fallback and Git safety PASS')
