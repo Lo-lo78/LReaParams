@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Optional release tag (leave blank to use Latest; example: v0.0.66)'
+        description: 'Optional release tag (leave blank to use Latest; example: v0.0.67)'
         required: false
         default: ''
         type: string
@@ -37,7 +37,7 @@ jobs:
           $tag = [string]$env:RELEASE_TAG
           $tag = $tag.Trim()
           if ([string]::IsNullOrWhiteSpace($tag)) {
-            # Avoid manual typing errors (notably v0.0.66. with a trailing dot).
+            # Avoid manual typing errors (notably v0.0.67. with a trailing dot).
             # `gh release view` without a tag selects the latest published release.
             $tag = (gh release view --repo $env:GITHUB_REPOSITORY --json tagName --jq .tagName).Trim()
             if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($tag)) {
@@ -45,7 +45,7 @@ jobs:
             }
           }
           if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?$') {
-            throw "Invalid release tag '$tag'. Use an exact tag such as v0.0.66 (no trailing dot)."
+            throw "Invalid release tag '$tag'. Use an exact tag such as v0.0.67 (no trailing dot)."
           }
           $releaseInfo = gh release view $tag --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0) { throw "Release $tag not found" }

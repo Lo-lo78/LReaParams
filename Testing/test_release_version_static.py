@@ -11,7 +11,7 @@ cmake = read('CMakeLists.txt')
 m = re.search(r'project\(LReaParams VERSION (\d+\.\d+\.\d+) LANGUAGES CXX\)', cmake)
 assert m, 'Missing CMake project version'
 version = m.group(1)
-assert version == '0.0.66', f'Unexpected release version: {version}'
+assert version == '0.0.67', f'Unexpected release version: {version}'
 
 about = read('src/Extension.cpp')
 assert f'LReaParams {version} - Native REAPER extension' in about
@@ -38,15 +38,15 @@ for filename in (f'LReaParams-{version}-Windows-x64-MULTILINGUAL',
 assert 'LReaParams-0.0.61-' not in workflow
 assert 'LReaParams-0.0.61-' not in nsi
 assert f'LReaParams {version}' in read('README.md')
-assert f'LReaParams {version}' in read('Docs/RELEASE_NOTES_0_0_66.md')
+assert f'LReaParams {version}' in read('Docs/RELEASE_NOTES_0_0_67.md')
 assert 'iZotope RX 11' in about
 assert 'F4 toggles Standard/Keyboard separately' in about
 assert 'Keyboard and Value: Page Up/Down use calibrated coarse steps' in about
-assert 'release-0-0-66-keyboard' in read('Guide/LReaParams - FX Params.html')
+assert 'release-0-0-67-grid' in read('Guide/LReaParams - FX Params.html')
 for name in ['FX Params','Track Params']:
     assert f'<title>LReaParams {version}' in read(f'Guide/LReaParams - {name}.html')
 for lang in ['it','es','fr','ru','zh-CN','ja']:
-    assert 'release-0-0-66-keyboard' in read(f'Guide/{lang}/fx.html'), lang
+    assert 'release-0-0-67-grid' in read(f'Guide/{lang}/fx.html'), lang
 
 for guide in ['Guide/index.html','Guide/LReaParams - FX Params.html',
               'Guide/LReaParams - Track Params.html','Guide/INSTALL.txt']:
@@ -66,4 +66,4 @@ for language in ['it','es','fr','ru','zh-CN','ja']:
 # These are compatibility/data format identifiers, not user-visible version labels.
 assert 'PageLayoutVersion' in read('src/TrackNavigator.cpp')
 assert '"61"' in read('src/TrackNavigator.cpp')
-print('Release version consistency PASS: 0.0.66 About, CMake, installer, Actions and 7 guide languages')
+print('Release version consistency PASS: 0.0.67 About, CMake, installer, Actions and 7 guide languages')

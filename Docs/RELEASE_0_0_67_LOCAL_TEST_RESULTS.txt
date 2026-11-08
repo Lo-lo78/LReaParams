@@ -1,0 +1,13 @@
+LReaParams 0.0.67 — release source local test report (2026-11-08)
+
+- 116 source-only static regression tests PASS (115 in concurrent re-run; the installer test also PASS individually after an isolated timeout).
+- Tools/audit.py PASS.
+- Testing/test_release_version_static.py PASS.
+- Testing/test67_release_preservation_static.py PASS.
+- ReaPack generator offline unittest suite 3/3 PASS.
+- Guide regeneration idempotent: PASS (seven languages; historical 0.0.66 release sections retained).
+- New keys: follows user-verified TEST66.2 code; FxNavigator.cpp and profile identifiers unchanged in this release promotion.
+- Github workflow: static presence verified. Windows DLL and NSIS EXE are NOT built here; these must pass on GitHub Actions.
+- Runtime on REAPER/OSARA/NVDA of the release-identified DLL: NOT tested here.
+- ReaPack release event can only be confirmed after a real v0.0.67 stable release is published.
+- Do NOT upload the user's archived LReaParams-0.0.66-Windows-x64-Setup.exe as v0.0.67.

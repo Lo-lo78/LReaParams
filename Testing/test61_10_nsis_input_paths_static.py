@@ -20,7 +20,7 @@ for inp in (
     'Guide\\*.*',
     'LICENSE',
     'THIRD_PARTY_NOTICES.md',
-    'dist\\LReaParams-0.0.66-Source.zip',
+    'dist\\LReaParams-0.0.67-Source.zip',
     'dist\\SOURCE-COMMIT.txt',
 ):
     assert '${PROJECT_ROOT}\\'+inp in s, inp

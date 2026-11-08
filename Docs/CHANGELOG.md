@@ -1,3 +1,11 @@
+## LReaParams 0.0.67 — 2026-11-08
+
+- FX Params: separated parameter, Step and Grid reset shortcuts (Backspace, Ctrl+Backspace and Shift+Backspace).
+- Rapid double Shift+Backspace opens an accessible Grid size edit field (1–400). Single Shift+Backspace restores only current Grid to 10.
+- Restored Ctrl+Shift+Backspace for full plugin parameter reset.
+- Preserved F3 Grid/Step/Group slots or Memory slots status, all 14 independent grid contexts, `.fx` profile storage and ReaPack historical index.
+- Release metadata, installer, seven-language guide generator and GitHub Actions source/installer artifacts updated to 0.0.67.
+
 ## 0.0.66 — Keyboard/Value Page key parity and ReaPack CI (2026-11-07)
 
 - Promotes user-tested TEST65.1.1: Keyboard Page Up/Down shares the Standard Value handler; no independent Keyboard Page interception. Page keys, arrows, Step and shortcuts stay consistent.

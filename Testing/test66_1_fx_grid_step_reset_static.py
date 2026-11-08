@@ -29,6 +29,6 @@ assert 'n <= 400' in views and 'std::clamp(saved.gridHeight, 1, 400)' in nav
 assert 'std::clamp(columns_+(k.vk==VK_F1?-1:1),1,400)' in nav
 assert 'lrp_context_grids_v1' in views and 'lrp_param_step_scales_v1' in views
 assert 'TEST66.1 separate FX Grid and Step resets' in (r/'.github/workflows/build-windows.yml').read_text()
-assert 'project(LReaParams VERSION 0.0.66' in (r/'CMakeLists.txt').read_text()
-assert 'LReaParams 0.0.66 - Native REAPER extension' in ext
+assert 'project(LReaParams VERSION 0.0.67' in (r/'CMakeLists.txt').read_text()
+assert 'LReaParams 0.0.67 - Native REAPER extension' in ext
 print('TEST66.1 independent Grid/Step reset and numeric edit static contracts PASS; Windows runtime NOT tested')
