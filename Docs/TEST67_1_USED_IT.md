@@ -1,6 +1,6 @@
 # LReaParams TEST67.1 — vista virtuale Usati / Used
 
-**Documento storico della TEST67.1**, successivamente integrata nella release stabile **0.0.67**. La descrizione originale dei test è conservata per permettere regressioni e verifiche; per pubblicare usa `Docs/REAPACK_SETUP_IT.md`.
+**Documento storico della TEST67.1**, destinata alla release stabile **0.0.68**. La descrizione originale dei test è conservata per permettere regressioni e verifiche; per pubblicare usa `Docs/REAPACK_SETUP_IT.md`.
 
 ## Comandi
 

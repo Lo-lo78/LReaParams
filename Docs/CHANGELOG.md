@@ -1,11 +1,19 @@
-## LReaParams 0.0.67 — Used Parameters and Independent Grid/Step (2026-11-08)
+## LReaParams 0.0.68 — Used (Usati) virtual FX view (2026-11-08)
 
-- Stable release combining TEST66.2 and TEST67.1; no changes to the underlying Used virtual-view logic.
-- **Usati / Used:** Ctrl+Shift+L switches to/from a per-instance, project-persistent virtual list of successfully edited FX parameters; Ctrl+Delete removes a list entry without changing its value. Automatic registration is first-edit-ordered and excludes presets and playback automation. Used has independent F4 theme, grid and cursor; the historic 14 contexts and `.fx` schema remain intact.
-- FX Params: Backspace resets current parameter; Ctrl+Backspace resets only Step; Shift+Backspace resets only Grid; double Shift+Backspace opens accessible Grid size editor (1–400); Ctrl+Shift+Backspace resets all parameter values.
-- F3 retains Grid, Step and Group slots / Memory slots announcements. Existing FX/Track shortcuts, F7 Standard editor and OSARA/NVDA workflows are preserved.
-- Updated About, release notes, installer metadata consistency, seven-language guides, static release safeguards and GitHub Actions packaging. The ReaPack generator continues building `index.xml` from **all** published stable tags with a DLL.
-- See [0.0.67 release notes](RELEASE_NOTES_0_0_67.md) and the original [TEST67.1 trial instructions](TEST67_1_USED_IT.md) for provenance.
+- Promotes the Tested TEST67.1 **Used** virtual FX parameter list to the next stable release, without changing the already published v0.0.67.
+- Ctrl+Shift+L toggles Used and the previous Plugin Order, Custom Order or Group; per-FX list saved in project, first-edit order, no duplicates, no automatic preset/automation registration.
+- Ctrl+Delete in Used removes the entry, not its value, other groups or automation. Used has its own Grid, cursor and Standard/Keyboard theme; the 14 older contexts remain intact.
+- All shortcuts from 0.0.67 and the F3 Group slots / Memory slots announcement remain unchanged.
+- About, installer metadata, build artifacts and seven-language guides updated for 0.0.68; ReaPack release indexing preserves all stable historical tags with DLLs.
+- See [0.0.68 release notes](RELEASE_NOTES_0_0_68.md) and [TEST67.1 test notes](TEST67_1_USED_IT.md).
+
+## LReaParams 0.0.67 — 2026-11-08
+
+- FX Params: separated parameter, Step and Grid reset shortcuts (Backspace, Ctrl+Backspace and Shift+Backspace).
+- Rapid double Shift+Backspace opens an accessible Grid size edit field (1–400). Single Shift+Backspace restores only current Grid to 10.
+- Restored Ctrl+Shift+Backspace for full plugin parameter reset.
+- Preserved F3 Grid/Step/Group slots or Memory slots status, all 14 independent grid contexts, `.fx` profile storage and ReaPack historical index.
+- Release metadata, installer, seven-language guide generator and GitHub Actions source/installer artifacts updated to 0.0.67.
 
 ## 0.0.66 — Keyboard/Value Page key parity and ReaPack CI (2026-11-07)
 

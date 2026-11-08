@@ -1,0 +1,13 @@
+LReaParams 0.0.68 — source-only local validation, 2026-11-08
+
+- Workflow-referenced Python source checks: 116/116 PASS across three batches (split due to runner timeout).
+- Tools/audit.py: PASS.
+- Testing/test_release_version_static.py and test68_tag_preservation_static.py: PASS.
+- C++ UsedParametersTests.cpp: PASS (g++ -std=c++17 -O2).
+- ReaPack index generator unit suite: 3/3 PASS.
+- Guide generator: 7 languages; second run idempotent, zero files changed.
+- GitHub publish workflow logic preserved: builds DLL from release tag and updates ONLY index.xml using stable published release assets.
+- Existing public v0.0.67 is not renamed or retagged. New Used release is 0.0.68.
+
+NOT performed locally: native Windows/MSVC build, installer compilation, NVDA/OSARA runtime test of 0.0.68, and real ReaPack publication.
+These steps must be completed through GitHub Actions and REAPER before/after publishing.
