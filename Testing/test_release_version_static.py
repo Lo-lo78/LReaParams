@@ -43,10 +43,12 @@ assert 'iZotope RX 11' in about
 assert 'F4 toggles Standard/Keyboard separately' in about
 assert 'Keyboard and Value: Page Up/Down use calibrated coarse steps' in about
 assert 'release-0-0-67-grid' in read('Guide/LReaParams - FX Params.html')
+assert 'release-0-0-67-used' in read('Guide/LReaParams - FX Params.html')
 for name in ['FX Params','Track Params']:
     assert f'<title>LReaParams {version}' in read(f'Guide/LReaParams - {name}.html')
 for lang in ['it','es','fr','ru','zh-CN','ja']:
     assert 'release-0-0-67-grid' in read(f'Guide/{lang}/fx.html'), lang
+    assert 'release-0-0-67-used' in read(f'Guide/{lang}/fx.html'), lang
 
 for guide in ['Guide/index.html','Guide/LReaParams - FX Params.html',
               'Guide/LReaParams - Track Params.html','Guide/INSTALL.txt']:

@@ -11,3 +11,5 @@ LReaParams 0.0.67 — release source local test report (2026-11-08)
 - Runtime on REAPER/OSARA/NVDA of the release-identified DLL: NOT tested here.
 - ReaPack release event can only be confirmed after a real v0.0.67 stable release is published.
 - Do NOT upload the user's archived LReaParams-0.0.66-Windows-x64-Setup.exe as v0.0.67.
+
+The Used feature in TEST67.1 has been promoted to stable 0.0.67 source; Windows CI/MSVC, installer output and actual ReaPack event must still be checked on GitHub.

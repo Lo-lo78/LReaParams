@@ -1,0 +1,17 @@
+LReaParams 0.0.67 stable release source — local verification 2026-11-08
+
+Source: promoted from user-tested TEST67.1 and TEST66.2.
+About, CMakeLists.txt and Windows installer metadata: 0.0.67.
+GitHub Actions installer/source/guide artifact names: 0.0.67.
+Multilingual Guide generation: 7 languages, 23 files, idempotent.
+115/115 Python source checks referenced by the Windows CI workflow: PASS.
+ReaPack offline unit tests: 3/3 PASS.
+ReaPack history preservation test (older + new stable tags): PASS.
+Portable C++ UsedParametersTests.cpp (g++ -std=c++17): PASS.
+Tools/audit.py source security/profile fixture audit: PASS.
+User-confirmed behavior of the prior TEST67.1 is the basis; this package contains no native Windows build.
+
+NOT performed: Windows/MSVC GitHub Actions compilation, installer generation, live NVDA/OSARA verification of the *final* release source, or the real ReaPack publish event. Confirm these on GitHub before and after publishing v0.0.67.
+
+Do not replace or delete historical index.xml, .git directory, old release tags or DLL assets.
+The ReaPack publisher builds the standalone DLL from the release tag and regenerates index.xml using all stable releases that have a DLL.

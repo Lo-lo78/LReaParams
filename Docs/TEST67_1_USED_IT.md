@@ -1,6 +1,6 @@
 # LReaParams TEST67.1 — vista virtuale Usati / Used
 
-Questa è una **TEST** basata su 0.0.67, non una nuova release pubblica. Non pubblicare un nuovo tag ReaPack prima di averla provata con Windows, REAPER, OSARA e NVDA.
+**Documento storico della TEST67.1**, successivamente integrata nella release stabile **0.0.67**. La descrizione originale dei test è conservata per permettere regressioni e verifiche; per pubblicare usa `Docs/REAPACK_SETUP_IT.md`.
 
 ## Comandi
 
@@ -15,7 +15,7 @@ Questa è una **TEST** basata su 0.0.67, non una nuova release pubblica. Non pub
 
 Un parametro entra **una sola volta**, nella posizione del primo intervento, dopo una **modifica effettiva e riuscita del valore tramite LReaParams**. Se lo regoli nuovamente, non cambia posizione. Se lo rimuovi con Ctrl+Delete e in seguito lo cambi ancora, torna in fondo all'elenco. Il reset del singolo parametro, se ne cambia effettivamente il valore, è considerato un intervento e lo aggiunge.
 
-**Non** vengono aggiunti parametri solo perché un preset ha valori diversi dal default, per l'automazione durante Play o per cambiamenti compiuti fuori dai comandi dell'interfaccia LReaParams. Alcuni controlli virtuali sintetici di ReaEQ sono esclusi in questa prima TEST; la raccolta riguarda i parametri fisici del plugin.
+**Non** vengono aggiunti parametri solo perché un preset ha valori diversi dal default, per l'automazione durante Play o per cambiamenti compiuti fuori dai comandi dell'interfaccia LReaParams. Alcuni controlli virtuali sintetici di ReaEQ sono esclusi dalla raccolta; la raccolta riguarda i parametri fisici del plugin.
 
 La raccolta appartiene al GUID dell'istanza FX ed è salvata nei dati del **progetto REAPER**, non nel profilo globale `.fx`. Salva il progetto per rendere persistenti i cambiamenti. Due istanze dello stesso VST possono avere liste diverse. Se la struttura/quantità dei parametri cambia, un elenco incompatibile viene ignorato per prudenza.
 
