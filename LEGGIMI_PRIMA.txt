@@ -1,20 +1,19 @@
-LReaParams 0.0.64 — sorgente COMPLETO per GitHub Actions
+LReaParams 0.0.68 — TEST68.1, sorgente COMPLETO per GitHub Actions
 
-Questo archivio contiene il progetto completo: DLL, installer NSIS, guide,
-workflow di compilazione e pubblicazione ReaPack.
-L'indice ReaPack gia attivo `index.xml` NON va sostituito: questo archivio
-non lo contiene proprio per evitare di cancellare le release esistenti.
+PROVA, non nuova release. La versione pubblica su ReaPack resta 0.0.68.
+Questa TEST modifica soltanto il ripristino della vista Usati / Used.
+Se chiudi FX Params con Escape mentre sei in Usati, quando riapri lo
+stesso FX ritorni in Usati sul parametro scelto. Ctrl+Shift+L continua
+ad alternare Usati e il contesto precedente. Ogni FX ha memoria distinta.
 
-1. Estrai l'archivio. Copia il contenuto nella radice del tuo repository
-   LReaParams locale, unendo le cartelle e sostituendo i file precedenti.
-2. Dal prompt aperto nella radice del repository esegui:
-   git add . && git commit -m "Release 0.0.64 iZotope RX 11 readback fix" && git push
-3. Controlla GitHub Actions: Build LReaParams Windows x64,
-   test e generazione di EXE/DLL/guide. Non creare il tag finche non e verde.
-4. Leggi Docs/REAPACK_SETUP_IT.md e Docs/RELEASE_NOTES_0_0_64.md.
-5. Quando pubblicherai una release stabile con tag v0.0.64,
-   Publish LReaParams to ReaPack compilerà una DLL dal tag, la aggiungerà
-   agli asset e aggiornerà index.xml (solo dopo il successo del workflow).
+Lo storico ReaPack e il file index.xml del repository NON devono essere
+sostituiti o cancellati. Questo archivio non li include.
 
-Lo ZIP non include una DLL ne un EXE gia compilati.
-Non pubblicare questo ZIP come se fosse l'installer di Windows.
+1. Estrai il sorgente nella cartella Git locale esistente; NON cancellare .git.
+2. Dalla radice del repository:
+   Tools\push_lreaparams.cmd "TEST68.1 - Remember Used view after Escape"
+3. Attendi il workflow Windows x64 su GitHub Actions. Prova in REAPER/NVDA.
+4. Leggi Docs/TEST68_1_USED_RESUME_IT.md per la sequenza di test.
+
+NON pubblicare una release/tag v0.0.68, gia' esistente su ReaPack.
+Non usare questo ZIP come installer: la DLL/EXE deve essere compilata su GitHub.

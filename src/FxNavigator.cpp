@@ -40,7 +40,7 @@ void FxNavigator::flushPersistentPosition() noexcept {
 }
 void FxNavigator::end() noexcept {
     if (active_ && usedActive_) {
-        try {if(contextUnchanged())leaveUsedView(false);else usedActive_=false;}
+        try {if(contextUnchanged())leaveUsedView(false, true);else usedActive_=false;}
         catch(...) {usedActive_=false;}
     }
     if (active_) {
@@ -1011,7 +1011,7 @@ void FxNavigator::chooseSlotAccess(int mode) {
     speech_(slotMode_==0?"Groups":"Memory positions");
 }
 bool FxNavigator::selectFx(int index) {
-    if (usedActive_ && contextUnchanged())leaveUsedView(false);
+    if (usedActive_ && contextUnchanged())leaveUsedView(false, true);
     // Commit the previous FX position before FxOrder::load rebinds the profile.
     if (active_ && count_ > 0 && browserIndex_ != index) {
         rememberPosition();
@@ -1039,6 +1039,9 @@ bool FxNavigator::selectFx(int index) {
     resetMidiContext();
     valueMode_ = false; searchMode_ = false; search_.clear();
     rememberPosition();
+    // A stored per-instance Used view is restored only after its original
+    // group/order and cursor have been reconstructed and remembered.
+    if (usedState_.resume) enterUsedView(false);
     return true;
 }
 int FxNavigator::count() const { return take_ ? TakeFX_GetNumParams(take_, fx_) : TrackFX_GetNumParams(track_, fx_); }
@@ -1639,6 +1642,17 @@ void FxNavigator::handle(const Key& k) {
         if(!k.repeat)toggleUsedView();
         return;
     }
+    // TEST68.2: Ctrl+L inside Used is an explicit exit, identical to
+    // Ctrl+Shift+L. Consume it BEFORE the historical Ctrl+L Custom Order
+    // handler, so an FX with no Custom Order does not prompt to press F7.
+    // Outside Used, the original Ctrl+L behavior is unchanged.
+    if (usedActive_ && k.ctrl && !k.shift && !k.alt && !k.altGr && k.vk=='L' &&
+        !editF7_ && !fxBrowserMode_ && !memoryManager_ && !textEdit_ &&
+        !numericEdit_ && !gridNumericEdit_ && !searchMode_ && !recentMode_ &&
+        !defaultConfirm_ && !clearAutomationConfirm_ && !pinAudioMode_) {
+        if(!k.repeat)leaveUsedView(true);
+        return;
+    }
     // Native Win32 EDIT owns ordinary typing, caret, clipboard and selection.
     if (gridNumericEdit_) {
         if (k.vk == VK_ESCAPE) {
@@ -1778,7 +1792,15 @@ void FxNavigator::handle(const Key& k) {
               (k.shift && (k.vk==VK_UP || k.vk==VK_DOWN)))) ||
          (k.ctrl && !k.shift && !k.alt && k.vk=='W') ||
          (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F10 || k.vk==VK_F11)))) {
-        leaveUsedView(false);
+        // Switching FX/track/take must remember Used for the departing instance.
+        // Opening a different view of the SAME FX (group, F7, Custom Order)
+        // is intentional and instead makes that context the next landing.
+        const bool switchContext=k.ctrl && !k.alt &&
+            ((!k.shift && (k.vk==VK_UP || k.vk==VK_DOWN ||
+                           k.vk==VK_LEFT || k.vk==VK_RIGHT ||
+                           k.vk==VK_PRIOR || k.vk==VK_NEXT || k.vk=='W')) ||
+             (k.shift && (k.vk==VK_UP || k.vk==VK_DOWN)));
+        leaveUsedView(false, switchContext);
     }
     // Native REAPER FX Chain and Add FX browser must own keyboard focus.
     if (!searchMode_ && !textEdit_ && !numericEdit_ && !memoryManager_) {

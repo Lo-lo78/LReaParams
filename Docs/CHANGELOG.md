@@ -1,3 +1,11 @@
+## TEST68.1 — Remember Used view after Escape (experimental, 2026-11-08)
+
+- After Escape, reopening the same FX restores Used / Usati and its selected parameter when it was the active view.
+- Switching FX, track or take keeps the departing instance's Used landing view; Ctrl+Shift+L explicitly returns to the previous original context.
+- The project-owned Used collection remains **U1** and is fully readable by the released 0.0.68. Only a separate per-FX `_LastView` project key stores `USED` / `OTHER`.
+- Existing 12 groups, 14 grids/themes, `.fx` profiles, public About version, ReaPack generator, release tags and index.xml remain unchanged.
+- Source checks in `Testing/test68_1_used_resume_static.py`; REAPER/NVDA Windows runtime verification required before release.
+
 ## LReaParams 0.0.68 — Used (Usati) virtual FX view (2026-11-08)
 
 - Promotes the Tested TEST67.1 **Used** virtual FX parameter list to the next stable release, without changing the already published v0.0.67.

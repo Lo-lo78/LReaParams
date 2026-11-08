@@ -259,7 +259,8 @@ private:
     void loadUsedState();
     void saveUsedState();
     void toggleUsedView();
-    void leaveUsedView(bool speak);
+    void enterUsedView(bool speak);
+    void leaveUsedView(bool speak, bool keepForNextEntry = false);
     void markUsedParameter(int id);
     void removeUsedParameter();
     void captureViewCursor();

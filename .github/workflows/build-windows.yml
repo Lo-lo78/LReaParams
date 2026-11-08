@@ -22,6 +22,10 @@ jobs:
         run: python Testing/test66_2_fx_backspace_routing_static.py
       - name: TEST67.1 Used virtual FX view (source only)
         run: python Testing/test67_1_used_view_static.py
+      - name: TEST68.1 Used reopen after Escape and switching FX (source only)
+        run: python Testing/test68_1_used_resume_static.py
+      - name: TEST68.2 Ctrl L exits Used before Custom Order logic (source only)
+        run: python Testing/test68_2_used_ctrl_l_exit_static.py
       - name: Release 0.0.68 Used, guides and historic ReaPack preservation (source only)
         run: python Testing/test68_tag_preservation_static.py
       - name: Release 0.0.68 Used release archive checks (source only)

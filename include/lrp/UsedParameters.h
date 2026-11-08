@@ -14,6 +14,7 @@ struct State {
     int count = 0;              // The parameter layout that was saved.
     int columns = 10;           // Independent fifteenth grid.
     bool keyboard = false;      // Independent fifteenth theme.
+    bool resume = false;        // Per-FX last view, saved separately in the project.
     int selected = -1;          // Physical parameter ID, not an occurrence.
     std::vector<int> ids;       // First-actual-edit order, no duplicates.
 };

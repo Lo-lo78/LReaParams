@@ -1,6 +1,7 @@
 #include "lrp/FxNavigator.h"
 #include <algorithm>
 #include <string>
+#include <utility>
 
 namespace lrp {
 namespace {
@@ -30,7 +31,14 @@ void FxNavigator::loadUsedState() {
     if(nul==data.end())return;
     data.resize(static_cast<std::size_t>(nul-data.begin()));
     used::State loaded;
-    if(used::decode(data,count_,loaded))usedState_=std::move(loaded);
+    if(used::decode(data,count_,loaded)) {
+        usedState_=std::move(loaded);
+        // Separate preference: the old U1 list remains readable by 0.0.68.
+        char lastView[16]{};
+        const std::string viewKey=key+"_LastView";
+        if(GetProjExtState(project_,section,viewKey.c_str(),lastView,static_cast<int>(sizeof(lastView)))>0)
+            usedState_.resume=std::string(lastView)=="USED";
+    }
 }
 void FxNavigator::saveUsedState() {
     if(!active_ || !project_ || !SetProjExtState || !contextUnchanged() || count_<=0)return;
@@ -38,8 +46,12 @@ void FxNavigator::saveUsedState() {
         usedState_.selected=visible_[static_cast<std::size_t>(viewPos_)];
     if(usedActive_) usedState_.columns=std::clamp(columns_,1,400);
     const auto key=usedKey(fxGuid_);
-    const auto payload=used::encode(usedState_);
-    SetProjExtState(project_,section,key.c_str(),payload.c_str());
+    const std::pair<std::string,std::string> records[] = {
+        {key, used::encode(usedState_)},
+        {key+"_LastView", usedState_.resume?"USED":"OTHER"}
+    };
+    for(const auto& record:records)
+        SetProjExtState(project_,section,record.first.c_str(),record.second.c_str());
 }
 void FxNavigator::markUsedParameter(int id) {
     // The physical parameter ID is used, never the order occurrence. Virtual
@@ -77,8 +89,11 @@ void FxNavigator::removeUsedParameter() {
     speech_("Removed from Used. "+std::to_string(visible_.size())+" parameters remaining"+
             (visible_.empty()?std::string():". "+currentParameterSpeech()));
 }
-void FxNavigator::leaveUsedView(bool speak) {
+void FxNavigator::leaveUsedView(bool speak, bool keepForNextEntry) {
     if(!usedActive_)return;
+    // An explicit departure (Ctrl+Shift+L, F7, FX Memories...) stores Original.
+    // Window close or changing FX retains Used as that instance's last view.
+    usedState_.resume=keepForNextEntry;
     saveUsedState();
     usedActive_=false;
     visible_=std::move(usedOrigin_.visible);
@@ -97,8 +112,8 @@ void FxNavigator::leaveUsedView(bool speak) {
         speech_(origin+". "+(visible_.empty()?"Empty":currentParameterSpeech()));
     }
 }
-void FxNavigator::toggleUsedView() {
-    if(usedActive_) {leaveUsedView(true);return;}
+void FxNavigator::enterUsedView(bool speak) {
+    if(usedActive_)return;
     // Entering Used never changes an original 14-context cursor or saved theme.
     rememberPosition();
     usedOrigin_.visible=visible_;
@@ -110,6 +125,7 @@ void FxNavigator::toggleUsedView() {
     usedOrigin_.filterQuery=f7FilterQuery_;
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
     usedActive_=true;valueMode_=false;
+    usedState_.resume=true;
     visible_=usedState_.ids; columns_=usedState_.columns;
     const auto found=std::find(visible_.begin(),visible_.end(),usedState_.selected);
     viewPos_=found!=visible_.end()?static_cast<int>(found-visible_.begin()):0;
@@ -117,7 +133,12 @@ void FxNavigator::toggleUsedView() {
         parameter_=visible_[static_cast<std::size_t>(viewPos_)];
         parameterName_=parameterName();syncParameterStep();
     }
-    speech_("Used. "+std::to_string(visible_.size())+" parameters"+
-            (visible_.empty()?std::string(". Empty") : ". "+currentParameterSpeech()));
+    saveUsedState();
+    if(speak) speech_("Used. "+std::to_string(visible_.size())+" parameters"+
+                      (visible_.empty()?std::string(". Empty") : ". "+currentParameterSpeech()));
+}
+void FxNavigator::toggleUsedView() {
+    if(usedActive_) leaveUsedView(true);
+    else enterUsedView(true);
 }
 }

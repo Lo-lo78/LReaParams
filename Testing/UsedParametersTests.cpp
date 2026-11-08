@@ -12,6 +12,10 @@ int main() {
     lrp::used::State restored;
     assert(lrp::used::decode(lrp::used::encode(s),128,restored));
     assert(restored.ids==s.ids && restored.columns==17 && restored.keyboard && restored.selected==11);
+    // The Used landing preference lives in a separate project key: U1 is unchanged.
+    s.resume=true;
+    assert(lrp::used::encode(s)==lrp::used::encode(restored));
+    assert(!restored.resume);
     assert(!lrp::used::decode(lrp::used::encode(s),129,restored)); // Changed plugin layout.
     assert(!lrp::used::decode("U1;128;17;1;11;74,74",128,restored));
     assert(!lrp::used::decode("U1;128;17;1;11;74,1200",128,restored));
