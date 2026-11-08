@@ -406,6 +406,63 @@ Alternatively, install or update LReaParams through ReaPack after the repository
         <source file="Guide/zh-CN/index.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.67/Guide/zh-CN/index.html</source>
         <source file="Guide/zh-CN/track.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.67/Guide/zh-CN/track.html</source>
       </version>
+      <version name="0.0.68" author="Lo-lo" time="2026-11-08T10:16:21Z">
+        <changelog># LReaParams 0.0.68 — Used Parameters
+
+This release introduces the new **Used (Usati)** virtual FX parameter view, providing fast access to parameters modified through LReaParams.
+
+## What's New
+
+- **Ctrl+Shift+L:** Toggle between Used and the previous Plugin Order, Custom Order or Group context.
+- **Automatic collection:** Modified parameters are added to Used once, in first-edit order, without duplicates.
+- **Ctrl+Delete in Used:** Remove a parameter from the collection without changing its value.
+- **Independent settings:** Used has its own Grid, cursor and Standard/Keyboard theme.
+- **Project persistence:** Used parameters are stored independently for each FX instance in the REAPER project.
+- Preset loading and playback automation do not automatically populate Used.
+
+## Compatibility
+
+- Preserves the existing 14 FX contexts and 12 custom groups.
+- Retains all independent Grid and Step controls introduced in 0.0.67.
+- Preserves F3 announcements, F7 Standard mode, FX profiles and parameter memories.
+- Maintains NVDA and OSARA accessibility.
+- Includes updated multilingual documentation.
+- Preserves historical ReaPack releases.
+
+## Installation
+
+Download the Windows x64 Setup ZIP, extract it, close REAPER and run the installer.
+
+Alternatively, update through the existing LReaParams ReaPack repository after publication completes.
+
+**Platform:** Windows x64 / REAPER x64  
+**License:** GPL-3.0  
+**Source code:** https://github.com/Lo-lo78/LReaParams</changelog>
+        <source file="reaper_lreaparams.dll" platform="win64">https://github.com/Lo-lo78/LReaParams/releases/download/v0.0.68/reaper_lreaparams.dll</source>
+        <source file="Guide/INSTALL.txt" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/INSTALL.txt</source>
+        <source file="Guide/LReaParams - FX Params.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/LReaParams%20-%20FX%20Params.html</source>
+        <source file="Guide/LReaParams - Track Params.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/LReaParams%20-%20Track%20Params.html</source>
+        <source file="Guide/en/index.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/en/index.html</source>
+        <source file="Guide/es/fx.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/es/fx.html</source>
+        <source file="Guide/es/index.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/es/index.html</source>
+        <source file="Guide/es/track.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/es/track.html</source>
+        <source file="Guide/fr/fx.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/fr/fx.html</source>
+        <source file="Guide/fr/index.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/fr/index.html</source>
+        <source file="Guide/fr/track.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/fr/track.html</source>
+        <source file="Guide/index.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/index.html</source>
+        <source file="Guide/it/fx.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/it/fx.html</source>
+        <source file="Guide/it/index.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/it/index.html</source>
+        <source file="Guide/it/track.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/it/track.html</source>
+        <source file="Guide/ja/fx.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/ja/fx.html</source>
+        <source file="Guide/ja/index.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/ja/index.html</source>
+        <source file="Guide/ja/track.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/ja/track.html</source>
+        <source file="Guide/ru/fx.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/ru/fx.html</source>
+        <source file="Guide/ru/index.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/ru/index.html</source>
+        <source file="Guide/ru/track.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/ru/track.html</source>
+        <source file="Guide/zh-CN/fx.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/zh-CN/fx.html</source>
+        <source file="Guide/zh-CN/index.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/zh-CN/index.html</source>
+        <source file="Guide/zh-CN/track.html" platform="win64">https://raw.githubusercontent.com/Lo-lo78/LReaParams/v0.0.68/Guide/zh-CN/track.html</source>
+      </version>
     </reapack>
   </category>
 </index>
