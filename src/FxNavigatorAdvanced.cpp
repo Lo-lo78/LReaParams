@@ -406,7 +406,7 @@ bool FxNavigator::numericCommitSelectedF7(double requested) {
             const bool ok=writeNamedConfig("vst_chunk",chunk.text());
             Undo_EndBlock2(project_,"LReaParams: selected EQ numeric values",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
             if(!ok){speech_("EQ numeric selection update failed. Use REAPER Undo");return true;}
-            for(int id:ids)pickup_.erase(id);
+            for(int id:ids){pickup_.erase(id);markUsedParameter(id);}
             numericEdit_=false;
             speech_(std::to_string(ids.size())+" selected EQ parameters set to "+numericBuffer_+" "+numericUnit_);
         } catch(const std::exception&) {speech_("EQ selection changed; no values written");}
@@ -480,7 +480,10 @@ bool FxNavigator::numericCommitSelectedF7(double requested) {
     }
     Undo_EndBlock2(project_,"LReaParams: selected FX numeric values",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
     if(!complete){speech_("Numeric selection update failed. Check values or use REAPER Undo");return true;}
-    for(int id:ids)pickup_.erase(id);
+    for(const auto& c:changes) {
+        pickup_.erase(c.id);
+        if(c.target!=c.old)markUsedParameter(c.id);
+    }
     numericEdit_=false;
     speech_(std::to_string(ids.size())+" selected parameters set to "+numericBuffer_+
         (numericUnit_.empty()?std::string():" "+numericUnit_));
@@ -490,7 +493,8 @@ void FxNavigator::numericCommit() {
     std::istringstream text(numericBuffer_);text.imbue(std::locale::classic());double value=0;
     if(!(text>>value) || !(text>>std::ws).eof() || !std::isfinite(value)) {speech_("Invalid number");return;}
     if(numericCommitSelectedF7(value))return;
-    const double beforeNorm = isIzotopeRx() ? valueFraction() : 0.0;
+    const double originalFraction=valueFraction();
+    const double beforeNorm = isIzotopeRx() ? originalFraction : 0.0;
     const std::string beforeDisplay = isIzotopeRx() ? formattedValue() : std::string();
     bool ok=false;
     if(numericFormatted_ && (eqBandParam(parameter_,0)||eqBandParam(parameter_,1)||eqBandParam(parameter_,2))) {
@@ -520,6 +524,7 @@ void FxNavigator::numericCommit() {
         Undo_EndBlock2(project_,"LReaParams: formatted numeric value",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
     }else ok=setRawValue(parameter_,value);
     if(!ok){speech_("Value unavailable or outside host range");return;}
+    if(valueFraction()!=originalFraction)markUsedParameter(parameter_);
     numericEdit_=false;pickup_.erase(parameter_);
     announceParameterWrite({}, true, beforeDisplay, beforeNorm);
 }

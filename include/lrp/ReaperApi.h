@@ -27,6 +27,8 @@
 #define REAPERAPI_WANT_AddExtensionsMainMenu
 #define REAPERAPI_WANT_GetUserFileName
 #define REAPERAPI_WANT_GetResourcePath
+#define REAPERAPI_WANT_GetProjExtState
+#define REAPERAPI_WANT_SetProjExtState
 #define REAPERAPI_WANT_EnumProjects
 #define REAPERAPI_WANT_GetTouchedOrFocusedFX
 #define REAPERAPI_WANT_CountActionShortcuts

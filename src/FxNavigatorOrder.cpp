@@ -223,7 +223,7 @@ bool FxNavigator::keyboardThemeActive() const noexcept {
            !searchMode_ && !recentMode_ && !memoryManager_ &&
            !fxBrowserMode_ && !pinAudioMode_ && !defaultConfirm_ &&
            !clearAutomationConfirm_ &&
-           keyboardThemes_[static_cast<std::size_t>(currentViewIndex())];
+           (usedActive_ ? usedState_.keyboard : keyboardThemes_[static_cast<std::size_t>(currentViewIndex())]);
 }
 void FxNavigator::loadKeyboardThemes() {
     keyboardThemes_ = keyboard::decode(fxOrder_.extraValue(keyboardThemesProfileKey));
@@ -232,6 +232,13 @@ void FxNavigator::toggleKeyboardTheme() {
     if (!active_ || editF7_ || memoryManager_ || fxBrowserMode_ ||
         pinAudioMode_ || textEdit_ || numericEdit_ || gridNumericEdit_ || searchMode_ ||
         recentMode_ || defaultConfirm_ || clearAutomationConfirm_) return;
+    if (usedActive_) {
+        usedState_.keyboard=!usedState_.keyboard;
+        saveUsedState();
+        speech_(std::string(usedState_.keyboard?"Keyboard. Used. ":"Standard. Used. ")+
+                (visible_.empty()?"Empty":currentParameterSpeech()));
+        return;
+    }
     const auto context = static_cast<std::size_t>(currentViewIndex());
     const bool previous = keyboardThemes_[context];
     keyboardThemes_[context] = !previous;
@@ -251,6 +258,7 @@ void FxNavigator::toggleKeyboardTheme() {
             (visible_.empty() ? "Empty" : currentParameterSpeech()));
 }
 void FxNavigator::captureViewCursor() {
+    if (usedActive_) return; // Never overwrite any of the original 14 cursors.
     if (visible_.empty() || viewPos_ < 0 ||
         viewPos_ >= static_cast<int>(visible_.size())) return;
     auto& cursor = viewCursors_[static_cast<size_t>(currentViewIndex())];
@@ -360,6 +368,7 @@ void FxNavigator::loadFxOrder() {
     },nativeOrder);
     loadParameterSteps();
     loadKeyboardThemes();
+    loadUsedState();
     groupSlot_=0;groupEditAll_=false;searchMode_=false;editF7_=false;
     loadViewCursors(); // Shared persistent defaults, before the per-GUID overlay.
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();

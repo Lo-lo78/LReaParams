@@ -185,7 +185,10 @@ void FxNavigator::dynamicsNudgeDetector(int direction,bool big) {
     const int amount=big?std::clamp(static_cast<int>(std::lround(std::pow(2.0,std::max(0,stepScale_)))),1,7):1;
     const int next=std::clamp(index+(direction>0?amount:-amount),0,7);
     if(next==index)return; // quiet at grid/value boundaries
-    if(dynamicsSetDetector(next/7.0))speech_(dynamics::detectorChoices[static_cast<size_t>(next)].label);
+    if(dynamicsSetDetector(next/7.0)) {
+        markUsedParameter(parameter_);
+        speech_(dynamics::detectorChoices[static_cast<size_t>(next)].label);
+    }
     else speech_("Detector input unchanged");
 }
 } // namespace lrp

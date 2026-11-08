@@ -4,6 +4,7 @@
 #include "TransportMarkers.h"
 #include "FxOrder.h"
 #include "KeyboardTheme.h"
+#include "UsedParameters.h"
 #include "TypeAhead.h"
 #include "MidiControl.h"
 #include <filesystem>
@@ -63,7 +64,7 @@ public:
     void announceTitle() override;
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
-    bool nativeValueSlider() const override { return active_ && !editF7_ && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_ && !gridNumericEdit_ &&
+    bool nativeValueSlider() const override { return active_ && !(usedActive_ && visible_.empty()) && !editF7_ && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_ && !gridNumericEdit_ &&
         ((valueMode_ && !clearAutomationConfirm_) || keyboardThemeActive()); }
     // Native Windows EDIT control for F7 rename and Ctrl+F search.
     bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_ || gridNumericEdit_) && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_; }
@@ -253,6 +254,14 @@ private:
     bool keyboardThemeActive() const noexcept;
     void loadKeyboardThemes();
     void toggleKeyboardTheme();
+    // TEST67.1: Per-FX-instance virtual Used view. Never saved in the
+    // plugin-wide .fx order/theme records; project-only GUID state.
+    void loadUsedState();
+    void saveUsedState();
+    void toggleUsedView();
+    void leaveUsedView(bool speak);
+    void markUsedParameter(int id);
+    void removeUsedParameter();
     void captureViewCursor();
     void loadViewCursors();
     void restoreViewCursor(int fallbackParam, int fallbackPosition = -1);
@@ -421,6 +430,17 @@ private:
     // Per plugin definition: Plugin Order, Custom Order, Groups 1..12.
     // F7 is ALWAYS Standard regardless of these persisted theme choices.
     std::array<bool, keyboard::contextCount> keyboardThemes_{};
+    used::State usedState_{};
+    bool usedActive_ = false;
+    struct UsedOrigin {
+        std::vector<int> visible;
+        int parameter = 0, position = 0, columns = 10;
+        bool value = false;
+        bool filterActive = false;
+        std::vector<int> filterFull;
+        std::vector<int> filterPositions;
+        std::string filterQuery;
+    } usedOrigin_{};
     int viewPos_ = 0;
     // The view from which the first group was loaded (also across group switches).
     bool groupReturnActive_ = false, groupReturnCustom_ = false, groupReturnEdit_ = false;

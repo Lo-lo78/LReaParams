@@ -20,6 +20,8 @@ jobs:
         run: python Testing/test66_1_fx_grid_step_reset_static.py
       - name: TEST66.2 FX Backspace routing and numeric grid (source only)
         run: python Testing/test66_2_fx_backspace_routing_static.py
+      - name: TEST67.1 Used virtual FX view (source only)
+        run: python Testing/test67_1_used_view_static.py
       - name: Release 0.0.67 metadata and F3/ReaPack preservation (source only)
         run: python Testing/test67_release_preservation_static.py
       - name: Release 0.0.66 Keyboard, Page parity and guide integrity (source only)

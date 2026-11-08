@@ -1,3 +1,7 @@
+## TEST67.1 — Usati / Used: collected FX parameters (experimental, source-only)
+
+**Ctrl+Shift+L** toggles between the current FX view and the per-instance **Used** virtual view; **Ctrl+Delete** in Used removes a parameter from the collection without changing its value. Parameters are recorded once, in first-manual-edit order, only when LReaParams successfully changes their values. Used has independent Standard/Keyboard theme, grid and cursor; its state is stored in the REAPER project by FX GUID, leaving the existing 14 per-plugin contexts and `.fx` schema untouched. Presets and automation do not automatically populate it. [Guida italiana TEST67.1](Docs/TEST67_1_USED_IT.md). **Do not publish this as a new 0.0.67 release**; compile on GitHub Actions and test with REAPER/NVDA first.
+
 ## LReaParams 0.0.67 — independent Grid and Step resets (2026-11-08)
 
 This release builds on the user-tested TEST66.2 and preserves the previous 0.0.66 feature set and profile formats. In FX Params, **Backspace** restores the current parameter; **Ctrl+Backspace** resets only the current Step; **Shift+Backspace** resets only the current Grid to 10, while a rapid double **Shift+Backspace** opens an accessible numeric edit for Grid size **1–400**; **Ctrl+Shift+Backspace** restores all plugin parameter defaults. F3 continues to announce Grid, Step, and Group slots / Memory slots, so the Alt+G / Alt+M mode remains discoverable. Fourteen per-context grids and the existing `.fx` profile keys are preserved.

@@ -24,7 +24,7 @@ bool anyNormalTrackFx(ReaProject* project) {
 }
 }
 void FxNavigator::flushPersistentPosition() noexcept {
-    if (!persistentPositionWriter_ || !active_ || !track_ || !count_ ||
+    if (usedActive_ || !persistentPositionWriter_ || !active_ || !track_ || !count_ ||
         browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size()) ||
         parameterName_.empty()) return;
     try {
@@ -39,6 +39,10 @@ void FxNavigator::flushPersistentPosition() noexcept {
     }
 }
 void FxNavigator::end() noexcept {
+    if (active_ && usedActive_) {
+        try {if(contextUnchanged())leaveUsedView(false);else usedActive_=false;}
+        catch(...) {usedActive_=false;}
+    }
     if (active_) {
         flushParameterSteps();
         // end() is noexcept: even allocation failure in the session snapshot
@@ -452,6 +456,7 @@ void FxNavigator::restoreParameterPosition() {
     }
 }
 void FxNavigator::rememberPosition() {
+    if (usedActive_) {saveUsedState();return;}
     if (!active_ || !track_ || count_ <= 0 || (parameter_ < 0 && parameter_!=compareParamIndex && !eqVirtualValid(parameter_) && !dynamicsVirtualValid(parameter_)) || parameter_ >= count_ ||
         browserIndex_ < 0 || browserIndex_ >= static_cast<int>(entries_.size())) return;
     syncParameterStep();
@@ -884,7 +889,8 @@ void FxNavigator::resetCurrentToDefault() {
     if(defaults.size()!=static_cast<size_t>(count_))defaults=fxOrder_.defaultValuesByIndex();
     const auto it=defaults.find(parameter_);
     if(it==defaults.end()) {speech_("No default for this parameter");return;}
-    const double beforeNorm = isIzotopeRx() ? valueFraction() : 0.0;
+    const double originalFraction=valueFraction();
+    const double beforeNorm = isIzotopeRx() ? originalFraction : 0.0;
     const std::string beforeDisplay = isIzotopeRx() ? formattedValue() : std::string();
     Undo_BeginBlock2(project_);
     const bool ok=take_?TakeFX_SetParamNormalized(take_,fx_,parameter_,it->second):
@@ -892,6 +898,7 @@ void FxNavigator::resetCurrentToDefault() {
     Undo_EndBlock2(project_,"LReaParams: parameter default",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
     if(!ok){speech_("Reset unavailable");return;}
     if(take_)TakeFX_EndParamEdit(take_,fx_,parameter_);else TrackFX_EndParamEdit(track_,fx_,parameter_);
+    if(valueFraction()!=originalFraction)markUsedParameter(parameter_);
     announceParameterWrite("Reset. ", false, beforeDisplay, beforeNorm);
 }
 bool FxNavigator::resetAllToDefault(bool announceResult) {
@@ -1004,6 +1011,7 @@ void FxNavigator::chooseSlotAccess(int mode) {
     speech_(slotMode_==0?"Groups":"Memory positions");
 }
 bool FxNavigator::selectFx(int index) {
+    if (usedActive_ && contextUnchanged())leaveUsedView(false);
     // Commit the previous FX position before FxOrder::load rebinds the profile.
     if (active_ && count_ > 0 && browserIndex_ != index) {
         rememberPosition();
@@ -1172,7 +1180,11 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (k.vk == VK_F4 && !k.ctrl && !k.alt && !k.shift && !k.altGr &&
         !editF7_ && !defaultConfirm_ && !clearAutomationConfirm_) return true;
     if (k.vk == VK_F12 && !k.ctrl) return false; // bare F12 is reserved for future LReaParams commands
-    if (k.ctrl && !k.alt && k.vk == 'L') return true;
+    if (k.ctrl && !k.alt && !k.altGr && k.vk == 'L')
+        return !k.shift || (!editF7_ && !defaultConfirm_ && !clearAutomationConfirm_ &&
+                            !fxBrowserMode_ && !pinAudioMode_);
+    if (usedActive_ && !k.shift && !k.alt && !k.altGr && k.ctrl && k.vk==VK_DELETE &&
+        !searchMode_ && !numericEdit_ && !textEdit_ && !gridNumericEdit_)return true;
     if (k.vk == VK_BACK && !k.alt && !k.altGr) return true;
     if (!k.ctrl && k.alt && !k.shift && (k.vk == 'G' || k.vk == 'M')) return true;
     if (k.ctrl && !k.alt && ((k.vk=='B' && !k.shift)||k.vk=='D')) return true;
@@ -1264,6 +1276,7 @@ void FxNavigator::announce() {
     if(pinAudioMode_) {speech_(pinAudioReview(false));return;}
     if(fxBrowserMode_) {speech_(browserSpeech());return;}
     if(memoryManager_) {speakMemory();return;}
+    if(usedActive_ && visible_.empty()){speech_("Used. Empty");return;}
     speech_(editF7_ ? editorParameterSpeech() : currentParameterSpeech());
 }
 void FxNavigator::announceTitle() {
@@ -1272,6 +1285,7 @@ void FxNavigator::announceTitle() {
     if(pinAudioMode_){speech_("Audio Pin Connector. "+pinAudioReview(true));return;}
     if(fxBrowserMode_){speech_("FX Browser. "+browserSpeech());return;}
     if(memoryManager_){speakMemory("FX Memories");return;}
+    if(usedActive_){speech_(fxWindowTitleBase()+". Used. "+(visible_.empty()?"Empty":currentParameterSpeech()));return;}
     speech_(fxWindowTitleBase() + ". " + currentParameterSpeech());
 }
 namespace {
@@ -1299,7 +1313,7 @@ std::wstring FxNavigator::windowTitle() const {
     return wideUtf8(fxWindowTitleBase()) +
            (gridNumericEdit_ ? L" - Grid Size" : textEdit_ ? L" - Rename" : searchMode_ ? L" - Find Parameter" :
             editF7_ ? L" - F7 Edit" : keyboardThemeActive() ? L" - Keyboard" :
-            valueMode_ ? L" - Value" : L"");
+            valueMode_ ? L" - Value" : L"") + (usedActive_ ? L" - Used" : L"");
 }
 std::string FxNavigator::reviewLine() const {
     // NVDA+Up reads the active confirmation rather than the stale FX parameter.
@@ -1316,10 +1330,12 @@ std::string FxNavigator::reviewLine() const {
     if(numericEdit_)return "Parameter value, "+numericBuffer_;
     if (textEdit_) return "Edit name, " + textBuffer_;
     if (searchMode_) return "Find parameter, " + search_;
+    if (usedActive_ && visible_.empty()) return "Used. Empty";
     if (editF7_ && !valueMode_)
         return editorParameterSpeech() + ". " + viewPositionSpeech() + ". " +
             std::to_string(f7Selected_.size()) + " selected";
-    if (keyboardThemeActive()) return "Keyboard, " + currentParameterSpeech();
+    if (keyboardThemeActive()) return std::string(usedActive_?"Used. Keyboard, ":"Keyboard, ")+currentParameterSpeech();
+    if (usedActive_) return "Used. "+currentParameterSpeech();
     return valueMode_ ? "Value, " + currentParameterSpeech() : currentParameterSpeech();
 }
 void FxNavigator::navigate(int delta) {
@@ -1409,6 +1425,7 @@ void FxNavigator::pollRxValueSpeech() {
     speech_(prefix + spoken);
 }
 void FxNavigator::setValue(double value) {
+    if (usedActive_ && visible_.empty()) return;
     if(parameter_==compareParamIndex){if(setCompare(value))speech_(compareFormatted());return;}
     if(eqVirtualValid(parameter_)){
         if(eqVirtualSet(parameter_,value) && active_)speech_(eqVirtualFormatted(parameter_));
@@ -1417,8 +1434,11 @@ void FxNavigator::setValue(double value) {
     if(dynamicsVirtualValid(parameter_))return; // summary is read-only, not a host param
     if(dynamicsDetectorInput(parameter_)) {
         if(!std::isfinite(value))return;
-        if(dynamicsSetDetector(value))speech_(dynamicsRealFormatted(parameter_,""));
-        else speech_("Detector input unchanged");
+        const double before=dynamicsFraction(parameter_);
+        if(dynamicsSetDetector(value)) {
+            if(dynamicsFraction(parameter_)!=before)markUsedParameter(parameter_);
+            speech_(dynamicsRealFormatted(parameter_,""));
+        } else speech_("Detector input unchanged");
         return;
     }
     if(eqBandParam(parameter_,1)) {
@@ -1426,7 +1446,8 @@ void FxNavigator::setValue(double value) {
         if(std::abs(value-eqGainNorm(parameter_))<1e-12)return;
         Undo_BeginBlock2(project_);const bool ok=writeEqGain(parameter_,value);
         Undo_EndBlock2(project_,"LReaParams: ReaEQ extended gain",UNDO_STATE_FX);
-        if(ok)speech_(formattedValue());else speech_("Gain update failed");return;
+        if(ok){markUsedParameter(parameter_);speech_(formattedValue());}
+        else speech_("Gain update failed");return;
     }
     if (!valid()) throw std::runtime_error("FX context changed");
     if (!std::isfinite(value)) return;
@@ -1442,6 +1463,8 @@ void FxNavigator::setValue(double value) {
     const bool ok = take_ ? TakeFX_SetParamNormalized(take_, fx_, parameter_, value) : TrackFX_SetParamNormalized(track_, fx_, parameter_, value);
     if (take_) TakeFX_EndParamEdit(take_, fx_, parameter_); else TrackFX_EndParamEdit(track_, fx_, parameter_);
     if (!ok) throw std::runtime_error("Host refused parameter value");
+    const double after=take_?TakeFX_GetParamNormalized(take_,fx_,parameter_):TrackFX_GetParamNormalized(track_,fx_,parameter_);
+    if(std::isfinite(after) && after!=before)markUsedParameter(parameter_);
     announceParameterWrite({}, true, beforeDisplay, before);
 }
 // F7 multi-edit: one REAPER undo point, one accessibility announcement.
@@ -1503,7 +1526,7 @@ void FxNavigator::nudgeSelectedF7(int direction,bool big) {
             if(take_)TakeFX_EndParamEdit(take_,fx_,change.id);
             else TrackFX_EndParamEdit(track_,fx_,change.id);
         }
-        if(ok) {++changed;pickup_.erase(change.id);}else ++failed;
+        if(ok) {++changed;pickup_.erase(change.id);markUsedParameter(change.id);}else ++failed;
     }
     Undo_EndBlock2(project_,"LReaParams: selected FX parameter values",take_?UNDO_STATE_ITEMS:UNDO_STATE_FX);
     announceParameterWrite(std::to_string(changed)+" selected parameter values adjusted"+
@@ -1512,6 +1535,7 @@ void FxNavigator::nudgeSelectedF7(int direction,bool big) {
         ". ", false, beforeDisplay, beforeNorm);
 }
 void FxNavigator::nudge(int direction, bool big) {
+    if(usedActive_ && visible_.empty())return;
     if(eqVirtualValid(parameter_)){eqVirtualNudge(direction,big);return;}
     if(dynamicsVirtualValid(parameter_))return; // no fake setter for filter summary
     if(dynamicsDetectorInput(parameter_)){dynamicsNudgeDetector(direction,big);return;}
@@ -1608,6 +1632,13 @@ void FxNavigator::handle(const Key& k) {
     if(!valueKey) rxValueAnnouncement_.active = false;
     if (!k.character || (k.ctrl && !k.altGr) || (k.alt && !k.altGr)) typeAhead_.reset();
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
+    if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk=='L' &&
+        !editF7_ && !fxBrowserMode_ && !memoryManager_ && !textEdit_ &&
+        !numericEdit_ && !gridNumericEdit_ && !searchMode_ && !recentMode_ &&
+        !defaultConfirm_ && !clearAutomationConfirm_ && !pinAudioMode_) {
+        if(!k.repeat)toggleUsedView();
+        return;
+    }
     // Native Win32 EDIT owns ordinary typing, caret, clipboard and selection.
     if (gridNumericEdit_) {
         if (k.vk == VK_ESCAPE) {
@@ -1659,6 +1690,7 @@ void FxNavigator::handle(const Key& k) {
         !textEdit_ && !searchMode_ && !numericEdit_ && !recentMode_ &&
         !memoryManager_ && !defaultConfirm_) {
         if (k.repeat) return;
+        if(usedActive_)leaveUsedView(false);
         if (k.vk == VK_F10) {
             if (fxBrowserMode_) browserSelect();
             else enterFxBrowser();
@@ -1721,6 +1753,10 @@ void FxNavigator::handle(const Key& k) {
     }
     if (fxBrowserMode_) {browserKey(k);return;}
     if (memoryManager_) {memoryNavigate(k);return;}
+    if (usedActive_ && !searchMode_ && k.ctrl && !k.shift && !k.alt && !k.altGr && k.vk==VK_DELETE) {
+        if(!k.repeat)removeUsedParameter();
+        return;
+    }
     if(recentMode_){handleRecent(k);return;}
     if (numericEdit_) {handleAdvanced(k);return;}
     if (textEdit_) { handleTextEdit(k); return; }
@@ -1731,6 +1767,18 @@ void FxNavigator::handle(const Key& k) {
             cycleByInitial(k.character, k.time, k.repeat, k.shift);
         }
         return;
+    }
+    if (usedActive_ && !searchMode_ && !textEdit_ && !numericEdit_ && !recentMode_ &&
+        ((k.vk==VK_F7 && !k.ctrl && !k.alt && !k.shift) ||
+         (k.ctrl && !k.alt && ((k.vk=='L' && !k.shift) ||
+              (k.vk>=VK_F1 && k.vk<=VK_F12 && slotMode_==0) ||
+              (!k.shift && (k.vk==VK_UP || k.vk==VK_DOWN ||
+                             k.vk==VK_LEFT || k.vk==VK_RIGHT ||
+                             k.vk==VK_PRIOR || k.vk==VK_NEXT)) ||
+              (k.shift && (k.vk==VK_UP || k.vk==VK_DOWN)))) ||
+         (k.ctrl && !k.shift && !k.alt && k.vk=='W') ||
+         (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F10 || k.vk==VK_F11)))) {
+        leaveUsedView(false);
     }
     // Native REAPER FX Chain and Add FX browser must own keyboard focus.
     if (!searchMode_ && !textEdit_ && !numericEdit_ && !memoryManager_) {
@@ -1745,7 +1793,10 @@ void FxNavigator::handle(const Key& k) {
     // Same memory shortcut as Track Params; F8 is reserved exclusively for A/B Compare.
     if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk == 'M' &&
         !searchMode_ && !recentMode_ && !fxBrowserMode_) {
-        if (!k.repeat) openFxMemories(false);
+        if (!k.repeat) {
+            if (usedActive_) leaveUsedView(false);
+            openFxMemories(false);
+        }
         return;
     }
     if (!k.ctrl && k.alt && !k.shift && (k.vk=='G'||k.vk=='M')) {
@@ -1868,6 +1919,7 @@ void FxNavigator::handle(const Key& k) {
     // Ctrl+Shift+Backspace = original full-FX reset.
     if (k.vk == VK_BACK && !k.alt && !k.altGr) {
         if (k.repeat) return;
+        if (usedActive_ && visible_.empty() && !k.shift) {speech_("Used. Empty");return;}
         if (k.ctrl && k.shift) {
             pendingGridResetAt_ = 0;
             resetAllToDefault();
@@ -1909,17 +1961,19 @@ void FxNavigator::handle(const Key& k) {
             setValue(eqVirtualFraction(parameter_)>=0.5?0.0:1.0);return;
         }
     }
-    if(k.vk==VK_RETURN){if(k.repeat)return;valueMode_=!valueMode_;
+    if(k.vk==VK_RETURN){if(k.repeat)return;
+        if(usedActive_ && visible_.empty()){speech_("Used. Empty");return;}
+        valueMode_=!valueMode_;
         if (valueMode_) speech_(reviewLine()); else announceTitle(); return;}
     // Tab describes the active parameter ordering; inside F7 it still
     // reports the selection count (handled earlier in handleF7).
     if (!k.ctrl && !k.alt && !k.shift && k.vk==VK_TAB) {
-        speech_((groupSlot_ ? groupLabel(groupSlot_) :
+        speech_((usedActive_?"Used":groupSlot_ ? groupLabel(groupSlot_) :
                 fxOrder_.custom?"Custom Order":"Plugin Order")+
                 (f7FilterActive_?". Search results":"")+". "+viewPositionSpeech());return;
     }
     if (!k.ctrl && !k.alt && !k.shift && k.vk==VK_F3) {
-        speech_("Grid "+std::to_string(columns_)+". Step "+std::to_string(stepScale_)+
+        speech_(std::string(usedActive_?"Used. ":"")+"Grid "+std::to_string(columns_)+". Step "+std::to_string(stepScale_)+
                 ". "+(slotMode_==0?"Group slots":"Memory slots"));return;
     }
     if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F5||k.vk==VK_F6||k.vk==VK_F9)) {

@@ -1,3 +1,10 @@
+## TEST67.1 — Used (Usati) virtual FX parameters (experimental)
+
+- Ctrl+Shift+L toggles an instance-specific virtual Used list with the prior Plugin/Custom/Group view. Ctrl+Delete in Used removes only the list entry, not the FX value.
+- Captures successfully edited physical parameter values through LReaParams, first-edit order without duplicates. Presets and automation are not collected automatically.
+- Own F4 Standard/Keyboard theme, grid, cursor and project-scoped REAPER storage by FX GUID; no change to historical `.fx` format, 14 grids, F7, About or ReaPack publisher.
+- C++ logic tests and new static safety check; MSVC build and NVDA/OSARA verification are still required. [Test instructions](TEST67_1_USED_IT.md).
+
 ## LReaParams 0.0.67 — 2026-11-08
 
 - FX Params: separated parameter, Step and Grid reset shortcuts (Backspace, Ctrl+Backspace and Shift+Backspace).

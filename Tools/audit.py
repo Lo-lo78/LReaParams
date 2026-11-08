@@ -44,9 +44,21 @@ def main():
     rows=list(csv.DictReader((ROOT/'Docs/LuaManifest.csv').open(encoding='utf-8-sig')))
     for row in rows:
         check(hashlib.sha256((ROOT/'Legacy'/row['file']).read_bytes()).hexdigest()==row['sha256'],'Original Lua changed')
-    all_cpp='\n'.join(p.read_text() for p in (ROOT/'src').glob('*.cpp'))
-    for forbidden in [r'SetWindowsHookExW\(WH_KEYBOARD_LL',r'SetProjExtState\s*\(',r'SetExtState\s*\(']:
+    sources=list((ROOT/'src').glob('*.cpp'))
+    all_cpp='\n'.join(p.read_text() for p in sources)
+    # TEST67.1: project-scoped per-instance Used state is the ONLY authorized
+    # persistent REAPER project extension write, never a global ExtState.
+    # Retain the original security guard for all other source modules.
+    without_used='\n'.join(p.read_text() for p in sources if p.name!='FxNavigatorUsed.cpp')
+    for forbidden in [r'SetWindowsHookExW\(WH_KEYBOARD_LL',r'SetExtState\s*\(']:
         check(not re.search(forbidden,all_cpp),'Unexpected window/global hook/state write')
+    check(not re.search(r'SetProjExtState\s*\(',without_used),
+          'Unexpected project state write outside the Used FX module')
+    used_source=(ROOT/'src/FxNavigatorUsed.cpp').read_text()
+    check(used_source.count('SetProjExtState(')==1 and
+          'LReaParams.UsedParameters.v1' in used_source and
+          'usedKey(fxGuid_)' in used_source,
+          'Per-instance Used project-state ownership changed')
     # One purpose-built offscreen title proxy is allowed; forbid other window creation.
     title_src=(ROOT/'src/TitleProxy.cpp').read_text()
     check(title_src.count('CreateWindowExW(')==5,'Expected title window, passive review, native Value and native EDIT with label')
