@@ -12,9 +12,9 @@ assert 'columns_ =' not in step and 'rememberPosition();' in step
 grid=nav.split('void FxNavigator::resetCurrentGrid() {',1)[1].split('void FxNavigator::beginGridNumericEdit()',1)[0]
 assert 'columns_ = 10;' in grid and 'stepScale_' not in grid
 assert 'rememberPosition();' in grid and 'lastControl_ = LastControl::grid;' in grid
-assert 'if (k.ctrl && k.shift && k.alt && !k.altGr)' in nav and 'resetAllToDefault();' in nav
+assert 'if (k.ctrl && k.shift) {' in nav and 'resetAllToDefault();' in nav
 assert 'else if (k.ctrl) resetCurrentStep();' in nav and 'else resetCurrentToDefault();' in nav
-assert 'if (k.vk == VK_BACK && (!k.alt || (k.ctrl && k.shift && !k.altGr)))' in nav
+assert 'if (k.vk == VK_BACK && !k.alt && !k.altGr)' in nav
 assert 'pendingGridResetAt_ = now ? now : 1;' in nav
 assert 'now - pendingGridResetAt_ <= GetDoubleClickTime()' in nav
 assert 'if (k.repeat) return;' in nav and 'beginGridNumericEdit();' in nav

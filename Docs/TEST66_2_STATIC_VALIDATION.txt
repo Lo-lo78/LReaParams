@@ -1,0 +1,9 @@
+LReaParams 0.0.66 — TEST66.2 — source-only static validation
+
+115/115 Python static tests: PASS
+Tools/audit.py: PASS
+Windows binary compilation: NOT TESTED locally (requires GitHub Actions)
+Runtime on REAPER/NVDA/OSARA: NOT TESTED
+
+Only TEST keyboard dispatch, its static tests, CI test step, and TEST documentation changed relative to TEST66.1.
+Release number, About, installer, existing profiles and ReaPack publish workflow unchanged.

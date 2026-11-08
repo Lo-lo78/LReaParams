@@ -29,7 +29,7 @@ public:
     // one or more REAPER UI cycles after SetParamNormalized. Do not announce
     // the previous value immediately after a successful write.
     void pollRxValueSpeech();
-    // Resolve a single Ctrl+Shift+Backspace after the double-press window.
+    // Resolve a single Shift+Backspace after the double-press window.
     void pollGridReset();
     // Complete Ctrl+Alt+B online recovery when an FX exposes its parameters
     // after the REAPER SetOffline call. Called by the existing main-thread timer.

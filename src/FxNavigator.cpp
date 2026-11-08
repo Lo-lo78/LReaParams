@@ -1173,7 +1173,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         !editF7_ && !defaultConfirm_ && !clearAutomationConfirm_) return true;
     if (k.vk == VK_F12 && !k.ctrl) return false; // bare F12 is reserved for future LReaParams commands
     if (k.ctrl && !k.alt && k.vk == 'L') return true;
-    if (k.vk==VK_BACK && (!k.alt || (k.ctrl && k.shift && !k.altGr))) return true;
+    if (k.vk == VK_BACK && !k.alt && !k.altGr) return true;
     if (!k.ctrl && k.alt && !k.shift && (k.vk == 'G' || k.vk == 'M')) return true;
     if (k.ctrl && !k.alt && ((k.vk=='B' && !k.shift)||k.vk=='D')) return true;
     if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F3 || k.vk==VK_F5 || k.vk==VK_F6 || k.vk==VK_F9)) return true;
@@ -1617,13 +1617,13 @@ void FxNavigator::handle(const Key& k) {
         } else if (k.vk == VK_RETURN && !k.repeat) commitGridNumericEdit();
         return;
     }
-    const bool gridResetKey = k.vk == VK_BACK && k.ctrl && k.shift &&
+    const bool gridResetKey = k.vk == VK_BACK && !k.ctrl && k.shift &&
                               !k.alt && !k.altGr;
     // A different key finishes a pending single press. A full FX reset
     // supersedes it rather than applying an unrelated Grid change first.
     if (pendingGridResetAt_ && !gridResetKey) {
         pendingGridResetAt_ = 0;
-        if (!(k.vk == VK_BACK && k.ctrl && k.shift && k.alt && !k.altGr))
+        if (!(k.vk == VK_BACK && k.ctrl && k.shift && !k.alt && !k.altGr))
             resetCurrentGrid();
     }
     if (clearAutomationConfirm_) {
@@ -1863,11 +1863,12 @@ void FxNavigator::handle(const Key& k) {
         }
         return;
     }
-    // Preserve the legacy Backspace behavior, including Shift+Backspace.
-    // Only the three explicit modified gestures are reassigned.
-    if (k.vk == VK_BACK && (!k.alt || (k.ctrl && k.shift && !k.altGr))) {
+    // TEST66.2: Backspace = parameter, Ctrl+Backspace = current Step,
+    // Shift+Backspace = current Grid (double press = numeric edit),
+    // Ctrl+Shift+Backspace = original full-FX reset.
+    if (k.vk == VK_BACK && !k.alt && !k.altGr) {
         if (k.repeat) return;
-        if (k.ctrl && k.shift && k.alt && !k.altGr) {
+        if (k.ctrl && k.shift) {
             pendingGridResetAt_ = 0;
             resetAllToDefault();
         } else if (gridResetKey) {
