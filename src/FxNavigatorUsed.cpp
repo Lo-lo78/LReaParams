@@ -21,6 +21,7 @@ constexpr const char* section="LReaParams.UsedParameters.v1";
 void FxNavigator::loadUsedState() {
     usedActive_=false;
     usedOrigin_={};
+    usedF7SelectedIds_.clear();
     usedState_={};usedState_.count=count_;
     if(!project_ || !count_ || !GetProjExtState)return;
     const auto key=usedKey(fxGuid_);
@@ -95,6 +96,15 @@ void FxNavigator::leaveUsedView(bool speak, bool keepForNextEntry) {
     // Window close or changing FX retains Used as that instance's last view.
     usedState_.resume=keepForNextEntry;
     saveUsedState();
+    if(editF7_) {
+        // Selection in Used uses its own occurrence coordinates. Keep it by
+        // physical ID; never store those coordinates in a Custom/Group view.
+        const auto& source=f7FilterActive_?f7FullView_:visible_;
+        usedF7SelectedIds_.clear();
+        for(const int pos:f7Selected_)
+            if(pos>=0 && pos<static_cast<int>(source.size()))
+                usedF7SelectedIds_.insert(source[static_cast<std::size_t>(pos)]);
+    }
     usedActive_=false;
     visible_=std::move(usedOrigin_.visible);
     parameter_=usedOrigin_.parameter;viewPos_=usedOrigin_.position;
@@ -103,13 +113,19 @@ void FxNavigator::leaveUsedView(bool speak, bool keepForNextEntry) {
     f7FullView_=std::move(usedOrigin_.filterFull);
     f7FilterPositions_=std::move(usedOrigin_.filterPositions);
     f7FilterQuery_=std::move(usedOrigin_.filterQuery);
+    if(editF7_) {
+        f7Selected_=std::move(usedOrigin_.f7Selected);
+        f7BaseSelection_=f7Selected_;
+        f7SnakePath_.clear();f7SnakeDirections_.clear();
+    }
     usedOrigin_={};
     parameterName_=parameterName();syncParameterStep();
     rememberPosition();
     if(speak) {
         const std::string origin=groupSlot_?groupLabel(groupSlot_):
             (fxOrder_.custom?"Custom Order":"Plugin Order");
-        speech_(origin+". "+(visible_.empty()?"Empty":currentParameterSpeech()));
+        speech_(std::string(editF7_?"Edit: ":"")+origin+". "+
+                (visible_.empty()?"Empty":(editF7_?editorParameterSpeech():currentParameterSpeech())));
     }
 }
 void FxNavigator::enterUsedView(bool speak) {
@@ -123,10 +139,19 @@ void FxNavigator::enterUsedView(bool speak) {
     usedOrigin_.filterFull=f7FullView_;
     usedOrigin_.filterPositions=f7FilterPositions_;
     usedOrigin_.filterQuery=f7FilterQuery_;
+    if(editF7_) usedOrigin_.f7Selected=f7Selected_;
     f7FilterActive_=false;f7FullView_.clear();f7FilterPositions_.clear();f7FilterQuery_.clear();
     usedActive_=true;valueMode_=false;
     usedState_.resume=true;
     visible_=usedState_.ids; columns_=usedState_.columns;
+    if(editF7_) {
+        f7Selected_.clear();
+        for(std::size_t i=0;i<visible_.size();++i)
+            if(usedF7SelectedIds_.count(visible_[i]))
+                f7Selected_.insert(static_cast<int>(i));
+        f7BaseSelection_=f7Selected_;
+        f7SnakePath_.clear();f7SnakeDirections_.clear();
+    }
     const auto found=std::find(visible_.begin(),visible_.end(),usedState_.selected);
     viewPos_=found!=visible_.end()?static_cast<int>(found-visible_.begin()):0;
     if(!visible_.empty()) {
@@ -134,8 +159,11 @@ void FxNavigator::enterUsedView(bool speak) {
         parameterName_=parameterName();syncParameterStep();
     }
     saveUsedState();
-    if(speak) speech_("Used. "+std::to_string(visible_.size())+" parameters"+
-                      (visible_.empty()?std::string(". Empty") : ". "+currentParameterSpeech()));
+    if(speak) speech_(std::string(editF7_?"Edit: Used. ":"Used. ")+
+                      std::to_string(visible_.size())+" parameters"+
+                      (editF7_?". "+std::to_string(f7Selected_.size())+" selected":"")+
+                      (visible_.empty()?std::string(". Empty") : ". "+
+                          (editF7_?editorParameterSpeech():currentParameterSpeech())));
 }
 void FxNavigator::toggleUsedView() {
     if(usedActive_) leaveUsedView(true);

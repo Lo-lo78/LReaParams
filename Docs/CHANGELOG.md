@@ -1,3 +1,11 @@
+## TEST68.3 — Used (Usati) available in F7 (experimental, 2026-11-08)
+
+- Ctrl+Shift+L now toggles Used within FX Params **and F7**, preserving F7 Standard navigation and a separate selection for Used versus the origin Custom Order/group.
+- In F7/Used, Shift+Space, Shift+arrows, Ctrl+A and Ctrl+C allow fast copying of modified parameters into groups; Ctrl+Shift+F1..F12 saves the selection as a new group directly.
+- Ctrl+Delete in F7 keeps its original group-removal role and **never** removes a Used-list entry. Within F7/Used it is a safe no-op; outside F7/Used it retains the existing Used removal.
+- F7 to enter/exit editing and Escape restore the Used view; no changes to per-instance project storage, group profiles, ReaPack index or public version (0.0.68).
+- Windows MSVC and NVDA/OSARA runtime verification required before a release.
+
 ## TEST68.1 — Remember Used view after Escape (experimental, 2026-11-08)
 
 - After Escape, reopening the same FX restores Used / Usati and its selected parameter when it was the active view.

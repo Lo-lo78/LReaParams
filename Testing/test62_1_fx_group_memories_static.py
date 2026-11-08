@@ -23,10 +23,13 @@ for s in (
     'saveUndo(); // One Undo captures BOTH groups',
     'if(clipCut_) {clip_.clear();clipPositions_.clear();}',
     'const bool createGroup=groupSlot_ && fxOrder_.groups.find(groupSlot_)==fxOrder_.groups.end();',
-    'if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(false);return true;}',
-    'if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(true);return true;}',
+    'if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){',
+    'if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE){',
     'return "Group "+(it!=fxOrder_.groupNames.end() && !it->second.empty()',
 ):assert s in cpp,s
+assert 'else if(!k.repeat)hideSelected(false);' in cpp
+assert 'else if(!k.repeat)hideSelected(true);' in cpp
+assert 'if(usedActive_)speech_("F7 Ctrl+Delete removes from groups, not Used.' in cpp
 assert 'for(int id:source)if(id!=compareParamIndex && (!custom||!hidden.count(id)))' in fx
 assert 'const auto& source=custom?order:defaultOrder_;' in fx
 for s in (

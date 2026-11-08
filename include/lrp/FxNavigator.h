@@ -371,7 +371,7 @@ private:
     void rebuildView(int preferParam, int preferPosition = -1);
     void positionChanged(int position, bool announcePosition = true);
     void enterF7();
-    void exitF7();
+    void exitF7(bool speak = true);
     void leaveGroupToCustomOrder(); // Ctrl+L: leave any group, including F7, for Custom Order
     void selectF7(bool shift, int target, const std::string& direction = "", bool sweep = false);
     void selectF7ToGlobalEdge(bool toEnd);
@@ -441,7 +441,12 @@ private:
         std::vector<int> filterFull;
         std::vector<int> filterPositions;
         std::string filterQuery;
+        // F7 selection positions belong to the origin ordering, not to Used.
+        std::set<int> f7Selected;
     } usedOrigin_{};
+    // Physical parameter IDs selected in F7/Used. They remain stable across
+    // filters, context switches and changes to the automatically built list.
+    std::set<int> usedF7SelectedIds_{};
     int viewPos_ = 0;
     // The view from which the first group was loaded (also across group switches).
     bool groupReturnActive_ = false, groupReturnCustom_ = false, groupReturnEdit_ = false;

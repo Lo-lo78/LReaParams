@@ -10,7 +10,7 @@ audit=(ROOT/'Tools/audit.py').read_text(encoding='utf-8')
 cm=(ROOT/'CMakeLists.txt').read_text(encoding='utf-8')
 for label,condition in [
  ('Ctrl+Shift+L toggle', "k.ctrl && k.shift && !k.alt && !k.altGr && k.vk=='L'" in fx and 'toggleUsedView();' in fx),
- ('Ctrl+Delete only Used', 'if (usedActive_ && !searchMode_ && k.ctrl && !k.shift' in fx and 'removeUsedParameter();' in fx),
+ ('Ctrl+Delete only Used', 'if (usedActive_ && !editF7_ && !searchMode_ && k.ctrl && !k.shift' in fx and 'removeUsedParameter();' in fx),
  ('collect only direct writes', 'markUsedParameter(parameter_)' in fx),
  ('per-FX project state', 'LReaParams.UsedParameters.v1' in used and 'usedKey(fxGuid_)' in used and 'SetProjExtState(' in used),
  ('restore original context', 'usedOrigin_.visible=visible_' in used and 'visible_=std::move(usedOrigin_.visible)' in used),

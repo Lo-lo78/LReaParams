@@ -10,8 +10,11 @@ mem=(root/'src/FxNavigatorMemories.cpp').read_text(encoding='utf-8')
 assert 'void hideSelected(bool globalHide);' in header
 assert 'if (group!=fxOrder_.groups.end()) {\n                    groupSlot_=last->groupSlot;' in order
 assert 'void FxNavigator::hideSelected(bool globalHide)' in order
-assert 'if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(false);return true;}' in order
-assert 'if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(true);return true;}' in order
+assert 'if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){' in order
+assert 'if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE){' in order
+assert 'else if(!k.repeat)hideSelected(false);' in order
+assert 'else if(!k.repeat)hideSelected(true);' in order
+assert 'if(usedActive_)speech_("F7 Ctrl+Delete removes from groups, not Used.' in order
 assert 'Restore hidden parameters from Custom Order' not in order
 assert 'fxOrder_.hidden.clear()' not in order[order.index('bool FxNavigator::handleF7'):]
 assert 'Ctrl+Delete removes parameters from a group only.' in order

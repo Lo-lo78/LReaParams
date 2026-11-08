@@ -532,14 +532,15 @@ void FxNavigator::enterF7() {
         ". "+std::to_string(f7Selected_.size())+" selected. "+
         viewPositionSpeech()+". "+(visible_.empty()?"Empty":editorParameterSpeech()));
 }
-void FxNavigator::exitF7() {
+void FxNavigator::exitF7(bool speak) {
     clearF7Filter();
     editF7_=false;valueMode_=false;groupEditAll_=false;
     f7SnakePath_.clear();f7SnakeDirections_.clear();
     groupSlot_=f7ReturnGroup_;
     rebuildView(f7ReturnParam_,f7ReturnPos_);
     rememberPosition();
-    speech_((groupSlot_?groupLabel(groupSlot_)+". ":fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech());
+    if(speak) speech_((groupSlot_?groupLabel(groupSlot_)+". ":fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech());
+    usedF7SelectedIds_.clear(); // Selection belongs to an F7 editing session.
 }
 void FxNavigator::selectF7(bool shift,int target,const std::string& direction,bool sweep) {
     if(visible_.empty())return;
@@ -638,6 +639,24 @@ void FxNavigator::selectF7ToGlobalEdge(bool toEnd) {
 
 void FxNavigator::doCopy(bool cut) {
     if(!editF7_)return;
+    if(usedActive_) {
+        if(cut) {speech_("Used is a virtual list. Use Ctrl+C to copy");return;}
+        const auto& rows=f7FilterActive_?f7FullView_:visible_;
+        std::set<int> positions=f7Selected_;
+        const int cursor=f7OriginalPosition(viewPos_);
+        if(positions.empty() && cursor>=0 && cursor<static_cast<int>(rows.size()))
+            positions.insert(cursor);
+        std::vector<int> copied;
+        for(int pos:positions)
+            if(pos>=0 && pos<static_cast<int>(rows.size()))
+                copied.push_back(rows[static_cast<std::size_t>(pos)]);
+        if(copied.empty()){speech_("No parameters to copy");return;}
+        clip_=std::move(copied);
+        clipCut_=false;clipPlugin_=entries_[browserIndex_].name;
+        clipFxGuid_=fxGuid_;clipSourceGroup_=0;clipPositions_.clear();
+        speech_("Copied "+std::to_string(clip_.size())+" parameters from Used");
+        return;
+    }
     const auto& source=f7FilterActive_?f7FullView_:visible_;
     const int cursor=f7OriginalPosition(viewPos_);
     std::set<int> chosen=f7Selected_;
@@ -668,6 +687,7 @@ void FxNavigator::doCopy(bool cut) {
             " parameters from "+(groupSlot_?groupLabel(groupSlot_):"Custom Order"));
 }
 void FxNavigator::doPaste() {
+    if(usedActive_) {speech_("Used is read only. Open a group to paste");return;}
     if(!editF7_ || clip_.empty()){speech_("Clipboard empty");return;}
     if(clipPlugin_!=entries_[browserIndex_].name){speech_("Clipboard belongs to another FX");return;}
     if(groupEditAll_){speech_("Return to group before paste");return;}
@@ -864,6 +884,8 @@ void FxNavigator::hideSelected(bool globalHide) {
 void FxNavigator::saveGroup(int slot) {
     if(!editF7_) {speech_("Press F7 to select group parameters");return;}
     std::vector<int> saved;
+    // In F7/Used the virtual list is indexed separately from Custom/groups;
+    // copying physical IDs is safe because Used has no duplicate occurrences.
     const auto& reference=f7FilterActive_?f7FullView_:visible_;
     for(int pos:f7Selected_)if(pos>=0&&pos<static_cast<int>(reference.size()))
         saved.push_back(reference[static_cast<size_t>(pos)]);
@@ -1096,6 +1118,7 @@ void FxNavigator::handleTextEdit(const Key& k) {
 bool FxNavigator::handleF7(const Key& k) {
     if(!editF7_)return false;
     if(k.ctrl&&!k.alt&&!k.shift&&(k.vk=='Z'||k.vk=='Y')){
+        if(usedActive_) {speech_("Leave Used to undo or redo group edits");return true;}
         if(!k.repeat)f7Undo(k.vk=='Y');return true;
     }
     if(k.ctrl&&!k.alt&&!k.shift&&(k.vk=='C'||k.vk=='X')){doCopy(k.vk=='X');return true;}
@@ -1106,8 +1129,16 @@ bool FxNavigator::handleF7(const Key& k) {
         f7SnakePath_.clear();f7SnakeDirections_.clear();rememberPosition();
         speech_("Selected all. "+std::to_string(f7Selected_.size())+" selected");return true;
     }
-    if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(false);return true;}
-    if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE){if(!k.repeat)hideSelected(true);return true;}
+    if(k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){
+        if(usedActive_)speech_("F7 Ctrl+Delete removes from groups, not Used. Return to a group first");
+        else if(!k.repeat)hideSelected(false);
+        return true;
+    }
+    if(k.ctrl&&k.shift&&!k.alt&&k.vk==VK_DELETE){
+        if(usedActive_)speech_("Return to a group or Custom Order to hide parameters");
+        else if(!k.repeat)hideSelected(true);
+        return true;
+    }
     if(!k.ctrl&&!k.alt&&!k.shift&&k.vk==VK_DELETE){
         f7Selected_.clear();f7SnakePath_.clear();f7SnakeDirections_.clear();
         rememberPosition();speech_("Unselected all. 0 selected");return true;
@@ -1120,7 +1151,7 @@ bool FxNavigator::handleF7(const Key& k) {
         speech_(std::string(f7Selected_.count(f7OriginalPosition(viewPos_))?"Selected ":"Unselected ")+currentParameterSpeech());return true;
     }
     if(!k.ctrl&&!k.shift&&!k.alt&&k.vk==VK_TAB){
-        speech_((groupSlot_?"Edit: "+groupLabel(groupSlot_):"Edit: Custom Order")+". "+
+        speech_((usedActive_?"Edit: Used":groupSlot_?"Edit: "+groupLabel(groupSlot_):"Edit: Custom Order")+". "+
                 std::to_string(f7Selected_.size())+" selected. "+viewPositionSpeech()+
                 (f7FilterActive_?". Filter "+f7FilterQuery_:""));return true;
     }

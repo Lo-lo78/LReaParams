@@ -1184,7 +1184,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         !editF7_ && !defaultConfirm_ && !clearAutomationConfirm_) return true;
     if (k.vk == VK_F12 && !k.ctrl) return false; // bare F12 is reserved for future LReaParams commands
     if (k.ctrl && !k.alt && !k.altGr && k.vk == 'L')
-        return !k.shift || (!editF7_ && !defaultConfirm_ && !clearAutomationConfirm_ &&
+        return !k.shift || (!defaultConfirm_ && !clearAutomationConfirm_ &&
                             !fxBrowserMode_ && !pinAudioMode_);
     if (usedActive_ && !k.shift && !k.alt && !k.altGr && k.ctrl && k.vk==VK_DELETE &&
         !searchMode_ && !numericEdit_ && !textEdit_ && !gridNumericEdit_)return true;
@@ -1279,7 +1279,7 @@ void FxNavigator::announce() {
     if(pinAudioMode_) {speech_(pinAudioReview(false));return;}
     if(fxBrowserMode_) {speech_(browserSpeech());return;}
     if(memoryManager_) {speakMemory();return;}
-    if(usedActive_ && visible_.empty()){speech_("Used. Empty");return;}
+    if(usedActive_ && visible_.empty()){speech_(editF7_?"Edit: Used. Empty":"Used. Empty");return;}
     speech_(editF7_ ? editorParameterSpeech() : currentParameterSpeech());
 }
 void FxNavigator::announceTitle() {
@@ -1333,7 +1333,7 @@ std::string FxNavigator::reviewLine() const {
     if(numericEdit_)return "Parameter value, "+numericBuffer_;
     if (textEdit_) return "Edit name, " + textBuffer_;
     if (searchMode_) return "Find parameter, " + search_;
-    if (usedActive_ && visible_.empty()) return "Used. Empty";
+    if (usedActive_ && visible_.empty()) return editF7_?"Edit: Used. Empty":"Used. Empty";
     if (editF7_ && !valueMode_)
         return editorParameterSpeech() + ". " + viewPositionSpeech() + ". " +
             std::to_string(f7Selected_.size()) + " selected";
@@ -1636,7 +1636,7 @@ void FxNavigator::handle(const Key& k) {
     if (!k.character || (k.ctrl && !k.altGr) || (k.alt && !k.altGr)) typeAhead_.reset();
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
     if (k.ctrl && k.shift && !k.alt && !k.altGr && k.vk=='L' &&
-        !editF7_ && !fxBrowserMode_ && !memoryManager_ && !textEdit_ &&
+        !fxBrowserMode_ && !memoryManager_ && !textEdit_ &&
         !numericEdit_ && !gridNumericEdit_ && !searchMode_ && !recentMode_ &&
         !defaultConfirm_ && !clearAutomationConfirm_ && !pinAudioMode_) {
         if(!k.repeat)toggleUsedView();
@@ -1647,7 +1647,7 @@ void FxNavigator::handle(const Key& k) {
     // handler, so an FX with no Custom Order does not prompt to press F7.
     // Outside Used, the original Ctrl+L behavior is unchanged.
     if (usedActive_ && k.ctrl && !k.shift && !k.alt && !k.altGr && k.vk=='L' &&
-        !editF7_ && !fxBrowserMode_ && !memoryManager_ && !textEdit_ &&
+        !fxBrowserMode_ && !memoryManager_ && !textEdit_ &&
         !numericEdit_ && !gridNumericEdit_ && !searchMode_ && !recentMode_ &&
         !defaultConfirm_ && !clearAutomationConfirm_ && !pinAudioMode_) {
         if(!k.repeat)leaveUsedView(true);
@@ -1767,7 +1767,7 @@ void FxNavigator::handle(const Key& k) {
     }
     if (fxBrowserMode_) {browserKey(k);return;}
     if (memoryManager_) {memoryNavigate(k);return;}
-    if (usedActive_ && !searchMode_ && k.ctrl && !k.shift && !k.alt && !k.altGr && k.vk==VK_DELETE) {
+    if (usedActive_ && !editF7_ && !searchMode_ && k.ctrl && !k.shift && !k.alt && !k.altGr && k.vk==VK_DELETE) {
         if(!k.repeat)removeUsedParameter();
         return;
     }
@@ -1783,9 +1783,9 @@ void FxNavigator::handle(const Key& k) {
         return;
     }
     if (usedActive_ && !searchMode_ && !textEdit_ && !numericEdit_ && !recentMode_ &&
-        ((k.vk==VK_F7 && !k.ctrl && !k.alt && !k.shift) ||
-         (k.ctrl && !k.alt && ((k.vk=='L' && !k.shift) ||
-              (k.vk>=VK_F1 && k.vk<=VK_F12 && slotMode_==0) ||
+        ((k.ctrl && !k.alt && ((k.vk=='L' && !k.shift) ||
+              (k.vk>=VK_F1 && k.vk<=VK_F12 && slotMode_==0 &&
+               !(editF7_ && k.shift)) ||
               (!k.shift && (k.vk==VK_UP || k.vk==VK_DOWN ||
                              k.vk==VK_LEFT || k.vk==VK_RIGHT ||
                              k.vk==VK_PRIOR || k.vk==VK_NEXT)) ||
@@ -1873,7 +1873,18 @@ void FxNavigator::handle(const Key& k) {
     }
     if (k.vk==VK_F7 && !k.ctrl && !k.alt && !k.shift) {
         if(k.repeat)return;
-        if(editF7_)exitF7();else enterF7();
+        if(usedActive_) {
+            if(editF7_) {
+                leaveUsedView(false, true);
+                exitF7(false);
+                enterUsedView(true);
+            } else {
+                leaveUsedView(false);
+                enterF7();
+                if(editF7_)enterUsedView(true);
+            }
+        } else if(editF7_)exitF7();
+        else enterF7();
         return;
     }
     if (editF7_ && handleF7(k)) return;
@@ -1965,7 +1976,13 @@ void FxNavigator::handle(const Key& k) {
             speech_(std::string(editF7_?"Edit: Search cleared. ":"Search cleared. ")+
                     (editF7_?editorParameterSpeech():currentParameterSpeech()));
         }
-        else if(editF7_)exitF7();
+        else if(editF7_) {
+            if(usedActive_) {
+                leaveUsedView(false, true);
+                exitF7(false);
+                enterUsedView(true);
+            } else exitF7();
+        }
         else end();return;}
     if(k.vk==VK_RETURN && !k.repeat && !editF7_ && dynamicsVirtualValid(parameter_)) {
         speech_(currentParameterSpeech());return; // read-only summary; no slider
