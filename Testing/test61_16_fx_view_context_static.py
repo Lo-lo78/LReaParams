@@ -12,7 +12,7 @@ assert 'groupSlot_ + 1 : fxOrder_.custom ? 1 : 0' in views
 assert 'void FxNavigator::captureViewCursor()' in views
 assert 'void FxNavigator::restoreViewCursor(' in views
 assert 'cursor.position = f7FilterActive_ ? f7OriginalPosition(viewPos_) : viewPos_' in views
-assert 'if (editF7_) return;' in views and 'cursor.columns = std::clamp(columns_, 1, 200);' in views
+assert 'if (editF7_) return;' in views and 'cursor.columns = std::clamp(columns_, 1, 400);' in views
 assert 'if (cursor.remembered && cursor.position >= 0)' in views
 assert 'rebuildView(cursor.parameter, cursor.position)' in views
 assert 'group_grid_size_v1::slot::' in views and 'grid_size_v1' in views

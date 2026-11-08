@@ -219,7 +219,7 @@ constexpr const char* keyboardThemesProfileKey = "lrp_keyboard_themes_v1";
 bool FxNavigator::keyboardThemeActive() const noexcept {
     // Only the normal FX Params navigation can use Keyboard. Every editor,
     // dialog, FX browser, F7 and FX Memories keeps the original shortcuts.
-    return active_ && !editF7_ && !textEdit_ && !numericEdit_ &&
+    return active_ && !editF7_ && !textEdit_ && !numericEdit_ && !gridNumericEdit_ &&
            !searchMode_ && !recentMode_ && !memoryManager_ &&
            !fxBrowserMode_ && !pinAudioMode_ && !defaultConfirm_ &&
            !clearAutomationConfirm_ &&
@@ -230,7 +230,7 @@ void FxNavigator::loadKeyboardThemes() {
 }
 void FxNavigator::toggleKeyboardTheme() {
     if (!active_ || editF7_ || memoryManager_ || fxBrowserMode_ ||
-        pinAudioMode_ || textEdit_ || numericEdit_ || searchMode_ ||
+        pinAudioMode_ || textEdit_ || numericEdit_ || gridNumericEdit_ || searchMode_ ||
         recentMode_ || defaultConfirm_ || clearAutomationConfirm_) return;
     const auto context = static_cast<std::size_t>(currentViewIndex());
     const bool previous = keyboardThemes_[context];
@@ -254,7 +254,7 @@ void FxNavigator::captureViewCursor() {
     if (visible_.empty() || viewPos_ < 0 ||
         viewPos_ >= static_cast<int>(visible_.size())) return;
     auto& cursor = viewCursors_[static_cast<size_t>(currentViewIndex())];
-    cursor.columns = std::clamp(columns_, 1, 200);
+    cursor.columns = std::clamp(columns_, 1, 400);
     cursor.remembered = true;
     // F7 edits the same group's grid width, but its transient editor
     // selection must not replace the last NORMAL navigation position.
@@ -288,7 +288,7 @@ void FxNavigator::loadViewCursors() {
         try {
             size_t used = 0;
             int n = std::stoi(text, &used, 10);
-            if (used == text.size() && n >= 1 && n <= 200) {
+            if (used == text.size() && n >= 1 && n <= 400) {
                 viewCursors_[static_cast<size_t>(i)].columns = n;
                 viewCursors_[static_cast<size_t>(i)].remembered = true;
             }
@@ -317,7 +317,7 @@ void FxNavigator::loadViewCursors() {
         char a = 0, b = 0, c = 0, trailing = 0;
         if ((fields >> i >> a >> width >> b >> pos >> c >> param) &&
             a == ',' && b == ',' && c == ',' && !(fields >> trailing) &&
-            i >= 0 && i < 14 && width >= 1 && width <= 200 &&
+            i >= 0 && i < 14 && width >= 1 && width <= 400 &&
             pos >= -1 && pos <= 1000000) {
             viewCursors_[static_cast<size_t>(i)] = {width, pos, param, true};
         }
@@ -325,7 +325,7 @@ void FxNavigator::loadViewCursors() {
 }
 void FxNavigator::restoreViewCursor(int fallbackParam, int fallbackPosition) {
     const auto& cursor = viewCursors_[static_cast<size_t>(currentViewIndex())];
-    columns_ = cursor.remembered ? std::clamp(cursor.columns, 1, 200) : 10;
+    columns_ = cursor.remembered ? std::clamp(cursor.columns, 1, 400) : 10;
     if (cursor.remembered && cursor.position >= 0) {
         // A duplicated parameter must reopen at its exact occurrence.
         rebuildView(cursor.parameter, cursor.position);

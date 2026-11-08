@@ -16,6 +16,8 @@ jobs:
           persist-credentials: false
       - name: Verify public release version and package consistency (source only)
         run: python Testing/test_release_version_static.py
+      - name: TEST66.1 separate FX Grid and Step resets (source only)
+        run: python Testing/test66_1_fx_grid_step_reset_static.py
       - name: Release 0.0.66 Keyboard, Page parity and guide integrity (source only)
         run: python Testing/test66_release_keyboard_static.py
       - name: TEST65.1.1 existing generated ReaPack index compatibility (source only)

@@ -41,7 +41,9 @@ assert 'flushParameterSteps();\n    flushPersistentPosition();' in ctx
 assert 'flushParameterSteps();\n        // end() is noexcept' in nav
 assert 'markParameterStepChanged();rememberPosition();' in nav
 assert 'markParameterStepChanged();rememberPosition();' in mem
-assert 'columns_=10;stepScale_=0;markParameterStepChanged();' in nav
+assert 'void FxNavigator::resetCurrentStep()' in nav
+assert 'markParameterStepChanged();' in nav
+assert 'void FxNavigator::resetCurrentGrid()' in nav
 assert 'if (!fxBrowserMode_) syncParameterStep();' in nav
 # CC speech is per parameter and must never disable normal Grid speech.
 assert 'cc_param_speech_v1::' in advanced

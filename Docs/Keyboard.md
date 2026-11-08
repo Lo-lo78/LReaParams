@@ -1,3 +1,5 @@
+**TEST66.1 — Modifica da provare, release pubblica ancora 0.0.66:** in FX Params, Backspace ripristina il parametro corrente; Ctrl+Backspace azzera solo lo Step del parametro corrente; Ctrl+Maiusc+Backspace azzera solo la griglia del contesto corrente (Grid 10), senza toccare gli Step; una doppia pressione rapida di Ctrl+Maiusc+Backspace apre il campo editazione nativo per Grid 1–400 (Invio conferma, Esc annulla); Ctrl+Maiusc+Alt+Backspace ripristina i valori predefiniti dell'intero FX. In Track Params rimangono le scorciatoie esistenti. Le note storiche sotto rimangono datate.
+
 **Aggiornamento TEST64.2:** in Keyboard i tasti senza parametro sono silenziosi e Pagina Su/Giù regolano il valore con lo Step ampio. [Verifica TEST64.2](TEST64_2_KEYBOARD_FIX.md).
 
 **NOVITÀ TEST64.1:** tema Keyboard opzionale, salvato per ciascuno dei 14 contesti di FX Params, F4 cambia tema solo nel contesto corrente; F7 resta Standard. [Guida TEST64.1](TEST64_1_KEYBOARD_THEMES.md).
@@ -200,8 +202,10 @@ Le azioni FX Params, Track Params e FX Memories si assegnano nella Action List. 
 | Ctrl+R | Storico: frecce, Enter applica, Delete elimina, Esc/Ctrl+R ritorna |
 | Ctrl+Shift+R | Rilettura completa FX; NVDA+Up continua a leggere la riga |
 | Backspace | Default del solo parametro; Compare si disarma |
-| Ctrl+Backspace | Grid 10, Step 0 |
-| Ctrl+Shift+Backspace | Ripristino valori default (chunk per ReaEQ) |
+| Ctrl+Backspace | Step 0 del solo parametro corrente (Grid invariata) |
+| Ctrl+Shift+Backspace | Grid 10 del solo contesto corrente (Step invariati) |
+| Doppio Ctrl+Shift+Backspace | Campo numerico accessibile per Grid 1–400 |
+| Ctrl+Shift+Alt+Backspace | Ripristino valori default dell’intero FX (chunk per ReaEQ) |
 
 Compare appare prima dei tre wrapper REAPER. Il primo movimento lo arma; movimento verso il basso passa a Original, verso l'alto a Edited. I bordi non ciclano. Le modifiche a Edited vengono catturate prima del ritorno a Original.
 

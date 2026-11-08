@@ -54,7 +54,8 @@ void FxNavigator::end() noexcept {
     // Ctrl+Tab. Original is captured only on first entry to the FX; a double
     // F8 is the sole user command which updates that reference.
     active_ = false; fxBrowserMode_ = false; onlineReturnPending_ = false; onlineReturnNextCheck_ = 0; onlineReturnUntil_ = 0; pinAudioMode_ = false; browserScopeMonitor_ = false; browserCursor_ = 0; browserMasterCursor_ = browserMonitorCursor_ = -1;
-    recentMode_ = false; numericEdit_ = false; learnCc_ = false;
+    recentMode_ = false; numericEdit_ = false; gridNumericEdit_ = false;
+    gridNumericBuffer_.clear(); pendingGridResetAt_ = 0; learnCc_ = false;
     floatingCc_ = false; floatingWaiting_ = false; pickup_.clear();
     valueMode_ = false; searchMode_ = false; editF7_ = false;
     textEdit_ = false; memoryManager_ = false; defaultConfirm_ = false;
@@ -415,7 +416,7 @@ void FxNavigator::restoreParameterPosition() {
     if (const auto* state = contextMemory()) {
         for (const auto& saved : state->positions) {
             if (!same(&saved.fxGuid, fxGuid_)) continue;
-            columns_ = std::clamp(saved.gridHeight, 1, 200);
+            columns_ = std::clamp(saved.gridHeight, 1, 400);
             stepScale_ = std::clamp(saved.stepScale, -10, 10);
             // Prefer the original parameter index if it still has the same
             // name; otherwise find that name in the updated plugin parameter list.
@@ -816,6 +817,7 @@ void FxNavigator::runLuaFunctionAction(int command) {
     if(Main_OnCommand) Main_OnCommand(command,0);
 }
 void FxNavigator::setNativeText(const std::string& content) {
+    if(gridNumericEdit_) {gridNumericBuffer_=content;return;}
     if(numericEdit_) {numericBuffer_=content;return;}
     if(textEdit_) {textBuffer_=content;return;}
     if(searchMode_)search_=content;
@@ -947,9 +949,53 @@ bool FxNavigator::resetAllToDefault(bool announceResult) {
     if(announceResult)speech_("Reset "+std::to_string(restored)+" parameters. "+currentParameterSpeech());
     return true;
 }
-void FxNavigator::resetGridAndStep() {
-    columns_=10;stepScale_=0;markParameterStepChanged();speech_("Grid 10. Step 0");
+void FxNavigator::resetCurrentStep() {
+    // Per-parameter Step, including its native .fx override; never touch Grid.
+    stepScale_ = 0;
+    markParameterStepChanged();
+    lastControl_ = LastControl::step;
     rememberPosition();
+    speech_("Step 0");
+}
+void FxNavigator::resetCurrentGrid() {
+    // This context only; the other 13 Grid settings and all Steps stay put.
+    columns_ = 10;
+    lastControl_ = LastControl::grid;
+    rememberPosition();
+    speech_("Grid 10");
+}
+void FxNavigator::beginGridNumericEdit() {
+    gridNumericBuffer_ = std::to_string(columns_);
+    gridNumericEdit_ = true;
+    speech_("Grid size, 1 to 400. Current " + gridNumericBuffer_ +
+            ". Enter accepts, Escape cancels");
+}
+void FxNavigator::commitGridNumericEdit() {
+    if (gridNumericBuffer_.empty() || gridNumericBuffer_.size() > 3 ||
+        !std::all_of(gridNumericBuffer_.begin(), gridNumericBuffer_.end(),
+                     [](char c) { return c >= '0' && c <= '9'; })) {
+        speech_("Invalid grid size. Enter a whole number from 1 to 400");
+        return;
+    }
+    const int width = std::stoi(gridNumericBuffer_);
+    if (width < 1 || width > 400) {
+        speech_("Grid size must be from 1 to 400");
+        return;
+    }
+    columns_ = width;
+    gridNumericEdit_ = false;
+    gridNumericBuffer_.clear();
+    lastControl_ = LastControl::grid;
+    rememberPosition();
+    speech_("Grid " + std::to_string(columns_));
+}
+void FxNavigator::pollGridReset() {
+    if (!pendingGridResetAt_) return;
+    if (!active_ || !contextUnchanged()) {pendingGridResetAt_ = 0; return;}
+    if (GetTickCount64() - pendingGridResetAt_ > GetDoubleClickTime()) {
+        pendingGridResetAt_ = 0;
+        resetCurrentGrid();
+    }
 }
 void FxNavigator::chooseSlotAccess(int mode) {
     slotMode_ = mode;
@@ -1037,6 +1083,7 @@ bool FxNavigator::uiStillOpen() const {
 bool FxNavigator::accepts(const Key& k) const noexcept {
     if (clearAutomationConfirm_) return true;
     if (!active_) return false;
+    if (gridNumericEdit_) return k.vk == VK_ESCAPE || k.vk == VK_RETURN;
     if (!textEdit_ && !numericEdit_ && !searchMode_ && !recentMode_ &&
         isPeakWatcherShortcut(k)) return true;
     if (!textEdit_ && !searchMode_ && !numericEdit_ && !recentMode_ &&
@@ -1100,6 +1147,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
                k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT;
     }
     if(recentMode_)return !k.alt && (k.vk==VK_ESCAPE||k.vk==VK_RETURN||k.vk==VK_TAB||k.vk==VK_DELETE||k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk==VK_HOME||k.vk==VK_END||k.vk==VK_PRIOR||k.vk==VK_NEXT||(k.ctrl&&k.vk=='R'));
+    if (gridNumericEdit_) return k.vk==VK_ESCAPE || k.vk==VK_RETURN;
     if (numericEdit_) return k.vk==VK_ESCAPE || k.vk==VK_RETURN || (k.ctrl && k.vk=='E');
     if (textEdit_) return true;
     // Context switch is owned by Extension; do not intercept inside text editing.
@@ -1125,7 +1173,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
         !editF7_ && !defaultConfirm_ && !clearAutomationConfirm_) return true;
     if (k.vk == VK_F12 && !k.ctrl) return false; // bare F12 is reserved for future LReaParams commands
     if (k.ctrl && !k.alt && k.vk == 'L') return true;
-    if (k.vk==VK_BACK && !k.alt) return true;
+    if (k.vk==VK_BACK && (!k.alt || (k.ctrl && k.shift && !k.altGr))) return true;
     if (!k.ctrl && k.alt && !k.shift && (k.vk == 'G' || k.vk == 'M')) return true;
     if (k.ctrl && !k.alt && ((k.vk=='B' && !k.shift)||k.vk=='D')) return true;
     if (!k.ctrl && !k.alt && !k.shift && (k.vk==VK_F3 || k.vk==VK_F5 || k.vk==VK_F6 || k.vk==VK_F9)) return true;
@@ -1249,7 +1297,7 @@ std::wstring FxNavigator::windowTitle() const {
     if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));
     // Keep Grid out of the title; position Bypassed/Delta BEFORE context/FX.
     return wideUtf8(fxWindowTitleBase()) +
-           (textEdit_ ? L" - Rename" : searchMode_ ? L" - Find Parameter" :
+           (gridNumericEdit_ ? L" - Grid Size" : textEdit_ ? L" - Rename" : searchMode_ ? L" - Find Parameter" :
             editF7_ ? L" - F7 Edit" : keyboardThemeActive() ? L" - Keyboard" :
             valueMode_ ? L" - Value" : L"");
 }
@@ -1264,6 +1312,7 @@ std::string FxNavigator::reviewLine() const {
     if (fxBrowserMode_) return browserSpeech();
     if (memoryManager_) return memoryReview();
     if(recentMode_ && historyIndex_>=0 && historyIndex_<static_cast<int>(searchHistory_.size()))return "Recent searches. "+searchHistory_[static_cast<size_t>(historyIndex_)];
+    if(gridNumericEdit_)return "Grid size, 1 to 400. Current "+gridNumericBuffer_;
     if(numericEdit_)return "Parameter value, "+numericBuffer_;
     if (textEdit_) return "Edit name, " + textBuffer_;
     if (searchMode_) return "Find parameter, " + search_;
@@ -1559,6 +1608,24 @@ void FxNavigator::handle(const Key& k) {
     if(!valueKey) rxValueAnnouncement_.active = false;
     if (!k.character || (k.ctrl && !k.altGr) || (k.alt && !k.altGr)) typeAhead_.reset();
     if (!contextUnchanged()) throw std::runtime_error("FX context changed");
+    // Native Win32 EDIT owns ordinary typing, caret, clipboard and selection.
+    if (gridNumericEdit_) {
+        if (k.vk == VK_ESCAPE) {
+            gridNumericEdit_ = false;
+            gridNumericBuffer_.clear();
+            speech_("Grid size edit cancelled");
+        } else if (k.vk == VK_RETURN && !k.repeat) commitGridNumericEdit();
+        return;
+    }
+    const bool gridResetKey = k.vk == VK_BACK && k.ctrl && k.shift &&
+                              !k.alt && !k.altGr;
+    // A different key finishes a pending single press. A full FX reset
+    // supersedes it rather than applying an unrelated Grid change first.
+    if (pendingGridResetAt_ && !gridResetKey) {
+        pendingGridResetAt_ = 0;
+        if (!(k.vk == VK_BACK && k.ctrl && k.shift && k.alt && !k.altGr))
+            resetCurrentGrid();
+    }
     if (clearAutomationConfirm_) {
         if (k.repeat) return;
         // The focus stays on the native STATIC (never on the stale Value
@@ -1796,12 +1863,23 @@ void FxNavigator::handle(const Key& k) {
         }
         return;
     }
-    if(k.vk==VK_BACK && !k.alt) {
-        if(!k.repeat) {
-            if(k.ctrl && k.shift)resetAllToDefault();
-            else if(k.ctrl)resetGridAndStep();
-            else resetCurrentToDefault();
-        }
+    // Preserve the legacy Backspace behavior, including Shift+Backspace.
+    // Only the three explicit modified gestures are reassigned.
+    if (k.vk == VK_BACK && (!k.alt || (k.ctrl && k.shift && !k.altGr))) {
+        if (k.repeat) return;
+        if (k.ctrl && k.shift && k.alt && !k.altGr) {
+            pendingGridResetAt_ = 0;
+            resetAllToDefault();
+        } else if (gridResetKey) {
+            const ULONGLONG now = GetTickCount64();
+            if (pendingGridResetAt_ && now - pendingGridResetAt_ <= GetDoubleClickTime()) {
+                pendingGridResetAt_ = 0;
+                beginGridNumericEdit();
+            } else {
+                pendingGridResetAt_ = now ? now : 1;
+            }
+        } else if (k.ctrl) resetCurrentStep();
+        else resetCurrentToDefault();
         return;
     }
     if (k.ctrl && !k.shift && !k.alt && k.vk==VK_HOME){navigate(-viewPos_);return;}
@@ -1887,7 +1965,7 @@ void FxNavigator::handle(const Key& k) {
         return; // Value remains open; characters do not modify its slider.
     }
     if(k.vk==VK_F1||k.vk==VK_F2){
-        const int next=std::clamp(columns_+(k.vk==VK_F1?-1:1),1,200);
+        const int next=std::clamp(columns_+(k.vk==VK_F1?-1:1),1,400);
         if(next!=columns_){columns_=next;lastControl_=LastControl::grid;rememberPosition();speech_("Grid "+std::to_string(columns_));}return;
     }
     // TEST65.1: ONE value-key dispatch for Standard (Alt/Value) and Keyboard.

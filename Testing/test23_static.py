@@ -12,7 +12,8 @@ assert "k.vk=='G'||k.vk=='M'" in fx
 assert "chooseSlotAccess(k.vk=='G'?0:1)" in fx
 assert 'groupLabel(groupSlot_)' in fx and 'groupLabel(slot)' in order
 assert 'VK_BACK' in fx and 'resetCurrentToDefault()' in fx and 'resetAllToDefault()' in fx
-assert 'columns_=10;stepScale_=0' in fx
+assert 'void FxNavigator::resetCurrentStep()' in fx
+assert 'void FxNavigator::resetCurrentGrid()' in fx
 assert 'snapshotDefaultsIfMissing()' in order and 'saveDefaultValues' in model
 assert 'defaultValues() const' in model and 'hasStructuralDefault()' in fx
 assert ('resetAllToDefault();' in mem or 'resetAllToDefault(false)' in mem) and 'memoryColumns_[6]' in mem

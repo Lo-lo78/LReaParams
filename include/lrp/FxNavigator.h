@@ -29,6 +29,8 @@ public:
     // one or more REAPER UI cycles after SetParamNormalized. Do not announce
     // the previous value immediately after a successful write.
     void pollRxValueSpeech();
+    // Resolve a single Ctrl+Shift+Backspace after the double-press window.
+    void pollGridReset();
     // Complete Ctrl+Alt+B online recovery when an FX exposes its parameters
     // after the REAPER SetOffline call. Called by the existing main-thread timer.
     bool pollOnlineParameters();
@@ -61,12 +63,12 @@ public:
     void announceTitle() override;
     std::wstring windowTitle() const override;
     std::string reviewLine() const override;
-    bool nativeValueSlider() const override { return active_ && !editF7_ && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_ &&
+    bool nativeValueSlider() const override { return active_ && !editF7_ && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_ && !gridNumericEdit_ &&
         ((valueMode_ && !clearAutomationConfirm_) || keyboardThemeActive()); }
     // Native Windows EDIT control for F7 rename and Ctrl+F search.
-    bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_) && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_; }
-    std::string nativeTextValue() const { return numericEdit_ ? numericBuffer_ : textEdit_ ? textBuffer_ : search_; }
-    std::string nativeTextLabel() const { return numericEdit_ ? "Parameter value" : textEdit_ ? (textEditParam_ == -1 ? "Group name" : "Parameter name") : "Find parameter"; }
+    bool nativeTextField() const noexcept { return active_ && (textEdit_ || searchMode_ || numericEdit_ || gridNumericEdit_) && !memoryManager_ && !fxBrowserMode_ && !pinAudioMode_; }
+    std::string nativeTextValue() const { return gridNumericEdit_ ? gridNumericBuffer_ : numericEdit_ ? numericBuffer_ : textEdit_ ? textBuffer_ : search_; }
+    std::string nativeTextLabel() const { return gridNumericEdit_ ? "Grid size, 1 to 400" : numericEdit_ ? "Parameter value" : textEdit_ ? (textEditParam_ == -1 ? "Group name" : "Parameter name") : "Find parameter"; }
     void setNativeText(const std::string& text);
     double valueFraction() const override;
     std::string sliderLabel() const override;
@@ -104,6 +106,11 @@ private:
     ULONGLONG midiSpeechTime_=0;
     std::string midiPendingSpeech_;
     bool numericEdit_=false;
+    // Separate from parameter numeric EDIT: use the same native Windows EDIT
+    // without mixing the parameter conversion/undo path with grid preferences.
+    bool gridNumericEdit_=false;
+    std::string gridNumericBuffer_;
+    ULONGLONG pendingGridResetAt_=0;
     std::string numericBuffer_,numericUnit_;
     bool numericFormatted_=false;
     bool numericFormat(double norm,double& value,std::string& unit) const;
@@ -271,7 +278,10 @@ private:
     std::string groupLabel(int slot) const;
     void resetCurrentToDefault();
     bool resetAllToDefault(bool announceResult = true);
-    void resetGridAndStep();
+    void resetCurrentStep();
+    void resetCurrentGrid();
+    void beginGridNumericEdit();
+    void commitGridNumericEdit();
     // Lua param_step_scales_v1, with a native -10..+10 override in the same
     // plugin profile. Changing parameter loads that parameter's Step only.
     using StepSetting = std::pair<std::string,int>;
