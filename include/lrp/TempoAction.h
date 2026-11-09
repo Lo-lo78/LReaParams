@@ -1,6 +1,6 @@
 #pragma once
 #include "lrp/TempoDetector.h"
-#include "reaper_plugin.h"
+#include "lrp/ReaperApi.h"
 #include <functional>
 #include <utility>
 #include <string>

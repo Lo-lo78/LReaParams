@@ -1,6 +1,18 @@
 #pragma once
 #include <cstring>
 #define REAPERAPI_MINIMAL
+// TEST69.4: native selected-item BPM detector REAPER API entry points.
+// Keep these in the centralized minimal API list so MSVC can declare and
+// REAPERAPI_LoadAPI can resolve the same exact set of functions.
+#define REAPERAPI_WANT_AudioAccessorStateChanged
+#define REAPERAPI_WANT_CreateTakeAudioAccessor
+#define REAPERAPI_WANT_DestroyAudioAccessor
+#define REAPERAPI_WANT_GetAudioAccessorSamples
+#define REAPERAPI_WANT_GetMediaItemTakeInfo_Value
+#define REAPERAPI_WANT_SetCurrentBPM
+#define REAPERAPI_WANT_SetMediaItemInfo_Value
+#define REAPERAPI_WANT_SetMediaItemTakeInfo_Value
+#define REAPERAPI_WANT_TakeIsMIDI
 #define REAPERAPI_WANT_genGuid
 #define REAPERAPI_WANT_Main_OnCommand
 #define REAPERAPI_WANT_NamedCommandLookup
