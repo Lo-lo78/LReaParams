@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <sstream>
+#include <iomanip>
 #include <vector>
 
 namespace lrp {
@@ -30,8 +32,12 @@ void TempoAction::stop() {
     estimates_.clear();
     mono_.clear();
     frame_=segment_=0;
+    mapMode_=false;
+    mapStream_=tempo_map::Stream{};
 }
-void TempoAction::start() {
+void TempoAction::start() { startInternal(false); }
+void TempoAction::startMap() { startInternal(true); }
+void TempoAction::startInternal(bool tempoMap) {
     stop();
     auto* project = EnumProjects(-1,nullptr,0);
     if(!project || CountSelectedMediaItems(project)!=1) {
@@ -62,14 +68,20 @@ void TempoAction::start() {
         speak_("Cannot protect audio timebase"); return;
     }
     project_=project; item_=item; take_=take;
+    mapMode_=tempoMap;
     previousTimebase_=originalMode;
     previousAutoStretch_=originalStretch;
     timebaseTemporary_=true;
     auto* accessor=CreateTakeAudioAccessor(take);
     if(!accessor){stop();speak_("Cannot read selected audio");return;}
     accessor_=accessor;
-    // For songs, use three separated excerpts to avoid trusting only the
-    // intro or an isolated fill. At most 54 seconds decoded in total.
+    // Tempo-map mode must inspect the entire audio, not three excerpts.
+    // The streaming flux buffer stores only a compact onset envelope.
+    if (mapMode_) {
+        segments_.push_back({pos,duration});
+        return;
+    }
+    // For fixed tempo, use three excerpts. At most 54 seconds decoded.
     const double window=std::min(18.0,duration);
     auto add=[&](double fraction){
         const double start=pos+std::max(0.0,(duration-window)*fraction);
@@ -82,8 +94,20 @@ void TempoAction::start() {
     mono_.reserve(std::size_t(window*tempo::sampleRate)+1);
 }
 void TempoAction::nextSegment() {
+    if (mapMode_) { finishMap(); return; }
     auto r=tempo::analyze(mono_);
-    if(r.valid) estimates_.push_back(r);
+    if(r.valid) {
+        // Refine coarse 0.1 BPM correlations with sub-frame beat positions.
+        // This also provides true decimal BPM values instead of rounding.
+        tempo_map::Stream refined;
+        refined.feed(mono_.data(),mono_.size());
+        auto envelope=refined.envelope();
+        auto measured=tempo_map::analyze(envelope,r.bpm);
+        if(measured.valid && !measured.varying &&
+           std::abs(measured.bpm-r.bpm)<2.5 && measured.confidence>0.40)
+            r.bpm=measured.bpm;
+        estimates_.push_back(r);
+    }
     mono_.clear();
     frame_=0;
     ++segment_;
@@ -103,7 +127,7 @@ void TempoAction::finish() {
         speak_("BPM not reliable");
         return;
     }
-    const int bpm=std::clamp(int(std::lround(bpmResult.bpm)),55,210);
+    const double bpm=std::clamp(bpmResult.bpm,55.0,210.0);
     ReaProject* project=project_;
     MediaItem* originalItem=item_;
     MediaItem_Take* originalTake=take_;
@@ -141,7 +165,111 @@ void TempoAction::finish() {
     // No second restoration is needed when clearing the completed job.
     stop();
     if (UpdateArrange) UpdateArrange();
-    speak_(std::to_string(bpm)+" BPM");
+    std::ostringstream msg;
+    msg<<std::fixed<<std::setprecision(3)<<bpm<<" BPM";
+    speak_(msg.str());
+}
+void TempoAction::finishMap() {
+    if (!CountTempoTimeSigMarkers || !SetTempoTimeSigMarker ||
+        !GetTempoTimeSigMarker || !Undo_BeginBlock2 || !Undo_EndBlock2 ||
+        !Undo_DoUndo2 || !SetMediaItemTakeInfo_Value) {
+        stop(); speak_("Tempo map unavailable"); return;
+    }
+    // Do not modify an existing tempo map, even if analysis succeeds.
+    // The user can deliberately work from a clean tempo map instead.
+    const int existingTempoCount=CountTempoTimeSigMarkers(project_);
+    if(existingTempoCount>1) {
+        stop(); speak_("Existing tempo map. BPM unchanged"); return;
+    }
+    if(existingTempoCount==1) {
+        double existingPosition=0.0;
+        if(!GetTempoTimeSigMarker(project_,0,&existingPosition,nullptr,nullptr,
+             nullptr,nullptr,nullptr,nullptr) || std::abs(existingPosition)>0.001) {
+            stop();speak_("Existing tempo map. BPM unchanged");return;
+        }
+    }
+    auto envelope=mapStream_.envelope();
+    const double guide=tempo_map::initialTempo(envelope);
+    auto result=tempo_map::analyze(envelope,guide);
+    if(!result.valid || result.confidence<0.47 ||
+       result.points.empty() || result.points.size()>500) {
+        stop(); speak_("Tempo map not reliable"); return;
+    }
+    auto* project=project_;
+    auto* item=item_;
+    auto* take=take_;
+    if(project!=EnumProjects(-1,nullptr,0) ||
+       CountSelectedMediaItems(project)!=1 ||
+       GetSelectedMediaItem(project,0)!=item ||
+       !ValidatePtr2(project,item,"MediaItem*") ||
+       !ValidatePtr2(project,take,"MediaItem_Take*")) {
+        stop(); speak_("Project changed. Tempo map unchanged"); return;
+    }
+    const double position=GetMediaItemInfo_Value(item,"D_POSITION");
+    const double length=GetMediaItemInfo_Value(item,"D_LENGTH");
+    const double rate=GetMediaItemTakeInfo_Value(take,"D_PLAYRATE");
+    if(!std::isfinite(position)||!std::isfinite(length)||!std::isfinite(rate)||rate<=0) {
+        stop(); speak_("Tempo map unchanged"); return;
+    }
+    // Tempo anchors are written directly, without MIDI notes/project markers.
+    // The prelude is adjusted to bring the first musical pulse onto an
+    // integer beat. This can only approximate true musical downbeats.
+    double lead=result.beats.front();
+    double introBpm=result.points.front().bpm;
+    if(lead>0.20 && lead<16.0) {
+        const int whole=std::max(1,int(std::round(lead*introBpm/60.0)));
+        const double computed=60.0*whole/lead;
+        if(computed>=45 && computed<=240)introBpm=computed;
+    }
+    if(accessor_) DestroyAudioAccessor(accessor_);
+    accessor_=nullptr;
+    Undo_BeginBlock2(project);
+    // Update the initial marker rather than create a duplicate at 0 seconds.
+    double initialAt=0.0;
+    const bool haveInitial=CountTempoTimeSigMarkers(project)==1 &&
+        GetTempoTimeSigMarker(project,0,&initialAt,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr);
+    const int firstIndex=(haveInitial && std::abs(initialAt-position)<1e-5)?0:-1;
+    bool okay=SetTempoTimeSigMarker(project,firstIndex,position,-1,-1,introBpm,0,0,false);
+    double last=position;
+    std::size_t inserted=0;
+    // Tempo changes are anchored in project seconds; never coalesce
+    // separate events after creating them, or their timing can drift.
+    for(auto marker:result.points) {
+        double t=position+marker.seconds;
+        if(!okay)break;
+        if(t<=last+0.03)continue;
+        if(!std::isfinite(t)||!std::isfinite(marker.bpm)||marker.bpm<45||marker.bpm>240){okay=false;break;}
+        okay=SetTempoTimeSigMarker(project,-1,t,-1,-1,marker.bpm,0,0,false);
+        // In projects with beat-anchored tempo markers, REAPER may adjust
+        // requested seconds. Never accept a silently shifted tempo map.
+        if(okay) {
+            double actual=0.0;
+            const int index=CountTempoTimeSigMarkers(project)-1;
+            okay=index>=0 && GetTempoTimeSigMarker(project,index,&actual,
+                nullptr,nullptr,nullptr,nullptr,nullptr,nullptr) &&
+                std::abs(actual-t)<0.012;
+        }
+        if(okay)++inserted;
+        last=t;
+    }
+    restoreTimebase();
+    SetMediaItemInfo_Value(item,"D_POSITION",position);
+    SetMediaItemInfo_Value(item,"D_LENGTH",length);
+    SetMediaItemTakeInfo_Value(take,"D_PLAYRATE",rate);
+    Undo_EndBlock2(project,"LReaParams: tempo map from selected audio",UNDO_STATE_ALL);
+    if(!okay) {
+        Undo_DoUndo2(project);
+        stop(); speak_("Tempo map unchanged");return;
+    }
+    auto count=inserted+std::size_t(firstIndex<0?1:0);
+    double bpm=result.bpm;
+    stop();
+    if(UpdateArrange)UpdateArrange();
+    std::ostringstream msg;
+    msg<<std::fixed<<std::setprecision(3)<<bpm<<" BPM. "
+       <<(result.varying?"Tempo map":"Fixed tempo")
+       <<". "<<count<<" tempo markers";
+    speak_(msg.str());
 }
 void TempoAction::tick() {
     if (!active()) return;
@@ -163,8 +291,14 @@ void TempoAction::tick() {
     int result=GetAudioAccessorSamples(accessor_,tempo::sampleRate,2,
         readPosition,int(count),interleaved.data());
     if(result<0){stop();speak_("Cannot read selected audio");return;}
-    for(std::size_t i=0;i<count;++i) {
-        mono_.push_back(float(std::clamp((interleaved[2*i]+interleaved[2*i+1])*0.5,-1.0,1.0)));
+    if(mapMode_) {
+        std::vector<float> buffer(count);
+        for(std::size_t i=0;i<count;++i)
+            buffer[i]=float(std::clamp((interleaved[2*i]+interleaved[2*i+1])*0.5,-1.0,1.0));
+        mapStream_.feed(buffer.data(),buffer.size());
+    } else {
+        for(std::size_t i=0;i<count;++i)
+            mono_.push_back(float(std::clamp((interleaved[2*i]+interleaved[2*i+1])*0.5,-1.0,1.0)));
     }
     frame_+=count;
     if(frame_>=frames) nextSegment();

@@ -54,3 +54,9 @@ add_executable(tempo_detector_tests Testing/TempoDetectorTests.cpp)
 target_include_directories(tempo_detector_tests PRIVATE include)
 target_compile_options(tempo_detector_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
 add_test(NAME tempo_detector COMMAND tempo_detector_tests)
+
+# TEST69.5 streaming adaptive tempo map (portable deterministic tests).
+add_executable(tempo_map_tests Testing/TempoMapTests.cpp)
+target_include_directories(tempo_map_tests PRIVATE include)
+target_compile_options(tempo_map_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
+add_test(NAME tempo_map COMMAND tempo_map_tests)

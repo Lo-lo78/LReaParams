@@ -277,6 +277,9 @@ public:
         case tempoDetection:
             tempoAction_.start();
             break;
+        case tempoMapping:
+            tempoAction_.startMap();
+            break;
         case stopBackgroundMidi:
             backgroundMidi_.end();
             backgroundTrackMidi_.end();
@@ -741,7 +744,7 @@ private:
     bool titleModeEnabled_ = true, titleProxyActive_ = false;
     accelerator_register_t fxChainAccel_{};
     bool fxChainAccelRegistered_ = false;
-    enum ActionIndex { fxParams, trackParams, importLegacy, importSelectedTxt, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, openGuide, tempoDetection, actionCount };
+    enum ActionIndex { fxParams, trackParams, importLegacy, importSelectedTxt, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, openGuide, tempoDetection, tempoMapping, actionCount };
     std::array<Action, actionCount> actions_{{
         {"LREAPARAMSFXPARAMS", "LReaParams: FX Params", L"FX Params"},
         {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params", L"Track Params"},
@@ -755,7 +758,8 @@ private:
         {"LREAPARAMSNVDATITLE", "LReaParams: Accessibility Focus Window (toggle)", L"Accessibility Focus Window"},
         {"LREAPARAMSSTOPMIDIBACKGROUND", "LReaParams: Stop background MIDI", L"Stop background MIDI"},
         {"LREAPARAMSOPENUSERGUIDE", "LReaParams: Open User Guide", L"Open User Guide"},
-        {"LREAPARAMSDETECTITEMBPM", "LReaParams: Detect BPM from selected audio item and set project tempo", L"Detect BPM from selected audio item"}
+        {"LREAPARAMSDETECTITEMBPM", "LReaParams: Detect BPM from selected audio item and set project tempo", L"Detect BPM from selected audio item"},
+        {"LREAPARAMSCREATETEMPOMAP", "LReaParams: Create tempo map from selected audio item", L"Create tempo map from selected audio item"}
     }};
 };
 int fxChainShortcutHook(MSG* msg, accelerator_register_t* ctx) noexcept {

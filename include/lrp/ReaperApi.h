@@ -9,6 +9,10 @@
 #define REAPERAPI_WANT_DestroyAudioAccessor
 #define REAPERAPI_WANT_GetAudioAccessorSamples
 #define REAPERAPI_WANT_GetMediaItemTakeInfo_Value
+#define REAPERAPI_WANT_CountTempoTimeSigMarkers
+#define REAPERAPI_WANT_GetTempoTimeSigMarker
+#define REAPERAPI_WANT_SetTempoTimeSigMarker
+#define REAPERAPI_WANT_Undo_DoUndo2
 #define REAPERAPI_WANT_SetCurrentBPM
 #define REAPERAPI_WANT_SetMediaItemInfo_Value
 #define REAPERAPI_WANT_SetMediaItemTakeInfo_Value

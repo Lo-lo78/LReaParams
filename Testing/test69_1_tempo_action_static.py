@@ -15,7 +15,7 @@ assert 'SetCurrentBPM(project, double(bpm), false)' in impl
 assert 'SetMediaItemInfo_Value(item,"C_BEATATTACHMODE",0.0)' in impl
 assert 'SetMediaItemInfo_Value(item,"C_AUTOSTRETCH",0.0)' in impl
 assert 'Undo_BeginBlock2(project)' in impl and 'Undo_EndBlock2(project' in impl
-assert 'BPM not reliable' in impl and 'std::to_string(bpm)+" BPM"' in impl
+assert 'BPM not reliable' in impl and 'std::setprecision(3)' and 'msg.str()' in impl
 assert 'AudioAccessorStateChanged' in impl and 'ValidatePtr2' in impl
 assert 'const double four =' in core and 'const double center=' in core
 assert 'TempoDetectorTests.cpp' in cmake and 'src/TempoAction.cpp' in cmake

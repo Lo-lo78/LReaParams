@@ -1,5 +1,6 @@
 #pragma once
 #include "lrp/TempoDetector.h"
+#include "lrp/TempoMapEngine.h"
 #include "lrp/ReaperApi.h"
 #include <functional>
 #include <utility>
@@ -14,6 +15,7 @@ public:
     explicit TempoAction(Speak callback): speak_(std::move(callback)) {}
     ~TempoAction();
     void start();
+    void startMap();
     void tick();
     void stop();
     bool active() const { return accessor_ != nullptr; }
@@ -29,11 +31,15 @@ private:
     std::vector<float> mono_;
     std::size_t segment_ = 0;
     std::size_t frame_ = 0;
+    bool mapMode_ = false;
+    tempo_map::Stream mapStream_;
     bool timebaseTemporary_ = false;
     double previousTimebase_ = 0.0;
     double previousAutoStretch_ = 0.0;
     void restoreTimebase();
     void nextSegment();
+    void startInternal(bool tempoMap);
+    void finishMap();
     void finish();
 };
 }
