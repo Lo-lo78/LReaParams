@@ -96,18 +96,10 @@ void TempoAction::startInternal(bool tempoMap) {
 void TempoAction::nextSegment() {
     if (mapMode_) { finishMap(); return; }
     auto r=tempo::analyze(mono_);
-    if(r.valid) {
-        // Refine coarse 0.1 BPM correlations with sub-frame beat positions.
-        // This also provides true decimal BPM values instead of rounding.
-        tempo_map::Stream refined;
-        refined.feed(mono_.data(),mono_.size());
-        auto envelope=refined.envelope();
-        auto measured=tempo_map::analyze(envelope,r.bpm);
-        if(measured.valid && !measured.varying &&
-           std::abs(measured.bpm-r.bpm)<2.5 && measured.confidence>0.40)
-            r.bpm=measured.bpm;
-        estimates_.push_back(r);
-    }
+    // Keep the proven TEST69.4 estimator independent from the experimental
+    // beat-phase tracker. The latter may follow an offbeat and corrupt the
+    // agreement among the independent excerpts, even on constant-tempo audio.
+    if(r.valid) estimates_.push_back(r);
     mono_.clear();
     frame_=0;
     ++segment_;

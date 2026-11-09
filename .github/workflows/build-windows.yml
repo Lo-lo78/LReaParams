@@ -259,6 +259,9 @@ jobs:
       - name: TEST69.5 adaptive tempo map API and action (source only)
         run: python Testing/test69_5_adaptive_tempo_map_static.py
 
+      - name: TEST69.6 fixed BPM detector regression
+        run: python Testing/test69_6_fixed_bpm_regression_static.py
+
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Verify TEST60 shared marker and timeline navigation (source only)
