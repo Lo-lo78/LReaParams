@@ -1,3 +1,11 @@
+## LReaParams 0.0.69 — Used in F7 and view persistence (2026-11-09)
+
+- The Used view remembers its place across Escape and FX changes, with per-FX project persistence.
+- Ctrl+L exits Used immediately without running Custom Order instructions; Ctrl+Shift+L still toggles the view.
+- F7 supports Used selection for rapid group building, using the physical parameter IDs and independent F7 selections.
+- Ctrl+Delete inside F7/Used cannot delete the Used list or affect a hidden group; outside F7 it retains its removal action.
+- Includes improvements from TEST68.1, TEST68.2, TEST68.3. Existing ReaPack release history and .fx profiles remain untouched.
+
 ## TEST68.3 — Used (Usati) available in F7 (experimental, 2026-11-08)
 
 - Ctrl+Shift+L now toggles Used within FX Params **and F7**, preserving F7 Standard navigation and a separate selection for Used versus the origin Custom Order/group.

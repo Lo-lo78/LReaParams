@@ -1,10 +1,10 @@
-"""0.0.68 release metadata, F3 speech, Grid/Step and ReaPack history safeguards."""
+"""0.0.69 release metadata, F3 speech, Grid/Step and ReaPack history safeguards."""
 from pathlib import Path
 r=Path(__file__).resolve().parents[1]
 def read(x): return (r/x).read_text(encoding='utf-8')
 cmake=read('CMakeLists.txt'); about=read('src/Extension.cpp'); nav=read('src/FxNavigator.cpp'); ci=read('.github/workflows/build-windows.yml'); pub=read('.github/workflows/publish-reapack.yml')
-assert 'project(LReaParams VERSION 0.0.68' in cmake
-assert 'LReaParams 0.0.68 - Native REAPER extension' in about
+assert 'project(LReaParams VERSION 0.0.69' in cmake
+assert 'LReaParams 0.0.69 - Native REAPER extension' in about
 assert 'FX Backspace: Backspace resets parameter' in about
 assert 'FX Used (Usati): Ctrl+Shift+L toggles' in about
 assert 'Used remembers parameters edited through LReaParams' in about
@@ -13,8 +13,8 @@ assert 'if (k.vk == VK_BACK && !k.alt && !k.altGr)' in nav
 assert 'resetCurrentStep()' in nav and 'resetCurrentGrid()' in nav and 'beginGridNumericEdit()' in nav
 assert 'resetAllToDefault()' in nav
 assert 'GetDoubleClickTime()' in nav
-assert 'LReaParams-0.0.68-Windows-x64-SETUP-EXE' in ci
-assert 'dist/LReaParams-0.0.68-Source.zip' in ci
+assert 'LReaParams-0.0.69-Windows-x64-SETUP-EXE' in ci
+assert 'dist/LReaParams-0.0.69-Source.zip' in ci
 assert 'types: [published]' in pub and 'ref: ${{ env.RELEASE_TAG }}' in pub
 assert 'python3 Tools/generate_reapack_index.py --output index.xml' in pub
 assert 'git add index.xml' in pub and 'git add .' not in pub
@@ -26,4 +26,4 @@ for lang in ['it','es','fr','ru','zh-CN','ja']:
     assert 'release-0-0-66-keyboard' in txt
 assert 'release-0-0-67-grid' in read('Guide/LReaParams - FX Params.html')
 assert 'release-0-0-68-used' in read('Guide/LReaParams - FX Params.html')
-print('Release 0.0.68 metadata, F3, Grid/Step and ReaPack preservation PASS')
+print('Release 0.0.69 metadata, F3, Grid/Step and ReaPack preservation PASS')

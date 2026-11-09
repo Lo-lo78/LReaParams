@@ -1,6 +1,6 @@
-LReaParams 0.0.68 — TEST68.1, sorgente COMPLETO per GitHub Actions
+LReaParams 0.0.69 — TEST68.1, sorgente COMPLETO per GitHub Actions
 
-PROVA, non nuova release. La versione pubblica su ReaPack resta 0.0.68.
+PROVA, non nuova release. La versione pubblica su ReaPack resta 0.0.69.
 Questa TEST modifica soltanto il ripristino della vista Usati / Used.
 Se chiudi FX Params con Escape mentre sei in Usati, quando riapri lo
 stesso FX ritorni in Usati sul parametro scelto. Ctrl+Shift+L continua
@@ -15,5 +15,5 @@ sostituiti o cancellati. Questo archivio non li include.
 3. Attendi il workflow Windows x64 su GitHub Actions. Prova in REAPER/NVDA.
 4. Leggi Docs/TEST68_1_USED_RESUME_IT.md per la sequenza di test.
 
-NON pubblicare una release/tag v0.0.68, gia' esistente su ReaPack.
+NON pubblicare una release/tag v0.0.69, gia' esistente su ReaPack.
 Non usare questo ZIP come installer: la DLL/EXE deve essere compilata su GitHub.
