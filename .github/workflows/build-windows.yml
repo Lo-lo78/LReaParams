@@ -16,6 +16,8 @@ jobs:
           persist-credentials: false
       - name: Release 0.0.69 Used in F7, persistence and full ReaPack history (source only)
         run: python Testing/test69_release_used_f7_history_static.py
+      - name: TEST69.1 native selected-item BPM detection safety (source only)
+        run: python Testing/test69_1_tempo_action_static.py
       - name: Verify public release version and package consistency (source only)
         run: python Testing/test_release_version_static.py
       - name: TEST66.1 separate FX Grid and Step resets (source only)

@@ -1,0 +1,11 @@
+LReaParams 0.0.69 TEST69.1 — source validation
+
+New native main action: LREAPARAMSDETECTITEMBPM
+Original public release 0.0.69 untouched; this is a test source package.
+C++ portable tempo tests (synthetic 90/100/120/128/150 BPM, silence/noise, consensus): PASS
+Undefined-behavior sanitizer: PASS
+Existing GitHub workflow static tests (120): PASS
+New TEST69.1 static integration audit: PASS
+Source-only audit: PASS
+MSVC Windows build and real REAPER/NVDA tests: NOT RUN
+ReaPack index and release workflows: UNCHANGED
