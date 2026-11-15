@@ -341,6 +341,7 @@ private:
     bool backgroundMode_ = false, clearAutomationConfirm_ = false;
     bool clearAutomationYes_ = false;
     bool selectionStroke_ = false;
+    bool selectionBuilding_ = false; // Keep non-contiguous selections across ordinary F1 cursor moves.
     int selectionAnchorRow_ = 0;
     std::unordered_set<MediaTrack*> selectionBase_;
     RoutingKind pendingRouting_ = RoutingKind::none;

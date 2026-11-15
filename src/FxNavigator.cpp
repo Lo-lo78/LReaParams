@@ -682,13 +682,11 @@ std::string FxNavigator::fxContextAnnouncement() const {
     return message + (fxNameFirst() ? contextName() : fxDisplayName()) + ". " + currentParameterSpeech();
 }
 std::string FxNavigator::fxWindowTitleBase(bool memories) const {
-    const std::string name = memories ? "FX Memories" : "FX Params";
     const std::string status = statusSummary();
     // Keep legacy title layout in the normal state, but precede context and FX
     // with active states (matching the exact requested Bypassed/Delta order).
     if (!memories) return formatFxTitle(fxDisplayName(), contextName(), status);
-    return name + (status.empty() ? " - " : ". " + status + ". ") +
-           (fxNameFirst() ? fxDisplayName() + " - " + contextName() : contextName() + " - " + fxDisplayName());
+    return formatFxPageTitle(fxDisplayName(), contextName(), 1, status);
 }
 void FxNavigator::toggleBypass() {
     if (!valid()) return;
@@ -1306,12 +1304,12 @@ std::wstring wideUtf8(const std::string& str) {
 }
 std::wstring FxNavigator::windowTitle() const {
     if (!active_) return L"FX Params";
-    if (pinAudioMode_) return wideUtf8("FX Pin Connector - " + contextName() + " - " + fxDisplayName());
+    if (pinAudioMode_) return wideUtf8(formatFxPageTitle(fxDisplayName(), contextName(), 3));
     if (fxBrowserMode_) {
         std::string browserContext = contextName();
         if (track_ == GetMasterTrack(project_) && !entries_.empty())
             browserContext = browserScopeMonitor_ ? "Monitor FX" : "Master";
-        return wideUtf8("FX Browser - " + browserContext);
+        return wideUtf8(formatFxPageTitle({}, browserContext, 2));
     }
     if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));
     // Keep Grid out of the title; position Bypassed/Delta BEFORE context/FX.

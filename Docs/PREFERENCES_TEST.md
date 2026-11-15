@@ -187,3 +187,64 @@ focus behavior remains a Windows + NVDA runtime acceptance test.
 - Verify Alt+Tab focus restore and Ctrl+P exact-position resume as before.
 - OSARA outputMessage is required for the spoken notification; the capture
   field also displays the message without stealing keyboard focus.
+
+## TEST: remembered tree choice, all Track Params title messages, F1 disjoint selection
+
+- Preferences remembers the last selected **tree node** for the current REAPER DLL session,
+  even if you exit with Escape. For example, after selecting Shortcuts / Track Params,
+  reopening Preferences starts on that node, not Messages. It always focuses the tree.
+- Messages / FX Params contains `Title: FX Params`.
+- Messages / Track Params contains a separate, explicitly named title template for:
+  Track (F1), Sends (F2), Receives (F3), FX TCP (F4), Track MIDI (F5),
+  Hardware outputs (F6), ReaRoute (F7), and Track Memories: MIDI CC,
+  Parameter Steps, Parameter Speech, Track Positions, Volume Ranges.
+- Tab from the tree goes to the list of named titles; a second Tab goes to that
+  title's parts; Tab/Shift+Tab continue via OK, Cancel and back to the tree.
+- Each Track title stores its own order, enabled components and editable custom
+  message (Space toggles fixed components, Alt+Up/Down reorders, Enter edits custom).
+  The original Track Title F1 settings stay compatible with the previous INI.
+- FX Params / Title behaves exactly as before. The new Track title keys are
+  `TrackTitlePage1...TrackTitlePage11` in `[Messages]` of Preferences.ini.
+- On F1, ordinary arrows select one track while no explicit multi-selection is
+  active. Its implicit single-selection status is not spoken on each arrow.
+  Tab reviews just `Selected. Track ...` (or `Not selected. Track ...`), not
+  the full value/step summary. For two or more selected tracks, selected rows
+  announce `Selected.` when encountered.
+- Shift+Down from a single selected track immediately selects the next track
+  as well and moves the cursor; Shift+Space starts or toggles additive selection.
+  After explicit multi-selection, releasing Shift and moving using plain arrows
+  does not clear earlier selections. From a *not selected* cursor, the first
+  Shift+arrow adds only the destination; continuing with Shift+arrow extends
+  that new group.
+- Routing test: select track 3 and Shift+Down to include 4; plain Down to 7,
+  Shift+Space adds 7; move to 9, Shift+Space adds 9; move to 10,
+  Shift+Down twice adds 11 and 12. Exact selected set: 3, 4, 7, 9, 11, 12.
+  Start Add Send with Ctrl+Shift+S, choose destinations with plain arrows
+  (single target) or additive Shift gestures (multiple targets), then finish.
+- All UI strings remain in English. Reopen the dialogue with Ctrl+P while FX or
+  Track Params is active and verify that OK and Cancel restore the parameter.
+
+These are source-only and synthetic assertions. Actual Win64 MSVC compilation,
+REAPER routing and NVDA/OSARA speech/focus require GitHub Actions and manual checks.
+
+## TEST 69: FX title templates and Shift selection anchor
+
+`Messages > FX Params` now has four independently configurable titles:
+`Title: FX Params` (heading, plugin, track, custom), `Title: FX Memories`
+(heading, plugin, track, custom), `Title: FX Browser` (heading, context,
+custom), `Title: FX Pin Connector` (heading, track, plugin, custom).
+Tab enters their components; Space toggles fixed elements; Alt+Up/Down
+moves them; Enter edits a custom phrase. Each topic persists separately in
+`Preferences.ini` (`FxTitle` unchanged; new `FxTitlePage1..3` keys).
+
+In Track Params F1, the **first** Shift+Up or Shift+Down marks the current
+track and speaks `Selected` **without moving**. The next Shift+arrow moves
+and adds its destination; further presses extend the current contiguous
+segment. After an ordinary arrow navigates to another track, a new first
+Shift+arrow marks that track as the start of a separate selection island.
+Unshifted arrows after selection began preserve previously marked tracks.
+The same first-press rule applies to Shift+PageUp/PageDown.
+
+Re-run `Tools/audit.py` and regression tests; Windows MSVC/NVDA behavior must
+be confirmed in GitHub Actions/REAPER. Do not alter the push script or ReaPack
+index history.

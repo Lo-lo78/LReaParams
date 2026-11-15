@@ -11,10 +11,10 @@ assert 'st->fxMsgNode = insertNode(st->tree, st->nodes[0], L"FX Params")' in pre
 assert 'st->trackMsgNode = insertNode(st->tree, st->nodes[0], L"Track Params")' in pref
 assert 'st->fxNode = insertNode(st->tree, st->nodes[1], L"FX Params")' in pref
 assert 'st->trackNode = insertNode(st->tree, st->nodes[1], L"Track Params")' in pref
-assert 'L"Title"' in pref and 'st->messageTopics' in pref
+assert 'L"Title: FX Params"' in pref and 'L"Title: Sends (F2)"' in pref and 'st->messageTopics' in pref
 assert 'reorderMessagePart(st, vk == VK_UP ? -1 : 1)' in pref
 assert 'toggleMessagePart(st)' in pref and 'startCustomEditor(st)' in pref
-assert 'if (part == customPart(st->messageScope)) return;' in pref
+assert 'if (part == customPart(st->messageScope, topic)) return;' in pref
 assert 'L"Disabled - "' in pref
 assert 'closeCustomEditor(st, true)' in pref and 'closeCustomEditor(st, false)' in pref
 assert 'if (st->editingCustom) closeCustomEditor(st, id == IDOK)' in pref

@@ -28,6 +28,16 @@ std::wstring wideUtf8(const std::string& text) {
     converted.resize(static_cast<size_t>(length - 1));
     return converted;
 }
+std::string narrowUtf8(const std::wstring& text) {
+    if (text.empty()) return {};
+    const int length = WideCharToMultiByte(CP_UTF8, 0, text.c_str(),
+        static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
+    if (length <= 0) return {};
+    std::string result(static_cast<size_t>(length), '\0');
+    if (!WideCharToMultiByte(CP_UTF8, 0, text.c_str(), static_cast<int>(text.size()),
+                            result.data(), length, nullptr, nullptr)) return {};
+    return result;
+}
 }
 
 // TEST49: preserve preferences even on an external REAPER action that closes
@@ -47,7 +57,7 @@ void TrackNavigator::end() noexcept {
     active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false;
     rangeEditing_ = false; resetMidiState();
     backgroundMode_ = false; clearAutomationConfirm_ = false; clearAutomationYes_ = false;
-    filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); resetPendingRouting(); rows_.clear(); entries_.clear(); fxTcpColumns_.clear(); fxTcpColumn_ = fxTcpRow_ = 0; fxTcpListOpen_ = false; fxTcpListEntries_.clear(); fxTcpVisibleColumns_.clear(); fxTcpMainFilter_.clear(); fxTcpGridFilter_.clear(); fxTcpListColumn_ = fxTcpListRow_ = 0;
+    filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); selectionBuilding_ = false; resetPendingRouting(); rows_.clear(); entries_.clear(); fxTcpColumns_.clear(); fxTcpColumn_ = fxTcpRow_ = 0; fxTcpListOpen_ = false; fxTcpListEntries_.clear(); fxTcpVisibleColumns_.clear(); fxTcpMainFilter_.clear(); fxTcpGridFilter_.clear(); fxTcpListColumn_ = fxTcpListRow_ = 0;
 }
 
 bool TrackNavigator::begin() {
@@ -88,6 +98,7 @@ bool TrackNavigator::begin() {
     page_ = Page::tracks;
     valueMode_ = false;
     resetSelectionStroke();
+    selectionBuilding_ = CountSelectedTracks(project_) > 1;
     resetPendingRouting();
     lastEndFolderTrackIndex_ = -1;
     nextEndFolderIndex_ = 0;
@@ -839,7 +850,7 @@ std::string TrackNavigator::currentParameterSpeech() const {
     if (!e) return trackName() + (page_ == Page::sends ? ", no sends" : page_ == Page::receives ? ", no receives" : ", no parameters");
     const std::string suffix = statusSuffix();
     if (page_ == Page::tracks) {
-        const std::string selected = IsTrackSelected(track_) ? "Selected. " : "";
+        const std::string selected = CountSelectedTracks(project_) > 1 && IsTrackSelected(track_) ? "Selected. " : "";
         // The folder-aware label contains open/closed and all ending folders.
         // Its suffix is critical when one track closes nested folders.
         return selected + folderAwareTrackLabel() + ", " + e->title + ", " + valueText(*e, get(*e)) + suffix;
@@ -974,49 +985,48 @@ void TrackNavigator::announce() { speech_(parameterValueSpeech()); }
 void TrackNavigator::announceTrack() { speech_(currentParameterSpeech()); }
 void TrackNavigator::announceTitle() {
     if (!active_) return;
+    // The same configurable title is spoken and exposed as the native window
+    // title. Disabling or reordering a Title component affects both.
+    const std::string title = narrowUtf8(windowTitle());
     if (page_ == Page::reaRoute && !memoryManager_) {
-        speech_("Track Params - " + trackName() + ". ReaRoute. " + reaRouteReview(true));
+        speech_(title + ". " + reaRouteReview(true));
         return;
     }
     if (page_ == Page::hardwareOutputs && !memoryManager_) {
-        speech_("Track Params - " + trackName() + ". Hardware outputs. " + hardwareOutputReview(true));
+        speech_(title + ". " + hardwareOutputReview(true));
         return;
     }
     if (page_ == Page::trackMidi && !memoryManager_) {
-        speech_("Track Params - " + trackName() + ". Track MIDI. " + trackMidiReview(false));
+        speech_(title + ". " + trackMidiReview(false));
         return;
     }
     if (page_ == Page::fxTcp && !memoryManager_) {
-        speech_("Track Params - " + trackName() + " - FX TCP. " + fxTcpReview(true));
+        speech_(title + ". " + fxTcpReview(true));
         return;
     }
     if (memoryManager_) { speakMemory("Track Memories"); return; }
-    const std::string pageSuffix = page_ == Page::tracks ? "" :
-                                   page_ == Page::sends ? " - Sends" : " - Receives";
-    speech_("Track Params - " + trackName() + pageSuffix +
-            (valueMode_ ? " - Value. " : ". ") + currentParameterSpeech());
+    speech_(title + ". " + currentParameterSpeech());
 }
 std::wstring TrackNavigator::windowTitle() const {
     if (!active_) return L"Track Params";
     const std::wstring configuredTitle = formatTrackTitle(wideUtf8(trackName()));
     if (page_ == Page::reaRoute && !memoryManager_)
-        return configuredTitle + L" - ReaRoute";
+        return formatTrackPageTitle(wideUtf8(trackName()), 6);
     if (page_ == Page::hardwareOutputs && !memoryManager_)
-        return configuredTitle + L" - Hardware outputs";
+        return formatTrackPageTitle(wideUtf8(trackName()), 5);
     if (page_ == Page::trackMidi && !memoryManager_)
-        return configuredTitle + L" - Track MIDI";
-    if (page_ == Page::fxTcp && !memoryManager_)
-        return configuredTitle +
-            (std::wstring(L" - ") + wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX") +
-             (fxTcpListOpen_ ? L" - Add TCP parameters" : L" - TCP parameters")) +
+        return formatTrackPageTitle(wideUtf8(trackName()), 4);
+    if (page_ == Page::fxTcp && !memoryManager_) {
+        const std::wstring label = wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX") +
+            (fxTcpListOpen_ ? L" - Add TCP parameters" : L" - TCP parameters");
+        return formatTrackPageTitle(wideUtf8(trackName()), 3, label) +
             (numericEditing_ ? L" - Numeric edit" : filterEditing_ ? L" - Filter" : !(fxTcpListOpen_ ? fxTcpGridFilter_ : fxTcpMainFilter_).empty() ? L" - Filter active" : L"");
-    if (memoryManager_) {
-        static constexpr const wchar_t* titles[] = {L"MIDI CC", L"Parameter Steps", L"Parameter Speech", L"Track Positions", L"Volume Ranges"};
-        return std::wstring(L"Track Memories - ") + titles[static_cast<size_t>(std::clamp(memoryColumn_, 0, 4))];
     }
-    const wchar_t* pageSuffix = page_ == Page::tracks ? L"" :
-                                page_ == Page::sends ? L" - Sends" : L" - Receives";
-    return configuredTitle + pageSuffix +
+    if (memoryManager_)
+        return formatTrackPageTitle(wideUtf8(trackName()), 7 + std::clamp(memoryColumn_, 0, 4));
+    const std::wstring pageTitle = page_ == Page::sends ? formatTrackPageTitle(wideUtf8(trackName()), 1) :
+        page_ == Page::receives ? formatTrackPageTitle(wideUtf8(trackName()), 2) : configuredTitle;
+    return pageTitle +
            (numericEditing_ ? L" - Numeric edit" : filterEditing_ ? L" - Filter" : !filterQuery_.empty() ? L" - Filter active" : L"") +
            (valueMode_ ? L" - Value" : L"");
 }
@@ -1044,10 +1054,10 @@ void TrackNavigator::refreshTrackSelection() {
 }
 void TrackNavigator::syncCursorToReaper() {
     if (!project_ || !track_ || !ValidatePtr2(project_, track_, "MediaTrack*")) return;
-    // During two-pass Add Send/Receive the Lua deliberately clears selection
-    // after storing the sources/destinations. Do not implicitly reselect a
-    // track while the user is picking the opposite side of the routing.
-    if (pendingRouting_ != RoutingKind::none) return;
+    // Once an additive selection has begun, cursor movement must not wipe it.
+    // In two-pass routing, before Shift selection begins, a plain arrow may
+    // choose a single destination/source just as in the normal F1 navigator.
+    if (selectionBuilding_) return;
     // A normal cursor move is an actual TCP track move, not merely a spoken
     // pointer. Collapse any older selection; Shift-selection gestures use
     // applyRangeSelection instead and remain fully multi-track capable.
@@ -1057,7 +1067,9 @@ void TrackNavigator::syncCursorToReaper() {
 }
 void TrackNavigator::announceSelection() const {
     if (page_ != Page::tracks) return;
-    speech_(std::to_string(CountSelectedTracks(project_)) + " Selected. " + currentParameterSpeech());
+    const bool selected = IsTrackSelected(track_);
+    speech_(std::string(selected ? "Selected. " : "Not selected. ") +
+        folderAwareTrackLabel() + ". " + std::to_string(CountSelectedTracks(project_)) + " tracks selected");
 }
 void TrackNavigator::applyRangeSelection(int first, int last) {
     if (rows_.empty()) return;
@@ -1074,6 +1086,7 @@ void TrackNavigator::applyRangeSelection(int first, int last) {
 }
 void TrackNavigator::selectVisibleTracks() {
     resetSelectionStroke();
+    selectionBuilding_ = true;
     for (const auto& row : rows_) SetTrackSelected(row.track, true);
     refreshTrackSelection();
     announceSelection();
@@ -1081,6 +1094,14 @@ void TrackNavigator::selectVisibleTracks() {
 void TrackNavigator::toggleCursorTrackSelection(bool deselectOnly) {
     resetSelectionStroke();
     const bool wasSelected = IsTrackSelected(track_);
+    // Shift+Space starts an additive selection from the already selected
+    // cursor. A second gesture may toggle it, as in REAPER.
+    if (!deselectOnly && !selectionBuilding_ && wasSelected && CountSelectedTracks(project_) == 1) {
+        selectionBuilding_ = true;
+        announceSelection();
+        return;
+    }
+    if (!deselectOnly) selectionBuilding_ = true;
     if (deselectOnly && !wasSelected) {
         speech_(std::to_string(CountSelectedTracks(project_)) + " Selected. " + trackName() + ". Not selected");
         return;
@@ -1092,6 +1113,7 @@ void TrackNavigator::toggleCursorTrackSelection(bool deselectOnly) {
 }
 void TrackNavigator::clearTrackSelection() {
     resetSelectionStroke();
+    selectionBuilding_ = false;
     for (int i = 0, n = CountTracks(project_); i < n; ++i) {
         if (MediaTrack* tr = GetTrack(project_, i)) SetTrackSelected(tr, false);
     }
@@ -1099,18 +1121,24 @@ void TrackNavigator::clearTrackSelection() {
     speech_("0 Selected");
 }
 void TrackNavigator::extendTrackSelection(int direction, bool page) {
+    if (rows_.empty()) return;
     if (!selectionStroke_) {
+        // First Shift+Up/Down (or Shift+PageUp/Down) marks ONLY the current
+        // cursor track and announces Selected. It never moves on that press.
+        // A new stroke after ordinary-arrow movement creates a new island of
+        // selection; previously selected islands remain in selectionBase_.
         selectionStroke_ = true;
         selectionAnchorRow_ = row_;
         captureBaseSelection();
-        // Original Lua: first Shift+arrow selects the anchor, next one moves.
+        selectionBuilding_ = true;
         applyRangeSelection(row_, row_);
         announceSelection();
         return;
     }
     const int jump = page ? 5 : 1;
     const int next = std::clamp(row_ + direction * jump, 0, static_cast<int>(rows_.size()) - 1);
-    if (next == row_) return;
+    if (next == row_) { announceSelection(); return; }
+    selectionBuilding_ = true;
     applyRangeSelection(selectionAnchorRow_, next);
     row_ = next;
     track_ = rows_[row_].track;
@@ -1119,6 +1147,7 @@ void TrackNavigator::extendTrackSelection(int direction, bool page) {
 }
 void TrackNavigator::extendTrackSelectionToEdge(int direction) {
     resetSelectionStroke();
+    selectionBuilding_ = true;
     captureBaseSelection();
     const int next = direction < 0 ? 0 : static_cast<int>(rows_.size()) - 1;
     applyRangeSelection(row_, next);
@@ -1328,6 +1357,15 @@ void TrackNavigator::handle(const Key& k) {
             const std::string page = page_ == Page::tracks ? "Track" : page_ == Page::sends ? "Sends" : "Receives";
             const auto dot = id.find('.');
             const std::string bare = dot == std::string::npos ? id : id.substr(dot + 1);
+            // F1 Tab is a short selection review, distinct from parameter
+            // review on F2/F3. The plain-arrow single selection is implicit.
+            if (page_ == Page::tracks) {
+                const bool selected = IsTrackSelected(track_);
+                const int total = CountSelectedTracks(project_);
+                speech_(std::string(selected ? "Selected. " : "Not selected. ") +
+                    folderAwareTrackLabel() + (total > 1 ? ". " + std::to_string(total) + " tracks selected" : ""));
+                return;
+            }
             std::string info = currentParameterSpeech();
             if (const Entry* entry = current(); entry && entry->type == Entry::volume) {
                 const auto limits = memory_.volumeRange(page);

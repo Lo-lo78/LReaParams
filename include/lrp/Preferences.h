@@ -21,7 +21,14 @@ struct Preferences {
     bool compatibilityHook = false;
     std::vector<ShortcutPreference> shortcuts;
     TitleMessage fxTitle;
+    // Independently configurable titles: FX Memories, FX Browser and FX Pin Connector.
+    // Existing FxTitle INI keys and shortcut indices remain untouched.
+    std::array<TitleMessage, 3> fxExtraTitles{};
     TitleMessage trackTitle;
+    // One distinct template for each additional Track Params window title:
+    // Sends, Receives, FX TCP, Track MIDI, Hardware outputs, ReaRoute,
+    // and the five Track Memories column titles. F1 stays trackTitle.
+    std::array<TitleMessage, 11> trackExtraTitles{};
 };
 Preferences defaultPreferences();
 Preferences loadPreferences(const std::filesystem::path& file);
@@ -39,6 +46,11 @@ bool fxNameFirst() noexcept;
 void setTitleMessages(const Preferences& settings);
 std::string formatFxTitle(const std::string& fx, const std::string& track,
     const std::string& status = {});
+// titleIndex 1: FX Memories; 2: FX Browser; 3: FX Pin Connector.
+std::string formatFxPageTitle(const std::string& fx, const std::string& context,
+    int titleIndex, const std::string& status = {});
 std::wstring formatTrackTitle(const std::wstring& track);
+std::wstring formatTrackPageTitle(const std::wstring& track, int titleIndex,
+    const std::wstring& pageText = {});
 
 }

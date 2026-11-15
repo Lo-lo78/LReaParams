@@ -156,7 +156,7 @@ def main():
                    'L"Messages"', 'L"Shortcuts"', 'L"Advanced"',
                    'L"FX Params"', 'L"Track Params"', 'DLGC_WANTTAB',
                    'Page::messages', 'Page::shortcuts', 'Page::advanced',
-                   'L"Title"', 'L"Custom message"',
+                   'L"Title: FX Params"', 'L"Title: Sends (F2)"', 'L"Custom message"',
                    'ShortcutScope::track', 'ShortcutScope::fx',
                    'st->ok', 'st->cancel', 'pageTab(&state',
                    'st->fxNode = insertNode', 'st->trackNode = insertNode',

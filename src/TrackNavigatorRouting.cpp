@@ -67,6 +67,7 @@ void TrackNavigator::startTrackRouting(RoutingKind kind) {
     pendingRouting_ = kind;
     pendingTrackGuids_ = tracks;
     resetSelectionStroke();
+    selectionBuilding_ = false; // Next ordinary arrow selects one destination/source.
     // Exactly like the Lua, clear selection after storing the first stage so
     // the next selection refers only to the other side of the routing.
     for (int i = 0, n = CountTracks(project_); i < n; ++i) {

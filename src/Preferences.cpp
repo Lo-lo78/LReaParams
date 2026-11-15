@@ -13,7 +13,13 @@ namespace lrp {
 namespace {
 bool nameFirst = true;
 TitleMessage activeFxTitle{};
+std::array<TitleMessage, 3> activeFxExtraTitles{};
 TitleMessage activeTrackTitle;
+std::array<TitleMessage, 11> activeTrackExtraTitles{};
+// Restore the last tree choice, even if the preceding dialog was cancelled.
+// Order: Messages, FX messages, Track messages, Shortcuts, FX shortcuts,
+// Track shortcuts, Advanced. Do not persist native HTREEITEM handles.
+int lastTreeChoice = 0;
 constexpr int IDC_TREE = 101, IDC_SHORTCUTS = 103;
 constexpr int IDC_CAPTURE = 104, IDC_MESSAGES = 105, IDC_ADVANCED = 106;
 constexpr int IDC_MESSAGE_TOPICS = 107, IDC_CUSTOM_EDIT = 108;
@@ -21,13 +27,50 @@ constexpr int kPrefCtrl = 1, kPrefAlt = 2, kPrefShift = 4;
 constexpr wchar_t kClassName[] = L"LReaParamsPreferencesV1";
 
 enum class Page { messages = 0, shortcuts = 1, advanced = 2 };
-int titlePartCount(ShortcutScope scope) { return scope == ShortcutScope::fx ? 4 : 3; }
-int customPart(ShortcutScope scope) { return titlePartCount(scope) - 1; }
-TitleMessage& titleFor(Preferences& p, ShortcutScope scope) {
-    return scope == ShortcutScope::fx ? p.fxTitle : p.trackTitle;
+// The FX browser's title has three parts; FX Params, FX Memories and the
+// FX Pin Connector have four. F7/Value/Keyboard/Used are state suffixes of
+// FX Params, not distinct title windows.
+constexpr int kFxTitleCount = 4;
+constexpr const wchar_t* kFxTopicNames[kFxTitleCount] = {
+    L"Title: FX Params", L"Title: FX Memories", L"Title: FX Browser",
+    L"Title: FX Pin Connector"
+};
+constexpr const wchar_t* kFxPartNames[kFxTitleCount][4] = {
+    {L"FX Params", L"Plugin", L"Track", L"Custom message"},
+    {L"FX Memories", L"Plugin", L"Track", L"Custom message"},
+    {L"FX Browser", L"Context", L"Custom message", L""},
+    {L"FX Pin Connector", L"Track", L"Plugin", L"Custom message"}
+};
+// Every Track Params title is independently reorderable. Only F1 has three
+// elements: the other titles have heading, track, page and custom message.
+constexpr int kTrackTitleCount = 12;
+constexpr const wchar_t* kTrackTopicNames[kTrackTitleCount] = {
+    L"Title: Track (F1)", L"Title: Sends (F2)", L"Title: Receives (F3)",
+    L"Title: FX TCP (F4)", L"Title: Track MIDI (F5)",
+    L"Title: Hardware outputs (F6)", L"Title: ReaRoute (F7)",
+    L"Title: Track Memories - MIDI CC", L"Title: Track Memories - Parameter Steps",
+    L"Title: Track Memories - Parameter Speech",
+    L"Title: Track Memories - Track Positions",
+    L"Title: Track Memories - Volume Ranges"
+};
+constexpr const wchar_t* kTrackPageLabels[kTrackTitleCount] = {
+    L"", L"Sends", L"Receives", L"FX TCP", L"Track MIDI",
+    L"Hardware outputs", L"ReaRoute", L"MIDI CC", L"Parameter Steps",
+    L"Parameter Speech", L"Track Positions", L"Volume Ranges"
+};
+int titlePartCount(ShortcutScope scope, int topic = 0) {
+    return scope == ShortcutScope::fx ? (topic == 2 ? 3 : 4) : (topic == 0 ? 3 : 4);
 }
-const TitleMessage& titleFor(const Preferences& p, ShortcutScope scope) {
-    return scope == ShortcutScope::fx ? p.fxTitle : p.trackTitle;
+int customPart(ShortcutScope scope, int topic = 0) { return titlePartCount(scope, topic) - 1; }
+TitleMessage& titleFor(Preferences& p, ShortcutScope scope, int topic = 0) {
+    if (scope == ShortcutScope::fx)
+        return topic <= 0 ? p.fxTitle : p.fxExtraTitles[static_cast<size_t>(std::clamp(topic, 1, kFxTitleCount - 1) - 1)];
+    return topic <= 0 ? p.trackTitle : p.trackExtraTitles[static_cast<size_t>(std::clamp(topic, 1, 11) - 1)];
+}
+const TitleMessage& titleFor(const Preferences& p, ShortcutScope scope, int topic = 0) {
+    if (scope == ShortcutScope::fx)
+        return topic <= 0 ? p.fxTitle : p.fxExtraTitles[static_cast<size_t>(std::clamp(topic, 1, kFxTitleCount - 1) - 1)];
+    return topic <= 0 ? p.trackTitle : p.trackExtraTitles[static_cast<size_t>(std::clamp(topic, 1, 11) - 1)];
 }
 void normalizeTitle(TitleMessage& title, int count) {
     // Guard user-edited/corrupt INI files: a template must be a permutation.
@@ -98,6 +141,7 @@ struct DialogState {
     Page page = Page::messages;
     ShortcutScope currentScope = ShortcutScope::fx;
     ShortcutScope messageScope = ShortcutScope::fx;
+    int selectedTopic[2]{};
     std::vector<size_t> visible;
     int selectedInScope[2]{};
     bool created = false, capturing = false, editingCustom = false, accepted = false;
@@ -136,17 +180,36 @@ void updateSelection(DialogState* st) {
     if (index >= 0 && index < static_cast<int>(st->visible.size()))
         st->selectedInScope[scopeIndex(st->currentScope)] = index;
 }
+void fillMessageTopics(DialogState* st) {
+    const int scope = scopeIndex(st->messageScope);
+    SendMessageW(st->messageTopics, LB_RESETCONTENT, 0, 0);
+    if (st->messageScope == ShortcutScope::fx) {
+        for (const auto* label : kFxTopicNames)
+            SendMessageW(st->messageTopics, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(label));
+        st->selectedTopic[scope] = std::clamp(st->selectedTopic[scope], 0, kFxTitleCount - 1);
+    } else {
+        for (const auto* label : kTrackTopicNames)
+            SendMessageW(st->messageTopics, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(label));
+        st->selectedTopic[scope] = std::clamp(st->selectedTopic[scope], 0, kTrackTitleCount - 1);
+    }
+    selectList(st->messageTopics, st->selectedTopic[scope]);
+}
 void fillMessageParts(DialogState* st, int selected = 0) {
-    TitleMessage& cfg = titleFor(st->pending, st->messageScope);
-    const int count = titlePartCount(st->messageScope);
-    const wchar_t* fxNames[] = {L"FX Params", L"Plugin", L"Track", L"Custom message"};
+    const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
+    TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
+    const int count = titlePartCount(st->messageScope, topic);
     const wchar_t* trackNames[] = {L"Track Params", L"Track", L"Custom message"};
+    const wchar_t* trackExtraNames[] = {
+        topic >= 7 ? L"Track Memories" : L"Track Params",
+        L"Track", kTrackPageLabels[std::clamp(topic, 0, kTrackTitleCount - 1)], L"Custom message"
+    };
     SendMessageW(st->messages, LB_RESETCONTENT, 0, 0);
     for (int i = 0; i < count; ++i) {
         const int part = cfg.order[static_cast<size_t>(i)];
-        const bool custom = part == customPart(st->messageScope);
+        const bool custom = part == customPart(st->messageScope, topic);
         std::wstring line = custom ? L"Custom message" :
-            (st->messageScope == ShortcutScope::fx ? fxNames[part] : trackNames[part]);
+            (st->messageScope == ShortcutScope::fx ? kFxPartNames[std::clamp(topic, 0, kFxTitleCount - 1)][part] :
+                topic == 0 ? trackNames[part] : trackExtraNames[part]);
         if (custom) {
             if (!cfg.custom.empty()) line += L": " + cfg.custom;
             line += L" (Enter to edit)";
@@ -167,9 +230,10 @@ void closeCustomEditor(DialogState* st, bool commit) {
     if (commit) {
         wchar_t buffer[241]{};
         GetWindowTextW(st->customEdit, buffer, 241);
-        TitleMessage& cfg = titleFor(st->pending, st->messageScope);
+        const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
+        TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
         cfg.custom = buffer;
-        normalizeTitle(cfg, titlePartCount(st->messageScope));
+        normalizeTitle(cfg, titlePartCount(st->messageScope, topic));
     }
     st->editingCustom = false;
     ShowWindow(st->customEdit, SW_HIDE);
@@ -180,10 +244,11 @@ void closeCustomEditor(DialogState* st, bool commit) {
 }
 void startCustomEditor(DialogState* st) {
     const int selection = listSelection(st->messages);
-    const TitleMessage& cfg = titleFor(st->pending, st->messageScope);
-    const int count = titlePartCount(st->messageScope);
+    const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
+    const TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
+    const int count = titlePartCount(st->messageScope, topic);
     if (selection < 0 || selection >= count ||
-        cfg.order[static_cast<size_t>(selection)] != customPart(st->messageScope)) return;
+        cfg.order[static_cast<size_t>(selection)] != customPart(st->messageScope, topic)) return;
     st->editingCustom = true;
     SetWindowTextW(st->customEdit, cfg.custom.c_str());
     ShowWindow(st->customLabel, SW_SHOW);
@@ -193,26 +258,32 @@ void startCustomEditor(DialogState* st) {
 }
 void toggleMessagePart(DialogState* st) {
     const int selected = listSelection(st->messages);
-    const int count = titlePartCount(st->messageScope);
+    const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
+    const int count = titlePartCount(st->messageScope, topic);
     if (selected < 0 || selected >= count) return;
-    TitleMessage& cfg = titleFor(st->pending, st->messageScope);
+    TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
     const int part = cfg.order[static_cast<size_t>(selected)];
-    if (part == customPart(st->messageScope)) return; // Custom is edited using Enter.
+    if (part == customPart(st->messageScope, topic)) return; // Custom is edited using Enter.
     cfg.enabled[static_cast<size_t>(part)] = !cfg.enabled[static_cast<size_t>(part)];
     fillMessageParts(st, selected);
     // Report the resulting state immediately without opening a confirmation.
-    const wchar_t* fxNames[] = {L"FX Params", L"Plugin", L"Track"};
     const wchar_t* trackNames[] = {L"Track Params", L"Track"};
+    const wchar_t* trackExtraNames[] = {
+        topic >= 7 ? L"Track Memories" : L"Track Params", L"Track",
+        kTrackPageLabels[std::clamp(topic, 0, kTrackTitleCount - 1)]
+    };
     const std::wstring feedback = std::wstring(cfg.enabled[static_cast<size_t>(part)] ? L"Enabled - " : L"Disabled - ") +
-        (st->messageScope == ShortcutScope::fx ? fxNames[part] : trackNames[part]);
+        (st->messageScope == ShortcutScope::fx ? kFxPartNames[std::clamp(topic, 0, kFxTitleCount - 1)][part] :
+            topic == 0 ? trackNames[part] : trackExtraNames[part]);
     if (st->announce) st->announce(toUtf8(feedback));
 }
 void reorderMessagePart(DialogState* st, int direction) {
     const int selected = listSelection(st->messages);
-    const int count = titlePartCount(st->messageScope);
+    const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
+    const int count = titlePartCount(st->messageScope, topic);
     const int dest = selected + direction;
     if (selected < 0 || dest < 0 || dest >= count) return;
-    auto& order = titleFor(st->pending, st->messageScope).order;
+    auto& order = titleFor(st->pending, st->messageScope, topic).order;
     std::swap(order[static_cast<size_t>(selected)], order[static_cast<size_t>(dest)]);
     fillMessageParts(st, dest);
 }
@@ -415,18 +486,17 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             252, 381, 465, 29, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_CAPTURE)), nullptr, nullptr);
         st->messages = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
-            252, 121, 465, 240, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_MESSAGES)), nullptr, nullptr);
+            252, 220, 465, 148, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_MESSAGES)), nullptr, nullptr);
         st->messageTopics = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
-            WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
-            252, 18, 465, 89, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_MESSAGE_TOPICS)), nullptr, nullptr);
+            WS_CHILD | WS_TABSTOP | WS_VSCROLL | LBS_NOINTEGRALHEIGHT | LBS_NOTIFY,
+            252, 18, 465, 187, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_MESSAGE_TOPICS)), nullptr, nullptr);
         st->customLabel = CreateWindowW(L"STATIC", L"Custom message:", WS_CHILD,
-            252, 367, 465, 18, hwnd, nullptr, nullptr, nullptr);
+            252, 377, 465, 18, hwnd, nullptr, nullptr, nullptr);
         st->customEdit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
             WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL,
-            252, 384, 465, 28, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_CUSTOM_EDIT)), nullptr, nullptr);
+            252, 396, 465, 28, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_CUSTOM_EDIT)), nullptr, nullptr);
         SendMessageW(st->customEdit, EM_LIMITTEXT, 240, 0);
-        SendMessageW(st->messageTopics, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Title"));
-        selectList(st->messageTopics, 0);
+        fillMessageTopics(st);
         st->advanced = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
             252, 18, 465, 160, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_ADVANCED)), nullptr, nullptr);
@@ -454,7 +524,10 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         SendMessageW(st->tree, TVM_EXPAND, TVE_EXPAND, reinterpret_cast<LPARAM>(st->nodes[1]));
         st->created = true;
         showPage(st, Page::messages);
-        SendMessageW(st->tree, TVM_SELECTITEM, TVGN_CARET, reinterpret_cast<LPARAM>(st->nodes[0]));
+        const HTREEITEM choices[] = {st->nodes[0], st->fxMsgNode, st->trackMsgNode,
+            st->nodes[1], st->fxNode, st->trackNode, st->nodes[2]};
+        const int index = std::clamp(lastTreeChoice, 0, 6);
+        SendMessageW(st->tree, TVM_SELECTITEM, TVGN_CARET, reinterpret_cast<LPARAM>(choices[index]));
         st->lastFocused = st->tree;
         return 0;
     }
@@ -462,11 +535,16 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     if (msg == WM_NOTIFY && st->created && reinterpret_cast<LPNMHDR>(lp)->idFrom == IDC_TREE &&
         reinterpret_cast<LPNMHDR>(lp)->code == TVN_SELCHANGEDW) {
         const HTREEITEM selected = reinterpret_cast<LPNMTREEVIEWW>(lp)->itemNew.hItem;
+        const HTREEITEM choices[] = {st->nodes[0], st->fxMsgNode, st->trackMsgNode,
+            st->nodes[1], st->fxNode, st->trackNode, st->nodes[2]};
+        for (int i = 0; i < 7; ++i) if (choices[i] == selected) { lastTreeChoice = i; break; }
         if (selected == st->nodes[0]) showPage(st, Page::messages);
         else if (selected == st->fxMsgNode || selected == st->trackMsgNode) {
             const ShortcutScope next = selected == st->fxMsgNode ? ShortcutScope::fx : ShortcutScope::track;
             if (st->messageScope != next) {
+                if (st->editingCustom) closeCustomEditor(st, true);
                 st->messageScope = next;
+                fillMessageTopics(st);
                 fillMessageParts(st);
             }
             showPage(st, Page::messages);
@@ -524,8 +602,11 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
         }
         if (id == IDC_MESSAGE_TOPICS && notice == LBN_SELCHANGE) {
-            // Title is currently the only message category.
-            selectList(st->messageTopics, 0);
+            const int selected = listSelection(st->messageTopics);
+            if (selected >= 0) {
+                st->selectedTopic[scopeIndex(st->messageScope)] = selected;
+                fillMessageParts(st);
+            }
             return 0;
         }
         if (id == IDC_SHORTCUTS && notice == LBN_SELCHANGE) { updateSelection(st); return 0; }
@@ -733,7 +814,18 @@ Preferences defaultPreferences() {
         if (!existing) unique.push_back(std::move(entry));
     }
     p.shortcuts = std::move(unique);
+    // The three new FX templates reproduce each window's original wording.
+    p.fxExtraTitles[0].enabled = {{true, true, true, false}};  // Memories: heading - plugin - track
+    p.fxExtraTitles[1].enabled = {{true, true, false, false}}; // Browser: heading - context
+    p.fxExtraTitles[2].enabled = {{true, true, true, false}};  // Pin: heading - track - plugin
     p.trackTitle.enabled = {{true, true, false, false}};
+    for (size_t i = 0; i < p.trackExtraTitles.size(); ++i) {
+        // Track Memories titles do not include the track name by default;
+        // the other pages preserve the historic Track Params - Track - Page.
+        p.trackExtraTitles[i].enabled = i >= 6 ?
+            std::array<bool, 4>{{true, false, true, false}} :
+            std::array<bool, 4>{{true, true, true, false}};
+    }
     return p;
 }
 namespace {
@@ -780,8 +872,21 @@ Preferences loadPreferences(const std::filesystem::path& file) {
     // Upgrade the previous two-way "PluginFirst" setting without losing it.
     const auto legacy = readIni(path, L"Messages", L"FxTitleOrder");
     if (legacy.empty() && !p.pluginFirst) p.fxTitle.order = {{0, 2, 1, 3}};
+    // FX Memories previously shared PluginFirst with FX Params. Preserve
+    // that historical order on first migration; afterward it has its own INI.
+    if (!p.pluginFirst && readIni(path, L"Messages", L"FxTitlePage1Order").empty())
+        p.fxExtraTitles[0].order = {{0, 2, 1, 3}};
     loadTitle(path, L"FxTitle", p.fxTitle, 4);
+    for (int i = 1; i < kFxTitleCount; ++i) {
+        const std::wstring key = L"FxTitlePage" + std::to_wstring(i);
+        loadTitle(path, key.c_str(), p.fxExtraTitles[static_cast<size_t>(i - 1)],
+            titlePartCount(ShortcutScope::fx, i));
+    }
     loadTitle(path, L"TrackTitle", p.trackTitle, 3);
+    for (int i = 1; i < kTrackTitleCount; ++i) {
+        const std::wstring key = L"TrackTitlePage" + std::to_wstring(i);
+        loadTitle(path, key.c_str(), p.trackExtraTitles[static_cast<size_t>(i - 1)], 4);
+    }
     for (size_t i = 0; i < p.shortcuts.size(); ++i) {
         const std::wstring key = L"Shortcut" + std::to_wstring(i);
         const int value = GetPrivateProfileIntW(L"Shortcuts", key.c_str(), -1, path.c_str());
@@ -801,6 +906,15 @@ bool savePreferences(const std::filesystem::path& file, const Preferences& p) {
     const std::wstring path = file.wstring();
     if (!WritePrivateProfileStringW(L"Messages", L"PluginFirst", p.pluginFirst ? L"1" : L"0", path.c_str())) return false;
     if (!saveTitle(path, L"FxTitle", p.fxTitle, 4) || !saveTitle(path, L"TrackTitle", p.trackTitle, 3)) return false;
+    for (int i = 1; i < kFxTitleCount; ++i) {
+        const std::wstring key = L"FxTitlePage" + std::to_wstring(i);
+        if (!saveTitle(path, key.c_str(), p.fxExtraTitles[static_cast<size_t>(i - 1)],
+            titlePartCount(ShortcutScope::fx, i))) return false;
+    }
+    for (int i = 1; i < kTrackTitleCount; ++i) {
+        const std::wstring key = L"TrackTitlePage" + std::to_wstring(i);
+        if (!saveTitle(path, key.c_str(), p.trackExtraTitles[static_cast<size_t>(i - 1)], 4)) return false;
+    }
     if (!WritePrivateProfileStringW(L"Keyboard", L"CompatibilityHook", p.compatibilityHook ? L"1" : L"0", path.c_str())) return false;
     for (size_t i = 0; i < p.shortcuts.size(); ++i) {
         const Key& k = p.shortcuts[i].assigned;
@@ -914,9 +1028,15 @@ bool fxNameFirst() noexcept { return nameFirst; }
 namespace lrp {
 void setTitleMessages(const Preferences& settings) {
     activeFxTitle = settings.fxTitle;
+    activeFxExtraTitles = settings.fxExtraTitles;
     activeTrackTitle = settings.trackTitle;
+    activeTrackExtraTitles = settings.trackExtraTitles;
     normalizeTitle(activeFxTitle, 4);
+    for (int i = 1; i < kFxTitleCount; ++i)
+        normalizeTitle(activeFxExtraTitles[static_cast<size_t>(i - 1)],
+            titlePartCount(ShortcutScope::fx, i));
     normalizeTitle(activeTrackTitle, 3);
+    for (auto& title : activeTrackExtraTitles) normalizeTitle(title, 4);
 }
 std::string formatFxTitle(const std::string& fx, const std::string& track,
     const std::string& status) {
@@ -942,6 +1062,37 @@ std::string formatFxTitle(const std::string& fx, const std::string& track,
     }
     return result;
 }
+// Compose the other three FX windows with the same Space / Alt+arrow / Enter
+// template contract as FX Params. Keep their original default word order.
+std::string formatFxPageTitle(const std::string& fx, const std::string& context,
+    int titleIndex, const std::string& status) {
+    if (titleIndex <= 0 || titleIndex >= kFxTitleCount)
+        return formatFxTitle(fx, context, status);
+    const auto& cfg = activeFxExtraTitles[static_cast<size_t>(titleIndex - 1)];
+    const int count = titlePartCount(ShortcutScope::fx, titleIndex);
+    const std::string names[] = {
+        titleIndex == 1 ? "FX Memories" : titleIndex == 2 ? "FX Browser" : "FX Pin Connector",
+        titleIndex == 2 || titleIndex == 3 ? context : fx,
+        titleIndex == 2 ? toUtf8(cfg.custom) : titleIndex == 3 ? fx : context,
+        titleIndex == 2 ? std::string{} : toUtf8(cfg.custom)
+    };
+    std::string result;
+    for (int i = 0; i < count; ++i) {
+        const int part = cfg.order[static_cast<size_t>(i)];
+        if (part < 0 || part >= count || !cfg.enabled[static_cast<size_t>(part)] || names[part].empty()) continue;
+        if (!result.empty()) result += " - ";
+        result += names[part];
+    }
+    if (result.empty()) result = names[0];
+    if (!status.empty()) {
+        // Preserve the historical "FX Memories. Bypassed. Plugin - Track".
+        const std::string prefix = names[0] + " - ";
+        if (cfg.order[0] == 0 && cfg.enabled[0] && result.compare(0, prefix.size(), prefix) == 0)
+            result = names[0] + ". " + status + ". " + result.substr(prefix.size());
+        else result += ". " + status;
+    }
+    return result;
+}
 std::wstring formatTrackTitle(const std::wstring& track) {
     const std::wstring names[] = {L"Track Params", track, activeTrackTitle.custom};
     std::wstring result;
@@ -952,5 +1103,21 @@ std::wstring formatTrackTitle(const std::wstring& track) {
         result += names[part];
     }
     return result.empty() ? L"Track Params" : result;
+}
+std::wstring formatTrackPageTitle(const std::wstring& track, int titleIndex,
+    const std::wstring& pageText) {
+    if (titleIndex <= 0 || titleIndex >= kTrackTitleCount) return formatTrackTitle(track);
+    const TitleMessage& cfg = activeTrackExtraTitles[static_cast<size_t>(titleIndex - 1)];
+    const bool memories = titleIndex >= 7;
+    const std::wstring names[] = {memories ? L"Track Memories" : L"Track Params", track,
+        pageText.empty() ? kTrackPageLabels[titleIndex] : pageText, cfg.custom};
+    std::wstring result;
+    for (int i = 0; i < 4; ++i) {
+        const int part = cfg.order[static_cast<size_t>(i)];
+        if (part < 0 || part >= 4 || !cfg.enabled[static_cast<size_t>(part)] || names[part].empty()) continue;
+        if (!result.empty()) result += L" - ";
+        result += names[part];
+    }
+    return result.empty() ? (memories ? L"Track Memories" : L"Track Params") : result;
 }
 } // namespace lrp

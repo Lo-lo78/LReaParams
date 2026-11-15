@@ -20,7 +20,7 @@ assert 'initialSelection_ = explicitTrack;' in track
 assert 'if (explicitTrack) syncCursorToReaper();' in track
 assert 'void TrackNavigator::syncCursorToReaper()' in track
 assert 'SetOnlyTrackSelected(track_);' in track
-assert 'if (pendingRouting_ != RoutingKind::none) return;' in track
+assert 'if (!k.repeat && pendingRouting_ != RoutingKind::none)' in track  # routing Tab speaks status; no unconditional silent return
 assert 'refreshTrackSelection();' in track
 assert 'if (next != row_) {' in track and 'syncCursorToReaper();' in track[track.index('void TrackNavigator::moveTrack'):track.index('void TrackNavigator::moveParameter')]
 assert 'syncCursorToReaper();' in track[track.index('void TrackNavigator::switchDetailTrack'):track.index('void TrackNavigator::toggle(')]

@@ -28,7 +28,7 @@ assert 'if (deltaSoloActive()) message += "Delta Solo. ";' in fx
 assert 'fxContextAnnouncement()' in h
 assert fx.count('speech_(fxContextAnnouncement());')==2
 assert 'fxWindowTitleBase(bool memories) const' in fx
-assert 'status.empty() ? " - " : ". " + status + ". "' in fx
+assert 'return formatFxPageTitle(fxDisplayName(), contextName(), 1, status);' in fx
 assert 'speech_(fxWindowTitleBase() + ". " + currentParameterSpeech());' in fx
 assert 'if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));' in fx
 assert 'while (visibleName.size() > 1' in fx
