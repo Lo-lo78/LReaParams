@@ -13,7 +13,16 @@ assert 'if (!count) return; // Empty FX remains accessible through Alt+Enter.' i
 assert 'if (!k.repeat) { rebuildFxTcp(true); openFxTcpParameterGrid(false); }' in t
 assert 'if (currentFxTcpParameter()) {' in t
 assert 'No TCP parameters. Press Alt+Enter to add' in t
-assert 'std::wstring(L" - ") + wideUtf8(currentFxTcpColumn()' in n
+# The FX TCP header is now assembled by the customizable Track title
+# template, rather than concatenated unconditionally. Verify both that
+# the current FX name remains in the label and that the correct page
+# template receives it; reordering/hiding remains controlled by Preferences.
+assert 'const std::wstring label = wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX") +' in n
+assert '(fxTcpListOpen_ ? L" - Add TCP parameters" : L" - TCP parameters")' in n
+assert 'formatTrackPageTitle(wideUtf8(trackName()), 3, label)' in n
+preferences=(r/'src/Preferences.cpp').read_text()
+assert 'std::wstring formatTrackPageTitle(' in preferences
+assert 'pageText.empty() ? kTrackPageLabels[titleIndex] : pageText' in preferences
 assert 'k.vk == VK_PRIOR || k.vk == VK_NEXT' in t
 assert 'moveFxTcpFx(k.vk == VK_PRIOR ? -1 : 1)' in t
 assert 'k.vk == VK_PRIOR || k.vk == VK_NEXT' in f
