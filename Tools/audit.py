@@ -136,9 +136,22 @@ def main():
     for marker in ['moveDetailColumn', 'VK_RETURN', 'Entry::midiFollowsFader',
                    'detailIndex_ * detailHeight + parameter_', 'toggle(*e)']:
         check(marker in track_src, 'Track grid/Enter feature missing: '+marker)
+    # The original title proxy is the only keyboard-owning navigation window.
+    # Preferences is a separate, explicit user-invoked modal Win32 dialog, with
+    # a narrow creation allowance. No arbitrary source file may add windows.
+    preferences_src = (ROOT/'src/Preferences.cpp').read_text()
+    check(preferences_src.count('CreateWindowExW(') == 5 and
+          preferences_src.count('CreateWindowW(') == 4,
+          'Preferences native dialog window/child creation contract changed')
+    for marker in ['L"LReaParamsPreferencesV1"', 'RegisterClassW(', 'WS_EX_DLGMODALFRAME',
+                   'WS_EX_CONTROLPARENT', 'SetWindowSubclass(', 'IsDialogMessageW(',
+                   'EnableWindow(owner,FALSE)', 'EnableWindow(owner,TRUE)',
+                   'DestroyWindow(hwnd)', 'WM_CLOSE', 'IDCANCEL', 'IDOK']:
+        check(marker in preferences_src, 'Preferences modal lifecycle contract missing: '+marker)
     for cpp in (ROOT/'src').glob('*.cpp'):
-        if cpp.name != 'TitleProxy.cpp':
-            check(not re.search(r'CreateWindow(?:Ex)?[AW]?\s*\(',cpp.read_text()),'Unexpected window creation: '+cpp.name)
+        if cpp.name not in {'TitleProxy.cpp', 'Preferences.cpp'}:
+            check(not re.search(r'CreateWindow(?:Ex)?[AW]?\s*\(', cpp.read_text()),
+                  'Unexpected window creation: '+cpp.name)
     check('PM_REMOVE' in all_cpp and 'CallNextHookEx' in all_cpp,'Thread hook lifecycle contract missing')
     # TEST6: the focus window owns the keys, without passing via the TCP.
     router=(ROOT/'src/InputRouter.cpp').read_text()

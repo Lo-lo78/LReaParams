@@ -20,3 +20,14 @@ Suggested checks:
 - Cancel another shortcut change, restart: previous assignment remains.
 - When native EDIT receives typing, no unwanted accelerator translation occurs.
 - The older `_LREAPARAMSSETTINGS` still chooses backend for the current session.
+
+## TEST fix: source audit for the Preferences dialog
+
+The first GitHub Actions run was stopped at `Tools/audit.py` by
+`RuntimeError: Unexpected window creation: Preferences.cpp`, before MSVC compilation.
+`Tools/audit.py` now permits **only** the explicit, user-invoked native
+`Preferences.cpp` dialog in addition to the pre-existing `TitleProxy.cpp`
+window. It checks the expected number of window/child creation sites and
+the modal lifecycle markers; creation remains forbidden in all other modules.
+The original `Tools/push_lreaparams.cmd` and the ReaPack `index.xml` are unchanged.
+This is a source-audit fix, not proof of successful compilation or runtime behavior.
