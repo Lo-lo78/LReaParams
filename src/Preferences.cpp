@@ -6,16 +6,45 @@
 #include <vector>
 #include <utility>
 #include <cwchar>
+#include <array>
+#include <cwctype>
 
 namespace lrp {
 namespace {
 bool nameFirst = true;
+TitleMessage activeFxTitle{};
+TitleMessage activeTrackTitle;
 constexpr int IDC_TREE = 101, IDC_SHORTCUTS = 103;
 constexpr int IDC_CAPTURE = 104, IDC_MESSAGES = 105, IDC_ADVANCED = 106;
+constexpr int IDC_MESSAGE_TOPICS = 107, IDC_CUSTOM_EDIT = 108;
 constexpr int kPrefCtrl = 1, kPrefAlt = 2, kPrefShift = 4;
 constexpr wchar_t kClassName[] = L"LReaParamsPreferencesV1";
 
 enum class Page { messages = 0, shortcuts = 1, advanced = 2 };
+int titlePartCount(ShortcutScope scope) { return scope == ShortcutScope::fx ? 4 : 3; }
+int customPart(ShortcutScope scope) { return titlePartCount(scope) - 1; }
+TitleMessage& titleFor(Preferences& p, ShortcutScope scope) {
+    return scope == ShortcutScope::fx ? p.fxTitle : p.trackTitle;
+}
+const TitleMessage& titleFor(const Preferences& p, ShortcutScope scope) {
+    return scope == ShortcutScope::fx ? p.fxTitle : p.trackTitle;
+}
+void normalizeTitle(TitleMessage& title, int count) {
+    // Guard user-edited/corrupt INI files: a template must be a permutation.
+    std::array<bool, 4> seen{};
+    for (int i = 0; i < count; ++i) {
+        const int part = title.order[static_cast<size_t>(i)];
+        if (part < 0 || part >= count || seen[static_cast<size_t>(part)]) {
+            for (int j = 0; j < count; ++j) title.order[static_cast<size_t>(j)] = j;
+            break;
+        }
+        seen[static_cast<size_t>(part)] = true;
+    }
+    if (title.custom.size() > 240) title.custom.resize(240);
+    for (auto& c : title.custom) if (c == L'\r' || c == L'\n' || c == L'\t') c = L' ';
+    title.enabled[static_cast<size_t>(count - 1)] = !title.custom.empty();
+}
+
 Key shortcut(UINT vk, int mods = 0) {
     Key k{}; k.vk = vk; k.ctrl = (mods & kPrefCtrl) != 0;
     k.alt = (mods & kPrefAlt) != 0; k.shift = (mods & kPrefShift) != 0;
@@ -23,6 +52,17 @@ Key shortcut(UINT vk, int mods = 0) {
 }
 bool same(const Key& a, const Key& b) {
     return a.vk == b.vk && a.ctrl == b.ctrl && a.alt == b.alt && a.shift == b.shift;
+}
+// Use UTF-8 for OSARA's outputMessage API. Never create a blocking dialog.
+std::string toUtf8(const std::wstring& text) {
+    if (text.empty()) return {};
+    const int bytes = WideCharToMultiByte(CP_UTF8, 0, text.c_str(),
+        static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
+    if (bytes <= 0) return {};
+    std::string result(static_cast<size_t>(bytes), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, text.c_str(), static_cast<int>(text.size()),
+        result.data(), bytes, nullptr, nullptr);
+    return result;
 }
 void add(Preferences& p, ShortcutScope scope, const wchar_t* name, UINT vk, int mods = 0) {
     const Key k = shortcut(vk, mods);
@@ -50,14 +90,17 @@ std::wstring keyName(const Key& k) {
 constexpr UINT kRestoreFocus = WM_APP + 31;
 struct DialogState {
     Preferences pending;
+    std::function<void(const std::string&)> announce;
     HWND hwnd{}, tree{}, shortcuts{}, capture{}, messages{}, advanced{};
+    HWND messageTopics{}, customLabel{}, customEdit{};
     HWND ok{}, cancel{}, lastFocused{};
-    HTREEITEM nodes[3]{}, fxNode{}, trackNode{};
+    HTREEITEM nodes[3]{}, fxNode{}, trackNode{}, fxMsgNode{}, trackMsgNode{};
     Page page = Page::messages;
     ShortcutScope currentScope = ShortcutScope::fx;
+    ShortcutScope messageScope = ShortcutScope::fx;
     std::vector<size_t> visible;
     int selectedInScope[2]{};
-    bool created = false, capturing = false, accepted = false;
+    bool created = false, capturing = false, editingCustom = false, accepted = false;
 };
 int scopeIndex(ShortcutScope scope) { return scope == ShortcutScope::fx ? 0 : 1; }
 int listSelection(HWND list) { return static_cast<int>(SendMessageW(list, LB_GETCURSEL, 0, 0)); }
@@ -93,14 +136,91 @@ void updateSelection(DialogState* st) {
     if (index >= 0 && index < static_cast<int>(st->visible.size()))
         st->selectedInScope[scopeIndex(st->currentScope)] = index;
 }
+void fillMessageParts(DialogState* st, int selected = 0) {
+    TitleMessage& cfg = titleFor(st->pending, st->messageScope);
+    const int count = titlePartCount(st->messageScope);
+    const wchar_t* fxNames[] = {L"FX Params", L"Plugin", L"Track", L"Custom message"};
+    const wchar_t* trackNames[] = {L"Track Params", L"Track", L"Custom message"};
+    SendMessageW(st->messages, LB_RESETCONTENT, 0, 0);
+    for (int i = 0; i < count; ++i) {
+        const int part = cfg.order[static_cast<size_t>(i)];
+        const bool custom = part == customPart(st->messageScope);
+        std::wstring line = custom ? L"Custom message" :
+            (st->messageScope == ShortcutScope::fx ? fxNames[part] : trackNames[part]);
+        if (custom) {
+            if (!cfg.custom.empty()) line += L": " + cfg.custom;
+            line += L" (Enter to edit)";
+        } else if (!cfg.enabled[static_cast<size_t>(part)]) line = L"Disabled - " + line;
+        SendMessageW(st->messages, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(line.c_str()));
+    }
+    selectList(st->messages, std::clamp(selected, 0, count - 1));
+}
 void updateChoices(DialogState* st) {
-    const wchar_t* const messageOptions[] = {L"Plugin - Track", L"Track - Plugin"};
     const wchar_t* const backendOptions[] = {
         L"1 - REAPER SDK accelerator (recommended default)",
         L"2 - Main-thread keyboard hook (compatibility)"
     };
-    buildChoices(st->messages, st->pending.pluginFirst ? 0 : 1, messageOptions, 2);
     buildChoices(st->advanced, st->pending.compatibilityHook ? 1 : 0, backendOptions, 2);
+}
+void closeCustomEditor(DialogState* st, bool commit) {
+    if (!st->editingCustom) return;
+    if (commit) {
+        wchar_t buffer[241]{};
+        GetWindowTextW(st->customEdit, buffer, 241);
+        TitleMessage& cfg = titleFor(st->pending, st->messageScope);
+        cfg.custom = buffer;
+        normalizeTitle(cfg, titlePartCount(st->messageScope));
+    }
+    st->editingCustom = false;
+    ShowWindow(st->customEdit, SW_HIDE);
+    ShowWindow(st->customLabel, SW_HIDE);
+    const int selection = listSelection(st->messages);
+    fillMessageParts(st, selection);
+    SetFocus(st->messages);
+}
+void startCustomEditor(DialogState* st) {
+    const int selection = listSelection(st->messages);
+    const TitleMessage& cfg = titleFor(st->pending, st->messageScope);
+    const int count = titlePartCount(st->messageScope);
+    if (selection < 0 || selection >= count ||
+        cfg.order[static_cast<size_t>(selection)] != customPart(st->messageScope)) return;
+    st->editingCustom = true;
+    SetWindowTextW(st->customEdit, cfg.custom.c_str());
+    ShowWindow(st->customLabel, SW_SHOW);
+    ShowWindow(st->customEdit, SW_SHOW);
+    SetFocus(st->customEdit);
+    SendMessageW(st->customEdit, EM_SETSEL, 0, -1);
+}
+void toggleMessagePart(DialogState* st) {
+    const int selected = listSelection(st->messages);
+    const int count = titlePartCount(st->messageScope);
+    if (selected < 0 || selected >= count) return;
+    TitleMessage& cfg = titleFor(st->pending, st->messageScope);
+    const int part = cfg.order[static_cast<size_t>(selected)];
+    if (part == customPart(st->messageScope)) return; // Custom is edited using Enter.
+    cfg.enabled[static_cast<size_t>(part)] = !cfg.enabled[static_cast<size_t>(part)];
+    fillMessageParts(st, selected);
+    // Report the resulting state immediately without opening a confirmation.
+    const wchar_t* fxNames[] = {L"FX Params", L"Plugin", L"Track"};
+    const wchar_t* trackNames[] = {L"Track Params", L"Track"};
+    const std::wstring feedback = std::wstring(cfg.enabled[static_cast<size_t>(part)] ? L"Enabled - " : L"Disabled - ") +
+        (st->messageScope == ShortcutScope::fx ? fxNames[part] : trackNames[part]);
+    if (st->announce) st->announce(toUtf8(feedback));
+}
+void reorderMessagePart(DialogState* st, int direction) {
+    const int selected = listSelection(st->messages);
+    const int count = titlePartCount(st->messageScope);
+    const int dest = selected + direction;
+    if (selected < 0 || dest < 0 || dest >= count) return;
+    auto& order = titleFor(st->pending, st->messageScope).order;
+    std::swap(order[static_cast<size_t>(selected)], order[static_cast<size_t>(dest)]);
+    fillMessageParts(st, dest);
+}
+void announceCapture(DialogState* st, HWND capture, const std::wstring& message) {
+    // Keep the entry and keyboard focus unchanged: the user can immediately
+    // try a different gesture. OSARA reads this at once without OK or Escape.
+    SetWindowTextW(capture, message.c_str());
+    if (st->announce) st->announce(toUtf8(message));
 }
 void cancelCapture(DialogState* st) {
     st->capturing = false;
@@ -121,10 +241,14 @@ void showPage(DialogState* st, Page page) {
     if (!st->created) return;
     st->page = page;
     if (st->capturing) cancelCapture(st);
+    if (st->editingCustom) closeCustomEditor(st, true);
+    ShowWindow(st->messageTopics, page == Page::messages ? SW_SHOW : SW_HIDE);
     ShowWindow(st->messages, page == Page::messages ? SW_SHOW : SW_HIDE);
     ShowWindow(st->advanced, page == Page::advanced ? SW_SHOW : SW_HIDE);
     ShowWindow(st->shortcuts, page == Page::shortcuts ? SW_SHOW : SW_HIDE);
     ShowWindow(st->capture, SW_HIDE);
+    ShowWindow(st->customEdit, SW_HIDE);
+    ShowWindow(st->customLabel, SW_HIDE);
 }
 HWND lastPageControl(DialogState* st) {
     switch (st->page) {
@@ -138,10 +262,13 @@ HWND lastPageControl(DialogState* st) {
 // the FX Params/Track Params scope is selected as a child in the native tree.
 void pageTab(DialogState* st, HWND from, bool backward) {
     HWND next = st->tree;
-    if (from == st->tree) next = backward ? st->cancel : lastPageControl(st);
+    if (from == st->tree) next = backward ? st->cancel : (st->page == Page::messages ? st->messageTopics : lastPageControl(st));
     else if (from == st->cancel) next = backward ? st->ok : st->tree;
     else if (from == st->ok) next = backward ? lastPageControl(st) : st->cancel;
-    else if (from == lastPageControl(st)) next = backward ? st->tree : st->ok;
+    else if (st->page == Page::messages && from == st->messageTopics)
+        next = backward ? st->tree : st->messages;
+    else if (from == lastPageControl(st))
+        next = backward ? (st->page == Page::messages ? st->messageTopics : st->tree) : st->ok;
     if (next && IsWindowVisible(next) && IsWindowEnabled(next)) SetFocus(next);
 }
 HTREEITEM insertNode(HWND tree, HTREEITEM parent, const wchar_t* text) {
@@ -161,15 +288,39 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
     if (hwnd == st->ok || hwnd == st->cancel)
         return DefSubclassProc(hwnd, msg, wp, lp);
     if (msg == WM_GETDLGCODE) return DefSubclassProc(hwnd, msg, wp, lp) | DLGC_WANTTAB | DLGC_WANTALLKEYS;
+    // READONLY EDIT gets WM_CHAR even when we consumed WM_KEYDOWN; otherwise
+    // Windows can sound its default invalid-input beep during shortcut capture.
+    if (hwnd == st->capture && (msg == WM_CHAR || msg == WM_SYSCHAR)) return 0;
+    if (hwnd == st->customEdit && msg == WM_CHAR &&
+        (wp == VK_RETURN || wp == VK_ESCAPE || wp == VK_TAB)) return 0;
     // Some Win32 controls beep on translated Tab characters after focus has
     // already changed. The modal pump consumes the physical Tab, and this
     // fallback consumes the character so there is no native error tone.
     if (msg == WM_CHAR && wp == VK_TAB) return 0;
+    // Alt+Up/Down are handled by the message-part list, not the system menu.
+    if (hwnd == st->messages && msg == WM_SYSCHAR && (wp == VK_UP || wp == VK_DOWN)) return 0;
     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
         const UINT vk = static_cast<UINT>(wp);
         const bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
         const bool ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
         const bool alt = (GetKeyState(VK_MENU) & 0x8000) != 0;
+        if (hwnd == st->customEdit) {
+            if (vk == VK_RETURN && !alt) {
+                closeCustomEditor(st, true);
+                if (ctrl) SendMessageW(st->hwnd, WM_COMMAND, IDOK, 0);
+                return 0;
+            }
+            if (vk == VK_ESCAPE && !ctrl && !alt) { closeCustomEditor(st, false); return 0; }
+            if (vk == VK_TAB && !ctrl && !alt) {
+                closeCustomEditor(st, true);
+                pageTab(st, st->messages, shift);
+                return 0;
+            }
+            return DefSubclassProc(hwnd, msg, wp, lp);
+        }
+        if (hwnd == st->messages && alt && !ctrl && (vk == VK_UP || vk == VK_DOWN)) {
+            reorderMessagePart(st, vk == VK_UP ? -1 : 1); return 0;
+        }
         if (hwnd != st->capture && alt) {
             if (vk == '1' || vk == '2') {
                 st->pending.compatibilityHook = vk == '2';
@@ -197,16 +348,19 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
                 (vk == VK_F12 && !ctrl) || vk == VK_INSERT || vk == VK_NUMPAD0 ||
                 (vk == VK_SPACE && ctrl) ||
                 (alt && (vk == VK_F10 || vk == VK_F11 || vk == VK_F12))) {
-                MessageBeep(MB_ICONWARNING);
-                SetWindowTextW(hwnd, L"Reserved shortcut. Try another key."); return 0;
+                announceCapture(st, hwnd, L"Reserved shortcut: " + keyName(candidate) +
+                    L". Try another shortcut.");
+                return 0;
             }
             if (st->visible.empty()) return 0;
             const size_t selected = st->visible[static_cast<size_t>(st->selectedInScope[scopeIndex(st->currentScope)])];
             for (size_t i = 0; i < st->pending.shortcuts.size(); ++i) {
                 if (i != selected && st->pending.shortcuts[i].scope == st->currentScope &&
                     same(st->pending.shortcuts[i].assigned, candidate)) {
-                    MessageBeep(MB_ICONWARNING);
-                    SetWindowTextW(hwnd, L"Already assigned in this list. Try another key."); return 0;
+                    announceCapture(st, hwnd, keyName(candidate) +
+                        L" is already assigned to " + st->pending.shortcuts[i].description +
+                        L". Try another shortcut.");
+                    return 0;
                 }
             }
             st->pending.shortcuts[selected].assigned = candidate;
@@ -224,7 +378,13 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
         if (hwnd == st->shortcuts && vk == VK_RETURN && !ctrl && !alt) {
             startCapture(st); return 0;
         }
-        if ((hwnd == st->messages || hwnd == st->advanced) && vk == VK_SPACE && !ctrl && !alt) {
+        if (hwnd == st->messages && vk == VK_RETURN && !ctrl && !alt) {
+            startCustomEditor(st); return 0;
+        }
+        if (hwnd == st->messages && vk == VK_SPACE && !ctrl && !alt) {
+            toggleMessagePart(st); return 0;
+        }
+        if (hwnd == st->advanced && vk == VK_SPACE && !ctrl && !alt) {
             const int count = static_cast<int>(SendMessageW(hwnd, LB_GETCOUNT, 0, 0));
             if (count > 0) {
                 const int next = (listSelection(hwnd) + 1) % count;
@@ -255,7 +415,18 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             252, 381, 465, 29, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_CAPTURE)), nullptr, nullptr);
         st->messages = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
-            252, 18, 465, 160, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_MESSAGES)), nullptr, nullptr);
+            252, 121, 465, 240, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_MESSAGES)), nullptr, nullptr);
+        st->messageTopics = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
+            WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
+            252, 18, 465, 89, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_MESSAGE_TOPICS)), nullptr, nullptr);
+        st->customLabel = CreateWindowW(L"STATIC", L"Custom message:", WS_CHILD,
+            252, 367, 465, 18, hwnd, nullptr, nullptr, nullptr);
+        st->customEdit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
+            WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL,
+            252, 384, 465, 28, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_CUSTOM_EDIT)), nullptr, nullptr);
+        SendMessageW(st->customEdit, EM_LIMITTEXT, 240, 0);
+        SendMessageW(st->messageTopics, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Title"));
+        selectList(st->messageTopics, 0);
         st->advanced = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
             252, 18, 465, 160, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_ADVANCED)), nullptr, nullptr);
@@ -263,19 +434,23 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             508, 434, 98, 32, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDOK)), nullptr, nullptr);
         st->cancel = CreateWindowW(L"BUTTON", L"&Cancel", WS_CHILD | WS_VISIBLE | WS_TABSTOP,
             618, 434, 98, 32, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDCANCEL)), nullptr, nullptr);
-        for (HWND control : {st->tree, st->shortcuts, st->capture, st->messages, st->advanced, st->ok, st->cancel})
+        for (HWND control : {st->tree, st->shortcuts, st->capture, st->messages, st->messageTopics, st->customLabel, st->customEdit, st->advanced, st->ok, st->cancel})
             SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
-        for (HWND control : {st->tree, st->shortcuts, st->capture, st->messages,
+        for (HWND control : {st->tree, st->shortcuts, st->capture, st->messages, st->messageTopics, st->customEdit,
                              st->advanced, st->ok, st->cancel})
             SetWindowSubclass(control, pageProc, 1, reinterpret_cast<DWORD_PTR>(st));
         fillShortcuts(st);
+        fillMessageParts(st);
         updateChoices(st);
         st->nodes[0] = insertNode(st->tree, TVI_ROOT, L"Messages");
+        st->fxMsgNode = insertNode(st->tree, st->nodes[0], L"FX Params");
+        st->trackMsgNode = insertNode(st->tree, st->nodes[0], L"Track Params");
         st->nodes[1] = insertNode(st->tree, TVI_ROOT, L"Shortcuts");
         st->fxNode = insertNode(st->tree, st->nodes[1], L"FX Params");
         st->trackNode = insertNode(st->tree, st->nodes[1], L"Track Params");
         st->nodes[2] = insertNode(st->tree, TVI_ROOT, L"Advanced");
         // Child categories are directly accessible with Down/Up.
+        SendMessageW(st->tree, TVM_EXPAND, TVE_EXPAND, reinterpret_cast<LPARAM>(st->nodes[0]));
         SendMessageW(st->tree, TVM_EXPAND, TVE_EXPAND, reinterpret_cast<LPARAM>(st->nodes[1]));
         st->created = true;
         showPage(st, Page::messages);
@@ -288,6 +463,14 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         reinterpret_cast<LPNMHDR>(lp)->code == TVN_SELCHANGEDW) {
         const HTREEITEM selected = reinterpret_cast<LPNMTREEVIEWW>(lp)->itemNew.hItem;
         if (selected == st->nodes[0]) showPage(st, Page::messages);
+        else if (selected == st->fxMsgNode || selected == st->trackMsgNode) {
+            const ShortcutScope next = selected == st->fxMsgNode ? ShortcutScope::fx : ShortcutScope::track;
+            if (st->messageScope != next) {
+                st->messageScope = next;
+                fillMessageParts(st);
+            }
+            showPage(st, Page::messages);
+        }
         else if (selected == st->nodes[2]) showPage(st, Page::advanced);
         else if (selected == st->nodes[1]) showPage(st, Page::shortcuts);
         else if (selected == st->fxNode || selected == st->trackNode) {
@@ -333,17 +516,22 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         const int id = LOWORD(wp);
         const int notice = HIWORD(wp);
         if (id == IDOK || id == IDCANCEL) {
+            if (st->editingCustom) closeCustomEditor(st, id == IDOK);
             st->accepted = id == IDOK;
             st->hwnd = nullptr;
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
             DestroyWindow(hwnd);
             return 0;
         }
+        if (id == IDC_MESSAGE_TOPICS && notice == LBN_SELCHANGE) {
+            // Title is currently the only message category.
+            selectList(st->messageTopics, 0);
+            return 0;
+        }
         if (id == IDC_SHORTCUTS && notice == LBN_SELCHANGE) { updateSelection(st); return 0; }
         if (id == IDC_SHORTCUTS && notice == LBN_DBLCLK) { startCapture(st); return 0; }
-        if (id == IDC_MESSAGES && notice == LBN_SELCHANGE) {
-            st->pending.pluginFirst = listSelection(st->messages) == 0;
-            updateChoices(st); return 0;
+        if (id == IDC_MESSAGES && notice == LBN_DBLCLK) {
+            startCustomEditor(st); return 0;
         }
         if (id == IDC_ADVANCED && notice == LBN_SELCHANGE) {
             st->pending.compatibilityHook = listSelection(st->advanced) == 1;
@@ -544,13 +732,56 @@ Preferences defaultPreferences() {
         });
         if (!existing) unique.push_back(std::move(entry));
     }
-    return Preferences{p.pluginFirst, p.compatibilityHook, std::move(unique)};
+    p.shortcuts = std::move(unique);
+    p.trackTitle.enabled = {{true, true, false, false}};
+    return p;
 }
+namespace {
+std::wstring readIni(const std::wstring& path, const wchar_t* section, const wchar_t* key) {
+    std::array<wchar_t, 512> buffer{};
+    GetPrivateProfileStringW(section, key, L"", buffer.data(),
+        static_cast<DWORD>(buffer.size()), path.c_str());
+    return buffer.data();
+}
+void loadTitle(const std::wstring& path, const wchar_t* prefix, TitleMessage& cfg, int count) {
+    const std::wstring orderKey = std::wstring(prefix) + L"Order";
+    const std::wstring enabledKey = std::wstring(prefix) + L"Enabled";
+    const std::wstring customKey = std::wstring(prefix) + L"Custom";
+    const std::wstring order = readIni(path, L"Messages", orderKey.c_str());
+    const std::wstring enabled = readIni(path, L"Messages", enabledKey.c_str());
+    if (static_cast<int>(order.size()) == count) {
+        for (int i = 0; i < count; ++i) cfg.order[static_cast<size_t>(i)] = order[static_cast<size_t>(i)] - L'0';
+    }
+    if (static_cast<int>(enabled.size()) == count) {
+        for (int i = 0; i < count; ++i) cfg.enabled[static_cast<size_t>(i)] = enabled[static_cast<size_t>(i)] == L'1';
+    }
+    cfg.custom = readIni(path, L"Messages", customKey.c_str());
+    normalizeTitle(cfg, count);
+}
+bool saveTitle(const std::wstring& path, const wchar_t* prefix, const TitleMessage& cfg, int count) {
+    const std::wstring orderKey = std::wstring(prefix) + L"Order";
+    const std::wstring enabledKey = std::wstring(prefix) + L"Enabled";
+    const std::wstring customKey = std::wstring(prefix) + L"Custom";
+    std::wstring order, enabled;
+    for (int i = 0; i < count; ++i) {
+        order += static_cast<wchar_t>(L'0' + cfg.order[static_cast<size_t>(i)]);
+        enabled += cfg.enabled[static_cast<size_t>(i)] ? L'1' : L'0';
+    }
+    return WritePrivateProfileStringW(L"Messages", orderKey.c_str(), order.c_str(), path.c_str()) &&
+           WritePrivateProfileStringW(L"Messages", enabledKey.c_str(), enabled.c_str(), path.c_str()) &&
+           WritePrivateProfileStringW(L"Messages", customKey.c_str(), cfg.custom.c_str(), path.c_str());
+}
+} // namespace
 Preferences loadPreferences(const std::filesystem::path& file) {
     Preferences p = defaultPreferences();
     const std::wstring path = file.wstring();
     p.pluginFirst = GetPrivateProfileIntW(L"Messages", L"PluginFirst", 1, path.c_str()) != 0;
     p.compatibilityHook = GetPrivateProfileIntW(L"Keyboard", L"CompatibilityHook", 0, path.c_str()) != 0;
+    // Upgrade the previous two-way "PluginFirst" setting without losing it.
+    const auto legacy = readIni(path, L"Messages", L"FxTitleOrder");
+    if (legacy.empty() && !p.pluginFirst) p.fxTitle.order = {{0, 2, 1, 3}};
+    loadTitle(path, L"FxTitle", p.fxTitle, 4);
+    loadTitle(path, L"TrackTitle", p.trackTitle, 3);
     for (size_t i = 0; i < p.shortcuts.size(); ++i) {
         const std::wstring key = L"Shortcut" + std::to_wstring(i);
         const int value = GetPrivateProfileIntW(L"Shortcuts", key.c_str(), -1, path.c_str());
@@ -569,6 +800,7 @@ Preferences loadPreferences(const std::filesystem::path& file) {
 bool savePreferences(const std::filesystem::path& file, const Preferences& p) {
     const std::wstring path = file.wstring();
     if (!WritePrivateProfileStringW(L"Messages", L"PluginFirst", p.pluginFirst ? L"1" : L"0", path.c_str())) return false;
+    if (!saveTitle(path, L"FxTitle", p.fxTitle, 4) || !saveTitle(path, L"TrackTitle", p.trackTitle, 3)) return false;
     if (!WritePrivateProfileStringW(L"Keyboard", L"CompatibilityHook", p.compatibilityHook ? L"1" : L"0", path.c_str())) return false;
     for (size_t i = 0; i < p.shortcuts.size(); ++i) {
         const Key& k = p.shortcuts[i].assigned;
@@ -579,7 +811,8 @@ bool savePreferences(const std::filesystem::path& file, const Preferences& p) {
     }
     return true;
 }
-std::optional<Preferences> editPreferences(HWND owner, const Preferences& current) {
+std::optional<Preferences> editPreferences(HWND owner, const Preferences& current,
+    const std::function<void(const std::string&)>& announce) {
     static bool registered = false;
     if (!registered) {
         INITCOMMONCONTROLSEX common{sizeof(INITCOMMONCONTROLSEX), ICC_TREEVIEW_CLASSES};
@@ -590,7 +823,7 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
         if (!RegisterClassW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) return std::nullopt;
         registered = true;
     }
-    DialogState state; state.pending = current;
+    DialogState state; state.pending = current; state.announce = announce;
     // Disable the owner before displaying the popup, as for a native modal
     // Win32 dialog. A disabled owner cannot compete with its dialog for focus.
     const bool disabledOwner = owner && IsWindow(owner) && IsWindowEnabled(owner);
@@ -627,8 +860,13 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
                 SetFocus(state.tree);
                 continue;
             }
+            if (focused == state.customEdit && state.editingCustom) {
+                closeCustomEditor(&state, true);
+                pageTab(&state, state.messages, (GetKeyState(VK_SHIFT) & 0x8000) != 0);
+                continue;
+            }
             if (focused == state.tree || focused == state.shortcuts ||
-                focused == state.messages || focused == state.advanced ||
+                focused == state.messages || focused == state.messageTopics || focused == state.advanced ||
                 focused == state.ok || focused == state.cancel) {
                 pageTab(&state, focused, (GetKeyState(VK_SHIFT) & 0x8000) != 0);
                 continue;
@@ -669,4 +907,50 @@ Key mapPreferredShortcut(Key key, const Preferences& p, ShortcutScope scope) noe
 }
 void setFxNameFirst(bool value) noexcept { nameFirst = value; }
 bool fxNameFirst() noexcept { return nameFirst; }
+} // namespace lrp
+
+// Ordered, individually enabled title parts. No redundant separators if an
+// element is disabled or the custom text is blank.
+namespace lrp {
+void setTitleMessages(const Preferences& settings) {
+    activeFxTitle = settings.fxTitle;
+    activeTrackTitle = settings.trackTitle;
+    normalizeTitle(activeFxTitle, 4);
+    normalizeTitle(activeTrackTitle, 3);
+}
+std::string formatFxTitle(const std::string& fx, const std::string& track,
+    const std::string& status) {
+    const std::string names[] = {"FX Params", fx, track, toUtf8(activeFxTitle.custom)};
+    std::string result;
+    for (int i = 0; i < 4; ++i) {
+        const int part = activeFxTitle.order[static_cast<size_t>(i)];
+        if (part < 0 || part >= 4 || !activeFxTitle.enabled[static_cast<size_t>(part)] || names[part].empty()) continue;
+        if (!result.empty()) result += " - ";
+        result += names[part];
+    }
+    if (result.empty()) result = "FX Params"; // Never leave a nameless accessible window.
+    if (!status.empty()) {
+        // Preserve the original announcement order when the heading is first:
+        // "FX Params. Bypassed. Plugin - Track".
+        if (activeFxTitle.order[0] == 0 && activeFxTitle.enabled[0]) {
+            const std::string prefix = "FX Params - ";
+            if (result.compare(0, prefix.size(), prefix) == 0)
+                result = "FX Params. " + status + ". " + result.substr(prefix.size());
+            else if (result == "FX Params") result += ". " + status;
+            else result += ". " + status;
+        } else result += ". " + status;
+    }
+    return result;
+}
+std::wstring formatTrackTitle(const std::wstring& track) {
+    const std::wstring names[] = {L"Track Params", track, activeTrackTitle.custom};
+    std::wstring result;
+    for (int i = 0; i < 3; ++i) {
+        const int part = activeTrackTitle.order[static_cast<size_t>(i)];
+        if (part < 0 || part >= 3 || !activeTrackTitle.enabled[static_cast<size_t>(part)] || names[part].empty()) continue;
+        if (!result.empty()) result += L" - ";
+        result += names[part];
+    }
+    return result.empty() ? L"Track Params" : result;
+}
 } // namespace lrp

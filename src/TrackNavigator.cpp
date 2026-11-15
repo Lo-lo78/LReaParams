@@ -1,4 +1,5 @@
 #include "lrp/TrackNavigator.h"
+#include "lrp/Preferences.h"
 #include "lrp/PeakWatcher.h"
 #include <algorithm>
 #include <cmath>
@@ -997,14 +998,15 @@ void TrackNavigator::announceTitle() {
 }
 std::wstring TrackNavigator::windowTitle() const {
     if (!active_) return L"Track Params";
+    const std::wstring configuredTitle = formatTrackTitle(wideUtf8(trackName()));
     if (page_ == Page::reaRoute && !memoryManager_)
-        return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + L" - ReaRoute";
+        return configuredTitle + L" - ReaRoute";
     if (page_ == Page::hardwareOutputs && !memoryManager_)
-        return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + L" - Hardware outputs";
+        return configuredTitle + L" - Hardware outputs";
     if (page_ == Page::trackMidi && !memoryManager_)
-        return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + L" - Track MIDI";
+        return configuredTitle + L" - Track MIDI";
     if (page_ == Page::fxTcp && !memoryManager_)
-        return std::wstring(L"Track Params - ") + wideUtf8(trackName()) +
+        return configuredTitle +
             (std::wstring(L" - ") + wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX") +
              (fxTcpListOpen_ ? L" - Add TCP parameters" : L" - TCP parameters")) +
             (numericEditing_ ? L" - Numeric edit" : filterEditing_ ? L" - Filter" : !(fxTcpListOpen_ ? fxTcpGridFilter_ : fxTcpMainFilter_).empty() ? L" - Filter active" : L"");
@@ -1014,7 +1016,7 @@ std::wstring TrackNavigator::windowTitle() const {
     }
     const wchar_t* pageSuffix = page_ == Page::tracks ? L"" :
                                 page_ == Page::sends ? L" - Sends" : L" - Receives";
-    return std::wstring(L"Track Params - ") + wideUtf8(trackName()) + pageSuffix +
+    return configuredTitle + pageSuffix +
            (numericEditing_ ? L" - Numeric edit" : filterEditing_ ? L" - Filter" : !filterQuery_.empty() ? L" - Filter active" : L"") +
            (valueMode_ ? L" - Value" : L"");
 }

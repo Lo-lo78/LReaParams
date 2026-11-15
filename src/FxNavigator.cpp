@@ -686,6 +686,7 @@ std::string FxNavigator::fxWindowTitleBase(bool memories) const {
     const std::string status = statusSummary();
     // Keep legacy title layout in the normal state, but precede context and FX
     // with active states (matching the exact requested Bypassed/Delta order).
+    if (!memories) return formatFxTitle(fxDisplayName(), contextName(), status);
     return name + (status.empty() ? " - " : ". " + status + ". ") +
            (fxNameFirst() ? fxDisplayName() + " - " + contextName() : contextName() + " - " + fxDisplayName());
 }

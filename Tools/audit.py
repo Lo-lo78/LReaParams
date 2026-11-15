@@ -144,8 +144,8 @@ def main():
     # Shortcuts and the on-open instructional static has been removed.
     # Keep the creation count restricted so additional focus-owning windows
     # cannot be introduced without updating this explicit safety audit.
-    check(preferences_src.count('CreateWindowExW(') == 6 and
-          preferences_src.count('CreateWindowW(') == 2,
+    check(preferences_src.count('CreateWindowExW(') == 8 and
+          preferences_src.count('CreateWindowW(') == 3,
           'Preferences native dialog window/child creation contract changed')
     for marker in ['L"LReaParamsPreferencesV1"', 'RegisterClassW(', 'WS_EX_DLGMODALFRAME',
                    'WS_EX_CONTROLPARENT', 'SetWindowSubclass(', 'IsDialogMessageW(',
@@ -156,10 +156,11 @@ def main():
                    'L"Messages"', 'L"Shortcuts"', 'L"Advanced"',
                    'L"FX Params"', 'L"Track Params"', 'DLGC_WANTTAB',
                    'Page::messages', 'Page::shortcuts', 'Page::advanced',
-                   'L"Plugin - Track"', 'L"Track - Plugin"',
+                   'L"Title"', 'L"Custom message"',
                    'ShortcutScope::track', 'ShortcutScope::fx',
                    'st->ok', 'st->cancel', 'pageTab(&state',
                    'st->fxNode = insertNode', 'st->trackNode = insertNode',
+                   'st->fxMsgNode = insertNode', 'st->trackMsgNode = insertNode',
                    'TVM_EXPAND', 'WM_ACTIVATE', 'kRestoreFocus',
                    '!taskSwitch && IsDialogMessageW', 'WM_CHAR']:
         check(marker in preferences_src, 'Preferences tree/keymap regression: ' + marker)

@@ -46,6 +46,7 @@ public:
         preferencesPath_ = resource_ / L"LReaParams" / L"Preferences.ini";
         preferences_ = loadPreferences(preferencesPath_);
         setFxNameFirst(preferences_.pluginFirst);
+        setTitleMessages(preferences_);
         backend_ = preferences_.compatibilityHook ? InputBackend::mainThreadHook : InputBackend::sdkAccelerator;
         input_.setPreferences(&preferences_);
         navigator_.setResourceRoot(resource_);
@@ -183,18 +184,58 @@ public:
             break;
         }
         case preferencesAction: {
-            exitNavigation(false);
-            const auto edited = editPreferences(info_.hwnd_main, preferences_);
-            if (!edited) { speak("Preferences cancelled. Changes not saved"); break; }
-            std::error_code ec;
-            fs::create_directories(preferencesPath_.parent_path(), ec);
-            if (ec || !savePreferences(preferencesPath_, *edited)) {
-                speak("Unable to save preferences. No changes applied"); break;
+            if (preferencesDialogOpen_) break;
+            // Ctrl+P comes from a live navigator. Keep its entire state (FX,
+            // track, page, selected parameter/occurrence, grid and editors).
+            // The independent action, when no navigator is active, returns
+            // directly to REAPER as before.
+            Navigator* suspended = current_ && current_->active() &&
+                (current_ == &navigator_ || current_ == &trackNavigator_) ? current_ : nullptr;
+            preferencesDialogOpen_ = true; // Block reentrant timer ticks in the modal message loop.
+            if (suspended) {
+                // The native Win32 EDIT can still contain uncommitted text;
+                // preserve its buffer before hiding the keyboard window.
+                if (titleProxyActive_ && current_ == &navigator_ && navigator_.nativeTextField())
+                    navigator_.setNativeText(titleProxy_.textValue());
+                else if (titleProxyActive_ && current_ == &trackNavigator_ && trackNavigator_.nativeTextField())
+                    trackNavigator_.setNativeText(titleProxy_.textValue());
+                input_.stop();
+                titleProxy_.hideAndRestore();
+                titleProxyActive_ = false;
+            } else {
+                exitNavigation(false);
             }
-            preferences_ = *edited;
-            setFxNameFirst(preferences_.pluginFirst);
-            backend_ = preferences_.compatibilityHook ? InputBackend::mainThreadHook : InputBackend::sdkAccelerator;
-            speak("Preferences saved");
+            const auto edited = editPreferences(info_.hwnd_main, preferences_,
+                [this](const std::string& text) { speak(text); });
+            if (!edited) {
+                speak("Preferences cancelled. Changes not saved");
+            } else {
+                std::error_code ec;
+                fs::create_directories(preferencesPath_.parent_path(), ec);
+                if (ec || !savePreferences(preferencesPath_, *edited)) {
+                    speak("Unable to save preferences. No changes applied");
+                } else {
+                    preferences_ = *edited;
+                    setFxNameFirst(preferences_.pluginFirst);
+                    setTitleMessages(preferences_);
+                    backend_ = preferences_.compatibilityHook ? InputBackend::mainThreadHook : InputBackend::sdkAccelerator;
+                    speak("Preferences saved");
+                }
+            }
+            // Restore the same navigator object without calling begin() or
+            // end(): those methods reset page/parameter/session state.
+            // Validate identities before returning control to avoid driving
+            // a stale track or FX after the modal dialog was open.
+            if (suspended) {
+                if (current_ == suspended && suspended->active() &&
+                    suspended->contextUnchanged() && suspended->uiStillOpen()) {
+                    launchNavigator(suspended, true);
+                } else {
+                    exitNavigation(false);
+                    speak("Navigation context changed. Back to REAPER");
+                }
+            }
+            preferencesDialogOpen_ = false;
             break;
         }
         case openGuide: {
@@ -343,19 +384,23 @@ public:
         // Return 1 so REAPER won't also process the original key for search.
         return action(actions_[fxParams].command) ? 1 : 0;
     }
-    void launchNavigator(Navigator* desired) {
-                // Reopening the very same FX transfers control back to the
-                // foreground and prevents two contexts driving one parameter.
-                if (desired == &navigator_ && backgroundMidi_.sameMidiFx(navigator_))
-                    backgroundMidi_.end();
-                // No two navigators may apply the same incoming MIDI CC.
-                backgroundTrackMidi_.end();
-                if (desired == &trackNavigator_) backgroundMidi_.end();
+    void launchNavigator(Navigator* desired, bool resumeAfterPreferences = false) {
+                // Restoring after Ctrl+P must not stop a parked MIDI context,
+                // select a different track or reset the navigator's position.
+                if (!resumeAfterPreferences) {
+                    // Reopening the very same FX transfers control back to the
+                    // foreground and prevents two contexts driving one parameter.
+                    if (desired == &navigator_ && backgroundMidi_.sameMidiFx(navigator_))
+                        backgroundMidi_.end();
+                    // No two navigators may apply the same incoming MIDI CC.
+                    backgroundTrackMidi_.end();
+                    if (desired == &trackNavigator_) backgroundMidi_.end();
+                }
                 current_ = desired;
                 // The track owning an FX (also a Take FX) must be the real
                 // TCP selection when opening FX Params. Otherwise Escape can
                 // return to the track that was selected BEFORE the FX switch.
-                if (desired == &navigator_ && !navigator_.isMemoryManager()) {
+                if (!resumeAfterPreferences && desired == &navigator_ && !navigator_.isMemoryManager()) {
                     MediaTrack* fxTrack = navigator_.cursorTrack();
                     ReaProject* project = EnumProjects(-1, nullptr, 0);
                     if (project && fxTrack && ValidatePtr2(project, fxTrack, "MediaTrack*") &&
@@ -390,7 +435,8 @@ public:
                 else {
                     // The accessible non-editable review label is populated before focus.
                     // Issue one explicit contextual OSARA announcement.
-                    desired->announceTitle();
+                    if (resumeAfterPreferences) desired->announce();
+                    else desired->announceTitle();
                 }
                 refreshToggles();
     }
@@ -493,6 +539,10 @@ public:
     }
     void tick() {
         if (GetCurrentThreadId() != mainThread_) { fail(); return; }
+        // editPreferences() runs a nested message loop. Its timer callbacks
+        // must never interpret the temporarily hidden title proxy or stopped
+        // input router as the end of an FX/Track navigation session.
+        if (preferencesDialogOpen_) return;
         if (startupImportCheckPending_ && IsWindowVisible(info_.hwnd_main) &&
             IsWindowEnabled(info_.hwnd_main)) {
             startupImportCheckPending_ = false;
@@ -763,6 +813,7 @@ private:
     bool hookRegistered_ = false, toggleRegistered_ = false, menuRegistered_ = false, timerRegistered_ = false, announceImport_ = false;
     bool startupImportCheckPending_ = false;
     bool titleModeEnabled_ = true, titleProxyActive_ = false;
+    bool preferencesDialogOpen_ = false;
     accelerator_register_t fxChainAccel_{};
     bool fxChainAccelRegistered_ = false;
     enum ActionIndex { fxParams, trackParams, importLegacy, importSelectedTxt, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, openGuide, preferencesAction, actionCount };
