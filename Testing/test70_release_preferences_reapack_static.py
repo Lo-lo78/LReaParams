@@ -1,6 +1,7 @@
 """0.0.70 version, accessible Preferences and non-destructive ReaPack publisher."""
 from pathlib import Path
 import importlib.util
+from reapack_index_contract import verify_optional_reapack_index
 import xml.etree.ElementTree as ET
 r=Path(__file__).resolve().parents[1]
 rd=lambda x:(r/x).read_text(encoding='utf-8')
@@ -27,7 +28,11 @@ assert 'types: [published]' in pub and 'ref: ${{ env.RELEASE_TAG }}' in pub
 assert 'git add index.xml' in pub and 'git add .' not in pub
 assert 'generate_reapack_index.py --output index.xml' in pub
 assert (r/'Docs/RELEASE_NOTES_0_0_69.md').is_file()
-assert not (r/'index.xml').exists(), 'Do not package the remote-generated index.xml'
+# A clean source ZIP has no index.xml, but a GitHub checkout of main
+# legitimately contains the catalog committed by the ReaPack publisher.
+# The protected push script restores that remote version before each commit.
+# Validate it when present; do not reject or remove the history.
+verify_optional_reapack_index(r)
 spec=importlib.util.spec_from_file_location('reapack', r/'Tools/generate_reapack_index.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 def rel(v):
