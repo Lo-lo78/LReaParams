@@ -1,13 +1,13 @@
-# LReaParams 0.0.69 — pubblicazione GitHub e ReaPack senza perdere lo storico
+# LReaParams 0.0.70 — pubblicazione GitHub e ReaPack senza perdere lo storico
 
-**Non modificare né spostare i tag pubblicati, incluso v0.0.68.** La nuova release è `v0.0.69`.
+**Versione nuova:** `v0.0.70`. Non spostare, cancellare o ricreare i tag precedenti, incluso `v0.0.69`. Non sostituire `index.xml` né forzare i push.
 
-1. Copia il contenuto di questo sorgente nella cartella Git esistente. Conserva `.git`, `index.xml` e le impostazioni del repository. Non usare `git init`, `git push --force` o `git add -A` in una cartella errata.
-2. Dalla radice esegui `Tools\push_lreaparams.cmd "Release 0.0.69 - Used in F7 and persistent Used view"`. Se Git segnala conflitti o errori, non creare il tag.
-3. In Actions, controlla che **Build LReaParams Windows x64** per il commit appena inviato sia verde. Scarica `LReaParams-0.0.69-Windows-x64-SETUP-EXE` e verifica la presenza di `LReaParams-0.0.69-Windows-x64-Setup.exe`. Prova About e la funzione Used in F7 con NVDA/OSARA.
-4. Crea UNA release stabile: tag `v0.0.69`, target il commit compilato, titolo `LReaParams 0.0.69 - Used in F7 and Persistent Used View`. Copia la descrizione da `Docs/GITHUB_RELEASE_0_0_69_BODY_EN.md`, allega SOLO lo ZIP dell'installer della 0.0.69.
-5. Dopo Publish release apri Actions > Publish LReaParams to ReaPack. Se il run automatico non parte, usa **Run workflow** su `main` e inserisci `v0.0.69`. Non ricreare il tag.
-6. Controlla il job `build-native-release-asset` che allega `reaper_lreaparams.dll` alla release e il job `regenerate-reapack-index` che aggiorna solamente `index.xml` ricostruendo lo storico dalle release stabili con DLL.
-7. Verifica che `index.xml` elenchi la nuova `0.0.69` e le versioni precedenti. Una volta aggiornato l'indice con commit automatico, sincronizza il repository locale con `git pull --rebase origin main` prima di un nuovo push.
+1. Copia il contenuto dello ZIP **0.0.70 GitHub Ready** dentro il repository Git locale esistente. Conserva la cartella `.git`. Non fare `git init` e non copiare via il file `index.xml` che GitHub aggiorna automaticamente.
+2. Dalla radice del repository esegui: `Tools\push_lreaparams.cmd "Release 0.0.70 - Accessible Preferences, customizable titles and track selection"`. Lo script riprende `index.xml` da `origin/main`, crea il commit, esegue `git pull --rebase origin main` ed effettua un push normale, senza riscrivere lo storico.
+3. Apri **GitHub Actions → Build LReaParams Windows x64** per il commit inviato; deve terminare correttamente. Scarica l'artefatto `LReaParams-0.0.70-Windows-x64-SETUP-EXE` e verifica che contenga `LReaParams-0.0.70-Windows-x64-Setup.exe`. Controlla About, Preferences, Ctrl+P e la navigazione Track Params con NVDA e OSARA.
+4. Nella pagina **GitHub Releases → Draft a new release**, crea il nuovo tag `v0.0.70` **sul commit appena compilato**. Titolo consigliato: `LReaParams 0.0.70 - Accessible Preferences and Customizable Titles`. Incolla il contenuto di `Docs/GITHUB_RELEASE_0_0_70_BODY_EN.md`. Allega lo ZIP dell'installer **0.0.70**, non un setup vecchio.
+5. Pubblica una release **stabile**, NON Draft e NON Pre-release. **La pubblicazione della release**, non il push del sorgente, attiva automaticamente **GitHub Actions → Publish LReaParams to ReaPack** (`release: published`). Il tag deve essere esattamente `v0.0.70` e CMake deve dichiarare `0.0.70`.
+6. Il job `build-native-release-asset` ricompila dal tag e allega `reaper_lreaparams.dll` alla release; il job successivo `regenerate-reapack-index` ricrea `index.xml` da TUTTE le release stabili con DLL e pubblica il nuovo indice su `main`. Controlla che il run sia verde e che nell'indice siano presenti **0.0.70 e tutte le versioni storiche idonee**.
+7. Se il run automatico fallisce, correggi l'errore prima di procedere. La funzione **Run workflow** consente di ripetere il processo indicando `v0.0.70`, senza cambiare tag o indice. Dopo il commit automatico di ReaPack, sincronizza il clone locale con `git pull --rebase origin main` prima del prossimo lavoro.
 
-Non modificare manualmente lo storico in `index.xml` né cancellare asset delle release precedenti. Una modifica al generatore dell'indice non è necessaria per aggiungere una nuova release stabile.
+**Non modificare** `Tools\push_lreaparams.cmd`, `.github/workflows/publish-reapack.yml`, `Tools/generate_reapack_index.py` o `index.xml` per fare questa release. La storia Git e le release passate devono restare intatte.

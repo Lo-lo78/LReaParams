@@ -1,3 +1,12 @@
+## LReaParams 0.0.70 — Preferences and customizable speech (2026-11-15)
+
+- Native accessible Preferences action: tree navigation, Messages / Shortcuts / Advanced, remembered position, keyboard focus restoration and OK/Cancel persistence.
+- Ctrl+P opens Preferences without losing the current FX or Track Params parameter; the standalone REAPER action returns to TCP.
+- Independent remappable FX/Track keymaps with instant OSARA speech for duplicate bindings; persistent keyboard accelerator choice.
+- Reorderable, individually enabled FX and Track title elements with optional custom text; four FX title types and twelve Track title types.
+- Track F1 supports non-contiguous selection and first Shift+arrow anchors on the current track.
+- Updated About, installer, release artifacts and seven-language accessible HTML manuals; original ReaPack publishing automation and historical index generator unchanged.
+
 ## LReaParams 0.0.69 — Used in F7 and view persistence (2026-11-09)
 
 - The Used view remembers its place across Escape and FX changes, with per-FX project persistence.

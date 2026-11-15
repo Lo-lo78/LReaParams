@@ -1,3 +1,7 @@
+## Status: released in LReaParams 0.0.70 (15 November 2026)
+
+This document preserves the development TEST history. The first Shift+arrow now selects the **current** track without moving (the later TEST69 correction supersedes earlier experimental notes). For up-to-date instructions see `Docs/RELEASE_NOTES_0_0_70.md` and the 0.0.70 accessible HTML guides.
+
 # LReaParams 0.0.69 TEST — Preferences tree and focus
 
 The action `LReaParams: Preferences` (`_LREAPARAMSPREFERENCES`) opens a

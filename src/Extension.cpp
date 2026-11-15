@@ -272,8 +272,13 @@ public:
         case about:
             exitNavigation(false);
             ShowMessageBox(
-                "LReaParams 0.0.69 - Native REAPER extension\n\n"
+                "LReaParams 0.0.70 - Native REAPER extension\nRelease date: 15 November 2026\n\n"
                 "Accessible FX Params and Track Params for NVDA and OSARA.\n"
+                "New in 0.0.70: accessible Preferences tree with Messages, Shortcuts and Advanced.\n"
+                "Ctrl+P opens Preferences in FX or Track Params, retaining the exact navigator position after OK or Escape.\n"
+                "Preferences: independently remappable FX/Track shortcuts, instant spoken duplicate warnings, configurable title elements, and keyboard input backend.\n"
+                "Title elements: Space toggles fixed parts; Alt+Up/Down reorders; Enter edits a custom message; OK saves and Cancel discards.\n"
+                "Track F1: Shift+Up/Down first selects the current track; further presses extend the selection. Non-contiguous track selections are supported for routing.\n"
                 "iZotope RX 11: stabilized parameter readback prevents announcing the previous value; minor speech delay on RX only.\n"
                 "Concept and design: Lo-lo. Code developed with ChatGPT.\n\n"
                 "FX Params: 14 independent grids (Plugin, Custom, 12 Groups) retain width and position.\nFX Backspace: Backspace resets parameter; Ctrl+Backspace resets Step; Shift+Backspace resets Grid; press twice for Grid Size 1-400; Ctrl+Shift+Backspace resets all FX parameters.\nFX Params: F4 toggles Standard/Keyboard separately in each of 14 contexts; F7 editor remains Standard.\nKeyboard: 36 direct keys 1-0, Q-P, A-L, Z-M; Alt+Up/Down changes 36-parameter pages.\nKeyboard and Value: Page Up/Down use calibrated coarse steps; unassigned keys stay silent.\n"
@@ -311,7 +316,7 @@ public:
                 "Import legacy profiles: Y imports the old Lua TXT settings, N leaves them unchanged. "
                 "At startup the one-time question appears only when legacy TXT files are found. "
                 "Run Import legacy profiles later to import manually.\n"
-                "Settings: 1 chooses REAPER SDK keyboard accelerator (recommended), "
+                "Legacy Settings action: 1 chooses REAPER SDK keyboard accelerator (recommended), "
                 "2 chooses the compatibility hook. Escape keeps the mode unchanged. "
                 "This keyboard selection lasts only for the current REAPER session.",
                 "About LReaParams", 0);

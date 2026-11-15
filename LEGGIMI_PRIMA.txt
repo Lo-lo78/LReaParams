@@ -1,19 +1,19 @@
-LReaParams 0.0.69 — TEST68.1, sorgente COMPLETO per GitHub Actions
+LReaParams 0.0.70 — sorgente GitHub Ready (15 novembre 2026)
 
-PROVA, non nuova release. La versione pubblica su ReaPack resta 0.0.69.
-Questa TEST modifica soltanto il ripristino della vista Usati / Used.
-Se chiudi FX Params con Escape mentre sei in Usati, quando riapri lo
-stesso FX ritorni in Usati sul parametro scelto. Ctrl+Shift+L continua
-ad alternare Usati e il contesto precedente. Ogni FX ha memoria distinta.
+Novita': finestra Preferenze ad albero (Messages, Shortcuts, Advanced), shortcut
+personalizzabili indipendenti per FX e Track, titoli configurabili con
+riordino/attivazione e testo personalizzato, Ctrl+P con ripristino del parametro,
+selezione tracce non contigua con primo Shift+freccia sulla traccia corrente.
 
-Lo storico ReaPack e il file index.xml del repository NON devono essere
-sostituiti o cancellati. Questo archivio non li include.
+Questo archivio contiene il SORGENTE, non la DLL o il setup compilati.
+L'indice ReaPack e le versioni storiche NON devono essere cancellati.
 
-1. Estrai il sorgente nella cartella Git locale esistente; NON cancellare .git.
-2. Dalla radice del repository:
-   Tools\push_lreaparams.cmd "TEST68.1 - Remember Used view after Escape"
-3. Attendi il workflow Windows x64 su GitHub Actions. Prova in REAPER/NVDA.
-4. Leggi Docs/TEST68_1_USED_RESUME_IT.md per la sequenza di test.
+1. Estrai nella cartella Git locale gia' esistente; conserva .git e index.xml.
+2. Usa il comando protetto dalla radice del repository:
+   Tools\push_lreaparams.cmd "Release 0.0.70 - Accessible Preferences, customizable titles and track selection"
+3. Controlla il run Windows build; scarica il Setup 0.0.70 e provalo.
+4. Crea la release STABILE v0.0.70 sul commit testato e allega il Setup ZIP 0.0.70.
+5. Solo la pubblicazione della release attiva in automatico il workflow ReaPack.
+   Verifica DLL allegata, run completato e index.xml con TUTTE le vecchie versioni.
 
-NON pubblicare una release/tag v0.0.69, gia' esistente su ReaPack.
-Non usare questo ZIP come installer: la DLL/EXE deve essere compilata su GitHub.
+Vedi Docs/REAPACK_SETUP_IT.md per i dettagli. Non usare push --force.
