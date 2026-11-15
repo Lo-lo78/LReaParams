@@ -5,7 +5,7 @@
 #include "lrp/TitleProxy.h"
 #include "lrp/Storage.h"
 #include "lrp/ChoiceDialogs.h"
-#include "lrp/TempoAction.h"
+#include "lrp/Preferences.h"
 #include <shellapi.h>
 #include <array>
 #include <memory>
@@ -36,13 +36,18 @@ struct Action {
 };
 class Extension {
 public:
-    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), backgroundMidi_([this](const std::string& text) { speak(text); }), backgroundTrackMidi_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_), titleProxy_(info->hwnd_main), tempoAction_([this](const std::string& text) { speak(text); }) {}
+    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), backgroundMidi_([this](const std::string& text) { speak(text); }), backgroundTrackMidi_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_), titleProxy_(info->hwnd_main) {}
     ~Extension() { shutdown(); }
     void init() {
         if (REAPERAPI_LoadAPI(info_.GetFunc) != 0) throw std::runtime_error("Required REAPER API missing");
         mainThread_ = GetCurrentThreadId();
         const char* path = GetResourcePath(); if (!path || !*path) throw std::runtime_error("No resource path");
         resource_ = fs::u8path(path);
+        preferencesPath_ = resource_ / L"LReaParams" / L"Preferences.ini";
+        preferences_ = loadPreferences(preferencesPath_);
+        setFxNameFirst(preferences_.pluginFirst);
+        backend_ = preferences_.compatibilityHook ? InputBackend::mainThreadHook : InputBackend::sdkAccelerator;
+        input_.setPreferences(&preferences_);
         navigator_.setResourceRoot(resource_);
         backgroundMidi_.setResourceRoot(resource_);
         backgroundTrackMidi_.setResourceRoot(resource_);
@@ -177,6 +182,21 @@ public:
             }
             break;
         }
+        case preferencesAction: {
+            exitNavigation(false);
+            const auto edited = editPreferences(info_.hwnd_main, preferences_);
+            if (!edited) { speak("Preferences unchanged"); break; }
+            std::error_code ec;
+            fs::create_directories(preferencesPath_.parent_path(), ec);
+            if (ec || !savePreferences(preferencesPath_, *edited)) {
+                speak("Unable to save preferences. No changes applied"); break;
+            }
+            preferences_ = *edited;
+            setFxNameFirst(preferences_.pluginFirst);
+            backend_ = preferences_.compatibilityHook ? InputBackend::mainThreadHook : InputBackend::sdkAccelerator;
+            speak("Preferences saved");
+            break;
+        }
         case openGuide: {
             exitNavigation(false);
             // Prefer the data folder, which survives DLL updates and is writable.
@@ -273,12 +293,6 @@ public:
             }
             if (trackNavigator_.begin() && trackNavigator_.openTrackMemories(true))
                 launchNavigator(&trackNavigator_);
-            break;
-        case tempoDetection:
-            tempoAction_.start();
-            break;
-        case tempoMapping:
-            tempoAction_.startMap();
             break;
         case stopBackgroundMidi:
             backgroundMidi_.end();
@@ -479,7 +493,6 @@ public:
     }
     void tick() {
         if (GetCurrentThreadId() != mainThread_) { fail(); return; }
-        tempoAction_.tick();
         if (startupImportCheckPending_ && IsWindowVisible(info_.hwnd_main) &&
             IsWindowEnabled(info_.hwnd_main)) {
             startupImportCheckPending_ = false;
@@ -689,14 +702,12 @@ public:
             for (int i : {importLegacy, importSelectedTxt, openData, settings})
                 AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[i].command), actions_[i].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[nvdaTitle].command), actions_[nvdaTitle].menu);
-            AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[tempoDetection].command), actions_[tempoDetection].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[openGuide].command), actions_[openGuide].menu);
             AppendMenuW(sub, MF_STRING, static_cast<UINT_PTR>(actions_[about].command), actions_[about].menu);
             if (!AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(sub), L"LReaParams")) DestroyMenu(sub);
         } else if (flag == 1) updateMenu(menu);
     }
     void shutdown() noexcept {
-        tempoAction_.stop();
         input_.stop(); titleProxy_.shutdown(); titleProxyActive_ = false;
         backgroundMidi_.end(); backgroundTrackMidi_.end(); navigator_.end(); trackNavigator_.end(); current_ = nullptr;
         if (fxChainAccelRegistered_) {
@@ -735,16 +746,17 @@ private:
     Navigator* current_ = nullptr;
     InputRouter input_;
     TitleProxy titleProxy_;
-    TempoAction tempoAction_;
     ImportWorker importer_;
     fs::path resource_;
+    fs::path preferencesPath_;
+    Preferences preferences_ = defaultPreferences();
     InputBackend backend_ = InputBackend::sdkAccelerator;
     bool hookRegistered_ = false, toggleRegistered_ = false, menuRegistered_ = false, timerRegistered_ = false, announceImport_ = false;
     bool startupImportCheckPending_ = false;
     bool titleModeEnabled_ = true, titleProxyActive_ = false;
     accelerator_register_t fxChainAccel_{};
     bool fxChainAccelRegistered_ = false;
-    enum ActionIndex { fxParams, trackParams, importLegacy, importSelectedTxt, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, openGuide, tempoDetection, tempoMapping, actionCount };
+    enum ActionIndex { fxParams, trackParams, importLegacy, importSelectedTxt, openData, settings, about, fxMemories, trackMemories, nvdaTitle, stopBackgroundMidi, openGuide, preferencesAction, actionCount };
     std::array<Action, actionCount> actions_{{
         {"LREAPARAMSFXPARAMS", "LReaParams: FX Params", L"FX Params"},
         {"LREAPARAMSTRACKPARAMS", "LReaParams: Track Params", L"Track Params"},
@@ -758,8 +770,7 @@ private:
         {"LREAPARAMSNVDATITLE", "LReaParams: Accessibility Focus Window (toggle)", L"Accessibility Focus Window"},
         {"LREAPARAMSSTOPMIDIBACKGROUND", "LReaParams: Stop background MIDI", L"Stop background MIDI"},
         {"LREAPARAMSOPENUSERGUIDE", "LReaParams: Open User Guide", L"Open User Guide"},
-        {"LREAPARAMSDETECTITEMBPM", "LReaParams: Detect BPM from selected audio item and set project tempo", L"Detect BPM from selected audio item"},
-        {"LREAPARAMSCREATETEMPOMAP", "LReaParams: Create tempo map from selected audio item", L"Create tempo map from selected audio item"}
+        {"LREAPARAMSPREFERENCES", "LReaParams: Preferences", L"Preferences"}
     }};
 };
 int fxChainShortcutHook(MSG* msg, accelerator_register_t* ctx) noexcept {

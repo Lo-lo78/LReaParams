@@ -1,0 +1,22 @@
+# Preferences - experimental source test based on 0.0.69
+
+New REAPER action: `LReaParams: Preferences` (`_LREAPARAMSPREFERENCES`).
+The old `LReaParams: Settings (Keyboard Input)` (`_LREAPARAMSSETTINGS`) is untouched.
+
+The window has three columns:
+1. Shortcuts: one shortcut followed by its purpose. Navigate the list, Tab into the shortcut input, press the new chord; Escape cancels capture. Changes are staged until OK. Duplicate keys and reserved gestures are rejected. The initial catalog provides 32 common mapped gestures (NOT yet every conditional shortcut). Some core gestures (Escape, bare F12, transport-specific keys) are not remappable. Changes to a chord only apply when FX/Track Params owns the keyboard.
+2. Messages: Space cycles between FX-before-track (default) and track-before-FX. The preview uses the LB-303/bass example. FX Params/FX Memories title and FX context-switch speech honor the order.
+3. Keyboard input: Space cycles the REAPER SDK and compatibility hook. This new Preferences setting is persistent; the pre-existing single-purpose Settings action still applies per session.
+
+Saved only upon OK into `<REAPER resource path>/LReaParams/Preferences.ini`.
+
+IMPORTANT: Not compiled locally: Windows MSVC and REAPER SDK environment is required. Test in GitHub Actions before release. The shortcut catalog is an initial group, not an exhaustive inventory, and the runtime remapper needs in-REAPER validation across text fields, browser, FX Memories and F7.
+
+Suggested checks:
+- Default title is `FX Params - VST3i: LB-303 (Lo-lo) - bass`.
+- In Messages, Space changes the order; Cancel leaves order unchanged. OK persists after REAPER restart.
+- In Keyboard input, Space changes the backend; OK persists after restart.
+- Change Ctrl+F to Ctrl+Y; after OK Ctrl+Y invokes Search and Ctrl+F no longer invokes Search in the navigator.
+- Cancel another shortcut change, restart: previous assignment remains.
+- When native EDIT receives typing, no unwanted accelerator translation occurs.
+- The older `_LREAPARAMSSETTINGS` still chooses backend for the current session.

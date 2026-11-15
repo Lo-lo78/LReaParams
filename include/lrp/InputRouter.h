@@ -1,6 +1,7 @@
 #pragma once
 #include "Navigator.h"
 #include "ReaperApi.h"
+#include "Preferences.h"
 #include <array>
 
 namespace lrp {
@@ -10,6 +11,7 @@ public:
     explicit InputRouter(reaper_plugin_info_t* api, Navigator& navigator);
     ~InputRouter();
     bool start(InputBackend backend, HWND keyboardWindow = nullptr);
+    void setPreferences(const Preferences* preferences) noexcept { preferences_ = preferences; }
     // Called directly by the Lua-style keyboard window, on REAPER's UI thread.
     // Unknown keys remain inside that window instead of escaping into REAPER.
     bool enqueueOwnedKey(HWND window, UINT vk, bool repeat) noexcept;
@@ -29,6 +31,7 @@ private:
     bool interceptTransport(MSG&) noexcept;
     bool safeTarget(HWND target) const noexcept;
     void requestExit() noexcept;
+    const Preferences* preferences_ = nullptr;
     reaper_plugin_info_t* api_;
     Navigator* navigator_;
     accelerator_register_t accelerator_{};

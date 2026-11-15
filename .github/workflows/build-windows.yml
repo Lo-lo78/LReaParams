@@ -16,8 +16,6 @@ jobs:
           persist-credentials: false
       - name: Release 0.0.69 Used in F7, persistence and full ReaPack history (source only)
         run: python Testing/test69_release_used_f7_history_static.py
-      - name: TEST69.1 native selected-item BPM detection safety (source only)
-        run: python Testing/test69_1_tempo_action_static.py
       - name: Verify public release version and package consistency (source only)
         run: python Testing/test_release_version_static.py
       - name: TEST66.1 separate FX Grid and Step resets (source only)
@@ -254,14 +252,6 @@ jobs:
         run: python Testing/test61_14_fx_group_persistence_static.py
       - name: TEST61.15 FX offline-online restore group and parameter (source only)
         run: python Testing/test61_15_fx_online_restore_static.py
-      - name: TEST69.4 native BPM API registration (source only)
-        run: python Testing/test69_4_tempo_api_registration_static.py
-      - name: TEST69.5 adaptive tempo map API and action (source only)
-        run: python Testing/test69_5_adaptive_tempo_map_static.py
-
-      - name: TEST69.6 fixed BPM detector regression
-        run: python Testing/test69_6_fixed_bpm_regression_static.py
-
       - name: Configure MSVC x64 - Visual Studio 2026
         run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64
       - name: Verify TEST60 shared marker and timeline navigation (source only)

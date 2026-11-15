@@ -1,3 +1,4 @@
+#include "lrp/Preferences.h"
 #include "lrp/FxNavigator.h"
 #include "lrp/ParameterStepSizing.h"
 #include "lrp/PeakWatcher.h"
@@ -675,10 +676,10 @@ std::string FxNavigator::statusSummary() const {
 }
 std::string FxNavigator::fxContextAnnouncement() const {
     // After changing FX, speak context, active states, plugin, parameter/value.
-    std::string message = contextName() + ". ";
+    std::string message = fxNameFirst() ? fxDisplayName() + ". " : contextName() + ". ";
     if (isBypassed()) message += "Bypassed. ";
     if (deltaSoloActive()) message += "Delta Solo. ";
-    return message + fxDisplayName() + ". " + currentParameterSpeech();
+    return message + (fxNameFirst() ? contextName() : fxDisplayName()) + ". " + currentParameterSpeech();
 }
 std::string FxNavigator::fxWindowTitleBase(bool memories) const {
     const std::string name = memories ? "FX Memories" : "FX Params";
@@ -686,7 +687,7 @@ std::string FxNavigator::fxWindowTitleBase(bool memories) const {
     // Keep legacy title layout in the normal state, but precede context and FX
     // with active states (matching the exact requested Bypassed/Delta order).
     return name + (status.empty() ? " - " : ". " + status + ". ") +
-           contextName() + " - " + fxDisplayName();
+           (fxNameFirst() ? fxDisplayName() + " - " + contextName() : contextName() + " - " + fxDisplayName());
 }
 void FxNavigator::toggleBypass() {
     if (!valid()) return;
