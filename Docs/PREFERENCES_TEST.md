@@ -31,3 +31,16 @@ window. It checks the expected number of window/child creation sites and
 the modal lifecycle markers; creation remains forbidden in all other modules.
 The original `Tools/push_lreaparams.cmd` and the ReaPack `index.xml` are unchanged.
 This is a source-audit fix, not proof of successful compilation or runtime behavior.
+
+## TEST fix: Windows MSVC Preferences.cpp compilation
+
+The next GitHub Actions run passed the source audit but MSVC stopped at
+`Preferences.cpp(13,27): error C2059: syntax error: constant`.
+The local modifier bit flags previously declared as `MOD_ALT` and `MOD_SHIFT`
+collided with predefined Windows SDK macros. Renamed the internal flags to
+`kPrefCtrl`, `kPrefAlt` and `kPrefShift` throughout Preferences.cpp.
+The stored bitfield layout (Ctrl=1, Alt=2, Shift=4) remains unchanged.
+The Win32 child control identifiers now cast through `INT_PTR` before `HMENU`
+to avoid MSVC warning C4312 on 64-bit Windows.
+This patch has not yet passed a Windows MSVC compilation; the GitHub Actions
+workflow remains the authoritative confirmation.
