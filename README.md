@@ -1,3 +1,9 @@
+## TEST Preferences: native tree navigation (15 November 2026)
+
+The experimental `LReaParams: Preferences` action now opens a native Windows tree with **Messages, Shortcuts, Advanced**. Tab navigates the selected page and returns to the tree; Shift+Tab reverses the cycle. The Shortcuts page offers separate FX Params and Track Params lists with more gesture mappings. Changes are staged until OK. See [Preferences test instructions](Docs/PREFERENCES_TEST.md). This is **source-only TEST**, not a new public release; CMake and About remain 0.0.69.
+
+**Git and ReaPack publishing contract:** publish source updates through the existing `Tools\push_lreaparams.cmd "Commit message"` from the repository root, **not** an ad-hoc `git add`/`git push`. This script fetches `origin/main`, restores the generated ReaPack `index.xml` from the remote revision and performs a non-force `git pull --rebase` before pushing. Never regenerate or overwrite `index.xml`, force-push, rewrite prior commits, or move release tags. Preserve all existing GitHub/ReaPack history and workflows.
+
 ## LReaParams 0.0.69 — Used in F7 and persistent Used navigation (2026-11-09)
 
 This release extends the 0.0.68 Used view. Escape and FX switching now remember Used, Ctrl+L exits Used directly, and F7 allows selecting and copying Used parameters into groups. Ctrl+Delete in F7/Used does not delete the Used collection or underlying group entries. The previous Used U1 serialization and legacy `.fx` profiles remain compatible. See [release notes](Docs/RELEASE_NOTES_0_0_69.md) and [publishing instructions](Docs/REAPACK_SETUP_IT.md). **Never recreate or move previous release tags.**

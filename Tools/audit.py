@@ -140,7 +140,7 @@ def main():
     # Preferences is a separate, explicit user-invoked modal Win32 dialog, with
     # a narrow creation allowance. No arbitrary source file may add windows.
     preferences_src = (ROOT/'src/Preferences.cpp').read_text()
-    check(preferences_src.count('CreateWindowExW(') == 5 and
+    check(preferences_src.count('CreateWindowExW(') == 7 and
           preferences_src.count('CreateWindowW(') == 4,
           'Preferences native dialog window/child creation contract changed')
     for marker in ['L"LReaParamsPreferencesV1"', 'RegisterClassW(', 'WS_EX_DLGMODALFRAME',
@@ -148,6 +148,13 @@ def main():
                    'EnableWindow(owner,FALSE)', 'EnableWindow(owner,TRUE)',
                    'DestroyWindow(hwnd)', 'WM_CLOSE', 'IDCANCEL', 'IDOK']:
         check(marker in preferences_src, 'Preferences modal lifecycle contract missing: '+marker)
+    for marker in ['WC_TREEVIEWW', 'TVM_INSERTITEMW', 'TVN_SELCHANGEDW',
+                   'L"Messages"', 'L"Shortcuts"', 'L"Advanced"',
+                   'L"FX Params"', 'L"Track Params"', 'DLGC_WANTTAB',
+                   'Page::messages', 'Page::shortcuts', 'Page::advanced',
+                   'TVM_SETITEMW', 'L"Plugin - Track"', 'L"Track - Plugin"',
+                   'ShortcutScope::track', 'ShortcutScope::fx']:
+        check(marker in preferences_src, 'Preferences tree/keymap regression: ' + marker)
     for cpp in (ROOT/'src').glob('*.cpp'):
         if cpp.name not in {'TitleProxy.cpp', 'Preferences.cpp'}:
             check(not re.search(r'CreateWindow(?:Ex)?[AW]?\s*\(', cpp.read_text()),

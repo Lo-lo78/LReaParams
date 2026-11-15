@@ -16,6 +16,7 @@ public:
     virtual bool begin() = 0;
     virtual void end() noexcept = 0;
     virtual bool active() const noexcept = 0;
+    virtual bool isTrackNavigator() const noexcept { return false; }
     virtual bool contextUnchanged() const = 0;
     virtual bool accepts(const Key&) const noexcept = 0;
     virtual void handle(const Key&) = 0;

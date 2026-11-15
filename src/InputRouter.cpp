@@ -163,7 +163,7 @@ bool InputRouter::route(MSG& message, bool removed) noexcept {
     key.altGr = key.ctrl && key.alt && (GetKeyState(VK_RMENU) & 0x8000);
     key.time = message.time;
     if ((!key.ctrl && !key.alt) || key.altGr) key.character = printableKey(vk);
-    if(preferences_) key=mapPreferredShortcut(key,*preferences_);
+    if(preferences_) key=mapPreferredShortcut(key,*preferences_,navigator_->isTrackNavigator()?ShortcutScope::track:ShortcutScope::fx);
     if (!key.vk) { swallowed_[vk]=message.hwnd; return true; }
     if (!navigator_->accepts(key)) {
         // Phase 0 has a deliberately small map. Exit before handing any other command to REAPER.
@@ -237,7 +237,7 @@ bool InputRouter::enqueueOwnedKey(HWND window, UINT vk, bool repeat) noexcept {
     if ((!key.ctrl && !key.alt) || key.altGr) key.character = printableKey(vk);
     // A gfx.getchar-style keyboard owner does not close on an unsupported key
     // and never leaks such a key to the TCP, FX or project.
-    if(preferences_) key=mapPreferredShortcut(key,*preferences_);
+    if(preferences_) key=mapPreferredShortcut(key,*preferences_,navigator_->isTrackNavigator()?ShortcutScope::track:ShortcutScope::fx);
     if (!key.vk) return true;
     if (!navigator_->accepts(key)) return true;
     const auto next = (tail_ + 1) % queue_.size();

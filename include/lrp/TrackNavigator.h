@@ -16,6 +16,7 @@ namespace lrp {
 // F2/F3: one send/receive per COLUMN, fourteen parameter ROWS, as in Lua.
 class TrackNavigator final : public Navigator {
 public:
+    bool isTrackNavigator() const noexcept override { return true; }
     explicit TrackNavigator(std::function<void(const std::string&)> speech) : speech_(std::move(speech)) {}
     void setResourceRoot(const std::filesystem::path& root) { resource_ = root; }
     void setNativeFilterAvailable(bool enabled) noexcept { nativeFilterAvailable_ = enabled; }
