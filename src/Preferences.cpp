@@ -10,7 +10,7 @@
 namespace lrp {
 namespace {
 bool nameFirst = true;
-constexpr int IDC_TREE = 101, IDC_SCOPE = 102, IDC_SHORTCUTS = 103;
+constexpr int IDC_TREE = 101, IDC_SHORTCUTS = 103;
 constexpr int IDC_CAPTURE = 104, IDC_MESSAGES = 105, IDC_ADVANCED = 106;
 constexpr int kPrefCtrl = 1, kPrefAlt = 2, kPrefShift = 4;
 constexpr wchar_t kClassName[] = L"LReaParamsPreferencesV1";
@@ -45,11 +45,14 @@ std::wstring keyName(const Key& k) {
     else s += L"VK " + std::to_wstring(k.vk);
     return s;
 }
+// Deliberately use the native TreeView's accessible selection state.
+// No additional spoken status prefixes or selection-reinsertion are needed.
+constexpr UINT kRestoreFocus = WM_APP + 31;
 struct DialogState {
     Preferences pending;
-    HWND hwnd{}, tree{}, scope{}, shortcuts{}, capture{}, messages{}, advanced{};
-    HWND hint{};
-    HTREEITEM nodes[3]{};
+    HWND hwnd{}, tree{}, shortcuts{}, capture{}, messages{}, advanced{};
+    HWND ok{}, cancel{}, lastFocused{};
+    HTREEITEM nodes[3]{}, fxNode{}, trackNode{};
     Page page = Page::messages;
     ShortcutScope currentScope = ShortcutScope::fx;
     std::vector<size_t> visible;
@@ -112,33 +115,16 @@ void startCapture(DialogState* st) {
     SetWindowTextW(st->capture, L"Press a new shortcut. Escape cancels.");
     SetFocus(st->capture);
 }
-void updateTreeLabels(DialogState* st) {
-    const wchar_t* names[] = {L"Messages", L"Shortcuts", L"Advanced"};
-    for (int i = 0; i < 3; ++i) {
-        const std::wstring text = (static_cast<int>(st->page) == i ? L"Active - " : L"") +
-            std::wstring(names[i]);
-        TVITEMW item{}; item.mask = TVIF_TEXT; item.hItem = st->nodes[i];
-        item.pszText = const_cast<wchar_t*>(text.c_str());
-        if (item.hItem) SendMessageW(st->tree, TVM_SETITEMW, 0, reinterpret_cast<LPARAM>(&item));
-    }
-}
+// Selection changes never recreate tree nodes or rename the item under
+// NVDA/OSARA. This prevents stale/duplicate announcements after an arrow key.
 void showPage(DialogState* st, Page page) {
     if (!st->created) return;
     st->page = page;
     if (st->capturing) cancelCapture(st);
     ShowWindow(st->messages, page == Page::messages ? SW_SHOW : SW_HIDE);
     ShowWindow(st->advanced, page == Page::advanced ? SW_SHOW : SW_HIDE);
-    ShowWindow(st->scope, page == Page::shortcuts ? SW_SHOW : SW_HIDE);
     ShowWindow(st->shortcuts, page == Page::shortcuts ? SW_SHOW : SW_HIDE);
     ShowWindow(st->capture, SW_HIDE);
-    if (page == Page::shortcuts) {
-        SetWindowTextW(st->hint, L"Select FX Params or Track Params. Enter on a shortcut to change it.");
-    } else if (page == Page::messages) {
-        SetWindowTextW(st->hint, L"Space changes the message order. The active choice is marked Active.");
-    } else {
-        SetWindowTextW(st->hint, L"Space changes the keyboard input method. The active choice is marked Active.");
-    }
-    updateTreeLabels(st);
 }
 HWND lastPageControl(DialogState* st) {
     switch (st->page) {
@@ -147,24 +133,38 @@ HWND lastPageControl(DialogState* st) {
         default: return st->messages;
     }
 }
-HWND firstPageControl(DialogState* st) { return st->page == Page::shortcuts ? st->scope : lastPageControl(st); }
+// Tab cycles through the selected tree page, OK, Cancel, and back to tree.
+// Shift+Tab follows the same path backwards. There is no redundant scope combo:
+// the FX Params/Track Params scope is selected as a child in the native tree.
 void pageTab(DialogState* st, HWND from, bool backward) {
     HWND next = st->tree;
-    if (from == st->tree) next = backward ? lastPageControl(st) : firstPageControl(st);
-    else if (st->page == Page::shortcuts) {
-        if (from == st->scope && !backward) next = st->shortcuts;
-        else if (from == st->shortcuts && backward) next = st->scope;
-    }
-    SetFocus(next);
+    if (from == st->tree) next = backward ? st->cancel : lastPageControl(st);
+    else if (from == st->cancel) next = backward ? st->ok : st->tree;
+    else if (from == st->ok) next = backward ? lastPageControl(st) : st->cancel;
+    else if (from == lastPageControl(st)) next = backward ? st->tree : st->ok;
+    if (next && IsWindowVisible(next) && IsWindowEnabled(next)) SetFocus(next);
 }
-void updateScope(DialogState* st) {
-    const int selected = static_cast<int>(SendMessageW(st->scope, CB_GETCURSEL, 0, 0));
-    st->currentScope = selected == 1 ? ShortcutScope::track : ShortcutScope::fx;
-    fillShortcuts(st);
+HTREEITEM insertNode(HWND tree, HTREEITEM parent, const wchar_t* text) {
+    TVINSERTSTRUCTW item{};
+    item.hParent = parent;
+    item.hInsertAfter = TVI_LAST;
+    item.item.mask = TVIF_TEXT;
+    item.item.pszText = const_cast<wchar_t*>(text);
+    return reinterpret_cast<HTREEITEM>(SendMessageW(tree, TVM_INSERTITEMW, 0,
+        reinterpret_cast<LPARAM>(&item)));
 }
 LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR ref) {
     auto* st = reinterpret_cast<DialogState*>(ref);
+    if (msg == WM_SETFOCUS) st->lastFocused = hwnd;
+    // Buttons keep the normal Win32 handling for Enter/Space while still
+    // remembering focus for Alt+Tab; only page controls own custom keys.
+    if (hwnd == st->ok || hwnd == st->cancel)
+        return DefSubclassProc(hwnd, msg, wp, lp);
     if (msg == WM_GETDLGCODE) return DefSubclassProc(hwnd, msg, wp, lp) | DLGC_WANTTAB | DLGC_WANTALLKEYS;
+    // Some Win32 controls beep on translated Tab characters after focus has
+    // already changed. The modal pump consumes the physical Tab, and this
+    // fallback consumes the character so there is no native error tone.
+    if (msg == WM_CHAR && wp == VK_TAB) return 0;
     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
         const UINT vk = static_cast<UINT>(wp);
         const bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
@@ -193,6 +193,7 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
                 (alt ? kPrefAlt : 0) | (shift ? kPrefShift : 0));
             // Keep REAPER transport, the NVDA modifier and OSARA's peak watchers free.
             if ((!ctrl && !alt && !shift && (vk == VK_SPACE || vk == VK_RETURN)) ||
+                (vk == 'P' && ctrl && !alt && !shift) || // Ctrl+P always opens Preferences
                 (vk == VK_F12 && !ctrl) || vk == VK_INSERT || vk == VK_NUMPAD0 ||
                 (vk == VK_SPACE && ctrl) ||
                 (alt && (vk == VK_F10 || vk == VK_F11 || vk == VK_F12))) {
@@ -242,61 +243,81 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         st = reinterpret_cast<DialogState*>(reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams);
         st->hwnd = hwnd;
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(st));
-        st->hint = CreateWindowW(L"STATIC", L"", WS_VISIBLE | WS_CHILD,
-            252, 12, 472, 27, hwnd, nullptr, nullptr, nullptr);
-        CreateWindowW(L"STATIC", L"Choose a page. Tab navigates the page and tree. Ctrl+Enter saves; Escape cancels.",
-            WS_VISIBLE | WS_CHILD, 16, 12, 226, 51, hwnd, nullptr, nullptr, nullptr);
         st->tree = CreateWindowExW(WS_EX_CLIENTEDGE, WC_TREEVIEWW, L"",
-            WS_VISIBLE | WS_CHILD | WS_TABSTOP | TVS_SHOWSELALWAYS | TVS_DISABLEDRAGDROP,
-            16, 70, 219, 348, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_TREE)), nullptr, nullptr);
-        st->scope = CreateWindowExW(WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
-            WS_CHILD | WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL,
-            252, 57, 465, 180, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_SCOPE)), nullptr, nullptr);
+            WS_VISIBLE | WS_CHILD | WS_TABSTOP | TVS_HASBUTTONS | TVS_HASLINES |
+            TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_DISABLEDRAGDROP,
+            16, 18, 219, 400, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_TREE)), nullptr, nullptr);
         st->shortcuts = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT,
-            252, 93, 465, 282, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_SHORTCUTS)), nullptr, nullptr);
+            252, 18, 465, 359, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_SHORTCUTS)), nullptr, nullptr);
         st->capture = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
             WS_CHILD | WS_TABSTOP | ES_READONLY,
-            252, 380, 465, 29, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_CAPTURE)), nullptr, nullptr);
+            252, 381, 465, 29, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_CAPTURE)), nullptr, nullptr);
         st->messages = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
-            252, 55, 465, 120, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_MESSAGES)), nullptr, nullptr);
+            252, 18, 465, 160, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_MESSAGES)), nullptr, nullptr);
         st->advanced = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
-            252, 55, 465, 120, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_ADVANCED)), nullptr, nullptr);
-        CreateWindowW(L"BUTTON", L"&OK", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
+            252, 18, 465, 160, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_ADVANCED)), nullptr, nullptr);
+        st->ok = CreateWindowW(L"BUTTON", L"&OK", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
             508, 434, 98, 32, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDOK)), nullptr, nullptr);
-        CreateWindowW(L"BUTTON", L"&Cancel", WS_CHILD | WS_VISIBLE | WS_TABSTOP,
+        st->cancel = CreateWindowW(L"BUTTON", L"&Cancel", WS_CHILD | WS_VISIBLE | WS_TABSTOP,
             618, 434, 98, 32, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDCANCEL)), nullptr, nullptr);
-        for (HWND control : {st->tree, st->scope, st->shortcuts, st->capture, st->messages, st->advanced, st->hint})
+        for (HWND control : {st->tree, st->shortcuts, st->capture, st->messages, st->advanced, st->ok, st->cancel})
             SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
-        for (HWND control : {st->tree, st->scope, st->shortcuts, st->capture, st->messages, st->advanced})
+        for (HWND control : {st->tree, st->shortcuts, st->capture, st->messages,
+                             st->advanced, st->ok, st->cancel})
             SetWindowSubclass(control, pageProc, 1, reinterpret_cast<DWORD_PTR>(st));
-        SendMessageW(st->scope, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"FX Params"));
-        SendMessageW(st->scope, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Track Params"));
-        SendMessageW(st->scope, CB_SETCURSEL, 0, 0);
         fillShortcuts(st);
         updateChoices(st);
-        const wchar_t* nodes[] = {L"Messages", L"Shortcuts", L"Advanced"};
-        for (int i = 0; i < 3; ++i) {
-            TVINSERTSTRUCTW item{};
-            item.hParent = TVI_ROOT; item.hInsertAfter = TVI_LAST;
-            item.item.mask = TVIF_TEXT;
-            item.item.pszText = const_cast<wchar_t*>(nodes[i]);
-            st->nodes[i] = reinterpret_cast<HTREEITEM>(SendMessageW(st->tree, TVM_INSERTITEMW,
-                0, reinterpret_cast<LPARAM>(&item)));
-        }
+        st->nodes[0] = insertNode(st->tree, TVI_ROOT, L"Messages");
+        st->nodes[1] = insertNode(st->tree, TVI_ROOT, L"Shortcuts");
+        st->fxNode = insertNode(st->tree, st->nodes[1], L"FX Params");
+        st->trackNode = insertNode(st->tree, st->nodes[1], L"Track Params");
+        st->nodes[2] = insertNode(st->tree, TVI_ROOT, L"Advanced");
+        // Child categories are directly accessible with Down/Up.
+        SendMessageW(st->tree, TVM_EXPAND, TVE_EXPAND, reinterpret_cast<LPARAM>(st->nodes[1]));
         st->created = true;
         showPage(st, Page::messages);
         SendMessageW(st->tree, TVM_SELECTITEM, TVGN_CARET, reinterpret_cast<LPARAM>(st->nodes[0]));
+        st->lastFocused = st->tree;
         return 0;
     }
     if (!st) return DefWindowProcW(hwnd, msg, wp, lp);
     if (msg == WM_NOTIFY && st->created && reinterpret_cast<LPNMHDR>(lp)->idFrom == IDC_TREE &&
         reinterpret_cast<LPNMHDR>(lp)->code == TVN_SELCHANGEDW) {
         const HTREEITEM selected = reinterpret_cast<LPNMTREEVIEWW>(lp)->itemNew.hItem;
-        for (int i = 0; i < 3; ++i)
-            if (st->nodes[i] == selected) { showPage(st, static_cast<Page>(i)); break; }
+        if (selected == st->nodes[0]) showPage(st, Page::messages);
+        else if (selected == st->nodes[2]) showPage(st, Page::advanced);
+        else if (selected == st->nodes[1]) showPage(st, Page::shortcuts);
+        else if (selected == st->fxNode || selected == st->trackNode) {
+            const auto newScope = selected == st->fxNode ? ShortcutScope::fx : ShortcutScope::track;
+            if (st->currentScope != newScope) {
+                st->currentScope = newScope;
+                fillShortcuts(st);
+            }
+            showPage(st, Page::shortcuts);
+        }
+        return 0;
+    }
+    // Alt+Tab must never leave focus stuck on the disabled REAPER owner or
+    // on the dialog frame instead of its active child. Restore asynchronously
+    // only when this dialog is foreground; do not steal focus from other apps.
+    if (msg == WM_ACTIVATE) {
+        if (LOWORD(wp) != WA_INACTIVE && st->created)
+            PostMessageW(hwnd, kRestoreFocus, 0, 0);
+        return DefWindowProcW(hwnd, msg, wp, lp);
+    }
+    if (msg == WM_SETFOCUS && st->created) {
+        HWND target = st->lastFocused;
+        if (!target || !IsWindow(target) || !IsWindowVisible(target)) target = st->tree;
+        if (target && GetFocus() == hwnd) SetFocus(target);
+        return 0;
+    }
+    if (msg == kRestoreFocus && st->created && GetForegroundWindow() == hwnd) {
+        HWND target = st->lastFocused;
+        if (!target || !IsWindow(target) || !IsWindowVisible(target)) target = st->tree;
+        if (GetFocus() != target) SetFocus(target);
         return 0;
     }
     if (msg == WM_SYSKEYDOWN && (GetKeyState(VK_MENU) & 0x8000) && (wp == '1' || wp == '2')) {
@@ -318,7 +339,6 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             DestroyWindow(hwnd);
             return 0;
         }
-        if (id == IDC_SCOPE && notice == CBN_SELCHANGE) { updateScope(st); return 0; }
         if (id == IDC_SHORTCUTS && notice == LBN_SELCHANGE) { updateSelection(st); return 0; }
         if (id == IDC_SHORTCUTS && notice == LBN_DBLCLK) { startCapture(st); return 0; }
         if (id == IDC_MESSAGES && notice == LBN_SELCHANGE) {
@@ -536,7 +556,8 @@ Preferences loadPreferences(const std::filesystem::path& file) {
         const int value = GetPrivateProfileIntW(L"Shortcuts", key.c_str(), -1, path.c_str());
         if (value < 0) continue;
         const Key candidate = shortcut(static_cast<UINT>(value & 255), value >> 8);
-        if (!candidate.vk || candidate.vk == VK_ESCAPE || (candidate.vk == VK_F12 && !candidate.ctrl)) continue;
+        if (!candidate.vk || candidate.vk == VK_ESCAPE || (candidate.vk == VK_F12 && !candidate.ctrl) ||
+            (candidate.vk == 'P' && candidate.ctrl && !candidate.alt && !candidate.shift)) continue;
         bool duplicate = false;
         for (size_t j = 0; j < p.shortcuts.size(); ++j)
             if (i != j && p.shortcuts[i].scope == p.shortcuts[j].scope &&
@@ -570,16 +591,64 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
         registered = true;
     }
     DialogState state; state.pending = current;
+    // Disable the owner before displaying the popup, as for a native modal
+    // Win32 dialog. A disabled owner cannot compete with its dialog for focus.
+    const bool disabledOwner = owner && IsWindow(owner) && IsWindowEnabled(owner);
+    if (disabledOwner) EnableWindow(owner,FALSE);
     HWND hwnd = CreateWindowExW(WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
-        kClassName, L"LReaParams - Preferences", WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
+        kClassName, L"LReaParams - Preferences", WS_POPUP | WS_CAPTION | WS_SYSMENU,
         CW_USEDEFAULT, CW_USEDEFAULT, 752, 512, owner, nullptr, GetModuleHandleW(nullptr), &state);
-    if (!hwnd) return std::nullopt;
-    EnableWindow(owner,FALSE); SetForegroundWindow(hwnd); SetFocus(state.tree);
-    MSG msg{};
-    while (state.hwnd && GetMessageW(&msg, nullptr, 0, 0) > 0) {
-        if (!IsDialogMessageW(hwnd, &msg)) { TranslateMessage(&msg); DispatchMessageW(&msg); }
+    if (!hwnd) {
+        if (disabledOwner && IsWindow(owner)) EnableWindow(owner,TRUE);
+        return std::nullopt;
     }
-    EnableWindow(owner,TRUE); SetForegroundWindow(owner);
+    ShowWindow(hwnd, SW_SHOW);
+    UpdateWindow(hwnd);
+    SetActiveWindow(hwnd);
+    SetFocus(state.tree);
+    MSG msg{};
+    while (state.hwnd) {
+        const BOOL got = GetMessageW(&msg, nullptr, 0, 0);
+        if (got <= 0) {
+            if (got == 0) PostQuitMessage(static_cast<int>(msg.wParam));
+            if (state.hwnd) DestroyWindow(state.hwnd);
+            break;
+        }
+        // Do not let the nested modal loop claim keyboard messages from
+        // unrelated REAPER windows or from another foreground application.
+        const bool isDialogMessage = msg.hwnd == hwnd || (msg.hwnd && IsChild(hwnd, msg.hwnd));
+        if (isDialogMessage && msg.message == WM_KEYDOWN && msg.wParam == VK_TAB &&
+            !(GetKeyState(VK_CONTROL) & 0x8000) &&
+            !(GetKeyState(VK_MENU) & 0x8000)) {
+            const HWND focused = GetFocus();
+            if (focused == state.capture && state.capturing) {
+                state.capturing = false;
+                ShowWindow(state.capture, SW_HIDE);
+                SetFocus(state.tree);
+                continue;
+            }
+            if (focused == state.tree || focused == state.shortcuts ||
+                focused == state.messages || focused == state.advanced ||
+                focused == state.ok || focused == state.cancel) {
+                pageTab(&state, focused, (GetKeyState(VK_SHIFT) & 0x8000) != 0);
+                continue;
+            }
+        }
+        // Alt+Tab is a system task-switch gesture, not dialog navigation.
+        const bool taskSwitch = (msg.message == WM_SYSKEYDOWN || msg.message == WM_SYSKEYUP) &&
+            msg.wParam == VK_TAB;
+        if (!(isDialogMessage && !taskSwitch && IsDialogMessageW(hwnd, &msg))) {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+    }
+    if (disabledOwner && IsWindow(owner)) {
+        EnableWindow(owner,TRUE);
+        // Restore REAPER only when it belongs to the foreground thread;
+        // otherwise preserve the user's Alt+Tab destination.
+        if (GetActiveWindow() == nullptr || GetActiveWindow() == owner)
+            SetActiveWindow(owner);
+    }
     return state.accepted ? std::make_optional(state.pending) : std::nullopt;
 }
 Key mapPreferredShortcut(Key key, const Preferences& p, ShortcutScope scope) noexcept {

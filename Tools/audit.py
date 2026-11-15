@@ -140,8 +140,12 @@ def main():
     # Preferences is a separate, explicit user-invoked modal Win32 dialog, with
     # a narrow creation allowance. No arbitrary source file may add windows.
     preferences_src = (ROOT/'src/Preferences.cpp').read_text()
-    check(preferences_src.count('CreateWindowExW(') == 7 and
-          preferences_src.count('CreateWindowW(') == 4,
+    # TEST Preferences Tree 2: scope chooser is now two real child nodes of
+    # Shortcuts and the on-open instructional static has been removed.
+    # Keep the creation count restricted so additional focus-owning windows
+    # cannot be introduced without updating this explicit safety audit.
+    check(preferences_src.count('CreateWindowExW(') == 6 and
+          preferences_src.count('CreateWindowW(') == 2,
           'Preferences native dialog window/child creation contract changed')
     for marker in ['L"LReaParamsPreferencesV1"', 'RegisterClassW(', 'WS_EX_DLGMODALFRAME',
                    'WS_EX_CONTROLPARENT', 'SetWindowSubclass(', 'IsDialogMessageW(',
@@ -152,9 +156,16 @@ def main():
                    'L"Messages"', 'L"Shortcuts"', 'L"Advanced"',
                    'L"FX Params"', 'L"Track Params"', 'DLGC_WANTTAB',
                    'Page::messages', 'Page::shortcuts', 'Page::advanced',
-                   'TVM_SETITEMW', 'L"Plugin - Track"', 'L"Track - Plugin"',
-                   'ShortcutScope::track', 'ShortcutScope::fx']:
+                   'L"Plugin - Track"', 'L"Track - Plugin"',
+                   'ShortcutScope::track', 'ShortcutScope::fx',
+                   'st->ok', 'st->cancel', 'pageTab(&state',
+                   'st->fxNode = insertNode', 'st->trackNode = insertNode',
+                   'TVM_EXPAND', 'WM_ACTIVATE', 'kRestoreFocus',
+                   '!taskSwitch && IsDialogMessageW', 'WM_CHAR']:
         check(marker in preferences_src, 'Preferences tree/keymap regression: ' + marker)
+    check('Choose a page.' not in preferences_src and
+          'Active - Shortcuts' not in preferences_src,
+          'Preferences must not speak on-open instructions or a redundant Active tree prefix')
     for cpp in (ROOT/'src').glob('*.cpp'):
         if cpp.name not in {'TitleProxy.cpp', 'Preferences.cpp'}:
             check(not re.search(r'CreateWindow(?:Ex)?[AW]?\s*\(', cpp.read_text()),

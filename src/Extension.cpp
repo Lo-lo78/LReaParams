@@ -185,7 +185,7 @@ public:
         case preferencesAction: {
             exitNavigation(false);
             const auto edited = editPreferences(info_.hwnd_main, preferences_);
-            if (!edited) { speak("Preferences unchanged"); break; }
+            if (!edited) { speak("Preferences cancelled. Changes not saved"); break; }
             std::error_code ec;
             fs::create_directories(preferencesPath_.parent_path(), ec);
             if (ec || !savePreferences(preferencesPath_, *edited)) {
@@ -563,6 +563,15 @@ public:
         while (budget-- && input_.pop(key)) {
             // Validate again after dequeue: a queued key must never address a replacement FX.
             if (!current_->contextUnchanged() || GetFocus() != key.window) { exitNavigation(false); return; }
+            // Ctrl+P is a reserved way to open the native Preferences dialog
+            // from both navigators. Never reinterpret it as a parameter key.
+            // action() releases the keyboard owner before creating the modal UI.
+            if ((current_ == &navigator_ || current_ == &trackNavigator_) &&
+                key.ctrl && !key.alt && !key.shift && !key.altGr &&
+                key.vk == 'P') {
+                if (!key.repeat) action(actions_[preferencesAction].command);
+                return;
+            }
             // A boundary key changes neither selection nor value.
             // Avoid sending redundant title, text or focus updates to NVDA.
             const std::wstring oldTitle = titleProxyActive_ ? current_->windowTitle() : L"";

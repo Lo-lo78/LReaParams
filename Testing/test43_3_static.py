@@ -28,7 +28,10 @@ assert 'k.shift&&!k.ctrl&&!k.alt&&k.vk==VK_SPACE' in f7
 # The native Win32 EDIT remains the authoritative text/space handler.
 assert 'TitleProxy::nativeEditProc' in proxy and 'CallWindowProcW(self->originalNativeEditProc_' in proxy
 # Both routes dispatch only accepted shortcuts, and REAPER must not get a second Space.
-assert 'if (!navigator_->accepts(key)) return true;' in router
+# The current keyboard router explicitly reserves Ctrl+P for Preferences before
+# consulting the navigator's acceptance check.
+assert 'if (!preferencesKey && !navigator_->accepts(key)) return true;' in router
+assert 'if (!preferencesKey && !navigator_->accepts(key)) {' in router
 assert 'queue_[tail_] = key;' in router
 # TEST54.1: Track Params now shares FX transport semantics.
 assert 'if ((state & 2) && OnPlayButton)' in track and 'Main_OnCommand(40073, 0)' in track

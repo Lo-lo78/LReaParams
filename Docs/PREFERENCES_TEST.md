@@ -1,74 +1,100 @@
-# Preferences - TEST tree navigation for LReaParams 0.0.69
+# LReaParams 0.0.69 TEST — Preferences tree and focus
 
-Action List: `LReaParams: Preferences` (`_LREAPARAMSPREFERENCES`).
+The action `LReaParams: Preferences` (`_LREAPARAMSPREFERENCES`) opens a
+native Windows preferences window. It does **not** replace the old
+`LReaParams: Settings (Keyboard Input)` (`_LREAPARAMSSETTINGS`): the old
+settings action continues to work independently for the current session.
 
-The existing `LReaParams: Settings (Keyboard Input)` (`_LREAPARAMSSETTINGS`) has not been changed. Its selection is session-only; Advanced in Preferences stores the selection across restarts.
+## Tree and speech
 
-## Page tree and keyboard
+The focus starts on the native TreeView. There is no introductory speech
+static and no `Active` prefix on page labels. Native Windows/NVDA selection,
+level, and position announcements are left to the TreeView. Tree items are
+created once; no renaming or re-insertion occurs on Up/Down.
 
-The Preferences dialog opens **with focus on the native Win32 TreeView**. There are three sibling items, in this order:
+The hierarchy (Shortcuts initially expanded) is:
 
-1. `Active - Messages` (initial page)
-2. `Shortcuts`
-3. `Advanced`
+- `Messages` (level 0, initial selection)
+- `Shortcuts` (level 0)
+  - `FX Params` (level 1)
+  - `Track Params` (level 1)
+- `Advanced` (level 0)
 
-The currently selected item always receives the `Active - ` prefix; the other two do not. Up/Down change the page without shifting focus away from the tree.
+Up/Down moves through the visible tree nodes in that order. Left/Right may
+collapse/expand the Shortcuts branch using ordinary Windows TreeView behavior.
+Selecting either child changes the shortcut list immediately without moving
+keyboard focus out of the tree. Selecting the parent `Shortcuts` uses the last
+FX/Track selection, initially `FX Params`.
 
-Tab/Shift+Tab form a closed loop for the active page:
+## Tab / Shift+Tab and shortcuts
 
-- Messages: `Tree -> message choice -> Tree`.
-- Shortcuts: `Tree -> FX Params / Track Params combo -> shortcut list -> Tree`.
-- Advanced: `Tree -> keyboard input choice -> Tree`.
-- Shift+Tab follows the same path in reverse, including Tree -> last control of the selected page.
+Tab cycles: `Tree -> selected page contents -> OK -> Cancel -> Tree`.
+Shift+Tab goes backwards through exactly the same controls. In Shortcuts,
+there is no FX/Track combo: selecting either child of the tree and pressing
+Tab goes **directly to its shortcut list**. This is intentional, leaving
+room to add further keymap families as child nodes.
 
-The dialog retains native OK and Cancel buttons. **Ctrl+Enter** saves and closes from page controls; **Alt+O** activates OK; **Alt+C** or **Escape** cancels. All changes, including shortcut remappings, are pending until OK. The extension writes its preferences only after the dialog successfully returns an accepted result.
+The list displays each assigned key before its function description. Enter
+or double-click opens a capture field for a replacement gesture. Escape from
+the capture cancels *only* that capture and returns to the key list. Regular
+Tab while capturing exits capture to the tree. The keymap still uses
+independent FX and Track assignments; duplicate mappings within a single
+keymap are refused. The first 32 shortcut indices from the earlier
+Preferences TEST are preserved so existing `Preferences.ini` values remain
+addressable.
 
-## Messages
+After modifying a shortcut, **OK**, **Ctrl+Enter** or **Alt+O** commits the
+whole Preferences session and writes `Preferences.ini` under the REAPER
+resource path's `LReaParams` directory. **Cancel**, **Alt+C**, or **Escape**
+cancels without any disk write. Ctrl+P from FX Params or Track Params opens
+Preferences and is reserved, not remappable.
 
-The choices are generic, no project/plug-in names:
+## Messages and Advanced
 
-- `Active - Plugin - Track` (default)
-- `Track - Plugin`
+Messages offers `Plugin - Track` (default) and `Track - Plugin`. These are
+generic, not hard-coded examples from a project. Space cycles and the
+selected choice is marked `Active` *within the choices*, not in the tree.
 
-Space cycles and Up/Down select. `Active - ` moves to the selected choice. The actual FX Params title and context announcements use the chosen order; the example text is not taken from a user project.
+Advanced offers `1 - REAPER SDK accelerator (recommended default)` and
+`2 - Main-thread keyboard hook (compatibility)`. Space cycles and the
+selected choice is marked `Active` inside the list. Alt+1/Alt+2 also select
+the backend. The choice is committed only after OK, and persists across
+REAPER sessions via `Preferences.ini`.
 
-## Shortcuts
+## Windows task switching and modal focus
 
-Tab from the tree focuses a **native combo** for choosing **FX Params** or **Track Params**. Tab again focuses the list of shortcuts for that navigator; a third Tab returns to the tree. Shift+Tab travels backwards.
+The owner is disabled while the modal dialog is visible, then re-enabled
+after OK or Cancel. The internal message loop now only applies dialog key
+translation to messages targeted at the Preferences window or its children;
+it does not intercept other REAPER window messages. Alt+Tab messages keep
+their normal system handling. When the user returns to Preferences, it
+restores focus to the last visible control, falling back to the tree. This
+focus repair is conditional on Preferences being foreground to prevent
+stealing focus from a different application.
 
-Each item starts with its current keyboard gesture, followed by ` - ` and a description. **Enter or double-click** a selected item opens a native key-capture field. Press the intended key combination, then return automatically to the shortcut list; Escape from key capture cancels only that capture. Tab without Ctrl/Alt in capture returns directly to the tree (no change).
+## Manual acceptance checks (Windows + NVDA + OSARA)
 
-The list follows the 0.0.69 source: Backspace resets a parameter, Ctrl+Backspace the step, Shift+Backspace the grid (double press opens grid size), and Ctrl+Shift+Backspace resets the whole FX. The list includes the original mappings plus additional navigation, F7, FX browser, group/memory slots, Track routing, Track selection, marker and MIDI/automation gestures supported by the native navigators. Some gestures are context-dependent and use the same chord in multiple pages; they appear once per FX/Track navigator. This is not a separate per-subpage keymap. Keys belonging to native text EDIT controls are not remapped. Escape, bare F12, REAPER transport Space/Ctrl+Space, the NVDA Insert modifier, and OSARA peak-watcher Alt+F10..F12 are protected.
+1. Open Preferences: hear `Messages`, not "Choose a page...".
+2. Down: `Shortcuts` level 0; Down: `FX Params` level 1; Down: `Track Params`
+   level 1; Down: `Advanced` level 0. No `Active - Shortcuts` or repeated
+   previous tree entry should be announced.
+3. On each shortcut child: Tab immediately opens the correct list. More
+   Tabs go to OK, Cancel, and tree. Shift+Tab reverses without error tones.
+4. Alt+Tab to another Windows app and return, both when focused on the tree
+   and when focused on a shortcut list/OK: arrows/Tab work **immediately**,
+   without the extra Tab previously needed to unlock the dialog.
+5. Change a shortcut and OK, reopen, and restart REAPER: saved. Change
+   another and Escape: unchanged. Repeat in both FX and Track scopes.
+6. Confirm Ctrl+P still opens Preferences and the old keyboard-only Settings
+   action continues to work separately.
 
-FX Params and Track Params have independent assignments. The same gesture can be mapped differently in those two lists; duplicate gestures within one list are rejected. The first 32 slots retain their original stored indices from the earlier Preferences TEST so previous `Preferences.ini` values remain addressable. More entries are appended after those slots.
+## Release safety
 
-## Advanced
+The project remains a **0.0.69 TEST**. The original
+`Tools/push_lreaparams.cmd` and `.github/workflows/publish-reapack.yml`
+remain unchanged, and `index.xml` is not included. Publish sources only
+using `Tools\push_lreaparams.cmd "Commit message"`, never with force-push or
+manual changes to the ReaPack index.
 
-- `Active - 1 - REAPER SDK accelerator (recommended default)` (default)
-- `2 - Main-thread keyboard hook (compatibility)`
-
-Space cycles, Up/Down selects. Alt+1/Alt+2 are also supported while Preferences controls have focus. No backend switch is committed until OK.
-
-## Save path
-
-`<REAPER resource path>/LReaParams/Preferences.ini`
-
-## Regression/acceptance checks
-
-- On initial open, NVDA should read the first TreeView entry as `Active - Messages`; focus should be on the TreeView, not a listbox.
-- Down reads `Active - Shortcuts`; Tab reaches the FX/Track combo; next Tab reaches the shortcuts; next Tab returns to the tree. Shift+Tab is the exact reverse.
-- Down again reads `Active - Advanced`, Tab reaches the accelerator selection, Space toggles the Active marker, Tab returns to tree.
-- From Shortcuts choose Track Params and remap an ordinary Track-only gesture; verify the FX equivalent is unchanged.
-- Enter on an FX shortcut should focus the read-only capture field (not press the OK button). Escape from capture returns to the shortcut list without changing it.
-- Make a key change, cancel the dialog, reopen: previous binding must still be present.
-- Make a key change, Ctrl+Enter or OK, restart REAPER: new binding must persist and work in the correct navigator.
-- Try a duplicate within the same navigator: reject with warning; a gesture assigned in the other navigator does not count as a duplicate.
-- Messages preview is generic `Plugin - Track` / `Track - Plugin`; FX Params NVDA+T title uses corresponding order.
-- Original Settings action `_LREAPARAMSSETTINGS` still operates independently and is not replaced.
-- REAPER MIDI transport, OSARA NVDA shortcuts, native EDIT input, Fx Memories and F7 navigation must not regress.
-
-## Source audit and publish hygiene
-
-`python Tools/audit.py` passes on this tree-navigation source. Native Windows MSVC compilation and REAPER/NVDA testing are still required; the static pass **is not** proof of runtime success.
-
-The project-provided `Tools/push_lreaparams.cmd` and `.github/workflows/publish-reapack.yml` remain byte-identical to the last working Preferences TEST. No `index.xml` is included or overwritten. Keep the existing release number at 0.0.69 until the test is confirmed.
+`python Tools/audit.py` is source-only; an actual Windows/MSVC build and
+NVDA/REAPER runtime tests are required before claiming success.
