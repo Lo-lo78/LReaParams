@@ -14,6 +14,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - name: TEST70.1 Separate FX plugin Type and Name in titles (source only)
+        run: python Testing/test70_1_fx_type_name_static.py
+      - name: TEST70.2 Track F4 Type/Name/Mode and legacy preferences (source only)
+        run: python Testing/test70_2_track_f4_type_name_static.py
       - name: Release 0.0.70 Preferences and full ReaPack history (source only)
         run: python Testing/test70_release_preferences_reapack_static.py
       - name: Release 0.0.69 Used in F7, persistence and full ReaPack history (source only)

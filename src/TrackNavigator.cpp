@@ -1017,9 +1017,9 @@ std::wstring TrackNavigator::windowTitle() const {
     if (page_ == Page::trackMidi && !memoryManager_)
         return formatTrackPageTitle(wideUtf8(trackName()), 4);
     if (page_ == Page::fxTcp && !memoryManager_) {
-        const std::wstring label = wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX") +
-            (fxTcpListOpen_ ? L" - Add TCP parameters" : L" - TCP parameters");
-        return formatTrackPageTitle(wideUtf8(trackName()), 3, label) +
+        const std::wstring fxName = wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX");
+        const std::wstring mode = fxTcpListOpen_ ? L"Add TCP parameters" : L"TCP parameters";
+        return formatTrackPageTitle(wideUtf8(trackName()), 3, fxName, mode) +
             (numericEditing_ ? L" - Numeric edit" : filterEditing_ ? L" - Filter" : !(fxTcpListOpen_ ? fxTcpGridFilter_ : fxTcpMainFilter_).empty() ? L" - Filter active" : L"");
     }
     if (memoryManager_)

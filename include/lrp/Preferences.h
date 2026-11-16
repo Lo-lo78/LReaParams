@@ -9,11 +9,12 @@
 namespace lrp {
 enum class ShortcutScope { fx, track };
 struct ShortcutPreference { std::wstring description; Key original{}, assigned{}; ShortcutScope scope = ShortcutScope::fx; };
-// Reusable ordered message parts. FX: Heading, Plugin, Track, Custom;
-// Track: Heading, Track, Custom. The fourth Track slot is reserved.
+// Reusable ordered title parts. FX uses five elements; Track F4 uses
+// six (Heading, Track, Name, Custom, Type, Mode). Other pages use 3/4.
+// Never change persisted part IDs without migrating Preferences.ini.
 struct TitleMessage {
-    std::array<int, 4> order{{0, 1, 2, 3}};
-    std::array<bool, 4> enabled{{true, true, true, false}};
+    std::array<int, 6> order{{0, 1, 2, 3, 4, 5}};
+    std::array<bool, 6> enabled{{true, true, true, false, false, false}};
     std::wstring custom;
 };
 struct Preferences {
@@ -51,6 +52,6 @@ std::string formatFxPageTitle(const std::string& fx, const std::string& context,
     int titleIndex, const std::string& status = {});
 std::wstring formatTrackTitle(const std::wstring& track);
 std::wstring formatTrackPageTitle(const std::wstring& track, int titleIndex,
-    const std::wstring& pageText = {});
+    const std::wstring& pageText = {}, const std::wstring& modeText = {});
 
 }

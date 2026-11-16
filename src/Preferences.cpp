@@ -8,6 +8,7 @@
 #include <cwchar>
 #include <array>
 #include <cwctype>
+#include <cctype>
 
 namespace lrp {
 namespace {
@@ -35,11 +36,13 @@ constexpr const wchar_t* kFxTopicNames[kFxTitleCount] = {
     L"Title: FX Params", L"Title: FX Memories", L"Title: FX Browser",
     L"Title: FX Pin Connector"
 };
-constexpr const wchar_t* kFxPartNames[kFxTitleCount][4] = {
-    {L"FX Params", L"Plugin", L"Track", L"Custom message"},
-    {L"FX Memories", L"Plugin", L"Track", L"Custom message"},
-    {L"FX Browser", L"Context", L"Custom message", L""},
-    {L"FX Pin Connector", L"Track", L"Plugin", L"Custom message"}
+// Part IDs 0..3 retain the previous saved meanings; part 4 is the new Type.
+// This allows a lossless migration of the 0.0.70 INI title layouts.
+constexpr const wchar_t* kFxPartNames[kFxTitleCount][5] = {
+    {L"FX Params", L"Name", L"Track", L"Custom message", L"Type"},
+    {L"FX Memories", L"Name", L"Track", L"Custom message", L"Type"},
+    {L"FX Browser", L"Context", L"Custom message", L"", L""},
+    {L"FX Pin Connector", L"Track", L"Name", L"Custom message", L"Type"}
 };
 // Every Track Params title is independently reorderable. Only F1 has three
 // elements: the other titles have heading, track, page and custom message.
@@ -59,9 +62,12 @@ constexpr const wchar_t* kTrackPageLabels[kTrackTitleCount] = {
     L"Parameter Speech", L"Track Positions", L"Volume Ranges"
 };
 int titlePartCount(ShortcutScope scope, int topic = 0) {
-    return scope == ShortcutScope::fx ? (topic == 2 ? 3 : 4) : (topic == 0 ? 3 : 4);
+    return scope == ShortcutScope::fx ? (topic == 2 ? 3 : 5) : (topic == 0 ? 3 : topic == 3 ? 6 : 4);
 }
-int customPart(ShortcutScope scope, int topic = 0) { return titlePartCount(scope, topic) - 1; }
+int customPart(ShortcutScope scope, int topic = 0) {
+    return (scope == ShortcutScope::fx && topic != 2) ||
+        (scope == ShortcutScope::track && topic == 3) ? 3 : titlePartCount(scope, topic) - 1;
+}
 TitleMessage& titleFor(Preferences& p, ShortcutScope scope, int topic = 0) {
     if (scope == ShortcutScope::fx)
         return topic <= 0 ? p.fxTitle : p.fxExtraTitles[static_cast<size_t>(std::clamp(topic, 1, kFxTitleCount - 1) - 1)];
@@ -74,7 +80,7 @@ const TitleMessage& titleFor(const Preferences& p, ShortcutScope scope, int topi
 }
 void normalizeTitle(TitleMessage& title, int count) {
     // Guard user-edited/corrupt INI files: a template must be a permutation.
-    std::array<bool, 4> seen{};
+    std::array<bool, 6> seen{};
     for (int i = 0; i < count; ++i) {
         const int part = title.order[static_cast<size_t>(i)];
         if (part < 0 || part >= count || seen[static_cast<size_t>(part)]) {
@@ -85,7 +91,7 @@ void normalizeTitle(TitleMessage& title, int count) {
     }
     if (title.custom.size() > 240) title.custom.resize(240);
     for (auto& c : title.custom) if (c == L'\r' || c == L'\n' || c == L'\t') c = L' ';
-    title.enabled[static_cast<size_t>(count - 1)] = !title.custom.empty();
+    title.enabled[static_cast<size_t>(count == 5 || count == 6 ? 3 : count - 1)] = !title.custom.empty();
 }
 
 Key shortcut(UINT vk, int mods = 0) {
@@ -194,22 +200,34 @@ void fillMessageTopics(DialogState* st) {
     }
     selectList(st->messageTopics, st->selectedTopic[scope]);
 }
+const wchar_t* titlePartLabel(ShortcutScope scope, int topic, int part) {
+    if (scope == ShortcutScope::fx)
+        return kFxPartNames[std::clamp(topic, 0, kFxTitleCount - 1)][part];
+    if (topic == 0) {
+        constexpr const wchar_t* names[] = {L"Track Params", L"Track", L"Custom message"};
+        return names[part];
+    }
+    if (topic == 3) {
+        // Existing IDs 0..3 retain their meanings. Type and Mode are new.
+        constexpr const wchar_t* names[] = {
+            L"Track Params", L"Track", L"Name", L"Custom message", L"Type", L"Mode"
+        };
+        return names[part];
+    }
+    if (part == 0) return topic >= 7 ? L"Track Memories" : L"Track Params";
+    if (part == 1) return L"Track";
+    if (part == 2) return kTrackPageLabels[std::clamp(topic, 0, kTrackTitleCount - 1)];
+    return L"Custom message";
+}
 void fillMessageParts(DialogState* st, int selected = 0) {
     const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
     TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
     const int count = titlePartCount(st->messageScope, topic);
-    const wchar_t* trackNames[] = {L"Track Params", L"Track", L"Custom message"};
-    const wchar_t* trackExtraNames[] = {
-        topic >= 7 ? L"Track Memories" : L"Track Params",
-        L"Track", kTrackPageLabels[std::clamp(topic, 0, kTrackTitleCount - 1)], L"Custom message"
-    };
     SendMessageW(st->messages, LB_RESETCONTENT, 0, 0);
     for (int i = 0; i < count; ++i) {
         const int part = cfg.order[static_cast<size_t>(i)];
         const bool custom = part == customPart(st->messageScope, topic);
-        std::wstring line = custom ? L"Custom message" :
-            (st->messageScope == ShortcutScope::fx ? kFxPartNames[std::clamp(topic, 0, kFxTitleCount - 1)][part] :
-                topic == 0 ? trackNames[part] : trackExtraNames[part]);
+        std::wstring line = titlePartLabel(st->messageScope, topic, part);
         if (custom) {
             if (!cfg.custom.empty()) line += L": " + cfg.custom;
             line += L" (Enter to edit)";
@@ -267,14 +285,8 @@ void toggleMessagePart(DialogState* st) {
     cfg.enabled[static_cast<size_t>(part)] = !cfg.enabled[static_cast<size_t>(part)];
     fillMessageParts(st, selected);
     // Report the resulting state immediately without opening a confirmation.
-    const wchar_t* trackNames[] = {L"Track Params", L"Track"};
-    const wchar_t* trackExtraNames[] = {
-        topic >= 7 ? L"Track Memories" : L"Track Params", L"Track",
-        kTrackPageLabels[std::clamp(topic, 0, kTrackTitleCount - 1)]
-    };
     const std::wstring feedback = std::wstring(cfg.enabled[static_cast<size_t>(part)] ? L"Enabled - " : L"Disabled - ") +
-        (st->messageScope == ShortcutScope::fx ? kFxPartNames[std::clamp(topic, 0, kFxTitleCount - 1)][part] :
-            topic == 0 ? trackNames[part] : trackExtraNames[part]);
+        titlePartLabel(st->messageScope, topic, part);
     if (st->announce) st->announce(toUtf8(feedback));
 }
 void reorderMessagePart(DialogState* st, int direction) {
@@ -814,18 +826,29 @@ Preferences defaultPreferences() {
         if (!existing) unique.push_back(std::move(entry));
     }
     p.shortcuts = std::move(unique);
+    // Type is its own disabled component, immediately before Name. Existing
+    // plugins default to a clean title, independent of FX format.
+    p.fxTitle.order = {{0, 4, 1, 2, 3}};
+    p.fxExtraTitles[0].order = {{0, 4, 1, 2, 3}};
+    p.fxExtraTitles[2].order = {{0, 1, 4, 2, 3}};
     // The three new FX templates reproduce each window's original wording.
-    p.fxExtraTitles[0].enabled = {{true, true, true, false}};  // Memories: heading - plugin - track
-    p.fxExtraTitles[1].enabled = {{true, true, false, false}}; // Browser: heading - context
-    p.fxExtraTitles[2].enabled = {{true, true, true, false}};  // Pin: heading - track - plugin
-    p.trackTitle.enabled = {{true, true, false, false}};
+    p.fxExtraTitles[0].enabled = {{true, true, true, false, false}};  // Memories: heading - plugin - track
+    p.fxExtraTitles[1].enabled = {{true, true, false, false, false}}; // Browser: heading - context
+    p.fxExtraTitles[2].enabled = {{true, true, true, false, false}};  // Pin: heading - track - plugin
+    // F4: Heading, Track, Type (off), Name, Mode, Custom message.
+    // Type/Mode have new IDs (4/5); old FX-name slot 2 and custom slot 3
+    // remain stable for lossless migration from release 0.0.70.
+    p.trackExtraTitles[2].order = {{0, 1, 4, 2, 5, 3}};
+    p.trackTitle.enabled = {{true, true, false, false, false, false}};
     for (size_t i = 0; i < p.trackExtraTitles.size(); ++i) {
         // Track Memories titles do not include the track name by default;
         // the other pages preserve the historic Track Params - Track - Page.
         p.trackExtraTitles[i].enabled = i >= 6 ?
-            std::array<bool, 4>{{true, false, true, false}} :
-            std::array<bool, 4>{{true, true, true, false}};
+            std::array<bool, 6>{{true, false, true, false, false, false}} :
+            std::array<bool, 6>{{true, true, true, false, false, false}};
     }
+    // Mode describes the page, not the FX. Keep it even with Type hidden.
+    p.trackExtraTitles[2].enabled[5] = true;
     return p;
 }
 namespace {
@@ -841,10 +864,37 @@ void loadTitle(const std::wstring& path, const wchar_t* prefix, TitleMessage& cf
     const std::wstring customKey = std::wstring(prefix) + L"Custom";
     const std::wstring order = readIni(path, L"Messages", orderKey.c_str());
     const std::wstring enabled = readIni(path, L"Messages", enabledKey.c_str());
-    if (static_cast<int>(order.size()) == count) {
+    if (count == 5 && order.size() == 4) {
+        // From 0.0.70: preserve all four positions, and add optional Type
+        // just before the existing Name (old part 1, or part 2 for Pin).
+        const int namePart = std::wstring(prefix) == L"FxTitlePage3" ? 2 : 1;
+        int target = 0;
+        for (wchar_t c : order) {
+            const int part = c - L'0';
+            if (part == namePart && target < 5) cfg.order[static_cast<size_t>(target++)] = 4;
+            if (target < 5) cfg.order[static_cast<size_t>(target++)] = part;
+        }
+    } else if (count == 6 && order.size() == 4) {
+        // Track F4: insert optional Type before former FX-name part 2,
+        // then Mode after it, preserving all original positions.
+        int target = 0;
+        for (wchar_t c : order) {
+            const int part = c - L'0';
+            if (part == 2 && target < 6) cfg.order[static_cast<size_t>(target++)] = 4;
+            if (target < 6) cfg.order[static_cast<size_t>(target++)] = part;
+            if (part == 2 && target < 6) cfg.order[static_cast<size_t>(target++)] = 5;
+        }
+    } else if (static_cast<int>(order.size()) == count) {
         for (int i = 0; i < count; ++i) cfg.order[static_cast<size_t>(i)] = order[static_cast<size_t>(i)] - L'0';
     }
-    if (static_cast<int>(enabled.size()) == count) {
+    if (count == 5 && enabled.size() == 4) {
+        for (int i = 0; i < 4; ++i) cfg.enabled[static_cast<size_t>(i)] = enabled[static_cast<size_t>(i)] == L'1';
+        cfg.enabled[4] = false;
+    } else if (count == 6 && enabled.size() == 4) {
+        for (int i = 0; i < 4; ++i) cfg.enabled[static_cast<size_t>(i)] = enabled[static_cast<size_t>(i)] == L'1';
+        cfg.enabled[4] = false; // Never enable Type implicitly on upgrade.
+        cfg.enabled[5] = cfg.enabled[2]; // Inherit old page-label visibility.
+    } else if (static_cast<int>(enabled.size()) == count) {
         for (int i = 0; i < count; ++i) cfg.enabled[static_cast<size_t>(i)] = enabled[static_cast<size_t>(i)] == L'1';
     }
     cfg.custom = readIni(path, L"Messages", customKey.c_str());
@@ -871,12 +921,12 @@ Preferences loadPreferences(const std::filesystem::path& file) {
     p.compatibilityHook = GetPrivateProfileIntW(L"Keyboard", L"CompatibilityHook", 0, path.c_str()) != 0;
     // Upgrade the previous two-way "PluginFirst" setting without losing it.
     const auto legacy = readIni(path, L"Messages", L"FxTitleOrder");
-    if (legacy.empty() && !p.pluginFirst) p.fxTitle.order = {{0, 2, 1, 3}};
+    if (legacy.empty() && !p.pluginFirst) p.fxTitle.order = {{0, 2, 4, 1, 3}};
     // FX Memories previously shared PluginFirst with FX Params. Preserve
     // that historical order on first migration; afterward it has its own INI.
     if (!p.pluginFirst && readIni(path, L"Messages", L"FxTitlePage1Order").empty())
-        p.fxExtraTitles[0].order = {{0, 2, 1, 3}};
-    loadTitle(path, L"FxTitle", p.fxTitle, 4);
+        p.fxExtraTitles[0].order = {{0, 2, 4, 1, 3}};
+    loadTitle(path, L"FxTitle", p.fxTitle, 5);
     for (int i = 1; i < kFxTitleCount; ++i) {
         const std::wstring key = L"FxTitlePage" + std::to_wstring(i);
         loadTitle(path, key.c_str(), p.fxExtraTitles[static_cast<size_t>(i - 1)],
@@ -885,7 +935,8 @@ Preferences loadPreferences(const std::filesystem::path& file) {
     loadTitle(path, L"TrackTitle", p.trackTitle, 3);
     for (int i = 1; i < kTrackTitleCount; ++i) {
         const std::wstring key = L"TrackTitlePage" + std::to_wstring(i);
-        loadTitle(path, key.c_str(), p.trackExtraTitles[static_cast<size_t>(i - 1)], 4);
+        loadTitle(path, key.c_str(), p.trackExtraTitles[static_cast<size_t>(i - 1)],
+            titlePartCount(ShortcutScope::track, i));
     }
     for (size_t i = 0; i < p.shortcuts.size(); ++i) {
         const std::wstring key = L"Shortcut" + std::to_wstring(i);
@@ -905,7 +956,7 @@ Preferences loadPreferences(const std::filesystem::path& file) {
 bool savePreferences(const std::filesystem::path& file, const Preferences& p) {
     const std::wstring path = file.wstring();
     if (!WritePrivateProfileStringW(L"Messages", L"PluginFirst", p.pluginFirst ? L"1" : L"0", path.c_str())) return false;
-    if (!saveTitle(path, L"FxTitle", p.fxTitle, 4) || !saveTitle(path, L"TrackTitle", p.trackTitle, 3)) return false;
+    if (!saveTitle(path, L"FxTitle", p.fxTitle, 5) || !saveTitle(path, L"TrackTitle", p.trackTitle, 3)) return false;
     for (int i = 1; i < kFxTitleCount; ++i) {
         const std::wstring key = L"FxTitlePage" + std::to_wstring(i);
         if (!saveTitle(path, key.c_str(), p.fxExtraTitles[static_cast<size_t>(i - 1)],
@@ -913,7 +964,8 @@ bool savePreferences(const std::filesystem::path& file, const Preferences& p) {
     }
     for (int i = 1; i < kTrackTitleCount; ++i) {
         const std::wstring key = L"TrackTitlePage" + std::to_wstring(i);
-        if (!saveTitle(path, key.c_str(), p.trackExtraTitles[static_cast<size_t>(i - 1)], 4)) return false;
+        if (!saveTitle(path, key.c_str(), p.trackExtraTitles[static_cast<size_t>(i - 1)],
+            titlePartCount(ShortcutScope::track, i))) return false;
     }
     if (!WritePrivateProfileStringW(L"Keyboard", L"CompatibilityHook", p.compatibilityHook ? L"1" : L"0", path.c_str())) return false;
     for (size_t i = 0; i < p.shortcuts.size(); ++i) {
@@ -1031,50 +1083,86 @@ void setTitleMessages(const Preferences& settings) {
     activeFxExtraTitles = settings.fxExtraTitles;
     activeTrackTitle = settings.trackTitle;
     activeTrackExtraTitles = settings.trackExtraTitles;
-    normalizeTitle(activeFxTitle, 4);
+    normalizeTitle(activeFxTitle, 5);
     for (int i = 1; i < kFxTitleCount; ++i)
         normalizeTitle(activeFxExtraTitles[static_cast<size_t>(i - 1)],
             titlePartCount(ShortcutScope::fx, i));
     normalizeTitle(activeTrackTitle, 3);
-    for (auto& title : activeTrackExtraTitles) normalizeTitle(title, 4);
+    for (int i = 1; i < kTrackTitleCount; ++i)
+        normalizeTitle(activeTrackExtraTitles[static_cast<size_t>(i - 1)],
+            titlePartCount(ShortcutScope::track, i));
+}
+// REAPER prefixes are recognized only as a complete token at the very start.
+// Never remove a type-like word from the middle of a real plugin name.
+struct FxNameParts { std::string type; std::string name; };
+FxNameParts splitReaperFxName(const std::string& raw) {
+    constexpr const char* prefixes[] = {
+        "VST3i", "VST3", "VST2i", "VST2", "VSTi", "VST",
+        "CLAPi", "CLAP", "JSFX", "JS", "DXi", "DX", "AUi", "AU",
+        "LV2i", "LV2"
+    };
+    for (const char* token : prefixes) {
+        const std::string type(token);
+        if (raw.size() <= type.size() + 2 || raw[type.size()] != ':' || raw[type.size()+1] != ' ') continue;
+        bool equal = true;
+        for (size_t i = 0; i < type.size(); ++i) {
+            const auto a = static_cast<unsigned char>(raw[i]);
+            const auto b = static_cast<unsigned char>(type[i]);
+            if (std::tolower(a) != std::tolower(b)) { equal = false; break; }
+        }
+        if (!equal) continue;
+        const auto first = raw.find_first_not_of(' ', type.size() + 2);
+        if (first == std::string::npos) break;
+        return {raw.substr(0, type.size()) + ":", raw.substr(first)};
+    }
+    return {{}, raw};
+}
+std::wstring fromUtf8(const std::string& s) {
+    if (s.empty()) return {};
+    const int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS,
+        s.data(), static_cast<int>(s.size()), nullptr, 0);
+    if (length <= 0) return {};
+    std::wstring result(static_cast<size_t>(length), L'\0');
+    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS,
+        s.data(), static_cast<int>(s.size()), result.data(), length);
+    return result;
 }
 std::string formatFxTitle(const std::string& fx, const std::string& track,
     const std::string& status) {
-    const std::string names[] = {"FX Params", fx, track, toUtf8(activeFxTitle.custom)};
+    const auto parsed = splitReaperFxName(fx);
+    const std::string names[] = {"FX Params", parsed.name, track,
+        toUtf8(activeFxTitle.custom), parsed.type};
     std::string result;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 5; ++i) {
         const int part = activeFxTitle.order[static_cast<size_t>(i)];
-        if (part < 0 || part >= 4 || !activeFxTitle.enabled[static_cast<size_t>(part)] || names[part].empty()) continue;
+        if (part < 0 || part >= 5 || !activeFxTitle.enabled[static_cast<size_t>(part)] || names[part].empty()) continue;
         if (!result.empty()) result += " - ";
         result += names[part];
     }
-    if (result.empty()) result = "FX Params"; // Never leave a nameless accessible window.
+    if (result.empty()) result = "FX Params";
     if (!status.empty()) {
-        // Preserve the original announcement order when the heading is first:
-        // "FX Params. Bypassed. Plugin - Track".
         if (activeFxTitle.order[0] == 0 && activeFxTitle.enabled[0]) {
             const std::string prefix = "FX Params - ";
             if (result.compare(0, prefix.size(), prefix) == 0)
                 result = "FX Params. " + status + ". " + result.substr(prefix.size());
-            else if (result == "FX Params") result += ". " + status;
             else result += ". " + status;
         } else result += ". " + status;
     }
     return result;
 }
-// Compose the other three FX windows with the same Space / Alt+arrow / Enter
-// template contract as FX Params. Keep their original default word order.
 std::string formatFxPageTitle(const std::string& fx, const std::string& context,
     int titleIndex, const std::string& status) {
     if (titleIndex <= 0 || titleIndex >= kFxTitleCount)
         return formatFxTitle(fx, context, status);
     const auto& cfg = activeFxExtraTitles[static_cast<size_t>(titleIndex - 1)];
     const int count = titlePartCount(ShortcutScope::fx, titleIndex);
+    const auto parsed = splitReaperFxName(fx);
     const std::string names[] = {
         titleIndex == 1 ? "FX Memories" : titleIndex == 2 ? "FX Browser" : "FX Pin Connector",
-        titleIndex == 2 || titleIndex == 3 ? context : fx,
-        titleIndex == 2 ? toUtf8(cfg.custom) : titleIndex == 3 ? fx : context,
-        titleIndex == 2 ? std::string{} : toUtf8(cfg.custom)
+        titleIndex == 2 || titleIndex == 3 ? context : parsed.name,
+        titleIndex == 2 ? toUtf8(cfg.custom) : titleIndex == 3 ? parsed.name : context,
+        titleIndex == 2 ? std::string{} : toUtf8(cfg.custom),
+        parsed.type
     };
     std::string result;
     for (int i = 0; i < count; ++i) {
@@ -1085,7 +1173,6 @@ std::string formatFxPageTitle(const std::string& fx, const std::string& context,
     }
     if (result.empty()) result = names[0];
     if (!status.empty()) {
-        // Preserve the historical "FX Memories. Bypassed. Plugin - Track".
         const std::string prefix = names[0] + " - ";
         if (cfg.order[0] == 0 && cfg.enabled[0] && result.compare(0, prefix.size(), prefix) == 0)
             result = names[0] + ". " + status + ". " + result.substr(prefix.size());
@@ -1105,18 +1192,37 @@ std::wstring formatTrackTitle(const std::wstring& track) {
     return result.empty() ? L"Track Params" : result;
 }
 std::wstring formatTrackPageTitle(const std::wstring& track, int titleIndex,
-    const std::wstring& pageText) {
+    const std::wstring& pageText, const std::wstring& modeText) {
     if (titleIndex <= 0 || titleIndex >= kTrackTitleCount) return formatTrackTitle(track);
     const TitleMessage& cfg = activeTrackExtraTitles[static_cast<size_t>(titleIndex - 1)];
     const bool memories = titleIndex >= 7;
-    const std::wstring names[] = {memories ? L"Track Memories" : L"Track Params", track,
-        pageText.empty() ? kTrackPageLabels[titleIndex] : pageText, cfg.custom};
     std::wstring result;
-    for (int i = 0; i < 4; ++i) {
-        const int part = cfg.order[static_cast<size_t>(i)];
-        if (part < 0 || part >= 4 || !cfg.enabled[static_cast<size_t>(part)] || names[part].empty()) continue;
-        if (!result.empty()) result += L" - ";
-        result += names[part];
+    if (titleIndex == 3) {
+        // Track F4 obtains the unmodified name from REAPER; use exactly the
+        // same type-prefix recognizer as FX Params. No heuristic substring
+        // trimming: unknown prefixes stay part of Name.
+        const auto parsed = splitReaperFxName(toUtf8(pageText));
+        const std::wstring name = fromUtf8(parsed.name);
+        const std::wstring type = fromUtf8(parsed.type);
+        const std::wstring names[] = {
+            L"Track Params", track, name.empty() ? pageText : name,
+            cfg.custom, type, modeText
+        };
+        for (int i = 0; i < 6; ++i) {
+            const int part = cfg.order[static_cast<size_t>(i)];
+            if (part < 0 || part >= 6 || !cfg.enabled[static_cast<size_t>(part)] || names[part].empty()) continue;
+            if (!result.empty()) result += L" - ";
+            result += names[part];
+        }
+    } else {
+        const std::wstring names[] = {memories ? L"Track Memories" : L"Track Params", track,
+            pageText.empty() ? kTrackPageLabels[titleIndex] : pageText, cfg.custom};
+        for (int i = 0; i < 4; ++i) {
+            const int part = cfg.order[static_cast<size_t>(i)];
+            if (part < 0 || part >= 4 || !cfg.enabled[static_cast<size_t>(part)] || names[part].empty()) continue;
+            if (!result.empty()) result += L" - ";
+            result += names[part];
+        }
     }
     return result.empty() ? (memories ? L"Track Memories" : L"Track Params") : result;
 }

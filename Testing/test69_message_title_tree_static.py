@@ -18,9 +18,9 @@ assert 'if (part == customPart(st->messageScope, topic)) return;' in pref
 assert 'L"Disabled - "' in pref
 assert 'closeCustomEditor(st, true)' in pref and 'closeCustomEditor(st, false)' in pref
 assert 'if (st->editingCustom) closeCustomEditor(st, id == IDOK)' in pref
-assert 'GetPrivateProfileStringW' in pref and 'loadTitle(path, L"FxTitle", p.fxTitle, 4)' in pref
+assert 'GetPrivateProfileStringW' in pref and 'loadTitle(path, L"FxTitle", p.fxTitle, 5)' in pref
 assert 'loadTitle(path, L"TrackTitle", p.trackTitle, 3)' in pref
-assert 'saveTitle(path, L"FxTitle", p.fxTitle, 4)' in pref
+assert 'saveTitle(path, L"FxTitle", p.fxTitle, 5)' in pref
 assert 'saveTitle(path, L"TrackTitle", p.trackTitle, 3)' in pref
 assert 'if (legacy.empty() && !p.pluginFirst)' in pref
 assert 'std::string formatFxTitle(' in pref and 'std::wstring formatTrackTitle(' in pref

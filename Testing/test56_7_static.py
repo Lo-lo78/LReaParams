@@ -13,13 +13,12 @@ assert 'if (!count) return; // Empty FX remains accessible through Alt+Enter.' i
 assert 'if (!k.repeat) { rebuildFxTcp(true); openFxTcpParameterGrid(false); }' in t
 assert 'if (currentFxTcpParameter()) {' in t
 assert 'No TCP parameters. Press Alt+Enter to add' in t
-# The FX TCP header is now assembled by the customizable Track title
-# template, rather than concatenated unconditionally. Verify both that
-# the current FX name remains in the label and that the correct page
-# template receives it; reordering/hiding remains controlled by Preferences.
-assert 'const std::wstring label = wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX") +' in n
-assert '(fxTcpListOpen_ ? L" - Add TCP parameters" : L" - TCP parameters")' in n
-assert 'formatTrackPageTitle(wideUtf8(trackName()), 3, label)' in n
+# F4 now passes the raw REAPER FX name and the separate TCP mode text
+# to the customizable page template. This makes Type/Name independent
+# without breaking the original F4 page's two TCP states.
+assert 'const std::wstring fxName = wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX")' in n
+assert 'const std::wstring mode = fxTcpListOpen_ ? L"Add TCP parameters" : L"TCP parameters"' in n
+assert 'formatTrackPageTitle(wideUtf8(trackName()), 3, fxName, mode)' in n
 preferences=(r/'src/Preferences.cpp').read_text()
 assert 'std::wstring formatTrackPageTitle(' in preferences
 assert 'pageText.empty() ? kTrackPageLabels[titleIndex] : pageText' in preferences
