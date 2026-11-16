@@ -1,13 +1,17 @@
-# LReaParams 0.0.70 — pubblicazione GitHub e ReaPack senza perdere lo storico
+# LReaParams 0.0.71 — pubblicazione GitHub e ReaPack senza perdere lo storico
 
-**Versione nuova:** `v0.0.70`. Non spostare, cancellare o ricreare i tag precedenti, incluso `v0.0.69`. Non sostituire `index.xml` né forzare i push.
+**Nuova release:** `v0.0.71` (16 novembre 2026). Le `v0.0.70`, `v0.0.69` e tutte le precedenti rimangono pubblicate. **Non spostare, cancellare o ricreare tag precedenti; non riscrivere manualmente `index.xml`.**
 
-1. Copia il contenuto dello ZIP **0.0.70 GitHub Ready** dentro il repository Git locale esistente. Conserva la cartella `.git`. Non fare `git init` e non copiare via il file `index.xml` che GitHub aggiorna automaticamente.
-2. Dalla radice del repository esegui: `Tools\push_lreaparams.cmd "Release 0.0.70 - Accessible Preferences, customizable titles and track selection"`. Lo script riprende `index.xml` da `origin/main`, crea il commit, esegue `git pull --rebase origin main` ed effettua un push normale, senza riscrivere lo storico.
-3. Apri **GitHub Actions → Build LReaParams Windows x64** per il commit inviato; deve terminare correttamente. Scarica l'artefatto `LReaParams-0.0.70-Windows-x64-SETUP-EXE` e verifica che contenga `LReaParams-0.0.70-Windows-x64-Setup.exe`. Controlla About, Preferences, Ctrl+P e la navigazione Track Params con NVDA e OSARA.
-4. Nella pagina **GitHub Releases → Draft a new release**, crea il nuovo tag `v0.0.70` **sul commit appena compilato**. Titolo consigliato: `LReaParams 0.0.70 - Accessible Preferences and Customizable Titles`. Incolla il contenuto di `Docs/GITHUB_RELEASE_0_0_70_BODY_EN.md`. Allega lo ZIP dell'installer **0.0.70**, non un setup vecchio.
-5. Pubblica una release **stabile**, NON Draft e NON Pre-release. **La pubblicazione della release**, non il push del sorgente, attiva automaticamente **GitHub Actions → Publish LReaParams to ReaPack** (`release: published`). Il tag deve essere esattamente `v0.0.70` e CMake deve dichiarare `0.0.70`.
-6. Il job `build-native-release-asset` ricompila dal tag e allega `reaper_lreaparams.dll` alla release; il job successivo `regenerate-reapack-index` ricrea `index.xml` da TUTTE le release stabili con DLL e pubblica il nuovo indice su `main`. Controlla che il run sia verde e che nell'indice siano presenti **0.0.70 e tutte le versioni storiche idonee**.
-7. Se il run automatico fallisce, correggi l'errore prima di procedere. La funzione **Run workflow** consente di ripetere il processo indicando `v0.0.70`, senza cambiare tag o indice. Dopo il commit automatico di ReaPack, sincronizza il clone locale con `git pull --rebase origin main` prima del prossimo lavoro.
+1. Estrai il contenuto dello ZIP **0.0.71 GitHub Ready** nella cartella Git locale già esistente. Conserva `.git` e l'eventuale `index.xml` presente nel clone; non usare `git init` o `git push --force`.
+2. Dalla radice del repository esegui:
 
-**Non modificare** `Tools\push_lreaparams.cmd`, `.github/workflows/publish-reapack.yml`, `Tools/generate_reapack_index.py` o `index.xml` per fare questa release. La storia Git e le release passate devono restare intatte.
+   `Tools\push_lreaparams.cmd "Release 0.0.71 - Customizable FX Type and Name titles"`
+
+   Lo script originale recupera l'indice remoto, crea il commit, esegue `git pull --rebase origin main` e invia un push normale.
+3. Controlla **GitHub Actions → Build LReaParams Windows x64**. Scarica `LReaParams-0.0.71-Windows-x64-SETUP-EXE`, verifica l'EXE **0.0.71** e prova About, FX Params e Track Params F4 con NVDA/OSARA prima della release stabile.
+4. Crea **GitHub Releases → Draft a new release**, tag **`v0.0.71`** sul commit appena verificato, titolo **`LReaParams 0.0.71 - Independent FX Type and Name Titles`** e descrizione da `Docs/GITHUB_RELEASE_0_0_71_BODY_EN.md`. Allega lo ZIP dell'installer di **0.0.71**; non usare asset di versioni precedenti.
+5. Premi **Publish release** come **stabile**, non prerelease. Il `release: published` avvia automaticamente `Publish LReaParams to ReaPack`. Un semplice push del sorgente NON avvia questo publisher.
+6. Il job `build-native-release-asset` compila la DLL dal tag della release e allega `reaper_lreaparams.dll`. `regenerate-reapack-index` recupera tutte le release stabili idonee, genera `index.xml` e lo aggiorna su `main` senza eliminare le vecchie versioni.
+7. Verifica il workflow verde e la nuova voce **0.0.71** insieme allo storico. Se occorre ripetere il publisher, usa **Run workflow** e il tag `v0.0.71`, senza cambiare versioni o tag. Dopo il commit automatico ReaPack sincronizza la copia locale (`git pull --rebase origin main`).
+
+**Non alterare:** `Tools\push_lreaparams.cmd`, `.github/workflows/publish-reapack.yml`, `Tools/generate_reapack_index.py`. Il pacchetto dei sorgenti non deve includere `index.xml`; il clone remoto può e deve conservarlo.

@@ -5,14 +5,14 @@ from reapack_index_contract import verify_optional_reapack_index
 import xml.etree.ElementTree as ET
 r=Path(__file__).resolve().parents[1]
 rd=lambda x:(r/x).read_text(encoding='utf-8')
-assert 'project(LReaParams VERSION 0.0.70 LANGUAGES CXX)' in rd('CMakeLists.txt')
-assert 'LReaParams 0.0.70 - Native REAPER extension' in rd('src/Extension.cpp')
-assert '!define APP_VERSION "0.0.70"' in rd('Installer/LReaParams.nsi')
-assert 'LReaParams-0.0.70-Windows-x64-SETUP-EXE' in rd('.github/workflows/build-windows.yml')
+assert 'project(LReaParams VERSION 0.0.71 LANGUAGES CXX)' in rd('CMakeLists.txt')
+assert 'LReaParams 0.0.71 - Native REAPER extension' in rd('src/Extension.cpp')
+assert '!define APP_VERSION "0.0.71"' in rd('Installer/LReaParams.nsi')
+assert 'LReaParams-0.0.71-Windows-x64-SETUP-EXE' in rd('.github/workflows/build-windows.yml')
 assert 'LREAPARAMSPREFERENCES' in rd('src/Extension.cpp')
 assert 'constexpr int kFxTitleCount = 4' in rd('src/Preferences.cpp')
 assert 'constexpr int kTrackTitleCount = 12' in rd('src/Preferences.cpp')
-assert 'Release 0.0.70' in rd('Docs/REAPACK_SETUP_IT.md')
+assert 'v0.0.71' in rd('Docs/REAPACK_SETUP_IT.md')
 assert 'Ctrl+P' in rd('Docs/RELEASE_NOTES_0_0_70.md')
 for name in ('Guide/LReaParams - FX Params.html','Guide/LReaParams - Track Params.html'):
     assert 'release-0-0-70-preferences' in rd(name)
@@ -43,4 +43,5 @@ def rel(v):
 versions=m.release_versions([rel(x) for x in ('0.0.70','0.0.69','0.0.68','0.0.67','0.0.66','0.0.65','0.0.63')],lambda _:['Guide/index.html'])
 root=ET.fromstring(m.build_index(versions,m.DEFAULT_REPO))
 assert [x.attrib['name'] for x in root.findall('./category/reapack/version')] == ['0.0.63','0.0.65','0.0.66','0.0.67','0.0.68','0.0.69','0.0.70']
-print('Release 0.0.70 version, Preferences and full ReaPack history: PASS')
+assert 'LReaParams 0.0.70' in rd('Docs/RELEASE_NOTES_0_0_70.md')
+print('Historical 0.0.70 Preferences and full ReaPack history: PASS')

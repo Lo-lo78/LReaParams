@@ -1,3 +1,12 @@
+## LReaParams 0.0.71 — independent FX Type and Name title elements (2026-11-16)
+
+- FX Params, FX Memories and FX Pin Connector title templates separate plugin **Type** (off by default) from **Name** (on by default); FX Browser remains unchanged.
+- Recognizes only documented, leading REAPER FX technology prefixes. Unknown names are left intact; no global substring removal.
+- Track Params F4 separates **Type**, **Name** and **Mode** (`TCP parameters` / `Add TCP parameters`), all reorderable with Alt+Up/Down; Space enables/disables fixed parts.
+- Legacy 0.0.70 `Preferences.ini` orders, enabled states and custom messages migrate without enabling the new Type field unexpectedly.
+- Updated About, installer, GitHub Actions artifacts, README and multilingual guides. Preserved public 0.0.70 documentation and the untouched ReaPack generator/publisher and push helper.
+- [Release notes 0.0.71](RELEASE_NOTES_0_0_71.md).
+
 ## LReaParams 0.0.70 — Preferences and customizable speech (2026-11-15)
 
 - Native accessible Preferences action: tree navigation, Messages / Shortcuts / Advanced, remembered position, keyboard focus restoration and OK/Cancel persistence.

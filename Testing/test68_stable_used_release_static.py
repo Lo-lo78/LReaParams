@@ -4,10 +4,10 @@ import importlib.util
 import xml.etree.ElementTree as ET
 r=Path(__file__).resolve().parents[1]
 read=lambda n: (r/n).read_text(encoding='utf-8')
-assert 'project(LReaParams VERSION 0.0.70 LANGUAGES CXX)' in read('CMakeLists.txt')
+assert 'project(LReaParams VERSION 0.0.71 LANGUAGES CXX)' in read('CMakeLists.txt')
 assert 'FX Used (Usati): Ctrl+Shift+L' in read('src/Extension.cpp')
-assert '0.0.70' in read('Installer/LReaParams.nsi')
-assert '0.0.70' in read('.github/workflows/build-windows.yml')
+assert '0.0.71' in read('Installer/LReaParams.nsi')
+assert '0.0.71' in read('.github/workflows/build-windows.yml')
 assert 'release-0-0-68-used' in read('Guide/LReaParams - FX Params.html')
 for lang in ('it','es','fr','ru','zh-CN','ja'):
     assert 'release-0-0-68-used' in read(f'Guide/{lang}/fx.html')
