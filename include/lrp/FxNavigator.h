@@ -296,6 +296,9 @@ private:
     // plugin profile. Changing parameter loads that parameter's Step only.
     using StepSetting = std::pair<std::string,int>;
     std::map<int,StepSetting> parameterSteps_;
+    // Nonpersistent F7 selection preview; discarded when focus changes.
+    std::map<int,int> previewSelectedSteps_;
+    int workingStepForParameter(int param) const;
     int stepActiveParameter_ = INT_MIN;
     bool parameterStepsDirty_ = false;
     void loadParameterSteps();
@@ -471,6 +474,7 @@ private:
     std::string memoryReturnF7Filter_;
     int memoryReturnParam_ = 0, memoryReturnPosition_ = 0, memoryReturnGroup_ = 0;
     int memoryCol_ = 0, memoryRow_ = 0;
+    std::map<int,int> memoryPreviewSteps_; // FX Memory editor preview until Alt+S.
     std::array<std::vector<MemoryEntry>,8> memoryColumns_{};
     // Ephemeral per-column selection, never written to the .fx profile.
     std::array<std::set<int>,8> memorySelected_{};

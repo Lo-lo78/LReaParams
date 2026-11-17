@@ -7,7 +7,8 @@ header=(r/'include/lrp/FxNavigator.h').read_text(encoding='utf-8')
 ext=(r/'src/Extension.cpp').read_text(encoding='utf-8')
 assert 'void FxNavigator::resetGridAndStep()' not in nav
 step=nav.split('void FxNavigator::resetCurrentStep() {',1)[1].split('void FxNavigator::resetCurrentGrid()',1)[0]
-assert 'stepScale_ = 0;' in step and 'markParameterStepChanged();' in step
+assert 'stepScale_ = 0;' in step and 'markParameterStepChanged();' not in step
+assert 'Alt+S is the only write' in step
 assert 'columns_ =' not in step and 'rememberPosition();' in step
 grid=nav.split('void FxNavigator::resetCurrentGrid() {',1)[1].split('void FxNavigator::beginGridNumericEdit()',1)[0]
 assert 'columns_ = 10;' in grid and 'stepScale_' not in grid

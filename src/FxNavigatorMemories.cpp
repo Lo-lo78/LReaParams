@@ -153,6 +153,7 @@ void FxNavigator::speakMemory(const std::string& prefix) {
 void FxNavigator::memoryExit(bool announceReturn) {
     if(!memoryManager_)return;
     const bool standalone=memoryStandalone_;
+    memoryPreviewSteps_.clear();
     memoryManager_=false;memoryStandalone_=false;
     for(auto& selection:memorySelected_)selection.clear();
     defaultConfirm_=false;defaultYes_=false;defaultRegenerate_=false;
@@ -166,6 +167,8 @@ void FxNavigator::memoryExit(bool announceReturn) {
         restoreViewCursor(memoryReturnParam_, memoryReturnPosition_);
     else rebuildView(memoryReturnParam_,memoryReturnPosition_);
     if(editF7_ && !memoryReturnF7Filter_.empty())applyF7Filter(memoryReturnF7Filter_,false);
+    stepScale_ = savedStepForParameter(parameter_); // Unsaved memory Step is discarded.
+    stepActiveParameter_ = parameter_;
     rememberPosition();
     if(standalone) {end();return;}
     if(!announceReturn)return;
@@ -506,24 +509,42 @@ void FxNavigator::memoryNavigate(const Key& k) {
         return;
     }
     if(k.vk==VK_F7 && !k.ctrl && !k.alt){memoryLoad(true);return;}
+    if(k.alt && !k.ctrl && !k.shift && k.vk=='S') {
+        if(k.repeat)return;
+        if(!persistentPositionWriter_) {speech_("Step cannot be saved");return;}
+        if(memoryCol_==7 && !memoryColumns_[7].empty()) {
+            const auto e=memoryColumns_[7][static_cast<size_t>(memoryRow_)];
+            const auto preview=memoryPreviewSteps_.find(e.param);
+            const int value=preview!=memoryPreviewSteps_.end()?preview->second:savedStepForParameter(e.param);
+            const auto name=stepParameterName(e.param);
+            if(name.empty()) {speech_("Step cannot be saved");return;}
+            parameterSteps_[e.param]={name,value};
+            parameterStepsDirty_=true;
+            if(!flushParameterSteps()) {speech_("Step not saved");return;}
+            memoryPreviewSteps_.erase(e.param);
+            if(e.param==parameter_) {stepScale_=value;stepActiveParameter_=parameter_;}
+            rebuildMemoryColumns();
+            speech_("Step "+std::to_string(value)+" saved");
+        } else {
+            markParameterStepChanged();
+            if(flushParameterSteps()) speech_("Step "+std::to_string(stepScale_)+" saved");
+            else speech_("Step not saved");
+        }
+        return;
+    }
     if(k.alt && !k.ctrl && !k.shift && (k.vk==VK_LEFT || k.vk==VK_RIGHT)) {
         if(memoryCol_==7 && !memoryColumns_[7].empty()) {
             const auto e=memoryColumns_[7][static_cast<size_t>(memoryRow_)];
-            const int before=savedStepForParameter(e.param);
+            const auto preview=memoryPreviewSteps_.find(e.param);
+            const int before=preview!=memoryPreviewSteps_.end()?preview->second:savedStepForParameter(e.param);
             const int next=std::clamp(before+(k.vk==VK_LEFT?-1:1),-10,10);
             if(next==before)return;
-            parameterSteps_[e.param]={stepParameterName(e.param),next};
-            parameterStepsDirty_=true;
+            memoryPreviewSteps_[e.param]=next; // Do not write the .fx profile yet.
             if(e.param==parameter_) {stepScale_=next;stepActiveParameter_=parameter_;}
-            if(!flushParameterSteps()) {speech_("Step memory not saved");return;}
-            for(auto& selection:memorySelected_)selection.clear();
-            rebuildMemoryColumns();
-            if(memoryColumns_[7].empty()) {memoryCol_=7;memoryRow_=0;}
-            else memoryRow_=std::clamp(memoryRow_,0,static_cast<int>(memoryColumns_[7].size())-1);
-            speakMemory();return;
+            speech_("Step "+std::to_string(next));return;
         }
         const int next=std::clamp(stepScale_+(k.vk==VK_LEFT?-1:1),-10,10);
-        if(next!=stepScale_) {stepScale_=next;markParameterStepChanged();rememberPosition();speech_("Step "+std::to_string(stepScale_));}
+        if(next!=stepScale_) {stepScale_=next;rememberPosition();speech_("Step "+std::to_string(stepScale_));}
         return;
     }
     if(k.ctrl && !k.alt && !k.shift && (k.vk==VK_HOME || k.vk==VK_END)) {

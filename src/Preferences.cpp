@@ -815,6 +815,9 @@ Preferences defaultPreferences() {
     for (int i = 1; i <= 10; ++i)
         track(p, (L"Jump to marker " + std::to_wstring(i)).c_str(),
             i == 10 ? '0' : '0' + i, kPrefCtrl);
+    // Append ONLY: existing shortcut preference IDs must not shift.
+    fx(p, L"Save current parameter step", 'S', kPrefAlt);
+    track(p, L"Save current parameter step", 'S', kPrefAlt);
     // Deduplicate aliases used in different screens: one physical gesture gets
     // one binding per navigator, with a description covering its contexts.
     std::vector<ShortcutPreference> unique;
@@ -1139,7 +1142,7 @@ std::string formatFxTitle(const std::string& fx, const std::string& track,
         if (!result.empty()) result += " - ";
         result += names[part];
     }
-    if (result.empty()) result = "FX Params";
+    if (result.empty()) return {}; // All title elements disabled: no fallback.
     if (!status.empty()) {
         if (activeFxTitle.order[0] == 0 && activeFxTitle.enabled[0]) {
             const std::string prefix = "FX Params - ";
@@ -1171,7 +1174,7 @@ std::string formatFxPageTitle(const std::string& fx, const std::string& context,
         if (!result.empty()) result += " - ";
         result += names[part];
     }
-    if (result.empty()) result = names[0];
+    if (result.empty()) return {}; // Do not resurrect a disabled heading.
     if (!status.empty()) {
         const std::string prefix = names[0] + " - ";
         if (cfg.order[0] == 0 && cfg.enabled[0] && result.compare(0, prefix.size(), prefix) == 0)
@@ -1206,7 +1209,7 @@ std::wstring formatTrackTitle(const std::wstring& track) {
         if (!result.empty()) result += L" - ";
         result += names[part];
     }
-    return result.empty() ? L"Track Params" : result;
+    return result; // Fully disabled Track title is intentionally blank.
 }
 std::wstring formatTrackPageTitle(const std::wstring& track, int titleIndex,
     const std::wstring& pageText, const std::wstring& modeText) {
@@ -1241,6 +1244,6 @@ std::wstring formatTrackPageTitle(const std::wstring& track, int titleIndex,
             result += names[part];
         }
     }
-    return result.empty() ? (memories ? L"Track Memories" : L"Track Params") : result;
+    return result; // No hidden fallback when every title part is disabled.
 }
 } // namespace lrp

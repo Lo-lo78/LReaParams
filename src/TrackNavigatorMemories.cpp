@@ -98,6 +98,7 @@ bool TrackNavigator::openTrackMemories(bool standalone) {
     rememberPosition();
     valueMode_ = false;
     memoryStandalone_ = standalone;
+    memoryPreviewSteps_.clear();
     memoryManager_ = true;
     for(auto& selection:memorySelected_)selection.clear();
     memoryColumn_ = memoryRow_ = 0;
@@ -270,7 +271,9 @@ void TrackNavigator::speakMemory(const std::string& prefix) const {
 void TrackNavigator::memoryExit() {
     const bool standalone = memoryStandalone_;
     memoryManager_ = memoryStandalone_ = false;
+    memoryPreviewSteps_.clear();
     memoryItems_.clear();
+    stepScale_ = memory_.step(parameterKey()); // Discard uncommitted manager preview.
     for(auto& selection:memorySelected_)selection.clear();
     if (standalone) end();
     else announceTitle();
@@ -278,15 +281,13 @@ void TrackNavigator::memoryExit() {
 void TrackNavigator::memoryAdjustStep(int delta) {
     if (memoryItems_.empty() || memoryColumn_ != 1) return;
     const auto id = memoryItems_[static_cast<size_t>(memoryRow_)].key;
-    const int before = memory_.step(id);
+    const auto preview = memoryPreviewSteps_.find(id);
+    const int before = preview != memoryPreviewSteps_.end() ? preview->second : memory_.step(id);
     const int next = std::clamp(before + delta, -10, 10);
     if (next == before) return; // Silent step limit, like FX Params.
-    memory_.setStep(id, next);
-    memory_.flush();
-    stepScale_ = memory_.step(parameterKey());
-    for(auto& selection:memorySelected_)selection.clear();
-    rebuildMemoryList();
-    speakMemory();
+    memoryPreviewSteps_[id] = next;
+    if (id == parameterKey()) stepScale_ = next;
+    speech_("Step " + std::to_string(next)); // Not written until Alt+S.
 }
 void TrackNavigator::memoryDelete() {
     if(memoryItems_.empty()){speakMemory();return;}
@@ -480,6 +481,21 @@ void TrackNavigator::handleMemory(const Key& k) {
             }
             memoryColumn_ = savedColumn; memoryRow_ = savedRow;
         }
+        return;
+    }
+    if (k.alt && !k.ctrl && !k.shift && k.vk == 'S') {
+        if (k.repeat) return;
+        if (memoryColumn_ != 1 || memoryItems_.empty()) {
+            speech_("No parameter Step to save"); return;
+        }
+        const auto id = memoryItems_[static_cast<size_t>(memoryRow_)].key;
+        const auto preview = memoryPreviewSteps_.find(id);
+        const int value = preview != memoryPreviewSteps_.end() ? preview->second : memory_.step(id);
+        memory_.setStep(id, value); memory_.flush();
+        memoryPreviewSteps_.erase(id);
+        if (id == parameterKey()) stepScale_ = value;
+        rebuildMemoryList();
+        speech_("Step " + std::to_string(value) + " saved");
         return;
     }
     if (k.vk == VK_RETURN) { memoryActivate(); return; }

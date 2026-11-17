@@ -92,6 +92,9 @@ private:
     void jumpFxTcpByInitial(wchar_t letter, bool backwards);
     void jumpFxTcpGridByInitial(wchar_t letter, bool backwards);
     std::string fxTcpStepKey() const;
+    int workingFxTcpStep() const;
+    std::string fxTcpPreviewKey_;
+    int fxTcpPreviewStep_ = 0;
     bool writeFxTcpValue(double normalized);
     bool writeFxTcpRawValue(double raw);
     void nudgeFxTcpValue(int direction, bool coarse);
@@ -300,6 +303,7 @@ private:
     bool memoryManager_ = false, memoryStandalone_ = false;
     int memoryColumn_ = 0, memoryRow_ = 0;
     std::vector<MemoryItem> memoryItems_;
+    std::map<std::string,int> memoryPreviewSteps_; // Track Memory editor preview until Alt+S.
     // Ephemeral per-column selection, never written to the .tp profile.
     std::array<std::set<int>,5> memorySelected_{};
     std::vector<TrackRow> rows_;

@@ -50,14 +50,14 @@ void TrackNavigator::end() noexcept {
             try { speech_("Track Params: project memory not saved. Check the project .tp"); } catch (...) {}
         }
     }
-    memoryManager_ = memoryStandalone_ = false; memoryItems_.clear();
+    memoryManager_ = memoryStandalone_ = false; memoryItems_.clear(); memoryPreviewSteps_.clear();
     trackMidiRow_ = 0; trackMidiEdge_.clear();
     hardwareOutputColumn_ = -1; hardwareOutputRow_ = 0; hardwareOutputNewPair_ = 0; hardwareOutputEdge_.clear();
     reaRouteColumn_ = reaRouteRow_ = 0;
     active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false;
     rangeEditing_ = false; resetMidiState();
     backgroundMode_ = false; clearAutomationConfirm_ = false; clearAutomationYes_ = false;
-    filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); selectionBuilding_ = false; resetPendingRouting(); rows_.clear(); entries_.clear(); fxTcpColumns_.clear(); fxTcpColumn_ = fxTcpRow_ = 0; fxTcpListOpen_ = false; fxTcpListEntries_.clear(); fxTcpVisibleColumns_.clear(); fxTcpMainFilter_.clear(); fxTcpGridFilter_.clear(); fxTcpListColumn_ = fxTcpListRow_ = 0;
+    filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); selectionBuilding_ = false; resetPendingRouting(); rows_.clear(); entries_.clear(); fxTcpPreviewKey_.clear(); fxTcpColumns_.clear(); fxTcpColumn_ = fxTcpRow_ = 0; fxTcpListOpen_ = false; fxTcpListEntries_.clear(); fxTcpVisibleColumns_.clear(); fxTcpMainFilter_.clear(); fxTcpGridFilter_.clear(); fxTcpListColumn_ = fxTcpListRow_ = 0;
 }
 
 bool TrackNavigator::begin() {
@@ -156,7 +156,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
                    k.vk == VK_LEFT || k.vk == VK_RIGHT;
         if (k.shift) return !k.ctrl && !k.alt && k.vk == VK_SPACE;
         if (k.ctrl) return !k.alt && (k.vk == VK_HOME || k.vk == VK_END || k.vk == 'A');
-        if (k.alt) return k.vk == VK_LEFT || k.vk == VK_RIGHT;
+        if (k.alt) return k.vk == VK_LEFT || k.vk == VK_RIGHT || k.vk == 'S';
         switch (k.vk) {
             case VK_ESCAPE: case VK_TAB: case VK_RETURN: case VK_DELETE:
             case VK_UP: case VK_DOWN: case VK_LEFT: case VK_RIGHT:
@@ -264,7 +264,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
         // Alt+Enter always opens the names-only TCP addition grid.
         if (k.alt && !k.ctrl && !k.shift && k.vk == VK_RETURN) return true;
         if (!k.ctrl && k.alt && !k.shift &&
-            (k.vk == VK_LEFT || k.vk == VK_RIGHT ||
+            (k.vk == 'S' || k.vk == VK_LEFT || k.vk == VK_RIGHT ||
              k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR || k.vk == VK_NEXT ||
              k.vk == VK_HOME || k.vk == VK_END)) return true;
         if (k.ctrl && !k.shift && !k.alt &&
@@ -307,7 +307,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (k.ctrl) return !k.alt && (k.vk == 'E' || k.vk == 'F' || k.vk == VK_HOME || k.vk == VK_END ||
         k.vk == 'T' || k.vk == VK_BACK || k.vk == VK_DELETE || k.vk == VK_SPACE || (!f1 && (k.vk == VK_UP || k.vk == VK_DOWN)) || (f1 && (k.vk == VK_RETURN || k.vk == 'A' || k.vk == 'C' ||
             k.vk == 'X' || k.vk == 'V' || k.vk == VK_DELETE)));
-    if (k.alt) return k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
+    if (k.alt) return k.vk == 'S' || k.vk == VK_UP || k.vk == VK_DOWN || k.vk == VK_PRIOR ||
         k.vk == VK_NEXT || k.vk == VK_HOME || k.vk == VK_END ||
         k.vk == VK_LEFT || k.vk == VK_RIGHT;
     switch (k.vk) {
@@ -988,24 +988,25 @@ void TrackNavigator::announceTitle() {
     // The same configurable title is spoken and exposed as the native window
     // title. Disabling or reordering a Title component affects both.
     const std::string title = narrowUtf8(windowTitle());
+    const std::string prefix = title.empty() ? "" : title + ". ";
     if (page_ == Page::reaRoute && !memoryManager_) {
-        speech_(title + ". " + reaRouteReview(true));
+        speech_(prefix + reaRouteReview(true));
         return;
     }
     if (page_ == Page::hardwareOutputs && !memoryManager_) {
-        speech_(title + ". " + hardwareOutputReview(true));
+        speech_(prefix + hardwareOutputReview(true));
         return;
     }
     if (page_ == Page::trackMidi && !memoryManager_) {
-        speech_(title + ". " + trackMidiReview(false));
+        speech_(prefix + trackMidiReview(false));
         return;
     }
     if (page_ == Page::fxTcp && !memoryManager_) {
-        speech_(title + ". " + fxTcpReview(true));
+        speech_(prefix + fxTcpReview(true));
         return;
     }
-    if (memoryManager_) { speakMemory("Track Memories"); return; }
-    speech_(title + ". " + currentParameterSpeech());
+    if (memoryManager_) { speakMemory(title); return; }
+    speech_(prefix + currentParameterSpeech());
 }
 std::wstring TrackNavigator::windowTitle() const {
     if (!active_) return L"Track Params";
@@ -1019,13 +1020,16 @@ std::wstring TrackNavigator::windowTitle() const {
     if (page_ == Page::fxTcp && !memoryManager_) {
         const std::wstring fxName = wideUtf8(currentFxTcpColumn() ? currentFxTcpColumn()->name : "FX");
         const std::wstring mode = fxTcpListOpen_ ? L"Add TCP parameters" : L"TCP parameters";
-        return formatTrackPageTitle(wideUtf8(trackName()), 3, fxName, mode) +
+        const auto title = formatTrackPageTitle(wideUtf8(trackName()), 3, fxName, mode);
+        if (title.empty()) return {};
+        return title +
             (numericEditing_ ? L" - Numeric edit" : filterEditing_ ? L" - Filter" : !(fxTcpListOpen_ ? fxTcpGridFilter_ : fxTcpMainFilter_).empty() ? L" - Filter active" : L"");
     }
     if (memoryManager_)
         return formatTrackPageTitle(wideUtf8(trackName()), 7 + std::clamp(memoryColumn_, 0, 4));
     const std::wstring pageTitle = page_ == Page::sends ? formatTrackPageTitle(wideUtf8(trackName()), 1) :
         page_ == Page::receives ? formatTrackPageTitle(wideUtf8(trackName()), 2) : configuredTitle;
+    if (pageTitle.empty()) return {};
     return pageTitle +
            (numericEditing_ ? L" - Numeric edit" : filterEditing_ ? L" - Filter" : !filterQuery_.empty() ? L" - Filter active" : L"") +
            (valueMode_ ? L" - Value" : L"");
@@ -1210,6 +1214,7 @@ void TrackNavigator::moveTrack(int delta) {
     const int next = std::clamp(row_ + delta, 0, static_cast<int>(rows_.size()) - 1);
     if (next != row_) {
         row_ = next; track_ = rows_[row_].track;
+        stepScale_ = memory_.step(parameterKey());
         syncCursorToReaper();
         midiPickup_.clear(); rememberPosition(); announceTrack();
     }
@@ -1227,6 +1232,7 @@ void TrackNavigator::moveDetailColumn(int delta) {
     if (next != detailIndex_) {
         const int previousColumn = detailIndex_;
         detailIndex_ = next;
+        stepScale_ = memory_.step(parameterKey());
         midiPickup_.clear();
         rememberPosition();
         speech_(detailColumnSpeech(previousColumn));
@@ -1265,7 +1271,7 @@ void TrackNavigator::nudge(int direction, bool coarse) {
     const auto* e = current();
     if (!e) return;
     const double old = get(*e);
-    const double factor = std::pow(2.0, memory_.step(parameterKey()));
+    const double factor = std::pow(2.0, stepScale_);
     double next = old;
     switch (e->type) {
         case Entry::volume: {
@@ -1338,6 +1344,14 @@ void TrackNavigator::handle(const Key& k) {
         if (!k.repeat) openTrackMemories(false);
         return;
     }
+    if (k.alt && !k.ctrl && !k.shift && k.vk == 'S') {
+        if (!k.repeat && current()) {
+            memory_.setStep(parameterKey(), stepScale_);
+            memory_.flush();
+            speech_("Step " + std::to_string(stepScale_) + " saved");
+        }
+        return;
+    }
     if (page_ == Page::tracks && k.ctrl && !k.alt &&
         k.vk >= VK_F1 && k.vk <= VK_F12) {
         if (!k.repeat) {
@@ -1372,7 +1386,7 @@ void TrackNavigator::handle(const Key& k) {
                 info += ". Volume range " + num(limits.first) + " to " +
                     num(limits.second) + " dB";
             }
-            info += ". Step " + std::to_string(memory_.step(id)) +
+            info += ". Step " + std::to_string(stepScale_) +
                 (memory_.valueSpeech(id) ? ". Value speech on" : ". Value speech off");
             if (ccSpeechSupported()) {
                 std::string target;
@@ -1517,7 +1531,7 @@ void TrackNavigator::handle(const Key& k) {
     }
     if (k.ctrl && !k.alt && !k.shift && k.vk == VK_BACK) {
         if (k.repeat || !current()) return;
-        memory_.setStep(parameterKey(), 0); stepScale_ = 0; memory_.flush();
+        stepScale_ = 0; // Unsaved until explicit Alt+S.
         speech_("Step 0"); return;
     }
     // Ctrl+Enter toggles the folder without stealing plain Enter from Value.
@@ -1588,8 +1602,6 @@ void TrackNavigator::handle(const Key& k) {
             const int next = std::clamp(stepScale_ + (k.vk == VK_LEFT ? -1 : 1), -10, 10);
             if (next != stepScale_) {
                 stepScale_ = next;
-                memory_.setStep(parameterKey(), stepScale_);
-                memory_.flush();
                 speech_("Step " + std::to_string(stepScale_));
             }
         }

@@ -7,7 +7,8 @@ track = (r/'src/TrackNavigatorFxTcp.cpp').read_text(encoding='utf-8')
 tracklist = (r/'src/TrackNavigatorFxTcpList.cpp').read_text(encoding='utf-8')
 pref = (r/'src/Preferences.cpp').read_text(encoding='utf-8')
 header = (r/'include/lrp/Preferences.h').read_text(encoding='utf-8')
-assert 'return fxWindowTitleBase() + ". " + currentParameterSpeech();' in fx
+assert 'return title.empty() ? currentParameterSpeech() : title + ". " + currentParameterSpeech();' in fx
+assert 'if (result.empty()) return {};' in pref
 assert 'if (!memories) return formatFxTitle(fxDisplayName(), contextName(), status);' in fx
 assert 'speech_(fxContextAnnouncement());' in fx # FX and track switches
 assert 'speech_(what + ". " + fxContextAnnouncement());' in fxctx # Context switch

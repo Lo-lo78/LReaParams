@@ -264,6 +264,8 @@ std::string TrackNavigator::fxTcpReview(bool includeContext) const {
 }
 
 void TrackNavigator::rememberFxTcpPosition() {
+    if (!fxTcpPreviewKey_.empty() && fxTcpPreviewKey_ != fxTcpStepKey())
+        fxTcpPreviewKey_.clear(); // Navigation discards an unsaved preview.
     if (const FxTcpColumn* column = currentFxTcpColumn()) {
         memory_.setPosition("LastPage", "F4");
         memory_.setPosition("F4.TrackGUID", rowGuid());
@@ -282,6 +284,7 @@ bool TrackNavigator::selectFxTcpPage() {
     // Do not switch pages if the native API cannot provide a meaningful view.
     rememberPosition();
     page_ = Page::fxTcp;
+    fxTcpPreviewKey_.clear();
     entries_.clear(); // F4 owns separate FX TCP value targets; discard stale F1/F2/F3 entries.
     valueMode_ = false;
     fxTcpListOpen_ = false; fxTcpListEntries_.clear(); fxTcpMainFilter_.clear(); fxTcpGridFilter_.clear();
@@ -309,6 +312,7 @@ void TrackNavigator::moveFxTcpColumn(int delta) {
     const int next = std::clamp(fxTcpColumn_ + delta, 0, static_cast<int>(fxTcpColumns_.size()) - 1);
     if (next == fxTcpColumn_) return; // Silent boundary, as FX Memories.
     fxTcpColumn_ = next;
+    fxTcpPreviewKey_.clear(); // Do not carry an unsaved Step across controls.
     valueMode_ = false;
     fxTcpRow_ = std::clamp(fxTcpRow_, fxTcpHeight() > 1 ? 1 : 0, fxTcpHeight() - 1);
     rememberFxTcpPosition();
@@ -392,6 +396,10 @@ void TrackNavigator::jumpFxTcpByInitial(wchar_t letter, bool backwards) {
     }
 }
 
+int TrackNavigator::workingFxTcpStep() const {
+    const auto key = fxTcpStepKey();
+    return !key.empty() && key == fxTcpPreviewKey_ ? fxTcpPreviewStep_ : memory_.step(key);
+}
 std::string TrackNavigator::fxTcpStepKey() const {
     const FxTcpColumn* column = currentFxTcpColumn();
     const FxTcpParameter* param = currentFxTcpParameter();
@@ -578,7 +586,7 @@ void TrackNavigator::nudgeFxTcpValue(int direction, bool coarse) {
     if (!std::isfinite(old)) return;
     if (known && toggle) { writeFxTcpValue(direction > 0 ? 1.0 : 0.0); return; }
     double step = known ? (coarse ? large : normal) : 0.0;
-    const double scale = std::pow(2.0, memory_.step(fxTcpStepKey()));
+    const double scale = std::pow(2.0, workingFxTcpStep());
     if (known && std::isfinite(step) && step > 0.0 && step <= 1.0) {
         // The host reports discrete steps in normalized coordinates. Snap to
         // the nearest step before moving, avoiding stuck combo/menu values.
@@ -722,6 +730,19 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
     }
     // The names-only TCP addition grid must never start learn/edit MIDI.
     if (fxTcpListOpen_) { handleFxTcpParameterGridKey(k); return; }
+    if (k.alt && !k.ctrl && !k.shift && k.vk == 'S') {
+        if (!k.repeat) {
+            const auto key = fxTcpStepKey();
+            if (!key.empty()) {
+                const int value = workingFxTcpStep();
+                memory_.setStep(key, value);
+                memory_.flush();
+                fxTcpPreviewKey_.clear();
+                speech_("Step " + std::to_string(value) + " saved");
+            }
+        }
+        return;
+    }
     if ((k.ctrl && k.alt && !k.shift && k.vk == 'C') ||
         (!k.ctrl && !k.alt && k.shift && k.vk == 'C') ||
         (k.ctrl && !k.alt && k.shift && k.vk == 'C') ||
@@ -877,11 +898,11 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
     if (!k.ctrl && k.alt && !k.shift && (k.vk == VK_LEFT || k.vk == VK_RIGHT)) {
         const std::string key = fxTcpStepKey();
         if (!key.empty() && !k.repeat) {
-            const int now = memory_.step(key);
+            const int now = workingFxTcpStep();
             const int next = std::clamp(now + (k.vk == VK_RIGHT ? 1 : -1), -10, 10);
             if (next != now) {
-                memory_.setStep(key, next);
-                memory_.flush();
+                fxTcpPreviewKey_ = key;
+                fxTcpPreviewStep_ = next; // Alt+S is the only persistence point.
                 speech_("Step " + std::to_string(next));
             }
         }
@@ -911,7 +932,7 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
             std::string id;
             const bool ccSpeaking = midiFixedIdentity(id) && memory_.fixedCcSpeech(id);
             speech_((valueMode_ ? "Value, " : "") + fxTcpReview(true) +
-                (key.empty() ? "" : ". Step " + std::to_string(memory_.step(key))) +
+                (key.empty() ? "" : ". Step " + std::to_string(workingFxTcpStep())) +
                 (key.empty() ? "" : (memory_.valueSpeech(key) ? ". Value speech on" : ". Value speech off")) +
                 (ccSpeaking ? ". MIDI speech on" : ". MIDI speech off"));
         }

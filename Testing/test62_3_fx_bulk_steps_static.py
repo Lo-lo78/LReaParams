@@ -19,12 +19,14 @@ assert 'std::vector<int> FxNavigator::selectedF7Parameters() const' in order
 assert 'const auto& source=f7FilterActive_?f7FullView_:visible_;' in order
 assert 'if(unique.insert(id).second)ids.push_back(id);' in order
 assert 'void FxNavigator::stepSelectedF7(int delta)' in order
-assert 'parameterSteps_[id]={name,next};' in order
+assert 'previewSelectedSteps_[id]=next;' in order
+assert 'parameterStepsDirty_=true;lastControl_=LastControl::step;' not in order
+assert 'parameterSteps_[id] = {name, std::clamp(stepScale_, -10, 10)};' in nav
 assert 'if(editF7_ && !f7Selected_.empty()) {stepSelectedF7' in nav
 assert 'else nudgeSelectedF7(direction,big);' in nav
 assert 'void FxNavigator::nudgeSelectedF7(int direction,bool big)' in nav
 assert 'Undo_BeginBlock2(project_);' in nav and '"LReaParams: selected FX parameter values"' in nav
-assert 'const int scale=savedStepForParameter(id);' in nav
+assert 'const int scale=workingStepForParameter(id);' in nav
 assert 'writeEqGain(change.id,change.next)' in nav
 assert 'bool FxNavigator::numericCommitSelectedF7(double requested)' in adv
 assert 'if(numericCommitSelectedF7(value))return;' in adv

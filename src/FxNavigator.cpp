@@ -480,7 +480,7 @@ void FxNavigator::rememberPosition() {
             pos.parameter = parameter_;
             pos.parameterName = parameterName_;
             pos.gridHeight = columns_;
-            pos.stepScale = stepScale_;
+            pos.stepScale = savedStepForParameter(parameter_);
             pos.viewPosition = viewPos_;
             pos.groupSlot = groupSlot_;
             pos.customView = fxOrder_.custom;
@@ -494,7 +494,7 @@ void FxNavigator::rememberPosition() {
     pos.parameter = parameter_;
     pos.parameterName = parameterName_;
     pos.gridHeight = columns_;
-    pos.stepScale = stepScale_;
+    pos.stepScale = savedStepForParameter(parameter_);
     pos.viewPosition = viewPos_;
     pos.groupSlot = groupSlot_;
     pos.customView = fxOrder_.custom;
@@ -680,7 +680,8 @@ std::string FxNavigator::fxContextAnnouncement() const {
     // Keep Type/Name, component ordering, visibility, and custom text EXACTLY
     // as configured for Messages > FX Params > Title. Raw host names are kept
     // in entries_ for GUID/profile matching; only the spoken text is formatted.
-    return fxWindowTitleBase() + ". " + currentParameterSpeech();
+    const auto title = fxWindowTitleBase();
+    return title.empty() ? currentParameterSpeech() : title + ". " + currentParameterSpeech();
 }
 std::string FxNavigator::fxWindowTitleBase(bool memories) const {
     const std::string status = statusSummary();
@@ -960,7 +961,7 @@ bool FxNavigator::resetAllToDefault(bool announceResult) {
 void FxNavigator::resetCurrentStep() {
     // Per-parameter Step, including its native .fx override; never touch Grid.
     stepScale_ = 0;
-    markParameterStepChanged();
+    // Ctrl+Backspace also previews the default; Alt+S is the only write.
     lastControl_ = LastControl::step;
     rememberPosition();
     speech_("Step 0");
@@ -1152,7 +1153,7 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
             return k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT;
         if(k.ctrl)return !k.alt && !k.shift && (k.vk==VK_HOME||k.vk==VK_END||k.vk=='A');
         if(k.shift)return !k.alt && !k.ctrl && k.vk==VK_SPACE;
-        if(k.alt)return k.vk==VK_LEFT||k.vk==VK_RIGHT;
+        if(k.alt)return k.vk==VK_LEFT||k.vk==VK_RIGHT||k.vk=='S';
         return k.vk==VK_ESCAPE||k.vk==VK_F7||
                k.vk==VK_TAB||k.vk==VK_RETURN||k.vk==VK_DELETE||
                k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_LEFT||k.vk==VK_RIGHT||
@@ -1162,6 +1163,9 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (gridNumericEdit_) return k.vk==VK_ESCAPE || k.vk==VK_RETURN;
     if (numericEdit_) return k.vk==VK_ESCAPE || k.vk==VK_RETURN || (k.ctrl && k.vk=='E');
     if (textEdit_) return true;
+    if (k.alt && !k.ctrl && !k.shift && !k.altGr && k.vk == 'S' &&
+        !searchMode_ && !recentMode_ && !fxBrowserMode_ && !pinAudioMode_ &&
+        !memoryManager_ && !defaultConfirm_) return true;
     // Context switch is owned by Extension; do not intercept inside text editing.
     if (k.ctrl && !k.shift && !k.alt && k.vk == VK_TAB &&
         !memoryManager_ && !textEdit_ && !searchMode_ && !numericEdit_ &&
@@ -1286,11 +1290,14 @@ void FxNavigator::announce() {
 void FxNavigator::announceTitle() {
     if (!active_) return;
     if(!fxBrowserMode_)syncParameterStep();
-    if(pinAudioMode_){speech_("Audio Pin Connector. "+pinAudioReview(true));return;}
-    if(fxBrowserMode_){speech_("FX Browser. "+browserSpeech());return;}
-    if(memoryManager_){speakMemory("FX Memories");return;}
-    if(usedActive_){speech_(fxWindowTitleBase()+". Used. "+(visible_.empty()?"Empty":currentParameterSpeech()));return;}
-    speech_(fxWindowTitleBase() + ". " + currentParameterSpeech());
+    if(pinAudioMode_){const auto title=formatFxPageTitle(fxDisplayName(),contextName(),3);
+        speech_((title.empty()?std::string{}:title+". ")+pinAudioReview(true));return;}
+    if(fxBrowserMode_){const auto title=formatFxPageTitle({},contextName(),2);
+        speech_((title.empty()?std::string{}:title+". ")+browserSpeech());return;}
+    if(memoryManager_){speakMemory(fxWindowTitleBase(true));return;}
+    const std::string title = fxWindowTitleBase();
+    if(usedActive_){speech_((title.empty()?std::string{}:title+". ")+"Used. "+(visible_.empty()?"Empty":currentParameterSpeech()));return;}
+    speech_(title.empty()?currentParameterSpeech():title + ". " + currentParameterSpeech());
 }
 namespace {
 std::wstring wideUtf8(const std::string& str) {
@@ -1314,7 +1321,9 @@ std::wstring FxNavigator::windowTitle() const {
     }
     if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));
     // Keep Grid out of the title; position Bypassed/Delta BEFORE context/FX.
-    return wideUtf8(fxWindowTitleBase()) +
+    const auto title = wideUtf8(fxWindowTitleBase());
+    if (title.empty()) return {}; // Disabled title means no caption, even in Value/F7.
+    return title +
            (gridNumericEdit_ ? L" - Grid Size" : textEdit_ ? L" - Rename" : searchMode_ ? L" - Find Parameter" :
             editF7_ ? L" - F7 Edit" : keyboardThemeActive() ? L" - Keyboard" :
             valueMode_ ? L" - Value" : L"") + (usedActive_ ? L" - Used" : L"");
@@ -1484,7 +1493,7 @@ void FxNavigator::nudgeSelectedF7(int direction,bool big) {
         // Virtual band actions and detector modes need their own transactional
         // setters. Never write blindly to a synthetic negative or enum ID.
         if(id<0 || dynamicsVirtualValid(id) || dynamicsDetectorInput(id)) {++unsupported;continue;}
-        const int scale=savedStepForParameter(id);
+        const int scale=workingStepForParameter(id);
         if(eqBandParam(id,1)) {
             const double old=eqGainNorm(id);
             double db=-150+186.1*old;
@@ -1718,6 +1727,25 @@ void FxNavigator::handle(const Key& k) {
     // Memory management or a filtered search may select a parameter without a position save.
     // Before using its step for a value change, load that parameter's setting.
     if (!fxBrowserMode_) syncParameterStep();
+    if (k.alt && !k.ctrl && !k.shift && !k.altGr && k.vk == 'S' &&
+        !textEdit_ && !numericEdit_ && !gridNumericEdit_ &&
+        !searchMode_ && !recentMode_ && !fxBrowserMode_ &&
+        !pinAudioMode_ && !memoryManager_ && !defaultConfirm_) {
+        if (k.repeat) return;
+        if (!persistentPositionWriter_) { speech_("Step cannot be saved"); return; }
+        if (editF7_ && !f7Selected_.empty()) {
+            for (int id : selectedF7Parameters()) {
+                const auto name = stepParameterName(id);
+                if (!name.empty()) parameterSteps_[id] = {name, std::clamp(stepScale_, -10, 10)};
+            }
+            parameterStepsDirty_ = true;
+        } else markParameterStepChanged();
+        if (flushParameterSteps()) {
+            previewSelectedSteps_.clear();
+            speech_("Step " + std::to_string(stepScale_) + " saved");
+        } else speech_("Step not saved");
+        return;
+    }
     if (k.vk == VK_F8 && !k.ctrl && !k.alt && !k.shift && !k.altGr &&
         !textEdit_ && !numericEdit_ && !searchMode_ && !recentMode_ && !fxBrowserMode_ && !memoryManager_) {
         if (!k.repeat) f8Press();
@@ -2069,7 +2097,7 @@ void FxNavigator::handle(const Key& k) {
         if(k.vk==VK_LEFT||k.vk==VK_RIGHT){
             if(editF7_ && !f7Selected_.empty()) {stepSelectedF7(k.vk==VK_LEFT?-1:1);return;}
             const int next=std::clamp(stepScale_+(k.vk==VK_LEFT?-1:1),-10,10);
-            if(next!=stepScale_){stepScale_=next;lastControl_=LastControl::step;markParameterStepChanged();rememberPosition();speech_("Step "+std::to_string(stepScale_));}
+            if(next!=stepScale_){stepScale_=next;lastControl_=LastControl::step;rememberPosition();speech_("Step "+std::to_string(stepScale_));}
         }else if (k.vk == VK_HOME) setValue(1);
         else if (k.vk == VK_END) setValue(0);
         else if(k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_PRIOR||k.vk==VK_NEXT) {

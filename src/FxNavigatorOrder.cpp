@@ -96,7 +96,7 @@ std::string FxNavigator::stepParameterName(int param) const {
     return originalName(track_,take_,fx_,param);
 }
 void FxNavigator::loadParameterSteps() {
-    parameterSteps_.clear(); parameterStepsDirty_=false;
+    parameterSteps_.clear(); previewSelectedSteps_.clear(); parameterStepsDirty_=false;
     stepActiveParameter_=INT_MIN;
     const auto text=fxOrder_.extraValue(nativeParamStepsKey);
     for(const auto& line:split(text,'\n')) {
@@ -131,10 +131,15 @@ int FxNavigator::savedStepForParameter(int param) const {
     (void)legacyIndex;
     return legacyMatches==1?legacyValue:0;
 }
+int FxNavigator::workingStepForParameter(int param) const {
+    const auto preview = previewSelectedSteps_.find(param);
+    return preview == previewSelectedSteps_.end() ? savedStepForParameter(param) : preview->second;
+}
 void FxNavigator::syncParameterStep() {
     if(!active_ || count_<=0 || browserIndex_<0)return;
     if(stepActiveParameter_==parameter_)return;
     if(parameterStepsDirty_)flushParameterSteps();
+    previewSelectedSteps_.clear(); // Unsaved adjustments do not follow the cursor.
     stepScale_=savedStepForParameter(parameter_);
     stepActiveParameter_=parameter_;
 }
@@ -191,15 +196,11 @@ void FxNavigator::stepSelectedF7(int delta) {
     if(ids.empty())return;
     const int next=std::clamp(stepScale_+delta,-10,10);
     if(next==stepScale_)return;
-    // Match the step of the focused parameter on ALL selected identities.
-    // A non-zero selection is deliberate; unselected steps are untouched.
-    for(int id:ids) {
-        const auto name=stepParameterName(id);
-        if(name.empty())continue;
-        parameterSteps_[id]={name,next};
-    }
+    // Apply the preview to all selected identities, but persist none of them
+    // until Alt+S. A cursor change discards the entire temporary selection.
+    for(int id:ids) if(!stepParameterName(id).empty())previewSelectedSteps_[id]=next;
     stepScale_=next;stepActiveParameter_=parameter_;
-    parameterStepsDirty_=true;lastControl_=LastControl::step;
+    lastControl_=LastControl::step;
     rememberPosition();
     speech_("Step "+std::to_string(next)+". "+std::to_string(ids.size())+" selected parameters");
 }

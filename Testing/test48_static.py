@@ -39,8 +39,11 @@ assert 'syncParameterStep();\n    captureViewCursor();\n    auto& state = ensure
 assert 'flushParameterSteps();\n        flushPersistentPosition();' in nav
 assert 'flushParameterSteps();\n    flushPersistentPosition();' in ctx
 assert 'flushParameterSteps();\n        // end() is noexcept' in nav
-assert 'markParameterStepChanged();rememberPosition();' in nav
-assert 'markParameterStepChanged();rememberPosition();' in mem
+# TEST71.2: previewing Step by arrow must not mark the profile dirty.
+assert 'markParameterStepChanged();rememberPosition();' not in nav
+assert 'stepScale_=next;lastControl_=LastControl::step;rememberPosition();' in nav
+assert 'previewSelectedSteps_' in order and 'void FxNavigator::markParameterStepChanged()' in order
+assert "if(k.alt && !k.ctrl && !k.shift && k.vk=='S')" in mem
 assert 'void FxNavigator::resetCurrentStep()' in nav
 assert 'markParameterStepChanged();' in nav
 assert 'void FxNavigator::resetCurrentGrid()' in nav
