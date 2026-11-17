@@ -272,9 +272,9 @@ public:
         case about:
             exitNavigation(false);
             ShowMessageBox(
-                "LReaParams 0.0.72 - Native REAPER extension\nRelease date: 17 November 2026\n\n"
+                "LReaParams 0.0.71 - Native REAPER extension\nRelease date: 16 November 2026\n\n"
                 "Accessible FX Params and Track Params for NVDA and OSARA.\n"
-                "New in 0.0.72: titles can be completely empty when all components are disabled, and Alt+S explicitly saves the current parameter Step.\nNew in 0.0.71: FX title components split into Type and Name. The plugin type is hidden by default, while the original plugin name remains intact.\n"
+                "New in 0.0.71: FX title components split into Type and Name. The plugin type is hidden by default, while the original plugin name remains intact.\n"
                 "Track Params F4: Type, Name and Mode are independent title components; Mode keeps TCP parameter context separate.\n"
                 "Supported REAPER FX prefixes are parsed only at the beginning of the name; unknown prefixes are left unchanged.\n"
                 "Preferences.ini title layouts from 0.0.70 are migrated, preserving user-defined order and custom messages.\n"

@@ -6,11 +6,11 @@ import xml.etree.ElementTree as ET
 from reapack_index_contract import verify_optional_reapack_index
 r=Path(__file__).resolve().parents[1]
 rd=lambda n:(r/n).read_text(encoding='utf-8')
-assert 'project(LReaParams VERSION 0.0.72 LANGUAGES CXX)' in rd('CMakeLists.txt')
-assert 'LReaParams 0.0.72 - Native REAPER extension' in rd('src/Extension.cpp')
-assert 'Release date: 17 November 2026' in rd('src/Extension.cpp')
-assert '!define APP_VERSION "0.0.72"' in rd('Installer/LReaParams.nsi')
-assert 'LReaParams-0.0.72-Windows-x64-SETUP-EXE' in rd('.github/workflows/build-windows.yml')
+assert 'project(LReaParams VERSION 0.0.71 LANGUAGES CXX)' in rd('CMakeLists.txt')
+assert 'LReaParams 0.0.71 - Native REAPER extension' in rd('src/Extension.cpp')
+assert 'Release date: 16 November 2026' in rd('src/Extension.cpp')
+assert '!define APP_VERSION "0.0.71"' in rd('Installer/LReaParams.nsi')
+assert 'LReaParams-0.0.71-Windows-x64-SETUP-EXE' in rd('.github/workflows/build-windows.yml')
 assert 'Title: FX TCP (F4)' in rd('Docs/GITHUB_RELEASE_0_0_71_BODY_EN.md') or 'Track Params F4' in rd('Docs/GITHUB_RELEASE_0_0_71_BODY_EN.md')
 assert 'TEST70.1' in rd('.github/workflows/build-windows.yml')
 assert 'TEST70.2' in rd('.github/workflows/build-windows.yml')

@@ -11,7 +11,7 @@ cmake = read('CMakeLists.txt')
 m = re.search(r'project\(LReaParams VERSION (\d+\.\d+\.\d+) LANGUAGES CXX\)', cmake)
 assert m, 'Missing CMake project version'
 version = m.group(1)
-assert version == '0.0.72', f'Unexpected release version: {version}'
+assert version == '0.0.71', f'Unexpected release version: {version}'
 
 about = read('src/Extension.cpp')
 assert f'LReaParams {version} - Native REAPER extension' in about
@@ -38,7 +38,7 @@ for filename in (f'LReaParams-{version}-Windows-x64-MULTILINGUAL',
 assert 'LReaParams-0.0.61-' not in workflow
 assert 'LReaParams-0.0.61-' not in nsi
 assert f'LReaParams {version}' in read('README.md')
-assert f'LReaParams {version}' in read('Docs/RELEASE_NOTES_0_0_72.md')
+assert f'LReaParams {version}' in read('Docs/RELEASE_NOTES_0_0_71.md')
 assert 'iZotope RX 11' in about
 assert (ROOT / 'Docs/RELEASE_NOTES_0_0_68.md').is_file()
 assert 'F4 toggles Standard/Keyboard separately' in about
@@ -69,4 +69,4 @@ for language in ['it','es','fr','ru','zh-CN','ja']:
 # These are compatibility/data format identifiers, not user-visible version labels.
 assert 'PageLayoutVersion' in read('src/TrackNavigator.cpp')
 assert '"61"' in read('src/TrackNavigator.cpp')
-print('Release version consistency PASS: 0.0.72 About, CMake, installer, Actions and 7 guide languages')
+print('Release version consistency PASS: 0.0.71 About, CMake, installer, Actions and 7 guide languages')

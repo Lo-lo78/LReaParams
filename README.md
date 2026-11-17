@@ -1,11 +1,3 @@
-## LReaParams 0.0.72 — Empty title behavior and intentional Step saving (17 November 2026)
-
-The tested 0.0.71 TEST71.2 changes are promoted to release 0.0.72. Disabling all title components leaves the accessible window title empty, with no hidden FX Params/Track Params fallback. FX/Track Step changes are temporary until **Alt+S** explicitly saves the selected parameter Step; existing stored Steps are not overwritten by unsaved adjustments. Preserves the FX Type/Name improvements from 0.0.71 and the previous project formats, accessibility and key maps. [Release notes](Docs/RELEASE_NOTES_0_0_72.md).
-
-**GitHub/ReaPack history safety:** the repository uses the original `Tools\push_lreaparams.cmd` and the automatic publisher; do not overwrite `index.xml`, rewrite any published tag, or remove the old ReaPack releases. Run `Tools\push_lreaparams.cmd "Release 0.0.72 - Empty titles and explicit Step saving"` from the existing cloned repository. Verify Windows Actions and publish stable `v0.0.72`, with its matching installer. The release publication triggers automatic DLL generation and index regeneration from all eligible historical releases. See [Italian instructions](Docs/REAPACK_SETUP_IT.md).
-
----
-
 ## LReaParams 0.0.71 — FX plugin Type / Name title components (16 November 2026)
 
 The 0.0.71 release promotes the tested TEST70.1/TEST70.2 changes on top of the public 0.0.70 release. In **Preferences → Messages → FX Params**, the configurable titles **FX Params**, **FX Memories** and **FX Pin Connector** now use independent **Type** and **Name** components instead of a single Plugin field; FX Browser is unchanged. **Type is disabled by default**, while Name keeps the plugin name returned by REAPER after removing *only* a recognized leading technology prefix (for example `VST3i: LJuno-116 (Lo-lo)` becomes `LJuno-116 (Lo-lo)`). Unknown names remain intact. All components can still be enabled/disabled with Space and reordered using Alt+Up/Down.

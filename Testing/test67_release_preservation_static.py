@@ -3,8 +3,8 @@ from pathlib import Path
 r=Path(__file__).resolve().parents[1]
 def read(x): return (r/x).read_text(encoding='utf-8')
 cmake=read('CMakeLists.txt'); about=read('src/Extension.cpp'); nav=read('src/FxNavigator.cpp'); ci=read('.github/workflows/build-windows.yml'); pub=read('.github/workflows/publish-reapack.yml')
-assert 'project(LReaParams VERSION 0.0.72' in cmake
-assert 'LReaParams 0.0.72 - Native REAPER extension' in about
+assert 'project(LReaParams VERSION 0.0.71' in cmake
+assert 'LReaParams 0.0.71 - Native REAPER extension' in about
 assert 'FX Backspace: Backspace resets parameter' in about
 assert 'FX Used (Usati): Ctrl+Shift+L toggles' in about
 assert 'Used remembers parameters edited through LReaParams' in about
@@ -13,8 +13,8 @@ assert 'if (k.vk == VK_BACK && !k.alt && !k.altGr)' in nav
 assert 'resetCurrentStep()' in nav and 'resetCurrentGrid()' in nav and 'beginGridNumericEdit()' in nav
 assert 'resetAllToDefault()' in nav
 assert 'GetDoubleClickTime()' in nav
-assert 'LReaParams-0.0.72-Windows-x64-SETUP-EXE' in ci
-assert 'dist/LReaParams-0.0.72-Source.zip' in ci
+assert 'LReaParams-0.0.71-Windows-x64-SETUP-EXE' in ci
+assert 'dist/LReaParams-0.0.71-Source.zip' in ci
 assert 'types: [published]' in pub and 'ref: ${{ env.RELEASE_TAG }}' in pub
 assert 'python3 Tools/generate_reapack_index.py --output index.xml' in pub
 assert 'git add index.xml' in pub and 'git add .' not in pub

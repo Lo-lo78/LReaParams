@@ -20,7 +20,7 @@ for lang in ['it','es','fr','ru','zh-CN','ja']:
     g=read(f'Guide/{lang}/fx.html')
     assert '0.0.66' in g and 'release-0-0-66-keyboard' in g, lang
     for file in ['index.html','track.html']:
-        assert '0.0.71' in read(f'Guide/{lang}/{file}'), (lang,file)
+        assert '0.0.72' in read(f'Guide/{lang}/{file}'), (lang,file)
 # The release publisher commits index.xml to main. Its presence is expected in CI.
 verify_optional_reapack_index(R)
 print('Release 0.0.66 metadata and Keyboard docs PASS')
