@@ -36,7 +36,12 @@ assert 'Visible TCP parameters - Remove' not in track  # UI retired in TEST56.6
 assert 'fxTcpParameterVisible(fxIndex, paramIndex) == visible' in grid
 assert 'TrackFX_GetFXGUID(track_, e.fxIndex)' in grid
 # No regressions to Step/Undo or single .tp structure.
-assert 'memory_.step(fxTcpStepKey())' in core
+# TEST71.2: navigation reads the working (possibly unsaved) Step; only Alt+S stores it.
+assert 'int TrackNavigator::workingFxTcpStep() const' in core
+assert 'key == fxTcpPreviewKey_ ? fxTcpPreviewStep_ : memory_.step(key)' in core
+assert 'const int now = workingFxTcpStep();' in core
+assert 'memory_.setStep(key, value);' in core
+assert 'fxTcpPreviewStep_ = next;' in core
 assert 'Undo_BeginBlock2(project_)' in core and 'Undo_EndBlock2(project_' in core
 assert 'test56_4_static.py' in workflow
 print('TEST56.4 source contracts PASS; native compilation and REAPER/NVDA NOT RUN')

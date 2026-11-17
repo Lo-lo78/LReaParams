@@ -25,14 +25,15 @@ assert 'return value > 0.5;' in fx
 assert 'if (bypassed && delta) return "Bypassed - Delta Solo";' in fx
 # The FX-switch speech uses the SAME configurable title (and status source)
 # as NVDA+T, rather than separately speaking the raw REAPER FX name.
-assert 'return fxWindowTitleBase() + ". " + currentParameterSpeech();' in fx
+assert 'const auto title = fxWindowTitleBase();' in fx
+assert 'return title.empty() ? currentParameterSpeech() : title + ". " + currentParameterSpeech();' in fx
 assert 'const bool bypassed = isBypassed();' in fx
 assert 'const bool delta = deltaSoloActive();' in fx
 assert 'fxContextAnnouncement()' in h
 assert fx.count('speech_(fxContextAnnouncement());')==2
 assert 'fxWindowTitleBase(bool memories) const' in fx
 assert 'return formatFxPageTitle(fxDisplayName(), contextName(), 1, status);' in fx
-assert 'speech_(fxWindowTitleBase() + ". " + currentParameterSpeech());' in fx
+assert 'speech_(title.empty()?currentParameterSpeech():title + ". " + currentParameterSpeech());' in fx
 assert 'if (memoryManager_) return wideUtf8(fxWindowTitleBase(true));' in fx
 assert 'while (visibleName.size() > 1' in fx
 assert 'project(LReaParams VERSION ' in (r/'CMakeLists.txt').read_text()
