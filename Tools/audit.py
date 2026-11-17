@@ -104,18 +104,9 @@ def main():
     check('if (newReview != oldReview) titleProxy_.updateReviewLine(newReview);' in (ROOT/'src/Extension.cpp').read_text() and
           'if (newTitle != oldTitle || newReview != oldReview)' in (ROOT/'src/Extension.cpp').read_text(),
           'Boundary must not send redundant review/focus updates')
-    # TEST72.3: native NVDA owns the entry announcement when the focus
-    # window is available. The parameter is exposed before SetFocus, without
-    # an overlapping explicit OSARA announcement.
-    extension_src = (ROOT/'src/Extension.cpp').read_text()
-    check('desired->windowTitle(), desired->reviewLine()' in extension_src and
-          'SetFocus(edit_);' in title_src and
-          'reviewText_ = toWide(initialReviewLine)' in title_src and
-          'initialFocusReviewSuppressed_' not in title_src and
-          'if (!titleProxyActive_) {' in extension_src and
-          extension_src.index('desired->windowTitle(), desired->reviewLine()') <
-          extension_src.index('if (!titleProxyActive_) {'),
-          'Native focus must own initial speech; OSARA must be fallback only')
+    check('desired->windowTitle(), desired->reviewLine()' in (ROOT/'src/Extension.cpp').read_text() and
+          'reviewText_ = toWide(initialReviewLine)' in title_src,
+          'Initial native text must be filled before focus')
     check('fxWindowTitleBase()' in fx_source and 'L"LReaParams - FX Params - "' not in fx_source,
           'FX NVDA+T title must not contain LReaParams')
     check('switchTrack(' in fx_source and 'SetOnlyTrackSelected(' in fx_source and

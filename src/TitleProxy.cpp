@@ -36,9 +36,10 @@ bool TitleProxy::ensureWindow() {
         WS_POPUP | WS_CAPTION, -32000, -32000, 1, 1,
         host_, nullptr, instance_, this);
     if (!window_) return false;
-    // Keep a STATIC keyboard owner, but do not mutate its native
+    // TEST12: keep a STATIC keyboard owner, but do not mutate its native
     // caption while it owns focus.  SetWindowTextW would broadcast a native
-    // accessibility name/text-change event. We expose the review text
+    // accessibility name/text-change event, which NVDA can speak on top of
+    // the explicit OSARA announcement.  We expose the latest review text
     // ON DEMAND via WM_GETTEXT/WM_GETTEXTLENGTH instead.  No edit caret,
     // no artificial name-change event for each parameter movement.
     edit_ = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE |
@@ -113,15 +114,6 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
     ShowWindow(slider_, SW_HIDE);
     ShowWindow(edit_, SW_SHOW);
     reviewText_ = toWide(initialReviewLine);
-    // TEST72.4: the focused STATIC is the one NVDA announcement we can
-    // reliably supply. The parent window caption is sometimes omitted by
-    // NVDA on focus changes, so include the configured title BEFORE the
-    // parameter in the initial accessible text (one focus, no OSARA speech).
-    // Subsequent passive review updates remain parameter-only as before.
-    if (!title_.empty()) {
-        if (reviewText_.empty()) reviewText_ = title_;
-        else reviewText_ = title_ + L". " + reviewText_;
-    }
     if (reviewText_.size() > 8192) reviewText_.resize(8192);
     // The child STATIC's stored caption is deliberately constant (empty).
     // Its window procedure answers WM_GETTEXT with reviewText_ when NVDA or
@@ -336,8 +328,7 @@ LRESULT TitleProxy::dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, 
     }
     // WM_GETTEXT remains a passive review query: no changing captions while
     // the value changes, and no duplicate OSARA/native text-change speech.
-    if (msg == WM_GETTEXTLENGTH)
-        return static_cast<LRESULT>(reviewText_.size());
+    if (msg == WM_GETTEXTLENGTH) return static_cast<LRESULT>(reviewText_.size());
     if (msg == WM_GETTEXT) {
         if (!lp || !wp) return 0;
         auto* target = reinterpret_cast<wchar_t*>(lp);
@@ -359,7 +350,7 @@ LRESULT TitleProxy::dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, 
     }
     if ((msg == WM_KEYUP || msg == WM_SYSKEYUP) && wp == VK_F12) return 0;
     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
-            // The OSARA/REAPER navigation backend stays authoritative for ALL keys.
+        // The OSARA/REAPER navigation backend stays authoritative for ALL keys.
         // No native trackbar key may edit the control independently of REAPER.
         try { if (keyboardKey_) keyboardKey_(hwnd, static_cast<UINT>(wp), (lp & (1LL << 30)) != 0); }
         catch (...) {

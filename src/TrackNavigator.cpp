@@ -1006,15 +1006,16 @@ void TrackNavigator::announceTitle() {
         return;
     }
     if (memoryManager_) { speakMemory(title); return; }
-    // The configured title already carries the track identity.  Do not
-    // repeat it in the opening announcement ("Track 1. Track 1, Volume").
-    // Ordinary Tab/track-change reviews still use currentParameterSpeech().
-    if (page_ == Page::tracks) {
-        const auto* entry = current();
-        if (!entry) { speech_(prefix + "No parameters"); return; }
-        const std::string selected = CountSelectedTracks(project_) > 1 && IsTrackSelected(track_)
-            ? "Selected. " : "";
-        speech_(prefix + selected + entry->title + ", " + valueText(*entry, get(*entry)) + statusSuffix());
+    // F1 entry: the configured title may already contain the track name.
+    // Do not announce it a second time before the parameter/value.  Keep
+    // the full track context when the user has removed Name from the title.
+    // This applies only to the contextual title announcement, not to cursor
+    // movement, Tab, folder changes, or NVDA's review line.
+    if (page_ == Page::tracks && !title.empty() &&
+        title.find(trackName()) != std::string::npos) {
+        const std::string selected = CountSelectedTracks(project_) > 1 &&
+            IsTrackSelected(track_) ? "Selected. " : "";
+        speech_(prefix + selected + parameterValueSpeech());
         return;
     }
     speech_(prefix + currentParameterSpeech());

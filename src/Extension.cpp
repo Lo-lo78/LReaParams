@@ -442,16 +442,10 @@ public:
                 if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
                     exitNavigation(false); speak("Keyboard capture unavailable"); }
                 else {
-                    // TEST72.3: let the native Windows focus event be the
-                    // sole entry announcement when the NVDA focus owner is active.
-                    // Title and current parameter/value were already supplied
-                    // before SetFocus; do not overlap NVDA with OSARA speech.
-                    // If the native focus owner is disabled/unavailable, retain
-                    // the existing OSARA entry announcement as a fallback.
-                    if (!titleProxyActive_) {
-                        if (resumeAfterPreferences) desired->announce();
-                        else desired->announceTitle();
-                    }
+                    // The accessible non-editable review label is populated before focus.
+                    // Issue one explicit contextual OSARA announcement.
+                    if (resumeAfterPreferences) desired->announce();
+                    else desired->announceTitle();
                 }
                 refreshToggles();
     }
