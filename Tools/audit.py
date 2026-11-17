@@ -104,9 +104,18 @@ def main():
     check('if (newReview != oldReview) titleProxy_.updateReviewLine(newReview);' in (ROOT/'src/Extension.cpp').read_text() and
           'if (newTitle != oldTitle || newReview != oldReview)' in (ROOT/'src/Extension.cpp').read_text(),
           'Boundary must not send redundant review/focus updates')
-    check('desired->windowTitle(), desired->reviewLine()' in (ROOT/'src/Extension.cpp').read_text() and
-          'reviewText_ = toWide(initialReviewLine)' in title_src,
-          'Initial native text must be filled before focus')
+    # TEST72.1: delay passive review text until the focus owner has
+    # received focus, so NVDA does not announce the parameter before OSARA's
+    # single contextual opening message.  The text remains readable on demand.
+    extension_src = (ROOT/'src/Extension.cpp').read_text()
+    initial_empty = 'desired->windowTitle(), std::string{}' in extension_src
+    delayed_review = 'titleProxy_.updateReviewLine(desired->reviewLine());' in extension_src
+    initial_focus = 'SetFocus(edit_);' in title_src
+    review_available = 'reviewText_ = toWide(initialReviewLine)' in title_src
+    check(initial_empty and delayed_review and initial_focus and review_available and
+          extension_src.index('desired->windowTitle(), std::string{}') <
+          extension_src.index('titleProxy_.updateReviewLine(desired->reviewLine());'),
+          'Initial native review text must be deferred until after focus')
     check('fxWindowTitleBase()' in fx_source and 'L"LReaParams - FX Params - "' not in fx_source,
           'FX NVDA+T title must not contain LReaParams')
     check('switchTrack(' in fx_source and 'SetOnlyTrackSelected(' in fx_source and
