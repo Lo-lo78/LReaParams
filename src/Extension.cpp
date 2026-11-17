@@ -424,7 +424,7 @@ public:
                 // Win32 window procedure into the navigator queue, without a
                 // REAPER accelerator/hook. No more fall-through to the TCP.
                 titleProxyActive_ = titleModeEnabled_ && titleProxy_.activate(
-                    desired->windowTitle(), std::string{},
+                    desired->windowTitle(), desired->reviewLine(),
                     [this] { exitNavigation(false); },
                     [this](HWND window, UINT vk, bool repeat) {
                         return input_.enqueueOwnedKey(window, vk, repeat);
@@ -442,14 +442,16 @@ public:
                 if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
                     exitNavigation(false); speak("Keyboard capture unavailable"); }
                 else {
-                    // The focus owner must be empty during the initial native
-                    // focus transition.  Otherwise NVDA speaks the parameter
-                    // before our single contextual OSARA opening message.
-                    // Populate its passive review text only AFTER focus has
-                    // settled; no Windows text/name-change event is emitted.
-                    if (titleProxyActive_) titleProxy_.updateReviewLine(desired->reviewLine());
-                    if (resumeAfterPreferences) desired->announce();
-                    else desired->announceTitle();
+                    // TEST72.3: let the native Windows focus event be the
+                    // sole entry announcement when the NVDA focus owner is active.
+                    // Title and current parameter/value were already supplied
+                    // before SetFocus; do not overlap NVDA with OSARA speech.
+                    // If the native focus owner is disabled/unavailable, retain
+                    // the existing OSARA entry announcement as a fallback.
+                    if (!titleProxyActive_) {
+                        if (resumeAfterPreferences) desired->announce();
+                        else desired->announceTitle();
+                    }
                 }
                 refreshToggles();
     }

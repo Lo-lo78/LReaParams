@@ -104,21 +104,18 @@ def main():
     check('if (newReview != oldReview) titleProxy_.updateReviewLine(newReview);' in (ROOT/'src/Extension.cpp').read_text() and
           'if (newTitle != oldTitle || newReview != oldReview)' in (ROOT/'src/Extension.cpp').read_text(),
           'Boundary must not send redundant review/focus updates')
-    # TEST72.1: delay passive review text until the focus owner has
-    # received focus, so NVDA does not announce the parameter before OSARA's
-    # single contextual opening message.  Passive review is unmasked
-    # after a user navigation key (not during delayed NVDA focus queries).
+    # TEST72.3: native NVDA owns the entry announcement when the focus
+    # window is available. The parameter is exposed before SetFocus, without
+    # an overlapping explicit OSARA announcement.
     extension_src = (ROOT/'src/Extension.cpp').read_text()
-    initial_empty = 'desired->windowTitle(), std::string{}' in extension_src
-    delayed_review = 'titleProxy_.updateReviewLine(desired->reviewLine());' in extension_src
-    initial_focus = 'SetFocus(edit_);' in title_src
-    review_available = 'reviewText_ = toWide(initialReviewLine)' in title_src
-    check(initial_empty and delayed_review and initial_focus and review_available and
-          'initialFocusReviewSuppressed_' in title_src and
-          'initialFocusReviewSuppressed_ = false;' in title_src and
-          extension_src.index('desired->windowTitle(), std::string{}') <
-          extension_src.index('titleProxy_.updateReviewLine(desired->reviewLine());'),
-          'Initial native review text must be deferred until after focus')
+    check('desired->windowTitle(), desired->reviewLine()' in extension_src and
+          'SetFocus(edit_);' in title_src and
+          'reviewText_ = toWide(initialReviewLine)' in title_src and
+          'initialFocusReviewSuppressed_' not in title_src and
+          'if (!titleProxyActive_) {' in extension_src and
+          extension_src.index('desired->windowTitle(), desired->reviewLine()') <
+          extension_src.index('if (!titleProxyActive_) {'),
+          'Native focus must own initial speech; OSARA must be fallback only')
     check('fxWindowTitleBase()' in fx_source and 'L"LReaParams - FX Params - "' not in fx_source,
           'FX NVDA+T title must not contain LReaParams')
     check('switchTrack(' in fx_source and 'SetOnlyTrackSelected(' in fx_source and
