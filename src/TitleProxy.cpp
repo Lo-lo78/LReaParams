@@ -113,6 +113,7 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
     ShowWindow(nativeLabel_,SW_HIDE);
     ShowWindow(slider_, SW_HIDE);
     ShowWindow(edit_, SW_SHOW);
+    initialFocusReviewSuppressed_ = true;
     reviewText_ = toWide(initialReviewLine);
     if (reviewText_.size() > 8192) reviewText_.resize(8192);
     // The child STATIC's stored caption is deliberately constant (empty).
@@ -237,6 +238,7 @@ void TitleProxy::hideAndRestore() noexcept {
     const HWND oldFocus = originalFocus_;
     closeNavigator_ = {};
     keyboardKey_ = {};
+    initialFocusReviewSuppressed_ = false;
     sliderMode_ = false; nativeEditMode_=false;
     originalForeground_ = originalFocus_ = nullptr;
     if (IsWindowVisible(window_)) ShowWindow(window_, SW_HIDE);
@@ -328,11 +330,13 @@ LRESULT TitleProxy::dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, 
     }
     // WM_GETTEXT remains a passive review query: no changing captions while
     // the value changes, and no duplicate OSARA/native text-change speech.
-    if (msg == WM_GETTEXTLENGTH) return static_cast<LRESULT>(reviewText_.size());
+    if (msg == WM_GETTEXTLENGTH)
+        return initialFocusReviewSuppressed_ ? 0 : static_cast<LRESULT>(reviewText_.size());
     if (msg == WM_GETTEXT) {
         if (!lp || !wp) return 0;
         auto* target = reinterpret_cast<wchar_t*>(lp);
-        const auto length = std::min(reviewText_.size(), static_cast<size_t>(wp - 1));
+        const auto length = initialFocusReviewSuppressed_ ? size_t{0} :
+            std::min(reviewText_.size(), static_cast<size_t>(wp - 1));
         if (length) std::wmemcpy(target, reviewText_.data(), length);
         target[length] = L'\0';
         return static_cast<LRESULT>(length);
@@ -350,6 +354,9 @@ LRESULT TitleProxy::dispatchKeyOwner(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, 
     }
     if ((msg == WM_KEYUP || msg == WM_SYSKEYUP) && wp == VK_F12) return 0;
     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
+        // A real user key ends the opening focus-event window. Review text
+        // becomes queryable, without issuing any native text-change event.
+        initialFocusReviewSuppressed_ = false;
         // The OSARA/REAPER navigation backend stays authoritative for ALL keys.
         // No native trackbar key may edit the control independently of REAPER.
         try { if (keyboardKey_) keyboardKey_(hwnd, static_cast<UINT>(wp), (lp & (1LL << 30)) != 0); }

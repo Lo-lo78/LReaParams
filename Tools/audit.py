@@ -106,13 +106,16 @@ def main():
           'Boundary must not send redundant review/focus updates')
     # TEST72.1: delay passive review text until the focus owner has
     # received focus, so NVDA does not announce the parameter before OSARA's
-    # single contextual opening message.  The text remains readable on demand.
+    # single contextual opening message.  Passive review is unmasked
+    # after a user navigation key (not during delayed NVDA focus queries).
     extension_src = (ROOT/'src/Extension.cpp').read_text()
     initial_empty = 'desired->windowTitle(), std::string{}' in extension_src
     delayed_review = 'titleProxy_.updateReviewLine(desired->reviewLine());' in extension_src
     initial_focus = 'SetFocus(edit_);' in title_src
     review_available = 'reviewText_ = toWide(initialReviewLine)' in title_src
     check(initial_empty and delayed_review and initial_focus and review_available and
+          'initialFocusReviewSuppressed_' in title_src and
+          'initialFocusReviewSuppressed_ = false;' in title_src and
           extension_src.index('desired->windowTitle(), std::string{}') <
           extension_src.index('titleProxy_.updateReviewLine(desired->reviewLine());'),
           'Initial native review text must be deferred until after focus')
