@@ -1,3 +1,10 @@
+## LReaParams 0.0.72 — blank titles and explicit Step persistence (2026-11-17)
+
+- When users disable every title component, the title stays empty, without fallback to FX Params / Track Params.
+- Step adjustment no longer implicitly commits a per-parameter Step; **Alt+S** explicitly persists the current Step in FX/Track contexts.
+- Preserves the 0.0.71 Type/Name behavior, user profiles, older release notes, and GitHub/ReaPack historical publishing.
+- [Release notes 0.0.72](RELEASE_NOTES_0_0_72.md).
+
 ## LReaParams 0.0.71 — independent FX Type and Name title elements (2026-11-16)
 
 - FX Params, FX Memories and FX Pin Connector title templates separate plugin **Type** (off by default) from **Name** (on by default); FX Browser remains unchanged.

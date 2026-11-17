@@ -3,8 +3,8 @@ from pathlib import Path
 import importlib.util, xml.etree.ElementTree as ET
 r=Path(__file__).resolve().parents[1]
 rd=lambda p:(r/p).read_text(encoding='utf-8')
-assert 'project(LReaParams VERSION 0.0.71 LANGUAGES CXX)' in rd('CMakeLists.txt')
-assert 'LReaParams 0.0.71 - Native REAPER extension' in rd('src/Extension.cpp')
+assert 'project(LReaParams VERSION 0.0.72 LANGUAGES CXX)' in rd('CMakeLists.txt')
+assert 'LReaParams 0.0.72 - Native REAPER extension' in rd('src/Extension.cpp')
 assert 'v0.0.69' in rd('Docs/REAPACK_SETUP_IT.md')
 assert 'Already' not in rd('Docs/RELEASE_NOTES_0_0_67.md')
 assert '0.0.67' in rd('Docs/RELEASE_NOTES_0_0_67.md')

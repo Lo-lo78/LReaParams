@@ -5,9 +5,9 @@ import xml.etree.ElementTree as ET
 r=Path(__file__).resolve().parents[1]
 read=lambda f:(r/f).read_text(encoding='utf-8')
 assert 'VERSION 0.0.71' in read('CMakeLists.txt')
-assert 'LReaParams 0.0.71 - Native REAPER extension' in read('src/Extension.cpp')
-assert '!define APP_VERSION "0.0.71"' in read('Installer/LReaParams.nsi')
-assert 'LReaParams-0.0.71-Windows-x64-SETUP-EXE' in read('.github/workflows/build-windows.yml')
+assert 'LReaParams 0.0.72 - Native REAPER extension' in read('src/Extension.cpp')
+assert '!define APP_VERSION "0.0.72"' in read('Installer/LReaParams.nsi')
+assert 'LReaParams-0.0.72-Windows-x64-SETUP-EXE' in read('.github/workflows/build-windows.yml')
 assert 'release-0-0-69-used-f7' in read('Guide/LReaParams - FX Params.html')
 assert 'release-0-0-68-used' in read('Guide/LReaParams - FX Params.html')
 for lang in ['it','es','fr','ru','zh-CN','ja']:
