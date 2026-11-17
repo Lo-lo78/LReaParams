@@ -113,6 +113,15 @@ bool TitleProxy::activate(const std::wstring& title, const std::string& initialR
     ShowWindow(slider_, SW_HIDE);
     ShowWindow(edit_, SW_SHOW);
     reviewText_ = toWide(initialReviewLine);
+    // TEST72.4: the focused STATIC is the one NVDA announcement we can
+    // reliably supply. The parent window caption is sometimes omitted by
+    // NVDA on focus changes, so include the configured title BEFORE the
+    // parameter in the initial accessible text (one focus, no OSARA speech).
+    // Subsequent passive review updates remain parameter-only as before.
+    if (!title_.empty()) {
+        if (reviewText_.empty()) reviewText_ = title_;
+        else reviewText_ = title_ + L". " + reviewText_;
+    }
     if (reviewText_.size() > 8192) reviewText_.resize(8192);
     // The child STATIC's stored caption is deliberately constant (empty).
     // Its window procedure answers WM_GETTEXT with reviewText_ when NVDA or
