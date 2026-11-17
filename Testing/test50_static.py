@@ -6,7 +6,9 @@ cpp = (root / 'src/TrackNavigator.cpp').read_text(encoding='utf-8')
 h = (root / 'include/lrp/TrackNavigator.h').read_text(encoding='utf-8')
 api = (root / 'include/lrp/ReaperApi.h').read_text(encoding='utf-8')
 assert version_at_least(root, (0, 0, 50))
-assert 'k.vk == VK_TAB' in cpp and 'info += ". Step " + std::to_string(memory_.step(id))' in cpp
+# TEST71.2: Tab describes the working Step (which may be unsaved).
+assert 'k.vk == VK_TAB' in cpp and 'info += ". Step " + std::to_string(stepScale_)' in cpp
+assert 'memory_.setStep(parameterKey(), stepScale_);' in cpp
 # Ctrl+R without Shift remains unbound; TEST51 adds only Ctrl+Shift+R
 # for Add Receive, and does not restore the old Ctrl+R review shortcut.
 assert 'k.vk == VK_TAB' in cpp

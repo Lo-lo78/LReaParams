@@ -21,7 +21,10 @@ assert 'writeFxTcpValue' in f and 'nudgeFxTcpValue' in f
 assert 'TrackFX_SetParamNormalized' in f and 'TrackFX_EndParamEdit' in f
 assert 'fxTcpParameterVisible(column->fxIndex, param->index)' in f
 assert 'std::memcmp(currentGuid, &column->guid, sizeof(GUID)) != 0' in f
-assert 'memory_.step(fxTcpStepKey())' in f and 'memory_.setStep(key, next)' in f
+# TEST71.2: the F4 working Step uses a preview, committed only by Alt+S.
+assert 'memory_.step(key)' in f and 'workingFxTcpStep()' in f
+assert 'fxTcpPreviewStep_ = next;' in f and 'memory_.setStep(key, next)' not in f
+assert 'memory_.setStep(key, value);' in f and 'memory_.flush();' in f
 assert 'if (page_ == Page::fxTcp)' in n and 'currentFxTcpParameter()' in n
 assert 'python Testing/test56_3_static.py' in w
 print('TEST56.3 static contracts PASS; native build and REAPER/NVDA runtime pending')
