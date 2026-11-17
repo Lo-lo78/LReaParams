@@ -1180,6 +1180,23 @@ std::string formatFxPageTitle(const std::string& fx, const std::string& context,
     }
     return result;
 }
+std::string formatTrackFxNameForSpeech(const std::string& raw) {
+    const auto parsed = splitReaperFxName(raw);
+    // Track F4's persisted title IDs: 2 = Name, 4 = Type.
+    // Respect their relative order; do not let other title parts leak into
+    // the FX-specific contextual message.
+    const auto& cfg = activeTrackExtraTitles[2];
+    std::string result;
+    for (int i = 0; i < 6; ++i) {
+        const int part = cfg.order[static_cast<size_t>(i)];
+        if ((part != 2 && part != 4) || !cfg.enabled[static_cast<size_t>(part)]) continue;
+        const std::string& value = part == 2 ? parsed.name : parsed.type;
+        if (value.empty()) continue;
+        if (!result.empty()) result += " - ";
+        result += value;
+    }
+    return result;
+}
 std::wstring formatTrackTitle(const std::wstring& track) {
     const std::wstring names[] = {L"Track Params", track, activeTrackTitle.custom};
     std::wstring result;

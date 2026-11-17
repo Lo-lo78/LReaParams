@@ -1,4 +1,5 @@
 #include "lrp/TrackNavigator.h"
+#include "lrp/Preferences.h"
 #include <algorithm>
 #include <cmath>
 #include <cwctype>
@@ -237,7 +238,9 @@ std::string TrackNavigator::fxTcpReview(bool includeContext) const {
     if (fxTcpListOpen_) return fxTcpParameterGridReview(includeContext);
     const FxTcpColumn* column = currentFxTcpColumn();
     if (!column) return "No track FX";
-    std::string name = "FX " + std::to_string(column->fxIndex + 1) + ", " + column->name;
+    std::string name = "FX " + std::to_string(column->fxIndex + 1);
+    const std::string visibleFx = formatTrackFxNameForSpeech(column->name);
+    if (!visibleFx.empty()) name += ", " + visibleFx;
     if (fxTcpRow_ == 0) {
         if (TrackFX_GetEnabled && !TrackFX_GetEnabled(track_, column->fxIndex)) name += ", bypassed";
         if (TrackFX_GetOffline && TrackFX_GetOffline(track_, column->fxIndex)) name += ", offline";

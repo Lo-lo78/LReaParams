@@ -675,11 +675,12 @@ std::string FxNavigator::statusSummary() const {
     return {};
 }
 std::string FxNavigator::fxContextAnnouncement() const {
-    // After changing FX, speak context, active states, plugin, parameter/value.
-    std::string message = fxNameFirst() ? fxDisplayName() + ". " : contextName() + ". ";
-    if (isBypassed()) message += "Bypassed. ";
-    if (deltaSoloActive()) message += "Delta Solo. ";
-    return message + (fxNameFirst() ? contextName() : fxDisplayName()) + ". " + currentParameterSpeech();
+    // Ctrl+Up/Down (FX), Ctrl+Shift+Up/Down (track), and context changes are
+    // user-facing title announcements, not a separate hard-coded FX caption.
+    // Keep Type/Name, component ordering, visibility, and custom text EXACTLY
+    // as configured for Messages > FX Params > Title. Raw host names are kept
+    // in entries_ for GUID/profile matching; only the spoken text is formatted.
+    return fxWindowTitleBase() + ". " + currentParameterSpeech();
 }
 std::string FxNavigator::fxWindowTitleBase(bool memories) const {
     const std::string status = statusSummary();

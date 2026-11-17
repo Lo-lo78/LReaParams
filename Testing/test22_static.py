@@ -23,8 +23,11 @@ assert 'Lua Home/End intentionally reversed' not in f8
 assert 'bool FxNavigator::deltaSoloActive() const' in fx
 assert 'return value > 0.5;' in fx
 assert 'if (bypassed && delta) return "Bypassed - Delta Solo";' in fx
-assert 'if (isBypassed()) message += "Bypassed. ";' in fx
-assert 'if (deltaSoloActive()) message += "Delta Solo. ";' in fx
+# The FX-switch speech uses the SAME configurable title (and status source)
+# as NVDA+T, rather than separately speaking the raw REAPER FX name.
+assert 'return fxWindowTitleBase() + ". " + currentParameterSpeech();' in fx
+assert 'const bool bypassed = isBypassed();' in fx
+assert 'const bool delta = deltaSoloActive();' in fx
 assert 'fxContextAnnouncement()' in h
 assert fx.count('speech_(fxContextAnnouncement());')==2
 assert 'fxWindowTitleBase(bool memories) const' in fx

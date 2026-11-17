@@ -1,4 +1,5 @@
 #include "lrp/TrackNavigator.h"
+#include "lrp/Preferences.h"
 #include <algorithm>
 #include <cctype>
 #include <cwctype>
@@ -244,14 +245,17 @@ std::string TrackNavigator::fxTcpParameterGridReview(bool details) const {
         const int fx = fxTcpListColumn_;
         char name[1024]{};
         if (TrackFX_GetFXName) TrackFX_GetFXName(track_, fx, name, sizeof(name));
-        const std::string fxName = name[0] ? name : "FX " + std::to_string(fx + 1);
+        const std::string fxName = formatTrackFxNameForSpeech(
+            name[0] ? std::string(name) : "FX " + std::to_string(fx + 1));
         const auto& rows = fxTcpVisibleColumns_[static_cast<size_t>(fx)];
-        if (fxTcpListRow_ <= 0) return "FX " + std::to_string(fx + 1) + ", " + fxName +
+        if (fxTcpListRow_ <= 0) return "FX " + std::to_string(fx + 1) +
+            (fxName.empty() ? "" : ", " + fxName) +
             (details && rows.empty() ? ", no visible TCP parameters" : "");
         const int pos = rows[static_cast<size_t>(fxTcpListRow_ - 1)];
         const auto& entry = fxTcpListEntries_[static_cast<size_t>(pos)];
         if (!details) return entry.parameterName;
-        return fxName + ", " + entry.parameterName + ", visible in TCP. Parameter " +
+        return (fxName.empty() ? std::string() : fxName + ", ") +
+            entry.parameterName + ", visible in TCP. Parameter " +
             std::to_string(fxTcpListRow_) + " of " + std::to_string(rows.size()) +
             ". FX " + std::to_string(fx + 1) + " of " + std::to_string(fxTcpVisibleColumns_.size());
     }

@@ -50,6 +50,9 @@ std::string formatFxTitle(const std::string& fx, const std::string& track,
 // titleIndex 1: FX Memories; 2: FX Browser; 3: FX Pin Connector.
 std::string formatFxPageTitle(const std::string& fx, const std::string& context,
     int titleIndex, const std::string& status = {});
+// Apply Track Params > Messages > FX TCP (F4) Type/Name preferences to
+// spoken FX labels, without repeating the window heading or track name.
+std::string formatTrackFxNameForSpeech(const std::string& raw);
 std::wstring formatTrackTitle(const std::wstring& track);
 std::wstring formatTrackPageTitle(const std::wstring& track, int titleIndex,
     const std::wstring& pageText = {}, const std::wstring& modeText = {});
