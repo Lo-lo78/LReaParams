@@ -424,7 +424,7 @@ public:
                 // Win32 window procedure into the navigator queue, without a
                 // REAPER accelerator/hook. No more fall-through to the TCP.
                 titleProxyActive_ = titleModeEnabled_ && titleProxy_.activate(
-                    desired->windowTitle(), desired->reviewLine(),
+                    desired->windowTitle(), std::string{},
                     [this] { exitNavigation(false); },
                     [this](HWND window, UINT vk, bool repeat) {
                         return input_.enqueueOwnedKey(window, vk, repeat);
@@ -442,8 +442,12 @@ public:
                 if (!input_.start(selected, titleProxyActive_ ? titleProxy_.hwnd() : nullptr)) {
                     exitNavigation(false); speak("Keyboard capture unavailable"); }
                 else {
-                    // The accessible non-editable review label is populated before focus.
-                    // Issue one explicit contextual OSARA announcement.
+                    // The focus owner must be empty during the initial native
+                    // focus transition.  Otherwise NVDA speaks the parameter
+                    // before our single contextual OSARA opening message.
+                    // Populate its passive review text only AFTER focus has
+                    // settled; no Windows text/name-change event is emitted.
+                    if (titleProxyActive_) titleProxy_.updateReviewLine(desired->reviewLine());
                     if (resumeAfterPreferences) desired->announce();
                     else desired->announceTitle();
                 }

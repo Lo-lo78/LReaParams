@@ -1006,6 +1006,17 @@ void TrackNavigator::announceTitle() {
         return;
     }
     if (memoryManager_) { speakMemory(title); return; }
+    // The configured title already carries the track identity.  Do not
+    // repeat it in the opening announcement ("Track 1. Track 1, Volume").
+    // Ordinary Tab/track-change reviews still use currentParameterSpeech().
+    if (page_ == Page::tracks) {
+        const auto* entry = current();
+        if (!entry) { speech_(prefix + "No parameters"); return; }
+        const std::string selected = CountSelectedTracks(project_) > 1 && IsTrackSelected(track_)
+            ? "Selected. " : "";
+        speech_(prefix + selected + entry->title + ", " + valueText(*entry, get(*entry)) + statusSuffix());
+        return;
+    }
     speech_(prefix + currentParameterSpeech());
 }
 std::wstring TrackNavigator::windowTitle() const {
