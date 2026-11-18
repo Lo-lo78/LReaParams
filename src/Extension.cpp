@@ -7,6 +7,7 @@
 #include "lrp/ChoiceDialogs.h"
 #include "lrp/Preferences.h"
 #include "lrp/RangeDialog.h"
+#include "lrp/RenderNavigation.h"
 #include <shellapi.h>
 #include <array>
 #include <memory>
@@ -37,7 +38,7 @@ struct Action {
 };
 class Extension {
 public:
-    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), backgroundMidi_([this](const std::string& text) { speak(text); }), backgroundTrackMidi_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_), titleProxy_(info->hwnd_main) {}
+    explicit Extension(reaper_plugin_info_t* info) : info_(*info), navigator_([this](const std::string& text) { speak(text); }), backgroundMidi_([this](const std::string& text) { speak(text); }), backgroundTrackMidi_([this](const std::string& text) { speak(text); }), trackNavigator_([this](const std::string& text) { speak(text); }), input_(&info_, navigator_), titleProxy_(info->hwnd_main), renderNavigation_(info->hwnd_main, [this](const std::string& text) { speak(text); }) {}
     ~Extension() { shutdown(); }
     void init() {
         if (REAPERAPI_LoadAPI(info_.GetFunc) != 0) throw std::runtime_error("Required REAPER API missing");
@@ -75,6 +76,9 @@ public:
         menuRegistered_ = info_.Register("hookcustommenu", reinterpret_cast<void*>(menuHook)) != 0;
         timerRegistered_ = info_.Register("timer", reinterpret_cast<void*>(timerHook)) != 0;
         if (!hookRegistered_ || !toggleRegistered_ || !menuRegistered_ || !timerRegistered_ || !fxChainAccelRegistered_) throw std::runtime_error("Callback registration failed");
+        // Optional focus-only navigation of the native Render to File dialog.
+        // If its thread-local hook cannot be installed, REAPER remains native.
+        renderNavigation_.start();
         AddExtensionsMainMenu();
         startupImportCheckPending_ = true; // No automatic conversion without user consent
     }
@@ -556,6 +560,7 @@ public:
         // editPreferences() runs a nested message loop. Its timer callbacks
         // must never interpret the temporarily hidden title proxy or stopped
         // input router as the end of an FX/Track navigation session.
+        renderNavigation_.tick();
         if (preferencesDialogOpen_) return;
         // Alt+R/C/F opens a native modal dialog on this same REAPER thread.
         // Its nested message loop receives timer ticks while the focus owner
@@ -798,6 +803,7 @@ public:
         } else if (flag == 1) updateMenu(menu);
     }
     void shutdown() noexcept {
+        renderNavigation_.stop();
         input_.stop(); titleProxy_.shutdown(); titleProxyActive_ = false;
         backgroundMidi_.end(); backgroundTrackMidi_.end(); navigator_.end(); trackNavigator_.end(); current_ = nullptr;
         if (fxChainAccelRegistered_) {
@@ -836,6 +842,7 @@ private:
     Navigator* current_ = nullptr;
     InputRouter input_;
     TitleProxy titleProxy_;
+    RenderNavigation renderNavigation_;
     ImportWorker importer_;
     fs::path resource_;
     fs::path preferencesPath_;

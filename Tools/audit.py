@@ -167,8 +167,18 @@ def main():
     check('Choose a page.' not in preferences_src and
           'Active - Shortcuts' not in preferences_src,
           'Preferences must not speak on-open instructions or a redundant Active tree prefix')
+    # TEST74.1 permits exactly one user-invoked, owned Render SEARCH window
+    # and its label/Edit children. It never replaces the native render window.
+    render_search_src = (ROOT/'src/RenderNavigation.cpp').read_text()
+    check(render_search_src.count('CreateWindowExW(') == 3 and
+          'L"Find Render control' in render_search_src and
+          'closeFind()' in render_search_src and
+          'UnregisterClassW(findClass' in render_search_src and
+          'GetForegroundWindow() == root' in render_search_src and
+          'WH_GETMESSAGE' in render_search_src,
+          'TEST74.1 owned Render search window/focus-only boundary changed')
     for cpp in (ROOT/'src').glob('*.cpp'):
-        if cpp.name not in {'TitleProxy.cpp', 'Preferences.cpp', 'RangeDialog.cpp'}:
+        if cpp.name not in {'TitleProxy.cpp', 'Preferences.cpp', 'RangeDialog.cpp', 'RenderNavigation.cpp'}:
             check(not re.search(r'CreateWindow(?:Ex)?[AW]?\s*\(', cpp.read_text()),
                   'Unexpected window creation: '+cpp.name)
     check('PM_REMOVE' in all_cpp and 'CallNextHookEx' in all_cpp,'Thread hook lifecycle contract missing')
