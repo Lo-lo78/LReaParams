@@ -13,11 +13,11 @@ assert 'bool enabled = false;' in header
 assert 'floatingCcSession().assign(cc.channel, cc.number);' in fx
 assert 'floatingCcSession().assign(cc.channel, cc.number);' in track_midi
 assert 'floatingCc_ = floating.active();' in fx
-assert 'if (floating.active()) {' in track
+assert 'if (floating.enabled && floating.learned()) {' in track
 assert 'floatingCcSession().enabled = false;' in track_midi
 assert 'floatingCcSession().enabled=false' in fx
 assert 'static ParameterRange range' not in header
-assert 'pendingMidiSpeech_ = target.parameter + ", "' in track_midi
+assert 'pendingMidiSpeech_ = (target.parameter == "Volume" ?' in track_midi
 assert 'pendingMidiSpeech_ = label + ", "' not in track_midi
 assert '(floating ? std::string() : savedTrackLabel' not in track_midi
 assert 'trackNavigator_.tickMidi();' in extension

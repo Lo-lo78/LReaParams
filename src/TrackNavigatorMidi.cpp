@@ -234,13 +234,10 @@ bool TrackNavigator::applyFxTcpMidi(const std::string& identity, int ccValue, bo
     // Speech defaults OFF per target. MIDI feedback never repeats the full
     // GUI announcement unless explicitly enabled with Ctrl+T.
     if (memory_.fixedCcSpeech(identity)) {
-        char paramName[1024]{}, formatted[512]{};
-        if (TrackFX_GetParamName) TrackFX_GetParamName(owner, fx, parameter, paramName, sizeof(paramName));
+        char formatted[512]{};
         if (TrackFX_GetFormattedParamValue)
             TrackFX_GetFormattedParamValue(owner, fx, parameter, formatted, sizeof(formatted));
-        pendingMidiSpeech_ =
-            (paramName[0] ? std::string(paramName) : "Parameter " + std::to_string(parameter + 1)) +
-            ", " + (formatted[0] ? std::string(formatted) : std::to_string(next));
+        pendingMidiSpeech_ = formatted[0] ? std::string(formatted) : std::to_string(next);
     }
     return true;
 }
@@ -272,6 +269,14 @@ void TrackNavigator::midiShortcut(const Key& k) {
     if (toggleFixed) {
         if (fixedCc_) {
             fixedCc_ = false; memory_.setFixedEnabled(false); memory_.flush();
+            auto& session = floatingCcSession();
+            session.suspendForFixed(false);
+            floatingCc_ = session.active();
+            floatingWaiting_ = false;
+            if (floatingCc_) {
+                floatingChannel_ = session.channel; floatingNumber_ = session.number;
+                floatingTarget_.clear();
+            }
             midiPickup_.clear(); speech_("Fixed CC map off"); return;
         }
         int count = 0;
@@ -281,7 +286,7 @@ void TrackNavigator::midiShortcut(const Key& k) {
         }
         if (!count) { speech_("No fixed CC map"); return; }
         fixedCc_ = true; floatingCc_ = floatingWaiting_ = false;
-        floatingCcSession().enabled = false;
+        floatingCcSession().suspendForFixed(true);
         memory_.setFixedEnabled(true); memory_.flush();
         midiSequence_ = recentSequence(); midiPickup_.clear();
         speech_("Fixed CC map on. " + std::to_string(count) + " parameters");
@@ -290,12 +295,14 @@ void TrackNavigator::midiShortcut(const Key& k) {
     if (toggleFloating) {
         if (floatingCc_ || floatingWaiting_) {
             floatingCc_ = floatingWaiting_ = false;
-            floatingCcSession().enabled = false;
+            floatingCcSession().enabled = false; // Explicit Floating CC off, not Fixed mode switching.
+            floatingCcSession().suspendForFixed(false);
             speech_("Floating CC off");
         } else {
             if (!supported) { speech_("No MIDI CC target for this field"); return; }
             floatingWaiting_ = true; fixedCc_ = false;
             floatingCcSession().enabled = false; // The next moved CC replaces this session's assignment.
+            floatingCcSession().suspendForFixed(false);
             midiSequence_ = recentSequence(); midiPickup_.clear();
             speech_("Floating CC learn. Move a MIDI control");
         }
@@ -361,7 +368,7 @@ void TrackNavigator::applyMidi(const std::string& section, const std::string& ke
     pickup.applied(ccPickupTarget(norm(get(*target)),cc));
     std::string speechTarget;
     if (midiFixedIdentity(speechTarget) && memory_.fixedCcSpeech(speechTarget))
-        pendingMidiSpeech_ = key + ", " + valueText(*target, get(*target));
+        pendingMidiSpeech_ = valueText(*target, get(*target));
 }
 
 void TrackNavigator::applyFixedMidi(const std::string& identity, int value) {
@@ -425,8 +432,7 @@ void TrackNavigator::applyFixedMidi(const std::string& identity, int value) {
     UpdateArrange();
     if (memory_.fixedCcSpeech(identity)) {
         // MIDI feedback is deliberately concise, unlike the full Tab/title review.
-        pendingMidiSpeech_ = target.parameter + ", " +
-            (target.parameter == "Volume" ?
+        pendingMidiSpeech_ = (target.parameter == "Volume" ?
                 (next <= 0 ? "minus infinity dB" : std::to_string(20.0 * std::log10(next)) + " dB") :
                 binary ? (next >= 0.5 ? "on" : "off") :
                 target.parameter == "Pan" ? std::to_string(static_cast<int>(std::abs(next) * 100.0)) +
@@ -513,7 +519,7 @@ void TrackNavigator::pollMidi() {
             }
             const auto target = learnKey_;
             learnCc_ = false; fixedCc_ = true; floatingCc_ = floatingWaiting_ = false;
-            floatingCcSession().enabled = false;
+            floatingCcSession().suspendForFixed(true);
             learnIdentity_.clear();
             midiPickup_.clear();
             speech_("CC learned. Channel " + std::to_string(cc.channel) + " CC " +

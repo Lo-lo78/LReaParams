@@ -45,14 +45,18 @@ struct FloatingCcSession {
     int channel = -1;
     int number = -1;
     bool enabled = false;
+    bool suspendedByFixed = false; // Fixed CC takes temporary priority, never forgets the learned CC.
     ParameterRange range{0.0, 127.0};
-    bool active() const noexcept {
-        return enabled && channel >= 1 && channel <= 16 && number >= 0 && number <= 127;
+    bool learned() const noexcept {
+        return channel >= 1 && channel <= 16 && number >= 0 && number <= 127;
     }
+    bool active() const noexcept { return enabled && !suspendedByFixed && learned(); }
+    void suspendForFixed(bool on) noexcept { suspendedByFixed = on; }
     void assign(int channelIn, int numberIn) noexcept {
         channel = channelIn;
         number = numberIn;
         enabled = true;
+        suspendedByFixed = false;
     }
 };
 inline FloatingCcSession& floatingCcSession() {

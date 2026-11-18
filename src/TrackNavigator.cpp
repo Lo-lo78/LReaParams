@@ -90,11 +90,13 @@ bool TrackNavigator::begin() {
     // Persisted Fixed CC is re-enabled on every entry, never silently lost.
     fixedCc_ = memory_.fixedEnabled();
     const auto& floating = floatingCcSession();
-    if (floating.active()) {
-        floatingCc_ = true;
+    if (floating.enabled && floating.learned()) {
+        // A learned Floating CC chooses the session mode across BOTH navigators.
+        // Fixed on only suspends it; Fixed off restores it without relearning.
+        fixedCc_ = floating.suspendedByFixed;
+        floatingCc_ = floating.active();
         floatingChannel_ = floating.channel;
         floatingNumber_ = floating.number;
-        fixedCc_ = false;  // Floating takes precedence while active.
     }
     row_ = 0;
     for (int i = 0; i < static_cast<int>(rows_.size()); ++i) {
