@@ -55,7 +55,7 @@ void TrackNavigator::end() noexcept {
     hardwareOutputColumn_ = -1; hardwareOutputRow_ = 0; hardwareOutputNewPair_ = 0; hardwareOutputEdge_.clear();
     reaRouteColumn_ = reaRouteRow_ = 0;
     active_ = false; valueMode_ = false; filterEditing_ = false; numericEditing_ = false;
-    rangeEditing_ = false; resetMidiState();
+    resetMidiState();
     backgroundMode_ = false; clearAutomationConfirm_ = false; clearAutomationYes_ = false;
     filterBuffer_.clear(); filterQuery_.clear(); resetSelectionStroke(); selectionBuilding_ = false; resetPendingRouting(); rows_.clear(); entries_.clear(); fxTcpPreviewKey_.clear(); fxTcpColumns_.clear(); fxTcpColumn_ = fxTcpRow_ = 0; fxTcpListOpen_ = false; fxTcpListEntries_.clear(); fxTcpVisibleColumns_.clear(); fxTcpMainFilter_.clear(); fxTcpGridFilter_.clear(); fxTcpListColumn_ = fxTcpListRow_ = 0;
 }
@@ -164,6 +164,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
             default: return false;
         }
     }
+    if (!k.ctrl && k.alt && !k.shift && (k.vk == 'R' || k.vk == 'C' || k.vk == 'F')) return true;
     if (filterEditing_ || numericEditing_) {
         // The standard EDIT handles actual typing, selection and clipboard.
         // Only accept navigation-ending keys; other keys must never reach
@@ -299,7 +300,7 @@ bool TrackNavigator::accepts(const Key& k) const noexcept {
     if (k.ctrl && k.alt) return !k.shift && (k.vk == 'C' || (f1 && (k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.alt && k.shift) return f1 && !k.ctrl && (k.vk == VK_UP || k.vk == VK_DOWN);
     if (k.ctrl && k.shift) return !k.alt && (k.vk == 'C' || k.vk == 'T' ||
-        (k.vk == 'S' || k.vk == 'R' || k.vk == 'A' || k.vk == 'I') || (f1 && k.vk == VK_DELETE) ||
+        (k.vk == 'S' || k.vk == 'R' || k.vk == 'A') || (f1 && k.vk == VK_DELETE) ||
         (f1 && (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN)));
     if (k.shift) return !k.alt && !k.ctrl && (k.vk == 'C' || (f1 &&
         (k.vk == VK_SPACE || k.vk == VK_UP || k.vk == VK_DOWN ||
@@ -676,14 +677,12 @@ void TrackNavigator::put(const Entry& e, double value) {
         e.type == Entry::receiveCount || e.type == Entry::fxCount || e.type == Entry::midiMerge) {
         speech_("Read only"); return;
     }
-    if (e.type == Entry::volume) {
-        // The project's Ctrl+Shift+I range is authoritative for every write
-        // path, not just arrow nudges and Home/End: MIDI, numeric edits and
-        // Value must never circumvent the configured limits.
-        const auto range = memory_.volumeRange(page_ == Page::tracks ? "Track" :
-            page_ == Page::sends ? "Sends" : "Receives");
-        value = amp(std::clamp(db(value), range.first, range.second));
-    }
+    // Every writable F1/F2/F3 parameter, including Volume, has its own range.
+    // A saved limit cannot accidentally affect a different track or send.
+    // Keyboard range belongs to the focused parameter. A background/floating
+    // MIDI update may address a different entry: never apply the focused
+    // control's range to that unrelated target.
+    if (current() == &e) value = clampParameterValue(e,value);
     if (get(e) == value) return; // silent boundary: no change
     std::string parm = e.parm;
     double raw = value;
@@ -923,7 +922,7 @@ std::string TrackNavigator::reviewLine() const {
     // Track/page names remain available via NVDA+T. Moving between tracks
     // announces the track name; Tab provides the full context.
     if (filterEditing_) return nativeTextLabel() + ", " + filterBuffer_;
-    if (numericEditing_) return (rangeEditing_ ? "Volume range, " : "Parameter value, ") + numericBuffer_;
+    if (numericEditing_) return "Parameter value, " + numericBuffer_;
     if (!valueMode_) return parameterValueSpeech();
     const auto* e = current();
     return e ? "Value, " + e->title + ", " + valueText(*e, get(*e)) : parameterValueSpeech();
@@ -949,9 +948,8 @@ double TrackNavigator::valueFraction() const {
     if (!e || !nativeValueSlider()) return 0.0;
     const double value = get(*e);
     if (e->type == Entry::volume) {
-        const auto range = memory_.volumeRange(page_ == Page::tracks ? "Track" :
-            page_ == Page::sends ? "Sends" : "Receives");
-        return std::clamp((db(value) - range.first) / (range.second - range.first), 0.0, 1.0);
+        const auto range = currentParameterRange();
+        return std::clamp((db(value) - range.minimum) / (range.maximum - range.minimum), 0.0, 1.0);
     }
     return std::clamp((value + 1.0) / 2.0, 0.0, 1.0);
 }
@@ -1287,9 +1285,8 @@ void TrackNavigator::nudge(int direction, bool coarse) {
     double next = old;
     switch (e->type) {
         case Entry::volume: {
-            const auto range = memory_.volumeRange(page_ == Page::tracks ? "Track" :
-                page_ == Page::sends ? "Sends" : "Receives");
-            next = amp(std::clamp(db(old) + (coarse ? 3.0 : 0.5) * factor * direction, range.first, range.second));
+            const auto range = currentParameterRange();
+            next = amp(std::clamp(db(old) + (coarse ? 3.0 : 0.5) * factor * direction, range.minimum, range.maximum));
             break;
         }
         case Entry::pan: case Entry::width: next = std::clamp(old + direction * (coarse ? 0.1 : 0.01) * factor, -1.0, 1.0); break;
@@ -1348,6 +1345,11 @@ void TrackNavigator::handle(const Key& k) {
         return;
     }
     if (memoryManager_) { handleMemory(k); return; }
+    if (k.alt && !k.ctrl && !k.shift && !k.repeat &&
+        (k.vk == 'R' || k.vk == 'C' || k.vk == 'F') &&
+        !filterEditing_ && !numericEditing_ && !clearAutomationConfirm_) {
+        editCurrentRange(static_cast<char>(k.vk)); return;
+    }
     if (page_ == Page::reaRoute) { handleReaRouteKey(k); return; }
     if (page_ == Page::hardwareOutputs) { handleHardwareOutputsKey(k); return; }
     if (page_ == Page::trackMidi) { handleTrackMidiKey(k); return; }
@@ -1393,10 +1395,9 @@ void TrackNavigator::handle(const Key& k) {
                 return;
             }
             std::string info = currentParameterSpeech();
-            if (const Entry* entry = current(); entry && entry->type == Entry::volume) {
-                const auto limits = memory_.volumeRange(page);
-                info += ". Volume range " + num(limits.first) + " to " +
-                    num(limits.second) + " dB";
+            if (!parameterRangeIdentity().empty()) {
+                const auto stored = memory_.parameterRange(parameterRangeIdentity());
+                if (!stored.empty()) info += ". Parameter range " + stored;
             }
             info += ". Step " + std::to_string(stepScale_) +
                 (memory_.valueSpeech(id) ? ". Value speech on" : ". Value speech off");
@@ -1428,7 +1429,7 @@ void TrackNavigator::handle(const Key& k) {
     if (numericEditing_) {
         if (k.vk == VK_RETURN) commitNumericEdit();
         else if (k.vk == VK_ESCAPE) {
-            numericEditing_ = rangeEditing_ = false;
+            numericEditing_ = 
             speech_("Edit cancelled. " + parameterValueSpeech());
         }
         return;
@@ -1449,10 +1450,6 @@ void TrackNavigator::handle(const Key& k) {
         return;
     }
     if (k.vk == VK_ESCAPE && learnCc_) { learnCc_ = false; learnSection_.clear(); learnKey_.clear(); learnIdentity_.clear(); speech_("CC learn cancelled"); return; }
-    if (k.ctrl && k.shift && !k.alt && k.vk == 'I') {
-        if (!k.repeat) beginVolumeRangeEdit();
-        return;
-    }
     if (k.ctrl && !k.shift && !k.alt && k.vk == 'E') {
         if (!k.repeat) beginNumericEdit();
         return;
@@ -1625,9 +1622,8 @@ void TrackNavigator::handle(const Key& k) {
             const bool high = k.vk == VK_HOME; // Lua: Home maximum, End minimum
             switch (e->type) {
                 case Entry::volume: {
-                    const auto range = memory_.volumeRange(page_ == Page::tracks ? "Track" :
-                        page_ == Page::sends ? "Sends" : "Receives");
-                    put(*e, amp(high ? range.second : range.first)); break;
+                    const auto range = currentParameterRange();
+                    put(*e, amp(high ? range.maximum : range.minimum)); break;
                 }
                 case Entry::pan: case Entry::width: put(*e, high ? 1.0 : -1.0); break;
                 case Entry::flag: case Entry::solo: case Entry::midiFollowsFader: put(*e, high ? 1.0 : 0.0); break;

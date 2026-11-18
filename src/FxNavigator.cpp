@@ -1163,6 +1163,11 @@ bool FxNavigator::accepts(const Key& k) const noexcept {
     if (gridNumericEdit_) return k.vk==VK_ESCAPE || k.vk==VK_RETURN;
     if (numericEdit_) return k.vk==VK_ESCAPE || k.vk==VK_RETURN || (k.ctrl && k.vk=='E');
     if (textEdit_) return true;
+    if (k.alt && !k.ctrl && !k.shift && !k.altGr &&
+        (k.vk == 'R' || k.vk == 'C' || k.vk == 'F') &&
+        !searchMode_ && !numericEdit_ && !textEdit_ && !recentMode_ &&
+        !fxBrowserMode_ && !pinAudioMode_ && !memoryManager_ && !defaultConfirm_)
+        return true;
     if (k.alt && !k.ctrl && !k.shift && !k.altGr && k.vk == 'S' &&
         !searchMode_ && !recentMode_ && !fxBrowserMode_ && !pinAudioMode_ &&
         !memoryManager_ && !defaultConfirm_) return true;
@@ -1440,6 +1445,9 @@ void FxNavigator::pollRxValueSpeech() {
 void FxNavigator::setValue(double value) {
     if (usedActive_ && visible_.empty()) return;
     if(parameter_==compareParamIndex){if(setCompare(value))speech_(compareFormatted());return;}
+    // Bound every normal and supported virtual FX value write, including
+    // Alt+arrows, Home/End and edits. CC range remains a separate MIDI scale.
+    if (std::isfinite(value)) value = parameterRangeFor(parameter_).clamp(value);
     if(eqVirtualValid(parameter_)){
         if(eqVirtualSet(parameter_,value) && active_)speech_(eqVirtualFormatted(parameter_));
         return;
@@ -1499,7 +1507,7 @@ void FxNavigator::nudgeSelectedF7(int direction,bool big) {
             double db=-150+186.1*old;
             double next=db+(big?10:1)*std::pow(2.0,scale)*direction;
             if(db<=-149.9 && direction>0)next=big?-36:-60;
-            const double normalized=std::clamp((std::clamp(next,-150.0,36.1)+150)/186.1,0.0,1.0);
+            const double normalized=parameterRangeFor(id).clamp(std::clamp((std::clamp(next,-150.0,36.1)+150)/186.1,0.0,1.0));
             if(std::abs(normalized-old)>1e-12)changes.push_back({id,normalized,true});
             continue;
         }
@@ -1516,7 +1524,7 @@ void FxNavigator::nudgeSelectedF7(int direction,bool big) {
             if(!std::isfinite(step)||step<=0||step>1)step=big?0.01:0.001;
             next=old+direction*step*std::pow(2.0,scale);
         }
-        next=std::clamp(next,0.0,1.0);
+        next=parameterRangeFor(id).clamp(std::clamp(next,0.0,1.0));
         if(std::abs(next-old)>1e-12)changes.push_back({id,next,false});
     }
     if(unsupported) {
@@ -1562,18 +1570,18 @@ void FxNavigator::nudge(int direction, bool big) {
         double db=-150+186.1*eqGainNorm(parameter_);
         double next=db+(big?10:1)*std::pow(2.0,stepScale_)*direction;
         if(db<=-149.9 && direction>0)next=big?-36:-60;
-        setValue((std::clamp(next,-150.0,36.1)+150)/186.1);return;
+        setValue(parameterRangeFor(parameter_).clamp((std::clamp(next,-150.0,36.1)+150)/186.1));return;
     }
     double normal = 0, small = 0, large = 0; bool toggle = false;
     const bool known = take_ ? TakeFX_GetParameterStepSizes(take_, fx_, parameter_, &normal, &small, &large, &toggle)
         : TrackFX_GetParameterStepSizes(track_, fx_, parameter_, &normal, &small, &large, &toggle);
     const double old = take_ ? TakeFX_GetParamNormalized(take_, fx_, parameter_) : TrackFX_GetParamNormalized(track_, fx_, parameter_);
-    if (known && toggle) { setValue(direction > 0 ? 1 : 0); return; }
+    if (known && toggle) { setValue(parameterRangeFor(parameter_).clamp(direction > 0 ? 1.0 : 0.0)); return; }
     // TEST64.3: use the same Step calibration in Value and Keyboard. Some
     // plug-ins return a 'large' step smaller than 'normal'; Page must not
     // require +4 Step clicks just to match one arrow adjustment.
     const double step = parameter_step::amount(known, normal, large, big, stepScale_);
-    setValue(old + direction * step);
+    setValue(parameterRangeFor(parameter_).clamp(old + direction * step));
 }
 namespace {
 std::string lowerAscii(std::string value) {
@@ -1661,6 +1669,16 @@ void FxNavigator::handle(const Key& k) {
         !numericEdit_ && !gridNumericEdit_ && !searchMode_ && !recentMode_ &&
         !defaultConfirm_ && !clearAutomationConfirm_ && !pinAudioMode_) {
         if(!k.repeat)leaveUsedView(true);
+        return;
+    }
+    // Range editor is a real Win32 modal dialog; its own controls handle
+    // Tab, Shift+Tab, Enter and Escape, without entering the REAPER key router.
+    if (!k.repeat && k.alt && !k.ctrl && !k.shift && !k.altGr &&
+        (k.vk == 'R' || k.vk == 'C' || k.vk == 'F') &&
+        !textEdit_ && !numericEdit_ && !gridNumericEdit_ && !searchMode_ &&
+        !recentMode_ && !fxBrowserMode_ && !pinAudioMode_ &&
+        !memoryManager_ && !defaultConfirm_ && !clearAutomationConfirm_) {
+        editCurrentRange(static_cast<char>(k.vk));
         return;
     }
     // Native Win32 EDIT owns ordinary typing, caret, clipboard and selection.
@@ -2098,8 +2116,8 @@ void FxNavigator::handle(const Key& k) {
             if(editF7_ && !f7Selected_.empty()) {stepSelectedF7(k.vk==VK_LEFT?-1:1);return;}
             const int next=std::clamp(stepScale_+(k.vk==VK_LEFT?-1:1),-10,10);
             if(next!=stepScale_){stepScale_=next;lastControl_=LastControl::step;rememberPosition();speech_("Step "+std::to_string(stepScale_));}
-        }else if (k.vk == VK_HOME) setValue(1);
-        else if (k.vk == VK_END) setValue(0);
+        }else if (k.vk == VK_HOME) setValue(parameterRangeFor(parameter_).maximum);
+        else if (k.vk == VK_END) setValue(parameterRangeFor(parameter_).minimum);
         else if(k.vk==VK_UP||k.vk==VK_DOWN||k.vk==VK_PRIOR||k.vk==VK_NEXT) {
             const int direction=k.vk==VK_UP||k.vk==VK_PRIOR?1:-1;
             const bool big=k.vk==VK_PRIOR||k.vk==VK_NEXT;

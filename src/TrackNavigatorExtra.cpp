@@ -1,4 +1,5 @@
 #include "lrp/TrackNavigator.h"
+#include "lrp/RangeDialog.h"
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
@@ -61,20 +62,124 @@ void TrackNavigator::jumpToLinkedRouting() {
     rememberPosition();
     speech_(trackName() + ". " + currentParameterSpeech());
 }
-void TrackNavigator::beginVolumeRangeEdit() {
-    const Entry* e = current();
-    if (!e || e->type != Entry::volume || !nativeFilterAvailable_ ||
-        filterEditing_ || numericEditing_ || pendingRouting_ != RoutingKind::none) {
-        speech_("Select a Volume parameter to edit its range"); return;
+std::string TrackNavigator::parameterRangeIdentity() const {
+    // F4 already has a stable physical FX-instance identity used by MIDI learn.
+    if (page_ == Page::fxTcp) {
+        std::string id;
+        return midiFixedIdentity(id) ? id : std::string();
     }
-    const auto limits = memory_.volumeRange(page_ == Page::tracks ? "Track" :
-        page_ == Page::sends ? "Sends" : "Receives");
-    std::ostringstream text;
-    text << limits.first << "," << std::min(limits.second, 12.0);
-    numericBuffer_ = text.str();
-    numericEditing_ = rangeEditing_ = true;
-    valueMode_ = false;
-    speech_("Volume range. Enter minimum and maximum dB separated by comma. Escape cancels");
+    if (!track_ || (page_ != Page::tracks && page_ != Page::sends && page_ != Page::receives)) return {};
+    const Entry* e = current();
+    if (!e || e->type == Entry::header || e->type == Entry::sendCount ||
+        e->type == Entry::receiveCount || e->type == Entry::fxCount ||
+        e->type == Entry::midiMerge) return {};
+    const auto id = parameterKey();
+    const auto dot = id.find('.');
+    if (dot == std::string::npos) return {};
+    const std::string key = id.substr(dot + 1);
+    const std::string owner = trackGuidText(track_);
+    if (owner.empty()) return {};
+    if (page_ == Page::tracks) return "Track|" + owner + "|" + key;
+    if (!GetSetTrackSendInfo || e->index < 0) return {};
+    const auto* peer = static_cast<MediaTrack*>(GetSetTrackSendInfo(track_, e->category,
+        e->index, page_ == Page::sends ? "P_DESTTRACK" : "P_SRCTRACK", nullptr));
+    const std::string other = trackGuidText(const_cast<MediaTrack*>(peer));
+    const int ordinal = detailPeerOccurrence(e->category,e->index);
+    if (other.empty() || ordinal < 1) return {};
+    const std::string source = page_ == Page::sends ? owner : other;
+    const std::string destination = page_ == Page::sends ? other : owner;
+    return "Sends|" + source + "|" + destination + "|" +
+           std::to_string(ordinal) + "|" + key;
+}
+ParameterRange TrackNavigator::parameterRangeBounds() const {
+    if (page_ == Page::fxTcp) return {0,100}; // Normalized FX parameter percent.
+    const Entry* e = current();
+    if (!e) return {0,1};
+    switch (e->type) {
+        case Entry::volume: return {-150,48}; // REAPER dB, including mute at -150.
+        case Entry::pan: case Entry::width: return {-100,100};
+        case Entry::flag: case Entry::solo: case Entry::midiFollowsFader: return {0,1};
+        case Entry::audioSourceMode: return {0,8};
+        case Entry::audioSource: return {-1,63};
+        case Entry::audioDestination: return {0,63};
+        case Entry::sendType: return {0,3};
+        // MIDI source is a DISCRETE 18-position combo: All (0),
+        // channels 1..16, None (raw state 31). Display indices 0..17,
+        // never expose invalid raw MIDI states 17..30 in range limits.
+        case Entry::midiSource: return {0,17};
+        case Entry::midiDestination: case Entry::midiSourceBus:
+        case Entry::midiDestinationBus: return {0,16};
+        default: return {0,1};
+    }
+}
+ParameterRange TrackNavigator::currentParameterRange() const {
+    const ParameterRange fallback = parameterRangeBounds();
+    const std::string identity = parameterRangeIdentity();
+    if (identity.empty()) return fallback;
+    ParameterRange saved{};
+    if (parseParameterRange(memory_.parameterRange(identity), saved,
+                            fallback.minimum, fallback.maximum)) return saved;
+    return fallback;
+}
+double TrackNavigator::clampParameterValue(const Entry& e, double raw) const {
+    const auto range = currentParameterRange();
+    if (e.type == Entry::volume) {
+        const double dbValue = raw <= 0 ? -150.0 : 20.0 * std::log10(raw);
+        const double bounded = range.clamp(dbValue);
+        return bounded <= -150.0 ? 0.0 : std::pow(10.0,bounded/20.0);
+    }
+    if (e.type == Entry::pan || e.type == Entry::width)
+        return range.clamp(raw * 100.0) / 100.0;
+    if (e.type == Entry::midiSource) {
+        const double ordinal = raw >= 31.0 ? 17.0 : raw;
+        const int bounded = static_cast<int>(range.clamp(ordinal));
+        return bounded >= 17 ? 31.0 : static_cast<double>(bounded);
+    }
+    return range.clamp(raw);
+}
+void TrackNavigator::editCurrentRange(char mode) {
+    if (learnCc_ || filterEditing_ || numericEditing_ || memoryManager_ ||
+        pendingRouting_ != RoutingKind::none) {
+        speech_("Finish the current operation before editing a range"); return;
+    }
+    const std::string id = parameterRangeIdentity();
+    if (id.empty()) { speech_("No editable parameter range for this field"); return; }
+    const bool midi = mode != 'R', floating = mode == 'F';
+    if (mode == 'C' && (!fixedCc_ || memory_.fixedCcLink(id).empty())) {
+        speech_("Assign and enable a fixed MIDI CC before editing its range"); return;
+    }
+    if (floating && !floatingCc_) {
+        speech_("Enable and learn a floating MIDI CC before editing its range"); return;
+    }
+    ParameterRange range = midi ? ParameterRange{0,127} : currentParameterRange();
+    if (midi) {
+        if (floating) range = floatingCcSessionRange();
+        else parseParameterRange(memory_.ccRange(id), range, 0,127,true);
+    }
+    const auto allowed = midi ? ParameterRange{0,127} : parameterRangeBounds();
+    std::wstring title = floating ? L"Floating CC range (session only)" :
+                               midi ? L"Fixed CC range (0 to 127)" :
+                               page_ == Page::fxTcp ? L"FX TCP parameter range (normalized percent)" :
+                               (current() && current()->type == Entry::volume) ? L"Volume parameter range (dB)" :
+                               (current() && (current()->type == Entry::pan || current()->type == Entry::width)) ?
+                                   L"Parameter range (percent)" : L"Parameter range";
+    if (page_ == Page::fxTcp) {
+        if (const auto* param = currentFxTcpParameter()) title += L" - " + rangeNameUtf8(param->name);
+    } else if (current()) title += L" - " + rangeNameUtf8(current()->title);
+    const bool integer = midi || (!midi && page_ != Page::fxTcp && current() &&
+        current()->type != Entry::volume && current()->type != Entry::pan &&
+        current()->type != Entry::width);
+    if (!editParameterRange(GetForegroundWindow(),title,allowed.minimum,allowed.maximum,range,integer)) return;
+    if (floating) floatingCcSessionRange() = range;
+    else {
+        const bool defaults = range.minimum == allowed.minimum && range.maximum == allowed.maximum;
+        if (midi) memory_.setCcRange(id,defaults ? "" : rangeText(range));
+        else memory_.setParameterRange(id,defaults ? "" : rangeText(range));
+        memory_.flush();
+    }
+    midiPickup_.clear();
+    speech_(std::string(floating?"Floating CC range":midi?"Fixed CC range":"Parameter range") +
+            " saved. " + rangeText(range));
 }
 void TrackNavigator::beginNumericEdit() {
     const Entry* e = current();
@@ -85,32 +190,12 @@ void TrackNavigator::beginNumericEdit() {
         e->type == Entry::receiveCount || e->type == Entry::fxCount ||
         e->type == Entry::midiMerge) { speech_("Read only"); return; }
     valueMode_ = false;
-    rangeEditing_ = false;
     numericEditing_ = true;
     numericBuffer_.clear();
     speech_("Parameter value. Enter a number, then Enter. Escape cancels");
 }
 void TrackNavigator::commitNumericEdit() {
     if (!numericEditing_) return;
-    if (rangeEditing_) {
-        try {
-            const auto comma = numericBuffer_.find(',');
-            if (comma == std::string::npos) throw std::invalid_argument("Missing comma");
-            std::size_t n = 0, m = 0;
-            const auto lhs = numericBuffer_.substr(0, comma);
-            const auto rhs = numericBuffer_.substr(comma + 1);
-            const double low = std::stod(lhs, &n), high = std::stod(rhs, &m);
-            if (lhs.substr(n).find_first_not_of(" \t") != std::string::npos ||
-                rhs.substr(m).find_first_not_of(" \t") != std::string::npos)
-                throw std::invalid_argument("Invalid characters");
-            memory_.setVolumeRange(page_ == Page::tracks ? "Track" :
-                page_ == Page::sends ? "Sends" : "Receives", low, high);
-            memory_.flush();
-            numericEditing_ = rangeEditing_ = false;
-            speech_("Volume range saved. Minimum " + lhs + ", maximum " + rhs + " dB");
-        } catch (...) { speech_("Invalid volume range. Enter two numbers from -150 to +12 dB, minimum below maximum"); }
-        return;
-    }
     const Entry* e = current();
     if (!e) { numericEditing_ = false; return; }
     std::string input = numericBuffer_;
@@ -136,12 +221,11 @@ void TrackNavigator::commitNumericEdit() {
             case Entry::volume:
                 if (typed < -150.0 || typed > 48.0 || unit == "%") { speech_("Volume range -150 to 48 dB"); return; }
                 {
-                    const auto limits = memory_.volumeRange(page_ == Page::tracks ? "Track" :
-                        page_ == Page::sends ? "Sends" : "Receives");
-                    if (typed < limits.first || typed > limits.second) {
+                    const auto limits = currentParameterRange();
+                    if (typed < limits.minimum || typed > limits.maximum) {
                         speech_("Volume outside configured range. Minimum " +
-                            std::to_string(limits.first) + " dB, maximum " +
-                            std::to_string(limits.second) + " dB");
+                            std::to_string(limits.minimum) + " dB, maximum " +
+                            std::to_string(limits.maximum) + " dB");
                         return;
                     }
                 }

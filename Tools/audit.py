@@ -93,8 +93,8 @@ def main():
           'Session FX memory must not write REAPER state')
     # TEST10 source regressions: absolute value direction, quiet boundaries,
     # and focused non-editable accessible content (runtime behavior unverified).
-    check('k.vk == VK_HOME) setValue(1)' in fx_source and
-          'k.vk == VK_END) setValue(0)' in fx_source,
+    check('k.vk == VK_HOME) setValue(parameterRangeFor(parameter_).maximum)' in fx_source and
+          'k.vk == VK_END) setValue(parameterRangeFor(parameter_).minimum)' in fx_source,
           'FX Alt+Home/End must use maximum/minimum in that order')
     check('const bool high = k.vk == VK_HOME' in (ROOT/'src/TrackNavigator.cpp').read_text(),
           'Track Alt+Home/End must use maximum/minimum in that order')
@@ -168,7 +168,7 @@ def main():
           'Active - Shortcuts' not in preferences_src,
           'Preferences must not speak on-open instructions or a redundant Active tree prefix')
     for cpp in (ROOT/'src').glob('*.cpp'):
-        if cpp.name not in {'TitleProxy.cpp', 'Preferences.cpp'}:
+        if cpp.name not in {'TitleProxy.cpp', 'Preferences.cpp', 'RangeDialog.cpp'}:
             check(not re.search(r'CreateWindow(?:Ex)?[AW]?\s*\(', cpp.read_text()),
                   'Unexpected window creation: '+cpp.name)
     check('PM_REMOVE' in all_cpp and 'CallNextHookEx' in all_cpp,'Thread hook lifecycle contract missing')

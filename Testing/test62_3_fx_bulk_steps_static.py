@@ -8,7 +8,7 @@ nav=(root/'src/FxNavigator.cpp').read_text(encoding='utf-8')
 order=(root/'src/FxNavigatorOrder.cpp').read_text(encoding='utf-8')
 mem=(root/'src/FxNavigatorMemories.cpp').read_text(encoding='utf-8')
 adv=(root/'src/FxNavigatorAdvanced.cpp').read_text(encoding='utf-8')
-assert 'std::array<std::vector<MemoryEntry>,8>' in header
+assert 'std::array<std::vector<MemoryEntry>,9>' in header
 assert '"Default values", "Parameter Steps"' in mem
 assert 'memoryColumns_[7].push_back' in mem
 assert 'if(value==0)continue;' in mem

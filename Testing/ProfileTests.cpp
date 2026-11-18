@@ -445,9 +445,10 @@ int main(int argc, char** argv) {
         tm.setPosition("F1.Parameter", "Track.Pan");
         tm.setCcLink("Track", "Volume", "4,77");
         tm.setFixedEnabled(true);
-        tm.setVolumeRange("Track", -60.0, 12.0);
-        check(tm.volumeRange("Track").first == -60.0 && tm.volumeRange("Track").second == 12.0,
-              "Track volume range not set before flush");
+        const std::string trackRangeId = "Track|{12345678-1234-1234-1234-1234567890AB}|Volume";
+        tm.setParameterRange(trackRangeId, "-60,12");
+        check(tm.parameterRange(trackRangeId) == "-60,12",
+              "Individual track parameter range not set before flush");
         const std::string trackSlotGuid = "{12345678-1234-1234-1234-1234567890AB}";
         check(tm.trackSlot(2).empty() && tm.entries("LReaParams.TrackPositions").empty(),
               "Track slots should start empty");
@@ -465,6 +466,8 @@ int main(int argc, char** argv) {
         check(tm.fixedCcSpeech(bassPan) && !tm.fixedCcSpeech(drumsPan),
               "Per-target CC speech unexpectedly enabled an unrelated track");
         tm.setFixedCcLink(bassPan, "1,10");
+        tm.setCcRange(bassPan, "30,110");
+        check(tm.ccRange(bassPan) == "30,110", "Individual MIDI CC range not set");
         tm.setFixedCcLink(drumsPan, "1,11");
         tm.setFixedCcLink(firstSend, "2,14");
         tm.setFixedCcLink(secondSend, "2,15");
@@ -506,8 +509,10 @@ int main(int argc, char** argv) {
               "Track project profile lost formatting, CC, F4 namespace or old sections");
         TrackMemory tmAgain;
         tmAgain.load(trackRoot, savedProject);
-        check(tmAgain.volumeRange("Track").first == -60.0 && tmAgain.volumeRange("Track").second == 12.0,
-              "Project volume range not persisted");
+        check(tmAgain.parameterRange(trackRangeId) == "-60,12",
+              "Project parameter range not persisted");
+        check(tmAgain.ccRange(bassPan) == "30,110",
+              "Project fixed CC range not persisted");
         check(tmAgain.trackSlot(2) == trackSlotGuid &&
               tmAgain.entries("LReaParams.TrackPositions").at("Slot2") == trackSlotGuid,
               "Track position not persisted in project TP");
@@ -546,14 +551,16 @@ int main(int argc, char** argv) {
               "Speech or navigation was not restored from the project .tp");
         tmAgain.setFixedCcSpeech(bassPan, false);
         tmAgain.setStep("Track.Volume", 0);
-        tmAgain.clearVolumeRange("Track");
+        tmAgain.setParameterRange(trackRangeId, "");
+        tmAgain.setCcRange(bassPan, "");
         tmAgain.flush();
         TrackMemory resetPreferences;
         resetPreferences.load(trackRoot, savedProject);
         check(!resetPreferences.fixedCcSpeech(bassPan) && resetPreferences.step("Track.Volume") == 0 &&
               resetPreferences.entries("LReaParams.StepScales").count("Track.Volume") == 0 &&
               resetPreferences.entries("LReaParams.FixedCCSpeechByTarget").count(bassPan) == 0 &&
-              resetPreferences.entries("LReaParams.VolumeRanges").count("Track") == 0,
+              resetPreferences.entries("LReaParams.ParameterRanges").count(trackRangeId) == 0 &&
+              resetPreferences.entries("LReaParams.CcRanges").count(bassPan) == 0,
               "Reset must remove default overrides from project TP");
         tmAgain.setFixedEnabled(false); tmAgain.flush();
         tmAgain.setTrackSlot(2, ""); tmAgain.flush();

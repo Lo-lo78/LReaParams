@@ -325,34 +325,19 @@ std::map<std::string, std::string> TrackMemory::entries(const std::string& secti
         for (const auto& item : it->second) found[item.first] = item.second;
     return found;
 }
-std::pair<double, double> TrackMemory::volumeRange(const std::string& page) const {
-    if (page != "Track" && page != "Sends" && page != "Receives") return {-150.0, 48.0};
-    const auto value = read("LReaParams.VolumeRanges", page);
-    if (value.empty()) return {-150.0, 48.0};
-    try {
-        const auto separator = value.find(',');
-        if (separator == std::string::npos) return {-150.0, 48.0};
-        std::size_t n = 0, m = 0;
-        const double low = std::stod(value.substr(0, separator), &n);
-        const auto end = value.substr(separator + 1);
-        const double high = std::stod(end, &m);
-        if (n != separator || m != end.size() || !std::isfinite(low) || !std::isfinite(high) ||
-            low < -150.0 || high > 12.0 || high - low < 0.01) return {-150.0, 48.0};
-        return {low, high};
-    } catch (...) { return {-150.0, 48.0}; }
+std::string TrackMemory::parameterRange(const std::string& id) const {
+    return read("LReaParams.ParameterRanges", id);
 }
-void TrackMemory::setVolumeRange(const std::string& page, double low, double high) {
-    if ((page != "Track" && page != "Sends" && page != "Receives") ||
-        !std::isfinite(low) || !std::isfinite(high) || low < -150 || high > 12 || high - low < 0.01)
-        throw ProfileError("Volume range must be between -150 and +12 dB");
-    std::ostringstream out;
-    out << std::fixed << std::setprecision(2) << low << ',' << high;
-    edit("LReaParams.VolumeRanges", page, out.str());
+void TrackMemory::setParameterRange(const std::string& id, const std::string& range) {
+    if (id.empty() || id.size() > 300) throw ProfileError("Invalid parameter range target");
+    edit("LReaParams.ParameterRanges", id, range);
 }
-void TrackMemory::clearVolumeRange(const std::string& page) {
-    if (page != "Track" && page != "Sends" && page != "Receives")
-        throw ProfileError("Unsupported Track Volume range section");
-    edit("LReaParams.VolumeRanges", page, "");
+std::string TrackMemory::ccRange(const std::string& id) const {
+    return read("LReaParams.CcRanges", id);
+}
+void TrackMemory::setCcRange(const std::string& id, const std::string& range) {
+    if (id.empty() || id.size() > 300) throw ProfileError("Invalid CC range target");
+    edit("LReaParams.CcRanges", id, range);
 }
 std::string TrackMemory::trackSlot(int slot) const {
     if (slot < 1 || slot > 12) return {};

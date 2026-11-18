@@ -1,5 +1,6 @@
 #pragma once
 #include "Profile.h"
+#include "ParameterRanges.h"
 #include <filesystem>
 #include <map>
 #include <string>
@@ -45,10 +46,12 @@ public:
     std::map<std::string, std::string> ccLinks(const std::string& section) const;
     // Read-only snapshots include unsaved in-memory edits. Empty entries are not memories.
     std::map<std::string, std::string> entries(const std::string& section) const;
-    // A scoped REAPER dB range; absent preferences preserve the 0.0.54 behavior.
-    std::pair<double, double> volumeRange(const std::string& page) const;
-    void setVolumeRange(const std::string& page, double low, double high);
-    void clearVolumeRange(const std::string& page);
+    // Individual parameter and fixed-MIDI-CC ranges. Stable physical target
+    // identity: no global Track/Sends/Receives volume range, no floating CC disk state.
+    std::string parameterRange(const std::string& identity) const;
+    void setParameterRange(const std::string& identity, const std::string& encoded);
+    std::string ccRange(const std::string& identity) const;
+    void setCcRange(const std::string& identity, const std::string& encoded);
     std::string trackSlot(int slot) const;
     void setTrackSlot(int slot, const std::string& guid);
     std::string position(const std::string& key) const;

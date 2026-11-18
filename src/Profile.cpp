@@ -1,4 +1,5 @@
 #include "lrp/Profile.h"
+#include "lrp/ParameterRanges.h"
 #include <algorithm>
 #include <cmath>
 #include <cctype>
@@ -193,23 +194,19 @@ Profile parseLegacy(std::string bytes) {
                     require(f.key == "FixedEnabled" && (f.value == "0" || f.value == "1"),
                         "Invalid project Track MIDI setting");
                 }
-            } else if (name == "LReaParams.VolumeRanges") {
+            } else if (name == "LReaParams.ParameterRanges" || name == "LReaParams.CcRanges") {
                 for (const auto& l : pair.second) {
                     const auto f = field(l);
-                    require(f.key == "Track" || f.key == "Sends" || f.key == "Receives", "Invalid volume range scope");
-                    const auto comma = f.value.find(',');
-                    require(comma != std::string::npos, "Missing volume range separator");
-                    try {
-                        const auto loText = f.value.substr(0, comma);
-                        const auto hiText = f.value.substr(comma + 1);
-                        std::size_t n = 0, m = 0;
-                        const double low = std::stod(loText, &n);
-                        const double high = std::stod(hiText, &m);
-                        require(n == loText.size() && m == hiText.size() &&
-                                std::isfinite(low) && std::isfinite(high) && low >= -150.0 &&
-                                high <= 12.0 && high - low >= 0.01, "Invalid volume range limits");
-                    } catch (const std::exception&) { throw ProfileError("Invalid volume range limits"); }
+                    require(!f.key.empty() && f.key.size() <= 300, "Invalid range identity");
+                    ParameterRange parsed{};
+                    const double high = name == "LReaParams.CcRanges" ? 127.0 : 100000.0;
+                    const double low = name == "LReaParams.CcRanges" ? 0.0 : -100000.0;
+                    require(parseParameterRange(f.value, parsed, low, high,
+                                name == "LReaParams.CcRanges"), "Invalid saved parameter range");
                 }
+            } else if (name == "LReaParams.VolumeRanges") {
+                // Old, unsupported range system: ignore its contents and
+                // never recreate this section. It does not control any value.
             } else if (name == "LReaParams.TrackPositions") {
                 static const std::regex trackGuid(R"(\{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\})");
                 for (const auto& l : pair.second) {

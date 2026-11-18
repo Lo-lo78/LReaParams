@@ -3,6 +3,7 @@
 #include "TransportMarkers.h"
 #include "ReaperApi.h"
 #include "TrackMemory.h"
+#include "ParameterRanges.h"
 #include "TypeAhead.h"
 #include "MidiControl.h"
 #include <map>
@@ -45,7 +46,7 @@ public:
     // The extension binds this to the existing accessible keyboard window.
     bool nativeTextField() const noexcept { return active_ && (filterEditing_ || numericEditing_); }
     std::string nativeTextValue() const { return numericEditing_ ? numericBuffer_ : filterBuffer_; }
-    std::string nativeTextLabel() const { if (page_ == Page::fxTcp && filterEditing_) return fxTcpListOpen_ ? "Filter FX parameter grid" : "Filter TCP FX parameters"; if (rangeEditing_) return "Volume range minimum and maximum dB";
+    std::string nativeTextLabel() const { if (page_ == Page::fxTcp && filterEditing_) return fxTcpListOpen_ ? "Filter FX parameter grid" : "Filter TCP FX parameters";
         if (numericEditing_) return "Parameter value"; return page_ == Page::tracks ? "Filter tracks" :
         page_ == Page::sends ? "Filter sends" : "Filter receives"; }
     void setNativeText(const std::string& text) { if (numericEditing_) numericBuffer_ = text; else if (filterEditing_) filterBuffer_ = text; }
@@ -233,7 +234,12 @@ private:
     void beginFxTcpNumericEdit();
     void commitFxTcpNumericEdit();
     bool fxTcpFormatNumeric(double norm, double& result, std::string& unit) const;
-    void beginVolumeRangeEdit();
+    // TEST73.1: ranges per immutable Track/Send/FX TCP target.
+    std::string parameterRangeIdentity() const;
+    ParameterRange parameterRangeBounds() const;
+    ParameterRange currentParameterRange() const;
+    double clampParameterValue(const Entry& e, double raw) const;
+    void editCurrentRange(char mode);
     void commitNumericEdit();
     // TEST54 CC map in the same main .tp as Lua, with pickup and no stale MIDI replay.
     void midiShortcut(const Key&);
@@ -317,7 +323,6 @@ private:
     GUID fxTcpNumericGuid_{};
     int fxTcpNumericParameter_ = -1;
     std::string fxTcpNumericTrack_;
-    bool rangeEditing_ = false;
     bool learnCc_ = false, fixedCc_ = false, floatingCc_ = false, floatingWaiting_ = false;
     std::string learnSection_, learnKey_, learnIdentity_;
     int midiSequence_ = 0, floatingChannel_ = -1, floatingNumber_ = -1;

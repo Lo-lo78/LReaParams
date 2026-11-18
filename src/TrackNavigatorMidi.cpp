@@ -211,19 +211,26 @@ bool TrackNavigator::applyFxTcpMidi(const std::string& identity, int ccValue, bo
         !TrackFX_GetParamNormalized || !TrackFX_SetParamNormalized) return false;
     const double currentValue = TrackFX_GetParamNormalized(owner, fx, parameter);
     if (!std::isfinite(currentValue)) return false;
+    const ParameterRange cc = [&] {
+        if (floating) return floatingCcSessionRange();
+        ParameterRange result{0,127};
+        parseParameterRange(memory_.ccRange(identity),result,0,127,true);
+        return result;
+    }();
     Pickup& pickup = midiPickup_[identity];
     double normal = 0, small = 0, large = 0;
     bool toggle = false;
     const bool stepped = TrackFX_GetParameterStepSizes &&
         TrackFX_GetParameterStepSizes(owner, fx, parameter, &normal, &small, &large, &toggle);
     // Discrete and binary controls must not wait for analog pickup.
-    if (!(stepped && toggle) && !pickup.allows(ccValue, std::clamp(currentValue, 0.0, 1.0)))
+    if (!(stepped && toggle) && !pickup.allows(ccValue, ccPickupTarget(std::clamp(currentValue, 0.0, 1.0),cc)))
         return false;
-    const double next = stepped && toggle ? (ccValue >= 64 ? 1.0 : 0.0) : ccValue / 127.0;
+    const double fraction = scaleCcFraction(ccValue,cc);
+    const double next = stepped && toggle ? (fraction >= 0.5 ? 1.0 : 0.0) : fraction;
     if (std::abs(next - currentValue) < 1e-9) return false;
     if (!TrackFX_SetParamNormalized(owner, fx, parameter, next)) return false;
     if (TrackFX_EndParamEdit) TrackFX_EndParamEdit(owner, fx, parameter);
-    pickup.applied(std::clamp(TrackFX_GetParamNormalized(owner, fx, parameter), 0.0, 1.0));
+    pickup.applied(ccPickupTarget(std::clamp(TrackFX_GetParamNormalized(owner, fx, parameter), 0.0, 1.0),cc));
     // Speech defaults OFF per target. MIDI feedback never repeats the full
     // GUI announcement unless explicitly enabled with Ctrl+T.
     if (memory_.fixedCcSpeech(identity)) {
@@ -298,7 +305,8 @@ void TrackNavigator::midiShortcut(const Key& k) {
         std::string identity;
         if (!midiFixedIdentity(identity)) { speech_("Routing unavailable"); return; }
         const bool has = !memory_.fixedCcLink(identity).empty();
-        if (has) { memory_.setFixedCcLink(identity, ""); memory_.flush(); midiPickup_.clear(); }
+        if (has) { memory_.setFixedCcLink(identity, ""); memory_.setCcRange(identity, "");
+                   memory_.flush(); midiPickup_.clear(); }
         speech_(has ? "Fixed CC removed. " + key : "No fixed CC on " + key);
     }
 }
@@ -327,32 +335,29 @@ void TrackNavigator::applyMidi(const std::string& section, const std::string& ke
     if (!target) return;
     const bool binary = target->type == Entry::flag || target->type == Entry::solo;
     const double before = get(*target);
-    // Fixed and Floating CC share the project's real Volume range. The
-    // normalized pickup must use precisely the same span as the CC mapping.
-    const auto volumeLimits = memory_.volumeRange(section);
-    const auto norm = [target, volumeLimits](double v) {
+    // Floating is session-only. Never read a fixed target's saved CC range
+    // from the roaming/current track when a floating controller is active.
+    const ParameterRange cc = floatingCcSessionRange();
+    const auto norm = [target](double v) {
         if (target->type == Entry::volume)
-            return std::clamp(((v <= 0 ? -150.0 : 20.0 * std::log10(v)) - volumeLimits.first) /
-                (volumeLimits.second - volumeLimits.first), 0.0, 1.0);
+            return std::clamp(((v <= 0 ? -150.0 : 20.0 * std::log10(v)) + 150.0) / 198.0, 0.0, 1.0);
         if (target->type == Entry::pan || target->type == Entry::width)
             return std::clamp((v + 1.0) / 2.0, 0.0, 1.0);
         return std::clamp(v, 0.0, 1.0);
     };
     const std::string id = section + "." + key;
     Pickup& pickup = midiPickup_[id];
-    if (!binary && !pickup.allows(value, norm(before))) return;
-    const double fraction = value / 127.0;
-    const double next = binary ? (value >= 64 ? 1.0 : 0.0) :
+    if (!binary && !pickup.allows(value, ccPickupTarget(norm(before),cc))) return;
+    const double fraction = scaleCcFraction(value,cc);
+    const double next = binary ? (fraction >= 0.5 ? 1.0 : 0.0) :
         target->type == Entry::volume ?
-            (fraction <= 0.0 && volumeLimits.first <= -150.0 ? 0.0 :
-                std::pow(10.0, (volumeLimits.first +
-                    (volumeLimits.second - volumeLimits.first) * fraction) / 20.0)) :
+            (fraction <= 0.0 ? 0.0 : std::pow(10.0, (-150.0 + 198.0 * fraction) / 20.0)) :
             fraction * 2.0 - 1.0;
     if (std::abs(next - before) < 0.000001) return;
     suppressPutSpeech_ = true;
     try { put(*target, next); } catch (...) { suppressPutSpeech_ = false; throw; }
     suppressPutSpeech_ = false;
-    pickup.applied(norm(get(*target)));
+    pickup.applied(ccPickupTarget(norm(get(*target)),cc));
     std::string speechTarget;
     if (midiFixedIdentity(speechTarget) && memory_.fixedCcSpeech(speechTarget))
         pendingMidiSpeech_ = key + ", " + valueText(*target, get(*target));
@@ -393,28 +398,28 @@ void TrackNavigator::applyFixedMidi(const std::string& identity, int value) {
     const double before = target.send ? GetTrackSendInfo_Value(source, 0, sendIndex, parm) :
         GetMediaTrackInfo_Value(source, parm);
     if (!std::isfinite(before)) return;
-    const auto limits = memory_.volumeRange(target.send ? "Sends" : "Track");
+    ParameterRange cc{0,127};
+    parseParameterRange(memory_.ccRange(identity),cc,0,127,true);
     const auto normalized = [&](double v) {
         if (target.parameter == "Volume")
-            return std::clamp(((v <= 0 ? -150.0 : 20.0 * std::log10(v)) - limits.first) /
-                (limits.second - limits.first), 0.0, 1.0);
+            return std::clamp(((v <= 0 ? -150.0 : 20.0 * std::log10(v)) + 150.0) /
+                198.0, 0.0, 1.0);
         if (target.parameter == "Pan" || target.parameter == "Width")
             return std::clamp((v + 1.0) / 2.0, 0.0, 1.0);
         return std::clamp(v, 0.0, 1.0);
     };
     Pickup& pickup = midiPickup_[identity];
-    if (!binary && !pickup.allows(value, normalized(before))) return;
-    const double fraction = value / 127.0;
-    const double next = binary ? (value >= 64 ? 1.0 : 0.0) :
+    if (!binary && !pickup.allows(value, ccPickupTarget(normalized(before),cc))) return;
+    const double fraction = scaleCcFraction(value,cc);
+    const double next = binary ? (fraction >= 0.5 ? 1.0 : 0.0) :
         target.parameter == "Volume" ?
-            (fraction <= 0.0 && limits.first <= -150.0 ? 0.0 :
-                std::pow(10.0, (limits.first + (limits.second - limits.first) * fraction) / 20.0)) :
+            (fraction <= 0.0 ? 0.0 : std::pow(10.0, (-150.0 + 198.0 * fraction) / 20.0)) :
             fraction * 2.0 - 1.0;
     if (std::abs(next - before) < 0.000001) return;
     const bool changed = target.send ? SetTrackSendInfo_Value(source, 0, sendIndex, parm, next) :
         SetMediaTrackInfo_Value(source, parm, next);
     if (!changed) return;
-    pickup.applied(normalized(next));
+    pickup.applied(ccPickupTarget(normalized(next),cc));
     TrackList_AdjustWindows(false);
     UpdateArrange();
     if (memory_.fixedCcSpeech(identity)) {
@@ -440,7 +445,7 @@ void TrackNavigator::prepareBackgroundMidi() {
     memoryManager_ = memoryStandalone_ = false;
     clearAutomationConfirm_ = false;
     learnCc_ = floatingWaiting_ = false;
-    filterEditing_ = numericEditing_ = rangeEditing_ = false;
+    filterEditing_ = numericEditing_ = false;
     pendingMidiSpeech_.clear();
     midiSequence_ = recentSequence(); // never replay MIDI received before Ctrl+Q
 }
@@ -494,7 +499,7 @@ void TrackNavigator::pollMidi() {
                     int oldCh = 0, oldCC = 0;
                     if (row.first != learnIdentity_ && parseCc(row.second, oldCh, oldCC) &&
                         oldCh == cc.channel && oldCC == cc.number)
-                        memory_.setFixedCcLink(row.first, "");
+                        { memory_.setFixedCcLink(row.first, ""); memory_.setCcRange(row.first, ""); }
                 }
                 // Store the guard in the same .tp transaction as this Fixed CC.
                 // Track parameters do not need a routing guard; send/receive do.

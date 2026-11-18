@@ -35,7 +35,7 @@ assert 'bool midiRunning() const noexcept' in hdr
 assert 'e.label=fxOrder_.label(pair.first)+". Channel "' in mem
 assert 'MIDI_GetRecentInputEvent(index' in advanced
 assert 'std::vector<Event> pending' in advanced
-assert 'if(!state.allows(value,current))return;' in advanced
+assert 'if(!state.allows(value,pickupTarget(current)))return;' in advanced
 assert 'if(floatingWaiting_ && !fixedCc_)' in advanced
 assert 'fixedCc_=fxOrder_.extraValue("cc_runtime_fixed_map_enabled_v1")' in advanced
 assert ext.index('backgroundMidi_.pollMidi();')<ext.index('if (!current_ || !current_->active()) return;', ext.index('    void tick() {'))

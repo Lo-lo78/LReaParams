@@ -10,7 +10,7 @@ fh=(root/'include/lrp/FxNavigator.h').read_text(encoding='utf-8')
 th=(root/'include/lrp/TrackNavigator.h').read_text(encoding='utf-8')
 fn=(root/'src/FxNavigator.cpp').read_text(encoding='utf-8')
 tn=(root/'src/TrackNavigator.cpp').read_text(encoding='utf-8')
-for name,src,head,nav,ncols in [('FX',fx,fh,fn,8),('Track',track,th,tn,5)]:
+for name,src,head,nav,ncols in [('FX',fx,fh,fn,9),('Track',track,th,tn,5)]:
     assert f'std::array<std::set<int>,{ncols}> memorySelected_' in head,name
     assert 'if(k.ctrl' in src or 'if (k.ctrl' in src
     assert "k.vk=='A'" in src or "k.vk == 'A'" in src

@@ -260,7 +260,7 @@ void TrackNavigator::reaRouteAdjust(int direction, bool coarse, int edge) {
     switch (row) {
         case 1: {
             parm = "D_VOL"; previous = get(parm);
-            const auto range = memory_.volumeRange("Sends");
+            const auto range = std::pair<double,double>{-150.0,48.0};
             const double current = inDb(previous);
             value = fromDb(edge < 0 ? range.first : edge > 0 ? range.second :
                 std::clamp(current + direction*(coarse ? 3.0 : 0.5),range.first,range.second));

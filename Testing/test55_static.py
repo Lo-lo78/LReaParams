@@ -28,10 +28,12 @@ assert 'std::clamp(memoryColumn_' in manager and 'memoryRow_' in manager
 assert 'memory_.setTrackSlot(slot, guid)' in manager and 'syncCursorToReaper();' in manager
 assert 'trackGuidText(' in manager and 'findSavedTrack' in manager
 assert 'LReaParams.TrackPositions' in mem and 'LReaParams.TrackPositions' in prof
-assert 'volumeRange(const std::string& page)' in mem and 'LReaParams.VolumeRanges' in prof
-assert 'rangeEditing_' in nav and 'beginVolumeRangeEdit()' in nav
+assert 'setParameterRange(const std::string& id' in mem and 'LReaParams.ParameterRanges' in prof
+assert 'setCcRange(const std::string& id' in mem and 'LReaParams.CcRanges' in prof
+assert 'editCurrentRange(static_cast<char>(k.vk))' in nav
+assert 'Volume Ranges' not in manager
 assert 'memoryManager_ || !contextUnchanged()' in (r/'src/TrackNavigatorMidi.cpp').read_text()
-assert 'TrackMemory afterDeletion;' in unit and 'tm.setVolumeRange("Track", -60.0, 12.0)' in unit
+assert 'TrackMemory afterDeletion;' in unit and 'tm.setParameterRange(trackRangeId, "-60,12")' in unit
 assert 'LReaParams: Track Memories' in core
 assert 'Parameter Library' not in cmake
 print('TEST55 source checks PASS (native build and REAPER/NVDA tests not run)')

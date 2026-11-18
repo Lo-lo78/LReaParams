@@ -7,6 +7,7 @@
 #include "UsedParameters.h"
 #include "TypeAhead.h"
 #include "MidiControl.h"
+#include "ParameterRanges.h"
 #include <filesystem>
 #include <array>
 #include <set>
@@ -326,6 +327,10 @@ private:
     std::string formattedValue() const;
     void nudge(int direction, bool big);
     void setValue(double value);
+    ParameterRange parameterRangeFor(int param) const;
+    ParameterRange ccRangeFor(int param, bool floating) const;
+    void editCurrentRange(char mode); // R: parameter, C: fixed CC, F: floating CC
+
     bool isIzotopeRx() const;
     void announceParameterWrite(const std::string& prefix = {},
                                 bool valueOnly = false,
@@ -475,9 +480,9 @@ private:
     int memoryReturnParam_ = 0, memoryReturnPosition_ = 0, memoryReturnGroup_ = 0;
     int memoryCol_ = 0, memoryRow_ = 0;
     std::map<int,int> memoryPreviewSteps_; // FX Memory editor preview until Alt+S.
-    std::array<std::vector<MemoryEntry>,8> memoryColumns_{};
+    std::array<std::vector<MemoryEntry>,9> memoryColumns_{};
     // Ephemeral per-column selection, never written to the .fx profile.
-    std::array<std::set<int>,8> memorySelected_{};
+    std::array<std::set<int>,9> memorySelected_{};
 
     int f7ReturnPos_ = 0, f7ReturnGroup_ = 0, f7ReturnParam_ = 0;
     std::set<int> f7Selected_, f7BaseSelection_;

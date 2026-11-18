@@ -1,4 +1,5 @@
 #include "lrp/FxNavigator.h"
+#include "lrp/RangeDialog.h"
 #include "lrp/ReaEqChunk.h"
 #include "lrp/ReaEqVirtual.h"
 #include "lrp/Storage.h"
@@ -120,6 +121,52 @@ std::string FxNavigator::currentParameterCcSpeech() const {
     return "CC channel " + std::to_string((status & 0x0Fu) + 1) +
            " CC " + std::to_string(number);
 }
+ParameterRange FxNavigator::parameterRangeFor(int param) const {
+    if (param == compareParamIndex || (param < 0 && !eqVirtualValid(param))) return {0,1};
+    ParameterRange percent{};
+    const std::string id = "param_range_v1::" + std::to_string(param);
+    if (parseParameterRange(fxOrder_.extraValue(id), percent, 0,100))
+        return {percent.minimum / 100.0, percent.maximum / 100.0};
+    return {0,1};
+}
+ParameterRange FxNavigator::ccRangeFor(int param, bool floating) const {
+    if (floating) return floatingCcSessionRange();
+    ParameterRange range{};
+    if (parseParameterRange(fxOrder_.extraValue("cc_range_v1::" + std::to_string(param)),
+                            range,0,127,true)) return range;
+    return {0,127};
+}
+void FxNavigator::editCurrentRange(char mode) {
+    if (!valid() || parameter_ == compareParamIndex ||
+        (parameter_ < 0 && !eqVirtualValid(parameter_)) || parameter_ >= count_) {
+        speech_("No editable parameter range for this field"); return;
+    }
+    if (mode == 'C' && (!fixedCc_ || fxOrder_.ccLinks.count(parameter_) == 0 ||
+                        fxOrder_.ccLinks.at(parameter_).empty())) {
+        speech_("Assign and enable a fixed MIDI CC before editing its range"); return;
+    }
+    if (mode == 'F' && !floatingCc_) {
+        speech_("Enable and learn a floating MIDI CC before editing its range"); return;
+    }
+    const bool midi = mode != 'R', floating = mode == 'F';
+    const ParameterRange existing = midi ? ccRangeFor(parameter_, floating) : parameterRangeFor(parameter_);
+    ParameterRange editable = midi ? existing : ParameterRange{existing.minimum*100.0,existing.maximum*100.0};
+    std::wstring title = mode == 'R' ? L"Parameter range (normalized percent)" :
+                         floating ? L"Floating CC range (session only)" : L"Fixed CC range (0 to 127)";
+    title += L" - " + rangeNameUtf8(displayName());
+    if (!editParameterRange(GetForegroundWindow(), title,
+                            0, midi ? 127.0 : 100.0, editable, midi)) return;
+    if (floating) floatingCcSessionRange() = editable;
+    else {
+        fxOrder_.setExtraValue(std::string(midi?"cc_range_v1::":"param_range_v1::") +
+                               std::to_string(parameter_),
+            (editable.minimum == 0 && editable.maximum == (midi?127:100)) ? "" : rangeText(editable));
+        saveStructure();
+    }
+    pickup_.clear();
+    speech_(std::string(floating?"Floating CC range":midi?"Fixed CC range":"Parameter range") +
+            " saved. " + rangeText(editable) + (midi?"":" percent"));
+}
 void FxNavigator::queueCcSpeech(int param,const std::string& formatted) {
     if(formatted.empty() || fxOrder_.extraValue("cc_param_speech_v1::"+std::to_string(param))!="1")return;
     if(midiSpoken_[param]==formatted)return;
@@ -138,6 +185,9 @@ void FxNavigator::clearNativeLearn(int param) {
     }
 }
 void FxNavigator::applyMidi(int param,int value) {
+    const ParameterRange cc = ccRangeFor(param, floatingCc_ && !fixedCc_);
+    const double scaled = scaleCcFraction(value, cc);
+    const auto pickupTarget = [&](double current) { return ccPickupTarget(current,cc); };
     if(eqVirtualValid(param)){
         if(param==reaeq::action){
             const bool high=value>=64;
@@ -146,11 +196,11 @@ void FxNavigator::applyMidi(int param,int value) {
             return;
         }
         auto& state=pickup_[param];
-        if(!state.allows(value,eqVirtualFraction(param)))return;
+        if(!state.allows(value,pickupTarget(eqVirtualFraction(param))))return;
         // Discrete virtuals use the same 0..127 learn mapping as Lua.
-        const double target=value/127.0;
+        const double target=scaled;
         if(eqVirtualSet(param,target)){
-            state.applied(eqVirtualFraction(param));
+            state.applied(pickupTarget(eqVirtualFraction(param)));
             queueCcSpeech(param,eqVirtualFormatted(param));
         }
         return;
@@ -159,24 +209,24 @@ void FxNavigator::applyMidi(int param,int value) {
     if(param<0||param>=count_||!valid())return;
     if(dynamicsDetectorInput(param)) {
         auto& pickup=pickup_[param];
-        if(!pickup.allows(value,dynamicsFraction(param)))return;
-        if(dynamicsSetDetectorAt(param,value/127.0)) {
-            pickup.applied(dynamicsFraction(param));
+        if(!pickup.allows(value,pickupTarget(dynamicsFraction(param))))return;
+        if(dynamicsSetDetectorAt(param,scaled)) {
+            pickup.applied(pickupTarget(dynamicsFraction(param)));
             queueCcSpeech(param,dynamicsRealFormatted(param,""));
         }
         return;
     }
     if(eqBandParam(param,1)) {
-        auto& state=pickup_[param];if(!state.allows(value,eqGainNorm(param)))return;
-        if(writeEqGain(param,value/127.0)) {
-            state.applied(eqGainNorm(param));
+        auto& state=pickup_[param];if(!state.allows(value,pickupTarget(eqGainNorm(param))))return;
+        if(writeEqGain(param,scaled)) {
+            state.applied(pickupTarget(eqGainNorm(param)));
             queueCcSpeech(param,std::to_string(-150+186.1*eqGainNorm(param))+" dB");
         }return;
     }
     const double current=take_?TakeFX_GetParamNormalized(take_,fx_,param):TrackFX_GetParamNormalized(track_,fx_,param);
     auto& state=pickup_[param];
-    if(!state.allows(value,current))return;
-    double norm=value/127.0;
+    if(!state.allows(value,pickupTarget(current)))return;
+    double norm=scaled;
     double step=0,small=0,large=0;bool toggle=false;
     const bool known=take_?TakeFX_GetParameterStepSizes(take_,fx_,param,&step,&small,&large,&toggle):
                            TrackFX_GetParameterStepSizes(track_,fx_,param,&step,&small,&large,&toggle);
@@ -185,7 +235,7 @@ void FxNavigator::applyMidi(int param,int value) {
     const bool ok=take_?TakeFX_SetParamNormalized(take_,fx_,param,norm):TrackFX_SetParamNormalized(track_,fx_,param,norm);
     if(!ok)return;
     if(take_)TakeFX_EndParamEdit(take_,fx_,param);else TrackFX_EndParamEdit(track_,fx_,param);
-    state.applied(take_?TakeFX_GetParamNormalized(take_,fx_,param):TrackFX_GetParamNormalized(track_,fx_,param));
+    state.applied(pickupTarget(take_?TakeFX_GetParamNormalized(take_,fx_,param):TrackFX_GetParamNormalized(track_,fx_,param)));
     char text[4096]{};
     const bool formatted=take_?TakeFX_GetFormattedParamValue(take_,fx_,param,text,sizeof(text)):
                                TrackFX_GetFormattedParamValue(track_,fx_,param,text,sizeof(text));
@@ -218,7 +268,9 @@ void FxNavigator::pollMidi() {
             for(auto link=fxOrder_.ccLinks.begin();link!=fxOrder_.ccLinks.end();) {
                 int ch=0,num=0;
                 if(link->first!=learnParam_ && parseLink(link->second,ch,num) && ch==cc.channel && num==cc.number) {
-                    clearNativeLearn(link->first);link=fxOrder_.ccLinks.erase(link);
+                    clearNativeLearn(link->first);
+                    fxOrder_.setExtraValue("cc_range_v1::" + std::to_string(link->first), "");
+                    link=fxOrder_.ccLinks.erase(link);
                 }else ++link;
             }
             fxOrder_.ccLinks[learnParam_]=std::to_string(cc.channel)+"\t"+std::to_string(cc.number);
@@ -269,7 +321,9 @@ bool FxNavigator::handleAdvanced(const Key& k) {
     if(k.repeat)return true;
     if(learnCc_) {
         if(k.vk==VK_ESCAPE || (k.ctrl&&k.alt&&k.vk=='C')){learnCc_=false;speech_("CC learn disarmed");}
-        else if(k.vk==VK_DELETE){clearNativeLearn(learnParam_);fxOrder_.deleteCcLink(learnParam_);pickup_.clear();learnCc_=false;speech_("CC removed");}
+        else if(k.vk==VK_DELETE){clearNativeLearn(learnParam_);fxOrder_.deleteCcLink(learnParam_);
+            fxOrder_.setExtraValue("cc_range_v1::" + std::to_string(learnParam_), "");
+            saveStructure();pickup_.clear();learnCc_=false;speech_("CC removed");}
         else if(k.vk==VK_TAB)speech_("CC learn. Move a MIDI control. Delete removes mapping");
         return true;
     }

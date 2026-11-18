@@ -9,7 +9,7 @@ core = (root/'src/Extension.cpp').read_text()
 # F8: opens with exactly one initial item announcement; standalone action
 # gets its single initial announcement from launchNavigator/announceTitle.
 assert 'if (!standalone) speakMemory("Track Memories")' in manager
-assert 'if (memoryManager_) { speakMemory("Track Memories"); return; }' in nav
+assert 'if (memoryManager_) { speakMemory(title); return; }' in nav
 assert 'if(navigator_.begin() && navigator_.openFxMemories(true))' in core
 assert 'while (memoryColumn_ < 4 && memoryItems_.empty())' in manager
 assert 'if (!memoryItems_.empty()) { speakMemory(); return; }' in manager
@@ -17,24 +17,20 @@ assert 'if (memoryRow_ != previous) speakMemory();' in manager
 assert 'if (next == before) return;' in manager
 assert 'savedColumn != memoryColumn_ || savedRow != memoryRow_' in manager
 assert 'std::string(labels[col]) + ". " + item.label' in nav
-# All write paths respect the saved project range, not only keyboard nudges.
-assert 'value = amp(std::clamp(db(value), range.first, range.second));' in nav
-assert 'memory_.volumeRange(page_ == Page::tracks' in nav
-assert 'const auto limits = memory_.volumeRange(page_ == Page::tracks' in extra
-assert 'Volume outside configured range' in extra
-assert 'const auto volumeLimits = memory_.volumeRange(section);' in midi
-assert 'volumeLimits.second - volumeLimits.first' in midi
-assert 'pickup.applied(norm(get(*target)))' in midi
-assert 'info += ". Volume range "' in nav
-# Sanity-check the boundary and MIDI numeric model for sample user limits.
-import math
-lo, hi = -60.0, 0.0
-for cc in range(128):
-    db = lo + (hi-lo)*cc/127.0
-    amp = 10**(db/20)
-    assert lo - 1e-9 <= 20*math.log10(amp) <= hi+1e-9
-assert max(lo, min(hi, 7.5)) == hi
-assert max(lo, min(hi, -80)) == lo
+# Parameter-specific ranges now replace all former page-wide Volume limits.
+assert 'if (current() == &e) value = clampParameterValue(e,value);' in nav
+assert 'const auto range = currentParameterRange();' in nav
+assert 'void TrackNavigator::editCurrentRange(char mode)' in extra
+assert 'clampParameterValue' in extra
+assert 'scaleCcFraction' in midi and 'ccPickupTarget' in midi
+assert 'LReaParams.ParameterRanges' in manager
+assert 'Volume Ranges' not in manager
+assert 'Ctrl+Shift+I' not in nav
+# Deterministic range model: MIDI input 0..127 maps to configured endpoint.
+from math import isclose
+low, high = 30, 110
+assert isclose((low + (high-low)*0/127)/127, 30/127)
+assert isclose((low + (high-low)*127/127)/127, 110/127)
 # Track positions remain installed; no redefinition of the user shortcuts.
 assert 'saveTrackSlot(slot)' in nav and 'recallTrackSlot(slot)' in nav
 assert 'Parameter Library' not in (root/'CMakeLists.txt').read_text()

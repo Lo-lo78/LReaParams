@@ -9,7 +9,7 @@
 namespace lrp {
 namespace {
 constexpr const char* columnNames[] = {"MIDI CC", "Parameter Steps", "Parameter Speech",
-                                       "Track Positions", "Volume Ranges"};
+                                       "Track Positions", "Parameter Ranges"};
 const char* trackPages[] = {"Track", "Sends", "Receives"};
 // Like FX Memories, show saved *differences* from the default, not every
 // possible parameter, zero-step, silent CC, or unused track slot.
@@ -174,6 +174,11 @@ void TrackNavigator::rebuildMemoryList() {
             const auto comma = entry.second.find(',');
             label += comma == std::string::npos ? ", CC " + entry.second :
                 ", Channel " + entry.second.substr(0, comma) + ", CC " + entry.second.substr(comma + 1);
+            // Show MIDI CC span only when modified; unchanged CCs retain
+            // their original compact presentation in the memories column.
+            ParameterRange cc{0,127};
+            if (parseParameterRange(memory_.ccRange(entry.first),cc,0,127,true))
+                label += ", Range " + rangeText(cc);
             if (entry.first.rfind("Sends|", 0) == 0) {
                 const auto guard = memory_.routingGuard(entry.first);
                 if (guard.empty() || guard != fixedRoutingSignature(entry.first))
@@ -222,11 +227,12 @@ void TrackNavigator::rebuildMemoryList() {
                 "Slot " + std::to_string(slot) + ", " + savedTrackLabel(guid), guid, slot});
         }
     } else if (memoryColumn_ == 4) {
-        // Automatic last cursor positions are *not* user-created memories.
-        // Explicitly configured volume ranges are, and belong in this manager.
-        for (const auto& entry : memory_.entries("LReaParams.VolumeRanges")) {
+        // Every saved parameter range is a physical, project-specific target.
+        // Old VolumeRanges are obsolete and are never included here.
+        for (const auto& entry : memory_.entries("LReaParams.ParameterRanges")) {
             if (entry.second.empty()) continue;
-            memoryItems_.push_back({entry.first, entry.first + ", " + entry.second + " dB",
+            memoryItems_.push_back({entry.first,
+                targetLabel(entry.first) + ", Range " + entry.second,
                 entry.second, 0});
         }
     }
@@ -260,7 +266,7 @@ void TrackNavigator::speakMemory(const std::string& prefix) const {
             } else if (i == 3) {
                 for (int slot = 1; slot <= 12; ++slot)
                     if (!memory_.trackSlot(slot).empty()) { any = true; break; }
-            } else any = !memory_.entries("LReaParams.VolumeRanges").empty();
+            } else any = !memory_.entries("LReaParams.ParameterRanges").empty();
         }
         speech_(any ? header + columnNames[col] + ". No memories" : "Track Memories. No memories");
         return;
@@ -329,7 +335,10 @@ void TrackNavigator::memoryDelete() {
     int removed=0;
     for(const auto& item:items) {
         if(removedColumn==0) {
-            if(item.key.rfind("S:",0)==0)memory_.setFixedCcLink(item.key.substr(2), "");
+            if(item.key.rfind("S:",0)==0) {
+                memory_.setFixedCcLink(item.key.substr(2), "");
+                memory_.setCcRange(item.key.substr(2), "");
+            }
             else {
                 const auto legacy=item.key.substr(2);
                 const auto dot=legacy.find('.');
@@ -345,7 +354,7 @@ void TrackNavigator::memoryDelete() {
         } else if(removedColumn==3) {
             if(item.value.empty())continue;
             memory_.setTrackSlot(item.slot,"");
-        } else if(removedColumn==4)memory_.clearVolumeRange(item.key);
+        } else if(removedColumn==4)memory_.setParameterRange(item.key, "");
         else continue;
         ++removed;
     }
@@ -404,7 +413,7 @@ void TrackNavigator::memoryActivate() {
         return;
     }
     if (memoryColumn_ == 4) {
-        speech_("Edit this range with Control Shift I on the Volume parameter; Delete restores the default");
+        speech_("Edit this parameter range with Alt R on its parameter. Delete restores the default");
     }
 }
 void TrackNavigator::memoryTypeAhead(const Key& k) {

@@ -421,7 +421,9 @@ bool TrackNavigator::writeFxTcpValue(double normalized) {
         !fxTcpParameterVisible(column->fxIndex, param->index)) {
         speech_("FX TCP structure changed. Reopen F4"); return false;
     }
-    normalized = std::clamp(normalized, 0.0, 1.0);
+    // A custom range is a normalized travel window, not a fabricated Hz value.
+    const ParameterRange range = currentParameterRange();
+    normalized = std::clamp(normalized,range.minimum/100.0,range.maximum/100.0);
     const double previous = TrackFX_GetParamNormalized(track_, column->fxIndex, param->index);
     if (!std::isfinite(previous) || std::abs(previous - normalized) < 1e-12) return false;
     Undo_BeginBlock2(project_);
@@ -516,7 +518,7 @@ void TrackNavigator::beginFxTcpNumericEdit() {
     fxTcpNumericParameter_ = parameter->index;
     fxTcpNumericTrack_ = rowGuid();
     numericEditing_ = true;
-    rangeEditing_ = false;
+    
     valueMode_ = false;
     speech_(fxTcpNumericFormatted_ ? "Parameter value. " + fxTcpNumericUnit_ :
                                    "Parameter value. Host raw units");
@@ -716,7 +718,7 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
     if (numericEditing_) {
         if (!k.repeat && k.vk == VK_RETURN) commitFxTcpNumericEdit();
         else if (!k.repeat && k.vk == VK_ESCAPE) {
-            numericEditing_ = rangeEditing_ = false;
+            numericEditing_ = 
             // No change to FX and no automatic exit from F4.
             speech_("Edit cancelled. " + fxTcpReview(false));
         }

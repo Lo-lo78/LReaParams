@@ -10,7 +10,7 @@
 namespace lrp {
 namespace {
 constexpr const char* names[] = {"Memory positions", "Groups", "Hidden parameters", "MIDI CC",
-                                 "Custom order", "Copied parameters", "Default values", "Parameter Steps"};
+                                 "Custom order", "Copied parameters", "Default values", "Parameter Steps", "Parameter Ranges"};
 }
 bool FxNavigator::openFxMemories(bool standalone) {
     if (!active_ || !valid()) return false;
@@ -31,8 +31,8 @@ bool FxNavigator::openFxMemories(bool standalone) {
     for(auto& selection:memorySelected_)selection.clear();
     rebuildMemoryColumns();
     memoryCol_=0;
-    while(memoryCol_<8 && memoryColumns_[static_cast<size_t>(memoryCol_)].empty())++memoryCol_;
-    if(memoryCol_==8)memoryCol_=0;
+    while(memoryCol_<9 && memoryColumns_[static_cast<size_t>(memoryCol_)].empty())++memoryCol_;
+    if(memoryCol_==9)memoryCol_=0;
     memoryRow_=0;
     if(!standalone)speakMemory("Parameter Navigator");
     return true;
@@ -71,6 +71,9 @@ void FxNavigator::rebuildMemoryColumns() {
                     ". CC "+pair.second.substr(tab+1);
         else
             e.label=fxOrder_.label(pair.first)+". "+pair.second;
+        const ParameterRange cc = ccRangeFor(pair.first, false);
+        if (cc.minimum != 0 || cc.maximum != 127)
+            e.label += ". Range " + rangeText(cc);
         memoryColumns_[3].push_back(std::move(e));
     }
     if(fxOrder_.storedCustomOrder()) {
@@ -123,6 +126,14 @@ void FxNavigator::rebuildMemoryColumns() {
         e.label=fxOrder_.label(id)+". Step "+std::to_string(value);
         memoryColumns_[7].push_back(std::move(e));
     }
+    // One row per configured per-parameter range; never list defaults.
+    for (int id = 0; id < count_; ++id) {
+        const auto r = parameterRangeFor(id);
+        if (r.minimum == 0.0 && r.maximum == 1.0) continue;
+        MemoryEntry entry; entry.param = id;
+        entry.label = fxOrder_.label(id) + ". " + rangeText({r.minimum*100.0,r.maximum*100.0}) + " percent";
+        memoryColumns_[8].push_back(std::move(entry));
+    }
     if(fxOrder_.hasDefaultValues()) {
         MemoryEntry e;e.label=std::to_string(fxOrder_.defaultValueCount())+" parameters";
         memoryColumns_[6].push_back(std::move(e));
@@ -133,7 +144,7 @@ bool FxNavigator::memoryHasEntries() const {
     return false;
 }
 std::string FxNavigator::memoryColumnName() const {
-    return names[static_cast<size_t>(std::clamp(memoryCol_,0,7))];
+    return names[static_cast<size_t>(std::clamp(memoryCol_,0,8))];
 }
 std::string FxNavigator::memoryReview() const {
     if(!memoryManager_)return {};
@@ -181,7 +192,7 @@ void FxNavigator::memoryExit(bool announceReturn) {
     else announce();
 }
 bool FxNavigator::memorySelectColumn(int direction) {
-    for(int c=memoryCol_+direction;c>=0&&c<8;c+=direction) {
+    for(int c=memoryCol_+direction;c>=0&&c<9;c+=direction) {
         if(!memoryColumns_[static_cast<size_t>(c)].empty()) {
             memoryCol_=c;
             memoryRow_=std::clamp(memoryRow_,0,static_cast<int>(memoryColumns_[static_cast<size_t>(c)].size())-1);
@@ -207,6 +218,13 @@ void FxNavigator::memoryLoad(bool toEdit) {
         // Hidden list has no Enter operation. Use Delete to unhide while
         // staying in the manager; this avoids accidental restoration.
         return;
+    }
+    if(memoryCol_==8) {
+        if(toEdit) {speech_("No F7 editor for parameter ranges");return;}
+        memoryReturnGroup_=0;
+        memoryReturnParam_=entry.param;
+        memoryReturnPosition_=-1;
+        fxOrder_.custom=false;
     }
     if(memoryCol_==7) {
         if(toEdit) {speech_("No F7 editor for parameter steps");return;}
@@ -366,7 +384,7 @@ void FxNavigator::memoryDelete() {
                 speech_("Memory selection changed. Select again");return;
             }
         }
-        if(targetColumn==7 && stepParameterName(entry.param).empty()) {
+        if((targetColumn==7 || targetColumn==8) && stepParameterName(entry.param).empty()) {
             speech_("Missing parameter. Selection unchanged");return;
         }
     }
@@ -386,6 +404,8 @@ void FxNavigator::memoryDelete() {
             case 2: fxOrder_.hidden.erase(entry.param);structureChanged=true;break;
             case 3:
                 if(!fxOrder_.deleteCcLink(entry.param))continue;
+                fxOrder_.setExtraValue("cc_range_v1::" + std::to_string(entry.param), "");
+                structureChanged=true;
                 clearNativeLearn(entry.param);pickup_.erase(entry.param);break;
             case 4:
                 fxOrder_.deleteCustomOrder();groupSlot_=0;memoryReturnGroup_=0;
@@ -397,6 +417,9 @@ void FxNavigator::memoryDelete() {
                 } else {
                     fxOrder_.order.erase(fxOrder_.order.begin()+entry.rawPos);
                 }
+                structureChanged=true;break;
+            case 8:
+                fxOrder_.setExtraValue("param_range_v1::" + std::to_string(entry.param), "");
                 structureChanged=true;break;
             case 7:
                 parameterSteps_[entry.param]={stepParameterName(entry.param),0};
@@ -415,8 +438,8 @@ void FxNavigator::memoryDelete() {
     // the next occupied one, matching the existing single-Delete behavior.
     if(memoryColumns_[static_cast<size_t>(memoryCol_)].empty()) {
         int first=0;
-        while(first<8 && memoryColumns_[static_cast<size_t>(first)].empty())++first;
-        memoryCol_=first==8?0:first;
+        while(first<9 && memoryColumns_[static_cast<size_t>(first)].empty())++first;
+        memoryCol_=first==9?0:first;
     }
     const auto& newList=memoryColumns_[static_cast<size_t>(memoryCol_)];
     memoryRow_=newList.empty()?0:std::clamp(memoryCol_==targetColumn?focusRow:0,
@@ -548,7 +571,7 @@ void FxNavigator::memoryNavigate(const Key& k) {
         return;
     }
     if(k.ctrl && !k.alt && !k.shift && (k.vk==VK_HOME || k.vk==VK_END)) {
-        for(int c=k.vk==VK_HOME?0:7;c>=0&&c<8;c+=(k.vk==VK_HOME?1:-1))
+        for(int c=k.vk==VK_HOME?0:8;c>=0&&c<9;c+=(k.vk==VK_HOME?1:-1))
             if(!memoryColumns_[static_cast<size_t>(c)].empty()){
                 memoryCol_=c;memoryRow_=k.vk==VK_HOME?0:
                     static_cast<int>(memoryColumns_[static_cast<size_t>(c)].size())-1;

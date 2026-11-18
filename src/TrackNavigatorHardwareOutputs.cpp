@@ -216,7 +216,7 @@ void TrackNavigator::hardwareOutputAdjust(int direction, bool coarse, int edge) 
     switch (row) {
         case 1: {
             parm = "D_VOL"; previous = oldLevel;
-            const auto range = memory_.volumeRange("Sends");
+            const auto range = std::pair<double,double>{-150.0,48.0};
             const double current = oldLevel <= 0 ? -150.0 : db(oldLevel);
             const double d = edge < 0 ? range.first : edge > 0 ? range.second :
                 std::clamp(current + (coarse ? 3.0 : 0.5) * direction, range.first, range.second);

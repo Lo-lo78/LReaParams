@@ -10,11 +10,11 @@ assert 'if (k.ctrl && !k.shift && !k.alt && k.vk==VK_HOME){navigate(-viewPos_);r
 assert 'if (k.ctrl && !k.shift && !k.alt && k.vk==VK_END){navigate(static_cast<int>(visible_.size())-1-viewPos_);return;}' in fx
 assert 'if(k.vk==VK_HOME){navigate(start-viewPos_);return;}' in fx
 assert 'if(k.vk==VK_END){navigate(end-viewPos_);return;}' in fx
-assert 'if (k.vk == VK_HOME) setValue(1)' in fx
-assert 'if (k.vk == VK_END) setValue(0)' in fx
+assert 'if (k.vk == VK_HOME) setValue(parameterRangeFor(parameter_).maximum)' in fx
+assert 'if (k.vk == VK_END) setValue(parameterRangeFor(parameter_).minimum)' in fx
 assert 'else if(k.vk==VK_HOME)target=start;' in f7
 assert 'else if(k.vk==VK_END)target=end;' in f7
-assert 'for(int c=k.vk==VK_HOME?0:7;c>=0&&c<8;c+=(k.vk==VK_HOME?1:-1))' in f8
+assert 'for(int c=k.vk==VK_HOME?0:8;c>=0&&c<9;c+=(k.vk==VK_HOME?1:-1))' in f8
 assert 'memoryCol_=c;memoryRow_=k.vk==VK_HOME?0:' in f8
 assert 'if(k.vk==VK_HOME)target=0;' in f8
 assert 'else if(k.vk==VK_END)target=size-1;' in f8

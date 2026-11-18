@@ -86,6 +86,8 @@ jobs:
         run: python Testing/test62_9_2_shifted_digits_static.py
       - name: TEST61.16 independent FX grids per ordering and group (source only)
         run: python Testing/test61_16_fx_view_context_static.py
+      - name: TEST73.1 parameter and CC range contracts (source only)
+        run: python Testing/test73_1_ranges_static.py
       - name: Verify source and synthetic fixtures
         run: python Tools/audit.py
       - name: Verify TEST21 shortcut and title contracts (source only)

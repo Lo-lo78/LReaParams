@@ -9,7 +9,7 @@ mem=(r/'src/FxNavigatorMemories.cpp').read_text(encoding='utf-8')
 fx=(r/'src/FxOrder.cpp').read_text(encoding='utf-8')
 workflow=(r/'.github/workflows/build-windows.yml').read_text(encoding='utf-8')
 header=(r/'include/lrp/FxNavigator.h').read_text(encoding='utf-8')
-assert 'std::array<std::vector<MemoryEntry>,8>' in header
+assert 'std::array<std::vector<MemoryEntry>,9>' in header
 for s in (
     'Hidden is global to Custom Order and ALL groups',
     'fxOrder_.hidden.count(id)!=0',
