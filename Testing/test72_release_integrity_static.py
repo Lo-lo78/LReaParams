@@ -1,5 +1,6 @@
 """LReaParams 0.0.74 release metadata and ReaPack history safety."""
 from pathlib import Path
+from reapack_index_contract import verify_optional_reapack_index
 r=Path(__file__).resolve().parents[1]
 rd=lambda n:(r/n).read_text(encoding='utf8')
 assert 'project(LReaParams VERSION 0.0.74 LANGUAGES CXX)' in rd('CMakeLists.txt')
@@ -14,5 +15,7 @@ assert 'release-0-0-72-empty-step' in rd('Guide/LReaParams - FX Params.html')
 assert 'git restore --source=origin/main --staged --worktree -- index.xml' in rd('Tools/push_lreaparams.cmd')
 assert 'git pull --rebase origin main' in rd('Tools/push_lreaparams.cmd')
 assert 'types: [published]' in rd('.github/workflows/publish-reapack.yml')
-assert not (r/'index.xml').exists(), 'ZIP source must not contain generated XML'
+# GitHub Actions checks out main where index.xml legitimately exists.
+# Validate it when present without requiring deletion of ReaPack history.
+verify_optional_reapack_index(r)
 print('Release 0.0.74 source metadata and historical ReaPack safeguards PASS')
