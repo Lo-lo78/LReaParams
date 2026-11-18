@@ -1,18 +1,18 @@
-"""LReaParams 0.0.73 release metadata and ReaPack history safety."""
+"""LReaParams 0.0.74 release metadata and ReaPack history safety."""
 from pathlib import Path
 r=Path(__file__).resolve().parents[1]
 rd=lambda n:(r/n).read_text(encoding='utf8')
-assert 'project(LReaParams VERSION 0.0.73 LANGUAGES CXX)' in rd('CMakeLists.txt')
-assert 'LReaParams 0.0.73 - Native REAPER extension' in rd('src/Extension.cpp')
-assert 'Release date: 17 November 2026' in rd('src/Extension.cpp')
-assert '!define APP_VERSION "0.0.73"' in rd('Installer/LReaParams.nsi')
-assert 'LReaParams-0.0.73-Windows-x64-SETUP-EXE' in rd('.github/workflows/build-windows.yml')
+assert 'project(LReaParams VERSION 0.0.74 LANGUAGES CXX)' in rd('CMakeLists.txt')
+assert 'LReaParams 0.0.74 - Native REAPER extension' in rd('src/Extension.cpp')
+assert 'Release date: 18 November 2026' in rd('src/Extension.cpp')
+assert '!define APP_VERSION "0.0.74"' in rd('Installer/LReaParams.nsi')
+assert 'LReaParams-0.0.74-Windows-x64-SETUP-EXE' in rd('.github/workflows/build-windows.yml')
 assert 'LReaParams 0.0.71' in rd('Docs/RELEASE_NOTES_0_0_71.md')
-assert 'LReaParams 0.0.73' in rd('Docs/RELEASE_NOTES_0_0_73.md')
+assert 'LReaParams 0.0.74' in rd('Docs/RELEASE_NOTES_0_0_74.md')
 assert 'release-0-0-71-type-name' in rd('Guide/LReaParams - FX Params.html')
 assert 'release-0-0-72-empty-step' in rd('Guide/LReaParams - FX Params.html')
 assert 'git restore --source=origin/main --staged --worktree -- index.xml' in rd('Tools/push_lreaparams.cmd')
 assert 'git pull --rebase origin main' in rd('Tools/push_lreaparams.cmd')
 assert 'types: [published]' in rd('.github/workflows/publish-reapack.yml')
 assert not (r/'index.xml').exists(), 'ZIP source must not contain generated XML'
-print('Release 0.0.73 source metadata and historical ReaPack safeguards PASS')
+print('Release 0.0.74 source metadata and historical ReaPack safeguards PASS')

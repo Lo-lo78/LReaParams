@@ -366,7 +366,19 @@ bool FxNavigator::handleAdvanced(const Key& k) {
                 floatingParam_ = -1;
             }
             fxOrder_.setExtraValue("cc_runtime_fixed_map_enabled_v1",fixedCc_?"1":"0");saveStructure();
-            speech_(fixedCc_?"Fixed CC on":"Fixed CC off");
+            if (fixedCc_) {
+                int count = 0;
+                for (const auto& link : fxOrder_.ccLinks) {
+                    int channel = 0, number = 0;
+                    if (parseLink(link.second, channel, number)) ++count;
+                }
+                speech_("Fixed CC on. " + std::to_string(count) + " parameters");
+            } else if (session.active()) {
+                speech_("Floating CC. Channel " + std::to_string(session.channel) +
+                        " CC " + std::to_string(session.number));
+            } else {
+                speech_("Fixed CC off. No active floating CC");
+            }
         }
         return true;
     }

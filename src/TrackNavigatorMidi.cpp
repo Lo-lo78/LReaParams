@@ -277,7 +277,15 @@ void TrackNavigator::midiShortcut(const Key& k) {
                 floatingChannel_ = session.channel; floatingNumber_ = session.number;
                 floatingTarget_.clear();
             }
-            midiPickup_.clear(); speech_("Fixed CC map off"); return;
+            midiPickup_.clear();
+            // The learned controller is session-global. Report what is active now,
+            // not just the fact that the fixed map was switched off.
+            if (session.active())
+                speech_("Floating CC. Channel " + std::to_string(session.channel) +
+                        " CC " + std::to_string(session.number));
+            else
+                speech_("Fixed CC off. No active floating CC");
+            return;
         }
         int count = 0;
         for (const auto& entry : memory_.fixedCcLinks()) {

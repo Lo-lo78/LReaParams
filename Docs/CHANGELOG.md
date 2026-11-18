@@ -1,3 +1,12 @@
+## 0.0.74 — 18 November 2026
+
+- Alt+R individual FX/Track parameter ranges (including Volume); Alt+C fixed CC ranges; Alt+F session-only floating CC ranges.
+- Accessible range dialogs return focus to the original navigator and parameter.
+- Per-parameter memories ranges and compact fixed CC range display; removed old Volume Ranges shortcut and column.
+- Track MIDI readback now immediately updates NVDA accessible text; MIDI speech is value-only.
+- Floating CC session shared across FX/Track; Shift+C restores learned floating CC and announces its channel/number when fixed map is disabled.
+- ReaPack publishing scripts, generator and history unchanged.
+
 ## LReaParams 0.0.72 — blank titles and explicit Step persistence (2026-11-17)
 
 - When users disable every title component, the title stays empty, without fallback to FX Params / Track Params.

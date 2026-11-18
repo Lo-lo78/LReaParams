@@ -5,10 +5,10 @@ from reapack_index_contract import verify_optional_reapack_index
 import xml.etree.ElementTree as ET
 r=Path(__file__).resolve().parents[1]
 rd=lambda x:(r/x).read_text(encoding='utf-8')
-assert 'project(LReaParams VERSION 0.0.73 LANGUAGES CXX)' in rd('CMakeLists.txt')
-assert 'LReaParams 0.0.73 - Native REAPER extension' in rd('src/Extension.cpp')
-assert '!define APP_VERSION "0.0.73"' in rd('Installer/LReaParams.nsi')
-assert 'LReaParams-0.0.73-Windows-x64-SETUP-EXE' in rd('.github/workflows/build-windows.yml')
+assert 'project(LReaParams VERSION 0.0.74 LANGUAGES CXX)' in rd('CMakeLists.txt')
+assert 'LReaParams 0.0.74 - Native REAPER extension' in rd('src/Extension.cpp')
+assert '!define APP_VERSION "0.0.74"' in rd('Installer/LReaParams.nsi')
+assert 'LReaParams-0.0.74-Windows-x64-SETUP-EXE' in rd('.github/workflows/build-windows.yml')
 assert 'LREAPARAMSPREFERENCES' in rd('src/Extension.cpp')
 assert 'constexpr int kFxTitleCount = 4' in rd('src/Preferences.cpp')
 assert 'constexpr int kTrackTitleCount = 12' in rd('src/Preferences.cpp')

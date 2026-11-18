@@ -26,7 +26,9 @@ jobs:
         run: python Testing/test73_3_floating_cc_and_track_review_static.py
       - name: TEST73.4 Fixed/Floating CC priority and value-only Track MIDI speech (source only)
         run: python Testing/test73_4_fixed_floating_toggle_static.py
-      - name: Release 0.0.73 Type Name titles and ReaPack history (source only)
+      - name: Release 0.0.74 floating CC speech, guides and ReaPack continuity (source only)
+        run: python Testing/test74_release_floating_cc_speech_static.py
+      - name: Release 0.0.74 Type Name titles and ReaPack history (source only)
         run: python Testing/test71_release_type_name_reapack_static.py
       - name: Release 0.0.70 Preferences and full ReaPack history (source only)
         run: python Testing/test70_release_preferences_reapack_static.py
@@ -302,13 +304,13 @@ jobs:
       - name: Upload ready-to-install multilingual package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: LReaParams-0.0.73-Windows-x64-MULTILINGUAL
+          name: LReaParams-0.0.74-Windows-x64-MULTILINGUAL
           path: package/
           if-no-files-found: error
       - name: Upload accessible HTML guides
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: LReaParams-0.0.73-HTML-Guides
+          name: LReaParams-0.0.74-HTML-Guides
           path: Guide/
           if-no-files-found: error
       - name: Package complete corresponding source from this commit
@@ -317,13 +319,13 @@ jobs:
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           $sha = (git rev-parse HEAD).Trim()
           if ($LASTEXITCODE -ne 0) { throw "Cannot determine source commit" }
-          git archive --format=zip --output=dist/LReaParams-0.0.73-Source.zip HEAD
+          git archive --format=zip --output=dist/LReaParams-0.0.74-Source.zip HEAD
           if ($LASTEXITCODE -ne 0) { throw "Cannot package matching source" }
           @(
-            "LReaParams 0.0.73 complete corresponding source",
+            "LReaParams 0.0.74 complete corresponding source",
             "Built from Git commit: $sha",
             "Source: https://github.com/Lo-lo78/LReaParams/tree/$sha",
-            "The included LReaParams-0.0.73-Source.zip contains the build scripts, C++ source, original Lua references, and the installer source.",
+            "The included LReaParams-0.0.74-Source.zip contains the build scripts, C++ source, original Lua references, and the installer source.",
             "License: GPL-3.0-only for LReaParams-owned code; see LICENSE and THIRD_PARTY_NOTICES.md in that archive."
           ) | Set-Content -Path dist/SOURCE-COMMIT.txt -Encoding utf8
       - name: Install NSIS setup builder
@@ -352,7 +354,7 @@ jobs:
             'Guide/index.html',
             'LICENSE',
             'THIRD_PARTY_NOTICES.md',
-            'dist/LReaParams-0.0.73-Source.zip',
+            'dist/LReaParams-0.0.74-Source.zip',
             'dist/SOURCE-COMMIT.txt',
             'Installer/Guide-Uninstall.nsh'
           )
@@ -365,18 +367,18 @@ jobs:
           $nsis = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
           & $nsis /V3 "/DPROJECT_ROOT=$projectRoot" 'Installer/LReaParams.nsi'
           if ($LASTEXITCODE -ne 0) { throw "NSIS installer build failed" }
-          if (-not (Test-Path 'dist/LReaParams-0.0.73-Windows-x64-Setup.exe')) { throw "EXE was not produced" }
+          if (-not (Test-Path 'dist/LReaParams-0.0.74-Windows-x64-Setup.exe')) { throw "EXE was not produced" }
       - name: Upload one-click Windows x64 installer
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: LReaParams-0.0.73-Windows-x64-SETUP-EXE
-          path: dist/LReaParams-0.0.73-Windows-x64-Setup.exe
+          name: LReaParams-0.0.74-Windows-x64-SETUP-EXE
+          path: dist/LReaParams-0.0.74-Windows-x64-Setup.exe
           if-no-files-found: error
       - name: Upload complete source for GPL distribution
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: LReaParams-0.0.73-COMPLETE-SOURCE
+          name: LReaParams-0.0.74-COMPLETE-SOURCE
           path: |
-            dist/LReaParams-0.0.73-Source.zip
+            dist/LReaParams-0.0.74-Source.zip
             dist/SOURCE-COMMIT.txt
           if-no-files-found: error

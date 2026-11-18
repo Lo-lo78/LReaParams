@@ -1,12 +1,12 @@
-## LReaParams 0.0.73 — Track Params entry announcement cleanup (17 November 2026)
+## LReaParams 0.0.74 — Parameter ranges and MIDI CC session control (18 November 2026)
 
-This maintenance release avoids repeating the track name when opening Track Params if the configured title already includes it. FX Params, navigation announcements and all settings are unchanged.
+This release introduces independent **Alt+R** ranges per FX/Track parameter, including Volume, and **Alt+C** ranges from 0–127 for an already assigned fixed MIDI CC. **Alt+F** sets a session-only range for the learned floating CC. The accessible dialogs offer Minimum, Maximum, OK and Cancel and return to the original parameter on confirmation or cancellation. Parameter ranges are displayed in the new Parameter Ranges memories column; modified fixed CC ranges appear alongside the assigned CC.
 
-The 0.0.72 release introduced empty title behavior and intentional Step saving with Alt+S.
+The former Volume-only **Ctrl+Shift+I** and Volume Ranges memory column have been removed. The floating CC (channel, CC number and Alt+F range) remains in RAM until REAPER closes, shared between FX Params and Track Params. **Shift+C** turns fixed CCs on (with their count), or off and restores the floating controller, announcing its channel and CC number. Track Params MIDI speech is value-only when enabled and its NVDA-accessible value updates immediately as a CC moves.
 
-The tested 0.0.71 TEST71.2 changes are promoted to release 0.0.73. Disabling all title components leaves the accessible window title empty, with no hidden FX Params/Track Params fallback. FX/Track Step changes are temporary until **Alt+S** explicitly saves the selected parameter Step; existing stored Steps are not overwritten by unsaved adjustments. Preserves the FX Type/Name improvements from 0.0.71 and the previous project formats, accessibility and key maps. [Release notes](Docs/RELEASE_NOTES_0_0_72.md).
+**GitHub/ReaPack history safety:** keep the existing `Tools\push_lreaparams.cmd`, `Tools/generate_reapack_index.py` and `.github/workflows/publish-reapack.yml`. Never overwrite `index.xml`, rewrite published tags, or delete previous releases. In the existing clone, run `Tools\push_lreaparams.cmd "Release 0.0.74 - Parameter ranges and floating MIDI CC control"`, verify the Windows Actions build, and publish the stable **`v0.0.74`** release with the matching installer. The separate `release: published` ReaPack workflow builds its DLL and updates the index while retaining previous versions. See [Italian publishing instructions](Docs/REAPACK_SETUP_IT.md).
 
-**GitHub/ReaPack history safety:** the repository uses the original `Tools\push_lreaparams.cmd` and the automatic publisher; do not overwrite `index.xml`, rewrite any published tag, or remove the old ReaPack releases. Run `Tools\push_lreaparams.cmd "Release 0.0.73 - Empty titles and explicit Step saving"` from the existing cloned repository. Verify Windows Actions and publish stable `v0.0.73`, with its matching installer. The release publication triggers automatic DLL generation and index regeneration from all eligible historical releases. See [Italian instructions](Docs/REAPACK_SETUP_IT.md).
+[Release notes](Docs/RELEASE_NOTES_0_0_74.md) · [Complete user guides](Guide/index.html)
 
 ---
 
