@@ -1429,7 +1429,7 @@ void TrackNavigator::handle(const Key& k) {
     if (numericEditing_) {
         if (k.vk == VK_RETURN) commitNumericEdit();
         else if (k.vk == VK_ESCAPE) {
-            numericEditing_ = 
+            numericEditing_ = false;
             speech_("Edit cancelled. " + parameterValueSpeech());
         }
         return;

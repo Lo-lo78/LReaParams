@@ -718,7 +718,7 @@ void TrackNavigator::handleFxTcpKey(const Key& k) {
     if (numericEditing_) {
         if (!k.repeat && k.vk == VK_RETURN) commitFxTcpNumericEdit();
         else if (!k.repeat && k.vk == VK_ESCAPE) {
-            numericEditing_ = 
+            numericEditing_ = false;
             // No change to FX and no automatic exit from F4.
             speech_("Edit cancelled. " + fxTcpReview(false));
         }
