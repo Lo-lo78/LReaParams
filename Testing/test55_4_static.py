@@ -24,12 +24,12 @@ assert 'if (memory_.valueSpeech(entry.first)) continue;' in manager
 assert 'if (!memory_.fixedCcSpeech(entry.first)) continue;' in manager
 assert 'if (guid.empty()) continue;' in manager
 assert 'Navigation Memory' not in manager
-assert '"Track Positions", "Volume Ranges"' in manager
-assert 'memory_.clearVolumeRange(item.key)' in manager
+assert '"Track Positions", "Parameter Ranges"' in manager
+assert 'memory_.setParameterRange(item.key, "")' in manager
 assert 'memory_.setFixedCcSpeech(item.key.substr(2), false)' in manager
 assert 'if (value.empty()) { bytes.erase(match, matchEnd - match); return bytes; }' in mem
 assert 'if (value.empty()) return bytes;' in mem
-assert 'void clearVolumeRange(const std::string& page);' in head
+assert 'void setParameterRange(const std::string& identity, const std::string& encoded);' in head
 assert 'if(!standalone && !editF7_)' not in fx
 assert 'memoryReturnF7_=editF7_' in fx
 assert "k.vk == 'M'" in (r/'src/FxNavigator.cpp').read_text() and 'openFxMemories(false)' in (r/'src/FxNavigator.cpp').read_text()

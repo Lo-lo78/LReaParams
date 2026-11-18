@@ -13,7 +13,11 @@ assert 'if (target.fxTcp) { applyFxTcpMidi(identity, value, false); return; }' i
 assert 'if (section == "F4" && page_ == Page::fxTcp && track_)' in m
 assert 'TrackFX_GetParamNormalized(owner, fx, parameter)' in m
 assert 'TrackFX_SetParamNormalized(owner, fx, parameter, next)' in m
-assert 'pickup.allows(ccValue, std::clamp(currentValue, 0.0, 1.0))' in m
+# TEST73.1 keeps pickup active with the inverse mapping to physical CC
+# coordinates, so a fixed CC range does not cause an unintended jump.
+assert 'pickup.allows(ccValue, ccPickupTarget(std::clamp(currentValue, 0.0, 1.0),cc))' in m
+assert 'scaleCcFraction(ccValue,cc)' in m
+assert 'pickup.applied(ccPickupTarget(std::clamp(TrackFX_GetParamNormalized(' in m
 assert 'memory_.fixedCcSpeech(identity)' in m
 assert 'midiFixedIdentity(id)' in m and 'group == "F4"' in m
 assert 'if (fxTcpListOpen_) { handleFxTcpParameterGridKey(k); return; }' in f

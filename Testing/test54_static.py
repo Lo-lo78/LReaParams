@@ -24,7 +24,12 @@ assert 'numericEditing_ = false;' in extra and 'put(*e, raw);' in extra
 assert 'MIDI_GetRecentInputEvent(i, bytes' in midi
 assert 'pending.rbegin()' not in midi and 'items.rbegin()' in midi
 assert 'decodeCc(' in midi and 'midiSequence_' in midi
-assert 'pickup.allows(value, norm(before))' in midi
+# TEST73.1: pickup still guards changes, but its target must be mapped
+# back into physical CC coordinates for a per-parameter CC range.
+assert 'pickup.allows(value, ccPickupTarget(norm(before),cc))' in midi
+assert 'pickup.allows(value, ccPickupTarget(normalized(before),cc))' in midi
+assert 'pickup.allows(ccValue, ccPickupTarget(' in midi
+assert 'scaleCcFraction(value,cc)' in midi
 assert 'pendingMidiSpeech_' in midi and 'GetTickCount64()' in midi
 assert 'memory_.setFixedCcLink(row.first, "")' in midi
 assert 'memory_.setFixedCcLink(learnIdentity_, link)' in midi
