@@ -22,4 +22,12 @@ for forbidden in ('Main_OnCommand(', 'SetMediaTrackInfo_Value(', 'TrackFX_SetPar
 assert 'case 1: return L"Render";' in src
 assert 'case 1046: return L"Tail";' in src
 assert 'case 1041: return L"Sample rate";' in src
+# Windows RECT coordinates use LONG, unlike the int literals/temporaries.
+# MSVC rejects ambiguous std::min/std::max template deduction without a fixed type.
+for expression in (
+    'std::min<int>(horizontal + vertical*3, above + std::abs(a.left-dst.left))',
+    'std::max<int>(0, (bounds.right-bounds.left-420)/2)',
+    'std::max<int>(0, (bounds.bottom-bounds.top-110)/3)',
+):
+    assert expression in src, expression
 print('TEST74.1 render focus-only source PASS')

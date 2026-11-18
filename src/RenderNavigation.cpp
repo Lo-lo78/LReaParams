@@ -204,7 +204,7 @@ std::wstring RenderNavigation::nearbyLabel(HWND control) const {
         const int horizontal = a.right <= dst.left + 18 ? std::abs(dst.left-a.right) : 500;
         // Label may also be immediately above its input box.
         const int above = a.bottom <= dst.top+10 && dst.top-a.bottom < 40 ? 60+dst.top-a.bottom : 500;
-        const int distance = std::min(horizontal + vertical*3, above + std::abs(a.left-dst.left));
+        const int distance = std::min<int>(horizontal + vertical*3, above + std::abs(a.left-dst.left));
         if (distance < best && distance < 320) {best = distance; label = text;}
     }
     while (!label.empty() && (label.back() == L':' || std::iswspace(label.back()))) label.pop_back();
@@ -535,8 +535,8 @@ void RenderNavigation::findDialog() {
     wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     RegisterClassW(&wc); // ERROR_CLASS_ALREADY_EXISTS is harmless.
     RECT bounds{}; GetWindowRect(render_, &bounds);
-    const int x = bounds.left + std::max(0, (bounds.right-bounds.left-420)/2);
-    const int y = bounds.top + std::max(0, (bounds.bottom-bounds.top-110)/3);
+    const int x = bounds.left + std::max<int>(0, (bounds.right-bounds.left-420)/2);
+    const int y = bounds.top + std::max<int>(0, (bounds.bottom-bounds.top-110)/3);
     find_ = CreateWindowExW(WS_EX_DLGMODALFRAME, findClass,
         L"Find Render control - Enter to focus, Esc to cancel",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, x, y, 440, 116,
