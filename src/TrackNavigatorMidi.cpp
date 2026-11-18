@@ -234,13 +234,11 @@ bool TrackNavigator::applyFxTcpMidi(const std::string& identity, int ccValue, bo
     // Speech defaults OFF per target. MIDI feedback never repeats the full
     // GUI announcement unless explicitly enabled with Ctrl+T.
     if (memory_.fixedCcSpeech(identity)) {
-        char paramName[1024]{}, formatted[512]{}, fxName[1024]{};
+        char paramName[1024]{}, formatted[512]{};
         if (TrackFX_GetParamName) TrackFX_GetParamName(owner, fx, parameter, paramName, sizeof(paramName));
         if (TrackFX_GetFormattedParamValue)
             TrackFX_GetFormattedParamValue(owner, fx, parameter, formatted, sizeof(formatted));
-        if (TrackFX_GetFXName) TrackFX_GetFXName(owner, fx, fxName, sizeof(fxName));
-        pendingMidiSpeech_ = (floating ? std::string() : savedTrackLabel(trackGuidText(owner)) + ", ") +
-            (fxName[0] ? std::string(fxName) + ", " : std::string()) +
+        pendingMidiSpeech_ =
             (paramName[0] ? std::string(paramName) : "Parameter " + std::to_string(parameter + 1)) +
             ", " + (formatted[0] ? std::string(formatted) : std::to_string(next));
     }
@@ -283,6 +281,7 @@ void TrackNavigator::midiShortcut(const Key& k) {
         }
         if (!count) { speech_("No fixed CC map"); return; }
         fixedCc_ = true; floatingCc_ = floatingWaiting_ = false;
+        floatingCcSession().enabled = false;
         memory_.setFixedEnabled(true); memory_.flush();
         midiSequence_ = recentSequence(); midiPickup_.clear();
         speech_("Fixed CC map on. " + std::to_string(count) + " parameters");
@@ -291,10 +290,12 @@ void TrackNavigator::midiShortcut(const Key& k) {
     if (toggleFloating) {
         if (floatingCc_ || floatingWaiting_) {
             floatingCc_ = floatingWaiting_ = false;
+            floatingCcSession().enabled = false;
             speech_("Floating CC off");
         } else {
             if (!supported) { speech_("No MIDI CC target for this field"); return; }
             floatingWaiting_ = true; fixedCc_ = false;
+            floatingCcSession().enabled = false; // The next moved CC replaces this session's assignment.
             midiSequence_ = recentSequence(); midiPickup_.clear();
             speech_("Floating CC learn. Move a MIDI control");
         }
@@ -423,12 +424,8 @@ void TrackNavigator::applyFixedMidi(const std::string& identity, int value) {
     TrackList_AdjustWindows(false);
     UpdateArrange();
     if (memory_.fixedCcSpeech(identity)) {
-        std::string label = savedTrackLabel(target.source);
-        if (target.send) {
-            label += ", Send to " + savedTrackLabel(target.destination);
-            if (target.ordinal > 1) label += " " + std::to_string(target.ordinal);
-        }
-        pendingMidiSpeech_ = label + ", " + target.parameter + ", " +
+        // MIDI feedback is deliberately concise, unlike the full Tab/title review.
+        pendingMidiSpeech_ = target.parameter + ", " +
             (target.parameter == "Volume" ?
                 (next <= 0 ? "minus infinity dB" : std::to_string(20.0 * std::log10(next)) + " dB") :
                 binary ? (next >= 0.5 ? "on" : "off") :
@@ -516,6 +513,7 @@ void TrackNavigator::pollMidi() {
             }
             const auto target = learnKey_;
             learnCc_ = false; fixedCc_ = true; floatingCc_ = floatingWaiting_ = false;
+            floatingCcSession().enabled = false;
             learnIdentity_.clear();
             midiPickup_.clear();
             speech_("CC learned. Channel " + std::to_string(cc.channel) + " CC " +
@@ -525,6 +523,7 @@ void TrackNavigator::pollMidi() {
         if (floatingWaiting_) {
             floatingChannel_ = cc.channel; floatingNumber_ = cc.number;
             floatingWaiting_ = false; floatingCc_ = true;
+            floatingCcSession().assign(cc.channel, cc.number);
             midiPickup_.clear();
             speech_("Floating CC. Channel " + std::to_string(cc.channel) +
                 " CC " + std::to_string(cc.number));

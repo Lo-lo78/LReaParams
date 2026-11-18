@@ -22,6 +22,8 @@ jobs:
         run: python Testing/test71_1_switch_announcement_title_static.py
       - name: TEST71.2 Empty titles and explicit Step save (source only)
         run: python Testing/test71_2_unsaved_step_and_empty_titles_static.py
+      - name: TEST73.3 floating CC session and Track MIDI review (source only)
+        run: python Testing/test73_3_floating_cc_and_track_review_static.py
       - name: Release 0.0.73 Type Name titles and ReaPack history (source only)
         run: python Testing/test71_release_type_name_reapack_static.py
       - name: Release 0.0.70 Preferences and full ReaPack history (source only)

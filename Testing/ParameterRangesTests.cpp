@@ -20,7 +20,17 @@ int main() {
     assert(!parseParameterRange("NaN,100",r,0,127));
     assert(parseParameterRange("-60,0",r,-150,48));
     assert(near(r.clamp(-90),-60) && near(r.clamp(12),0));
+    auto& session = floatingCcSession();
+    assert(!session.active());
+    session.assign(1, 74);
+    assert(session.active() && session.channel == 1 && session.number == 74);
     floatingCcSessionRange() = {15,99};
     assert(floatingCcSessionRange().minimum == 15 && floatingCcSessionRange().maximum == 99);
+    session.enabled = false;
+    assert(!session.active());
+    assert(session.channel == 1 && session.number == 74);
+    assert(floatingCcSessionRange().minimum == 15); // Off never clears the session range.
+    session.assign(3, 11);
+    assert(session.active() && session.channel == 3 && session.number == 11);
     std::cout << "ParameterRanges unit tests PASS\n";
 }

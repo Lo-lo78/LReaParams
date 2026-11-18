@@ -38,11 +38,29 @@ inline double scaleCcFraction(int value, const ParameterRange& cc) noexcept {
     const double raw = std::clamp(value, 0, 127) / 127.0;
     return std::clamp((cc.minimum + (cc.maximum - cc.minimum) * raw) / 127.0, 0.0, 1.0);
 }
-// Shared by FX and Track navigators in the loaded REAPER extension. Reset only
-// when REAPER unloads the DLL, never written to a profile or a memory column.
+// Shared by FX Params and Track Params for the lifetime of this REAPER DLL.
+// No project, preset, profile, or memory-file persistence is permitted.
+// Switching navigator must not forget the learned channel/controller or range.
+struct FloatingCcSession {
+    int channel = -1;
+    int number = -1;
+    bool enabled = false;
+    ParameterRange range{0.0, 127.0};
+    bool active() const noexcept {
+        return enabled && channel >= 1 && channel <= 16 && number >= 0 && number <= 127;
+    }
+    void assign(int channelIn, int numberIn) noexcept {
+        channel = channelIn;
+        number = numberIn;
+        enabled = true;
+    }
+};
+inline FloatingCcSession& floatingCcSession() {
+    static FloatingCcSession session;
+    return session;
+}
 inline ParameterRange& floatingCcSessionRange() {
-    static ParameterRange range{0.0, 127.0};
-    return range;
+    return floatingCcSession().range;
 }
 inline double ccPickupTarget(double current, const ParameterRange& cc) {
     const double width = cc.maximum - cc.minimum;

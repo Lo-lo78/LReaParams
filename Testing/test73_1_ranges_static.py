@@ -20,7 +20,7 @@ assert 'value = clampParameterValue(e,value);' in track
 assert 'fixedCc_ ||' in adv and 'fixedCc_ ||' in extra
 assert 'floatingCcSessionRange() = editable;' in adv
 assert 'floatingCcSessionRange() = range;' in extra
-assert 'static ParameterRange range{0.0, 127.0}' in header
+assert 'ParameterRange range{0.0, 127.0}' in header and 'return floatingCcSession().range;' in header
 assert 'ccPickupTarget' in midi and 'scaleCcFraction' in midi and 'scaleCcFraction' in adv
 assert 'setParameterRange' in store and 'setCcRange' in store
 assert 'LReaParams.ParameterRanges' in profile and 'LReaParams.CcRanges' in profile

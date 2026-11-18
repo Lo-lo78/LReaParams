@@ -601,7 +601,20 @@ public:
         if (shortcutHelp() || input_.exitRequested() || !current_->contextUnchanged() || !current_->uiStillOpen() || !input_.environmentSafe()) {
             exitNavigation(false); return;
         }
-        if (current_ == &trackNavigator_) trackNavigator_.tickMidi();
+        if (current_ == &trackNavigator_) {
+            const std::string previous = titleProxyActive_ ? trackNavigator_.reviewLine() : std::string();
+            trackNavigator_.tickMidi();
+            if (titleProxyActive_) {
+                const std::string next = trackNavigator_.reviewLine();
+                // Passive WM_GETTEXT readback stays current even if REAPER changed
+                // the parameter before this timer tick (without a navigation key).
+                titleProxy_.updateReviewLine(next);
+                if (next != previous) {
+                    titleProxy_.syncValueControl(trackNavigator_.nativeValueSlider(),
+                        trackNavigator_.sliderLabel(), trackNavigator_.valueFraction());
+                }
+            }
+        }
         if(current_==&navigator_) {
             const auto previous=current_->reviewLine();
             // An FX may finish loading its parameter list after Ctrl+Alt+B

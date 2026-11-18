@@ -88,6 +88,14 @@ void FxNavigator::resetMidiContext() {
     learnCc_=false;learnParam_=-1;pickup_.clear();midiSpoken_.clear();
     floatingParam_=-1;numericEdit_=false;midiPendingSpeech_.clear();
     fixedCc_=fxOrder_.extraValue("cc_runtime_fixed_map_enabled_v1")=="1";
+    const auto& floating = floatingCcSession();
+    floatingCc_ = floating.active();
+    floatingWaiting_ = false;
+    if (floatingCc_) {
+        floatingChannel_ = floating.channel;
+        floatingNumber_ = floating.number;
+        fixedCc_ = false;
+    }
     midiSequence_=recentSequence();
 }
 // Same persisted MIDI association read by FX Memories/F8. Speech lookup
@@ -275,6 +283,7 @@ void FxNavigator::pollMidi() {
             }
             fxOrder_.ccLinks[learnParam_]=std::to_string(cc.channel)+"\t"+std::to_string(cc.number);
             clearNativeLearn(learnParam_);learnCc_=false;fixedCc_=true;
+            floatingCcSession().enabled = false;
             fxOrder_.setExtraValue("cc_runtime_fixed_map_enabled_v1","1");
             saveStructure();pickup_.clear();
             speech_("CC learned. Channel "+std::to_string(cc.channel)+" CC "+std::to_string(cc.number));
@@ -284,6 +293,7 @@ void FxNavigator::pollMidi() {
         if(floatingWaiting_ && !fixedCc_) {
             floatingChannel_=cc.channel;floatingNumber_=cc.number;
             floatingWaiting_=false;floatingCc_=true;floatingParam_=-1;
+            floatingCcSession().assign(cc.channel, cc.number);
             speech_("Floating CC. Channel "+std::to_string(cc.channel)+" CC "+std::to_string(cc.number));continue;
         }
         if(fixedCc_) {
@@ -333,10 +343,11 @@ bool FxNavigator::handleAdvanced(const Key& k) {
             floatingCc_=floatingWaiting_=false;learnCc_=true;learnParam_=parameter_;
             speech_("CC learn. "+displayName()+". Move a MIDI control");
         }else if(k.ctrl && k.shift) {
-            if(floatingCc_||floatingWaiting_) {floatingCc_=floatingWaiting_=false;fixedCc_=fxOrder_.extraValue("cc_runtime_fixed_map_enabled_v1")=="1";speech_("Floating CC off. Normal CC mappings");}
-            else {fixedCc_=false;floatingWaiting_=true;speech_("Floating CC. Move a MIDI control");}
+            if(floatingCc_||floatingWaiting_) {floatingCc_=floatingWaiting_=false;floatingCcSession().enabled=false;fixedCc_=fxOrder_.extraValue("cc_runtime_fixed_map_enabled_v1")=="1";speech_("Floating CC off. Normal CC mappings");}
+            else {floatingCcSession().enabled=false;fixedCc_=false;floatingWaiting_=true;speech_("Floating CC. Move a MIDI control");}
         }else {
             fixedCc_=!fixedCc_;floatingCc_=floatingWaiting_=false;
+            floatingCcSession().enabled = false;
             fxOrder_.setExtraValue("cc_runtime_fixed_map_enabled_v1",fixedCc_?"1":"0");saveStructure();
             speech_(fixedCc_?"Fixed CC on":"Fixed CC off");
         }

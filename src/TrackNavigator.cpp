@@ -89,6 +89,13 @@ bool TrackNavigator::begin() {
     migratePageLayout();
     // Persisted Fixed CC is re-enabled on every entry, never silently lost.
     fixedCc_ = memory_.fixedEnabled();
+    const auto& floating = floatingCcSession();
+    if (floating.active()) {
+        floatingCc_ = true;
+        floatingChannel_ = floating.channel;
+        floatingNumber_ = floating.number;
+        fixedCc_ = false;  // Floating takes precedence while active.
+    }
     row_ = 0;
     for (int i = 0; i < static_cast<int>(rows_.size()); ++i) {
         if (rows_[i].track == initialSelection_) { row_ = i; break; }
