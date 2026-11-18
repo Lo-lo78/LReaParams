@@ -3,6 +3,9 @@
 #include <windows.h>
 #include <string>
 namespace lrp {
+// True only while a native range dialog owns the REAPER UI thread.
+// Extension::tick must not end navigation because its focus is temporarily modal.
+bool rangeDialogModalActive() noexcept;
 // Display the selected parameter name, including UTF-8 plug-in names,
 // in each native dialog title so NVDA identifies the edited control.
 std::wstring rangeNameUtf8(const std::string& text);

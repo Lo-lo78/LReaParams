@@ -6,6 +6,12 @@
 #include <algorithm>
 
 namespace lrp {
+namespace {
+// DialogBoxIndirectParamW runs an internal message loop: REAPER keeps firing
+// its timer during this time, even though the active window is the dialog.
+thread_local unsigned rangeDialogDepth = 0;
+}
+bool rangeDialogModalActive() noexcept { return rangeDialogDepth != 0; }
 std::wstring rangeNameUtf8(const std::string& text) {
     if (text.empty()) return {};
     const int length = MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, nullptr, 0);
@@ -112,8 +118,25 @@ bool editParameterRange(HWND owner,const std::wstring& title,
     auto* caption = reinterpret_cast<WCHAR*>(bytes + 22);
     wcsncpy(caption, title.c_str(), 120);
     DialogState state{value,low,high,integers};
+    // The navigator's keyboard owner is focused when Alt+R/C/F is pressed.
+    // Remember that exact control, including native Value/EDIT modes, so
+    // OK/Enter AND Cancel/Escape return to the SAME navigator location.
+    const HWND priorFocus = GetFocus();
+    const bool ownedFocus = owner && priorFocus && IsWindow(priorFocus) &&
+        GetAncestor(priorFocus, GA_ROOT) == owner;
+    ++rangeDialogDepth;
     const auto ok = DialogBoxIndirectParamW(GetModuleHandleW(nullptr), dlg,
         owner, proc, reinterpret_cast<LPARAM>(&state));
+    // After the modal loop exits, Windows has re-enabled its owner. Restore
+    // the original title/parameter focus before allowing the REAPER timer to
+    // validate the navigation context again. Do not reopen the navigator:
+    // doing so would discard its current page/selection or reset its MIDI state.
+    if (ownedFocus && IsWindow(owner) && IsWindowVisible(owner) &&
+        IsWindowEnabled(owner) && IsWindow(priorFocus)) {
+        SetForegroundWindow(owner);
+        if (GetForegroundWindow() == owner) SetFocus(priorFocus);
+    }
+    --rangeDialogDepth;
     if (ok != IDOK || !state.accepted) return false;
     value=state.result;return true;
 }

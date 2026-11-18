@@ -6,6 +6,7 @@
 #include "lrp/Storage.h"
 #include "lrp/ChoiceDialogs.h"
 #include "lrp/Preferences.h"
+#include "lrp/RangeDialog.h"
 #include <shellapi.h>
 #include <array>
 #include <memory>
@@ -553,6 +554,10 @@ public:
         // must never interpret the temporarily hidden title proxy or stopped
         // input router as the end of an FX/Track navigation session.
         if (preferencesDialogOpen_) return;
+        // Alt+R/C/F opens a native modal dialog on this same REAPER thread.
+        // Its nested message loop receives timer ticks while the focus owner
+        // is disabled; treating that as lost focus would exit to the TCP.
+        if (rangeDialogModalActive()) return;
         if (startupImportCheckPending_ && IsWindowVisible(info_.hwnd_main) &&
             IsWindowEnabled(info_.hwnd_main)) {
             startupImportCheckPending_ = false;
