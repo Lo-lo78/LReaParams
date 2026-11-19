@@ -114,6 +114,83 @@ bool isInput(HWND h) {
     // them keyboard-focusable; never focus a decorative static HWND.
     return (GetWindowLongPtrW(h, GWL_STYLE) & WS_TABSTOP) != 0;
 }
+// REAPER may expose its output-format pages as MSAA child tabs of a
+// generic WDL window, rather than as a Win32 SysTabControl32 HWND.
+// Match BOTH labels and the page-tab accessibility role before operating.
+struct AccessibleTabs {
+    HWND window{};
+    LONG items[2]{};
+};
+bool readAccessibleTabs(HWND window, AccessibleTabs& tabs) {
+    IAccessible* acc = nullptr;
+    if (FAILED(AccessibleObjectFromWindow(window, OBJID_CLIENT, IID_IAccessible,
+        reinterpret_cast<void**>(&acc))) || !acc) return false;
+    LONG count = 0;
+    if (FAILED(acc->get_accChildCount(&count)) || count < 2 || count > 128) {
+        acc->Release(); return false;
+    }
+    LONG matching[2]{};
+    for (LONG i = 1; i <= count; ++i) {
+        VARIANT child{}; child.vt = VT_I4; child.lVal = i;
+        VARIANT role{}; VariantInit(&role);
+        if (FAILED(acc->get_accRole(child, &role)) || role.vt != VT_I4 ||
+            role.lVal != ROLE_SYSTEM_PAGETAB) {VariantClear(&role); continue;}
+        VariantClear(&role);
+        BSTR name = nullptr;
+        if (SUCCEEDED(acc->get_accName(child, &name)) && name) {
+            const auto label = lower(std::wstring(name, SysStringLen(name)));
+            if (label.find(L"primary output format") != std::wstring::npos) matching[0] = i;
+            if (label.find(L"secondary output format") != std::wstring::npos) matching[1] = i;
+        }
+        if (name) SysFreeString(name);
+    }
+    acc->Release();
+    if (!matching[0] || !matching[1]) return false;
+    tabs.window = window;
+    tabs.items[0] = matching[0]; tabs.items[1] = matching[1];
+    return true;
+}
+bool findAccessibleTabs(HWND root, AccessibleTabs& tabs) {
+    // A custom control may expose the page tabs directly on the dialog HWND.
+    if (readAccessibleTabs(root, tabs)) return true;
+    for (HWND h : children(root)) {
+        if (IsWindowVisible(h) && IsWindowEnabled(h) && readAccessibleTabs(h, tabs)) return true;
+    }
+    return false;
+}
+int selectedAccessibleTab(const AccessibleTabs& tabs) {
+    IAccessible* acc = nullptr;
+    if (FAILED(AccessibleObjectFromWindow(tabs.window, OBJID_CLIENT, IID_IAccessible,
+        reinterpret_cast<void**>(&acc))) || !acc) return -1;
+    int result = -1;
+    for (int page = 0; page < 2; ++page) {
+        VARIANT child{}; child.vt = VT_I4; child.lVal = tabs.items[page];
+        VARIANT state{}; VariantInit(&state);
+        if (SUCCEEDED(acc->get_accState(child, &state)) && state.vt == VT_I4 &&
+            (state.lVal & STATE_SYSTEM_SELECTED)) result = page;
+        VariantClear(&state);
+    }
+    if (result < 0) {
+        VARIANT selected{}; VariantInit(&selected);
+        if (SUCCEEDED(acc->get_accSelection(&selected)) && selected.vt == VT_I4) {
+            for (int page = 0; page < 2; ++page)
+                if (selected.lVal == tabs.items[page]) result = page;
+        }
+        VariantClear(&selected);
+    }
+    acc->Release(); return result;
+}
+bool selectAccessibleTab(const AccessibleTabs& tabs, int page) {
+    IAccessible* acc = nullptr;
+    if (FAILED(AccessibleObjectFromWindow(tabs.window, OBJID_CLIENT, IID_IAccessible,
+        reinterpret_cast<void**>(&acc))) || !acc) return false;
+    VARIANT child{}; child.vt = VT_I4; child.lVal = tabs.items[page];
+    // This selects a navigation tab only; it NEVER activates Render or changes
+    // output format, sample rate, or any other render option.
+    const HRESULT result = acc->accSelect(SELFLAG_TAKESELECTION, child);
+    acc->Release(); return SUCCEEDED(result);
+}
+
 const wchar_t* const findClass = L"LRP_RenderFind_74_1";
 } // namespace
 
@@ -138,6 +215,7 @@ void RenderNavigation::stop() noexcept {
 }
 void RenderNavigation::resetDialog() noexcept {
     render_ = nullptr;
+    cachedFormatTab_ = nullptr;
     controls_.clear(); accelerators_.clear(); cycle_.clear();
     lastResult_ = nullptr; lastResultPage_ = -1;
     lastTabFocus_[0] = lastTabFocus_[1] = nullptr;
@@ -376,57 +454,40 @@ bool RenderNavigation::searchStep(int dir) {
 
 HWND RenderNavigation::findFormatTab() const {
     if (!render_) return nullptr;
+    AccessibleTabs tabs{};
+    if (cachedFormatTab_ && IsWindow(cachedFormatTab_) &&
+        isDescendant(render_, cachedFormatTab_) &&
+        (readAccessibleTabs(cachedFormatTab_, tabs) ||
+         klass(cachedFormatTab_) == L"systabcontrol32")) return cachedFormatTab_;
+    cachedFormatTab_ = nullptr;
     for (HWND h : children(render_)) {
         if (!IsWindowVisible(h) || !IsWindowEnabled(h)) continue;
         const auto cls = klass(h);
-        if (cls == L"systabcontrol32" || cls == L"wdltabctrl") return h;
+        if (cls == L"systabcontrol32" || cls == L"wdltabctrl") {
+            cachedFormatTab_ = h; return h;
+        }
+    }
+    if (findAccessibleTabs(render_, tabs)) {
+        cachedFormatTab_ = tabs.window; return tabs.window;
     }
     return nullptr;
 }
 int RenderNavigation::selectedPage() const {
+    if (!render_) return -1;
     if (const HWND tab = findFormatTab()) {
+        AccessibleTabs tabs{};
+        if (readAccessibleTabs(tab, tabs)) return selectedAccessibleTab(tabs);
         if (klass(tab) == L"systabcontrol32") {
-            const auto result = static_cast<int>(SendMessageW(tab, TCM_GETCURSEL, 0, 0));
-            if (result == 0 || result == 1) return result;
-        }
-    }
-    // REAPER can use a custom WDL tab whose selected item is exposed
-    // through MSAA (as NVDA sees it), rather than TCM_GETCURSEL.
-    if (HWND tab = findFormatTab()) {
-        IAccessible* accessible = nullptr;
-        if (SUCCEEDED(AccessibleObjectFromWindow(tab, OBJID_CLIENT, IID_IAccessible,
-            reinterpret_cast<void**>(&accessible))) && accessible) {
-            LONG count = 0;
-            if (SUCCEEDED(accessible->get_accChildCount(&count))) {
-                for (LONG i = 1; i <= count && i <= 16; ++i) {
-                    VARIANT child{}; child.vt = VT_I4; child.lVal = i;
-                    VARIANT state{}; VariantInit(&state);
-                    BSTR name = nullptr;
-                    if (SUCCEEDED(accessible->get_accName(child, &name)) && name) {
-                        const auto label = lower(std::wstring(name, SysStringLen(name)));
-                        SysFreeString(name);
-                        const bool primary = label.find(L"primary") != std::wstring::npos;
-                        const bool secondary = label.find(L"secondary") != std::wstring::npos;
-                        if ((primary || secondary || count == 2) &&
-                            SUCCEEDED(accessible->get_accState(child, &state)) &&
-                            state.vt == VT_I4 && (state.lVal & STATE_SYSTEM_SELECTED)) {
-                            const int result = primary ? 0 : secondary ? 1 : static_cast<int>(i - 1);
-                            VariantClear(&state);
-                            accessible->Release();
-                            return result;
-                        }
-                    }
-                    VariantClear(&state);
-                }
-            }
-            accessible->Release();
+            const int page = static_cast<int>(SendMessageW(tab, TCM_GETCURSEL, 0, 0));
+            if (page == 0 || page == 1) return page;
         }
     }
     return -1;
 }
 bool RenderNavigation::inFormatArea(HWND focus) const {
     if (!render_ || !focus) return false;
-    if (const HWND tab = findFormatTab()) if (isDescendant(tab, focus)) return true;
+    if (const HWND tab = findFormatTab())
+        if (tab != render_ && isDescendant(tab, focus)) return true;
     if (const HWND host = directOrNested(render_, 58000)) if (isDescendant(host, focus)) return true;
     // In several REAPER releases the output-format ComboBox is a sibling
     // of the replaceable settings subdialog, not a child of it.
@@ -445,68 +506,31 @@ void RenderNavigation::rememberFocus(HWND focus) {
 }
 bool RenderNavigation::changePage(int page) {
     if (page < 0 || page > 1) return false;
-    HWND tab = findFormatTab();
+    const HWND tab = findFormatTab();
     if (!tab) return false;
-    const HWND old = GetFocus();
+    const HWND previous = GetFocus();
     const int current = selectedPage();
-    if (inFormatArea(old)) rememberFocus(old);
+    if (inFormatArea(previous)) rememberFocus(previous);
     if (current != page) {
-        // A tab selection changes only the visible SETTINGS PAGE, not the
-        // chosen output codec or any render parameter.
-        if (!focusControl(tab)) return false;
-        const auto cls = klass(tab);
-        bool selectedUsingMSAA = false;
-        IAccessible* acc = nullptr;
-        if (SUCCEEDED(AccessibleObjectFromWindow(tab, OBJID_CLIENT, IID_IAccessible,
-            reinterpret_cast<void**>(&acc))) && acc) {
-            LONG count = 0;
-            if (SUCCEEDED(acc->get_accChildCount(&count))) {
-                for (LONG i = 1; i <= count && i <= 16; ++i) {
-                    VARIANT item{}; item.vt = VT_I4; item.lVal = i;
-                    BSTR caption = nullptr;
-                    if (SUCCEEDED(acc->get_accName(item, &caption)) && caption) {
-                        const auto label = lower(std::wstring(caption, SysStringLen(caption)));
-                        SysFreeString(caption);
-                        const bool matches = (page == 0 ?
-                            label.find(L"primary") != std::wstring::npos :
-                            label.find(L"secondary") != std::wstring::npos) ||
-                            (count == 2 && i == static_cast<LONG>(page + 1));
-                        if (matches && SUCCEEDED(acc->accSelect(SELFLAG_TAKESELECTION, item))) {
-                            selectedUsingMSAA = selectedPage() == page;
-                            break;
-                        }
-                    }
-                }
-            }
-            acc->Release();
-        }
-        if (selectedUsingMSAA) { /* native tab handled selection */ }
-        else if (cls == L"systabcontrol32") {
-            // Prefer the control's native keyboard handling and its selection
-            // notifications, as if the user pressed the arrow on the tab.
-            SendMessageW(tab, WM_KEYDOWN, page > current ? VK_RIGHT : VK_LEFT, 0);
-            SendMessageW(tab, WM_KEYUP, page > current ? VK_RIGHT : VK_LEFT, 0);
-            if (selectedPage() != page) {
-                // TCM_SETCURSEL does not notify the owner automatically.
-                TabCtrl_SetCurSel(tab, page);
-                NMHDR changed{}; changed.hwndFrom = tab;
-                changed.idFrom = static_cast<UINT_PTR>(GetDlgCtrlID(tab));
-                changed.code = TCN_SELCHANGE;
-                SendMessageW(GetParent(tab), WM_NOTIFY, changed.idFrom, reinterpret_cast<LPARAM>(&changed));
-            }
-        } else if (current >= 0) {
-            // REAPER/WDL custom tabs may support the same arrow navigation.
+        AccessibleTabs tabs{};
+        if (readAccessibleTabs(tab, tabs)) {
+            if (!selectAccessibleTab(tabs, page)) return focusControl(tab);
+        } else if (klass(tab) == L"systabcontrol32") {
+            // Native page-tab keyboard handling; never send messages to the
+            // dialog itself or invent selection changes for a WDL control.
+            if (!focusControl(tab)) return false;
+            if (current < 0) return true;
             SendMessageW(tab, WM_KEYDOWN, page > current ? VK_RIGHT : VK_LEFT, 0);
             SendMessageW(tab, WM_KEYUP, page > current ? VK_RIGHT : VK_LEFT, 0);
         } else {
-            // The active page of this custom tab cannot be verified. Do not
-            // guess a direction and accidentally select the wrong tab.
+            // An unrecognized custom tab is left untouched, not guessed.
             return focusControl(tab);
         }
+        // Never move into controls from a different page if selection failed.
+        if (selectedPage() != page) return focusControl(tab);
     }
-    // REAPER may recreate the entire settings HWND tree when switching tabs.
-    // Restore by semantic control name/ID as well as by HWND so that a stale
-    // handle (or a newly reused handle) does not select an unrelated control.
+    // REAPER may replace the entire format-settings child dialog on a page
+    // switch. Rebind by ID/name rather than reusing an invalid HWND.
     refreshControls(render_);
     const HWND remembered = lastTabFocus_[page];
     if (remembered && isInRoot(remembered) && IsWindowVisible(remembered) &&
@@ -516,8 +540,6 @@ bool RenderNavigation::changePage(int page) {
     for (const auto& c : controls_)
         if (c.format && !c.tab && static_cast<int>(c.id) == lastTabId_[page] &&
             c.name == lastTabName_[page] && focusControl(c.hwnd)) return true;
-    // On first visit, prefer the format combo, then the first current-page
-    // focusable native input, otherwise leave focus on the tab itself.
     for (const auto& c : controls_)
         if (c.format && !c.tab && c.id == 1116 && focusControl(c.hwnd)) return true;
     for (const auto& c : controls_)
@@ -648,7 +670,8 @@ bool RenderNavigation::onKey(MSG& msg) {
     rememberFocus(GetFocus());
     if (ctrl && !alt && !shift && vk == 'F') {findDialog(); return find_ != nullptr;}
     if (!alt && !ctrl && vk == VK_F3) { searchStep(shift ? -1 : 1); return true; }
-    if (ctrl && !alt && vk == VK_TAB && inFormatArea(GetFocus())) {
+    if (ctrl && !alt && vk == VK_TAB &&
+        (inFormatArea(GetFocus()) || GetFocus() == findFormatTab())) {
         const int current = selectedPage();
         if (current < 0) return false;
         return changePage(1 - current);

@@ -62,6 +62,7 @@ private:
     DWORD thread_{};
     HHOOK hook_{};
     HWND render_{};
+    mutable HWND cachedFormatTab_{};
     HWND find_{};
     HWND edit_{};
     HWND focusBeforeFind_{};

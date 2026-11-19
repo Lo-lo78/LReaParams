@@ -9,7 +9,7 @@ for needle in ('WH_GETMESSAGE', 'WM_NULL', 'isRender(', 'GetForegroundWindow()',
                'Find Render control', 'VK_F3', 'VK_TAB', 'VK_RETURN', 'VK_ESCAPE',
                'VK_CONTROL', 'VK_MENU', 'focusControl(', 'refreshControls(',
                'EnumChildWindows(', 'lastTabFocus_', 'lastTabId_',
-               'lastTabName_', 'get_accName(', 'accSelect(', 'TCN_SELCHANGE'):
+               'lastTabName_', 'get_accName(', 'accSelect(', 'ROLE_SYSTEM_PAGETAB', 'get_accSelection('):
     assert needle in (src+hdr), needle
 assert 'src/RenderNavigation.cpp' in cm
 assert 'renderNavigation_.start()' in ext
@@ -31,3 +31,10 @@ for expression in (
 ):
     assert expression in src, expression
 print('TEST74.1 render focus-only source PASS')
+
+# Never synthesize tab-clicks, rendering actions or changes to render settings.
+assert 'TabCtrl_SetCurSel(' not in src
+assert 'TCN_SELCHANGE' not in src
+assert 'selectAccessibleTab(tabs, page)' in src
+assert 'if (selectedPage() != page) return focusControl(tab);' in src
+print('TEST74.2 accessible tabs PASS')
