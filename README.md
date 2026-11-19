@@ -1,10 +1,12 @@
-> **TEST74.5 — Render navigation (source-only):** Alt+Shift+letter cycles backwards
-> through native Render controls sharing the same accelerator; Alt+letter goes
-> forwards. Alt+Z now targets the main sample-rate control, with Alt+S kept
-> as an alias. Both shortcuts change focus only: no button activation or render
-> setting change. See [Render test guide](Docs/TEST74_1_RENDER_NAVIGATION.md).
-> Preserve the ReaPack history and use `Tools\push_lreaparams.cmd "Commit message"`
-> in the existing Git clone; never overwrite `index.xml`.
+## LReaParams 0.0.75 — Accessible native Render navigation (19 November 2026)
+
+Version 0.0.75 adds fast, **focus-only** navigation to REAPER's original **Render to File** dialog: **Ctrl+F** searches native controls by name, **F3 / Shift+F3** cycles search matches, and **Alt+letter / Alt+Shift+letter** cycles forward/backward among controls assigned the same accelerator. **Alt+Z** jumps to Sample rate (Alt+S alias), **Alt+1 / Alt+2** focus Primary / Secondary format tab labels, and native **Ctrl+Tab / Ctrl+Shift+Tab** are unchanged. The current Primary/Secondary context is spoken for format controls when known. **Navigation never starts rendering or changes a checkbox, button or setting**; use REAPER's native keys to activate a focused control.
+
+All 0.0.74 parameter range and floating/fixed MIDI CC features, user settings and profiles remain intact. See [0.0.75 release notes](Docs/RELEASE_NOTES_0_0_75.md), [accessible Render guide](Docs/RENDER_NAVIGATION.md) and [multilingual user guides](Guide/index.html).
+
+**GitHub/ReaPack historical safety:** from the existing Git clone (retain `.git` and `index.xml`), use `Tools\push_lreaparams.cmd "Release 0.0.75 - Accessible native Render navigation and reverse accelerators"`. Verify the Windows build, then publish stable tag **`v0.0.75`** on that commit and attach the matching installer. The unmodified `release: published` workflow uploads the standalone DLL and regenerates `index.xml` from all eligible tagged releases. Never recreate older tags, overwrite the generated index, or force-push. See [Italian publishing instructions](Docs/REAPACK_SETUP_IT.md).
+
+---
 
 ## LReaParams 0.0.74 — Parameter ranges and MIDI CC session control (18 November 2026)
 

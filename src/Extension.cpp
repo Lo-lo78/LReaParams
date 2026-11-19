@@ -277,8 +277,12 @@ public:
         case about:
             exitNavigation(false);
             ShowMessageBox(
-                "LReaParams 0.0.74 - Native REAPER extension\nRelease date: 18 November 2026\n\n"
+                "LReaParams 0.0.75 - Native REAPER extension\nRelease date: 19 November 2026\n\n"
                 "Accessible FX Params and Track Params for NVDA and OSARA.\n"
+                "New in 0.0.75: accessible navigation of REAPER's native Render to File window.\n"
+                "Render: Ctrl+F searches controls, F3/Shift+F3 moves between matches; Alt+letter/Alt+Shift+letter cycles forward/backward through assigned controls.\n"
+                "Render: Alt+Z focuses Sample rate (Alt+S alias); Alt+1/Alt+2 focuses Primary/Secondary format tabs; native Ctrl+Tab is unchanged.\n"
+                "Render accelerators change focus only: they never render, toggle a setting or alter a value.\n"
                 "New in 0.0.74: individual parameter ranges with Alt+R; fixed MIDI CC ranges with Alt+C; session-only floating CC ranges with Alt+F.\n"
                 "Range dialogs retain navigator focus after OK, Enter, Cancel or Escape; MIDI Track values refresh for NVDA.\n"
                 "Floating CC is shared across FX/Track Params for the REAPER session; Shift+C restores it and announces its channel and CC number.\n"

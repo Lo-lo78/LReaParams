@@ -1,19 +1,34 @@
-LReaParams 0.0.70 — sorgente GitHub Ready (15 novembre 2026)
+LReaParams 0.0.75 — sorgente GitHub Ready (19 novembre 2026)
 
-Novita': finestra Preferenze ad albero (Messages, Shortcuts, Advanced), shortcut
-personalizzabili indipendenti per FX e Track, titoli configurabili con
-riordino/attivazione e testo personalizzato, Ctrl+P con ripristino del parametro,
-selezione tracce non contigua con primo Shift+freccia sulla traccia corrente.
+NOVITA': navigazione nella finestra Render nativa di REAPER:
+Ctrl+F ricerca, F3/Maiusc+F3 risultati, Alt+lettera avanti,
+Alt+Maiusc+lettera indietro nei cicli, Alt+Z sample rate (Alt+S alternativo),
+Alt+1/Alt+2 schede Primary/Secondary. Tutti gli acceleratori spostano SOLO
+il focus, senza attivare controlli o cambiare impostazioni.
 
 Questo archivio contiene il SORGENTE, non la DLL o il setup compilati.
-L'indice ReaPack e le versioni storiche NON devono essere cancellati.
+Lo storico ReaPack e tutte le release precedenti NON devono andare persi.
 
-1. Estrai nella cartella Git locale gia' esistente; conserva .git e index.xml.
-2. Usa il comando protetto dalla radice del repository:
-   Tools\push_lreaparams.cmd "Release 0.0.70 - Accessible Preferences, customizable titles and track selection"
-3. Controlla il run Windows build; scarica il Setup 0.0.70 e provalo.
-4. Crea la release STABILE v0.0.70 sul commit testato e allega il Setup ZIP 0.0.70.
-5. Solo la pubblicazione della release attiva in automatico il workflow ReaPack.
-   Verifica DLL allegata, run completato e index.xml con TUTTE le vecchie versioni.
+1. Estrai NEL CLONE GIT GIA' ESISTENTE. Conserva .git e index.xml
+   presenti nella cartella locale; non creare un nuovo repository.
+2. Dalla radice del clone esegui ESCLUSIVAMENTE:
+   Tools\push_lreaparams.cmd "Release 0.0.75 - Accessible native Render navigation and reverse accelerators"
+3. Controlla Actions > Build LReaParams Windows x64 e scarica l'artefatto
+   LReaParams-0.0.75-Windows-x64-SETUP-EXE. Provalo in REAPER con NVDA/OSARA.
+4. Crea la release STABILE v0.0.75 sul commit compilato e collaudato.
+   Titolo: LReaParams 0.0.75 - Accessible Native Render Navigation
+   Descrizione: Docs/GITHUB_RELEASE_0_0_75_BODY_EN.md
+   Allega l'installer EXE 0.0.75, senza rinominarlo in una vecchia versione.
+5. Pubblicare la RELEASE (non il solo push) attiva automaticamente
+   Actions > Publish LReaParams to ReaPack.
+6. Verifica i due job build-native-release-asset e regenerate-reapack-index,
+   la DLL standalone allegata alla release e index.xml con lo storico completo.
+   Se un run fallisce, NON creare un secondo tag o forzare il push:
+   correggi il problema, poi usa workflow_dispatch con tag v0.0.75.
+7. Dopo il commit automatico di index.xml, aggiorna il clone locale:
+   git pull --rebase origin main
 
-Vedi Docs/REAPACK_SETUP_IT.md per i dettagli. Non usare push --force.
+NON modificare i file Tools/push_lreaparams.cmd,
+Tools/generate_reapack_index.py, .github/workflows/publish-reapack.yml.
+NON cancellare vecchie release/tag e NON sovrascrivere index.xml.
+Vedi Docs/REAPACK_SETUP_IT.md e Docs/RENDER_NAVIGATION.md.

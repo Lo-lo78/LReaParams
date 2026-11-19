@@ -11,7 +11,7 @@ assert 'Floating CC. Channel ' in fx
 assert 'std::to_string(session.number)' in track and 'std::to_string(session.number)' in fx
 assert 'session.suspendForFixed(false)' in track and 'session.suspendForFixed(fixedCc_)' in fx
 assert 'Fixed CC on. ' in fx and 'Fixed CC map on. ' in track
-assert '0.0.74 - Native REAPER extension' in rd('src/Extension.cpp')
+assert '0.0.75 - Native REAPER extension' in rd('src/Extension.cpp')
 for lang in ('it','es','fr','ru','zh-CN','ja'):
     for name in ('fx','track'):
         guide=rd(f'Guide/{lang}/{name}.html')

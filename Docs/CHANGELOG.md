@@ -1,3 +1,11 @@
+## LReaParams 0.0.75 — 19 November 2026
+
+- Accessible focus-only shortcuts in native Render to File: Ctrl+F control search, F3/Shift+F3 results, Alt+letter / Alt+Shift+letter bidirectional cyclic navigation.
+- Alt+Z Sample rate with Alt+S preserved; improved detection of native/custom sample-rate controls. Alt+1 / Alt+2 focus Primary/Secondary tabs, native Ctrl+Tab unchanged.
+- Format-specific controls announce Primary/Secondary when available, without selecting a new format or changing render settings.
+- Updated About, installer, Windows workflow artifacts, seven-language user guides and dedicated Render documentation.
+- Preserved every 0.0.74 parameter/MIDI CC feature, historical release documentation and automated ReaPack publisher/index generator; `index.xml` remains owned by the publisher.
+
 ## 0.0.74 — 18 November 2026
 
 - Alt+R individual FX/Track parameter ranges (including Volume); Alt+C fixed CC ranges; Alt+F session-only floating CC ranges.
