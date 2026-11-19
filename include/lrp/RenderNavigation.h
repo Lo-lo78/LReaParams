@@ -1,6 +1,6 @@
 #pragma once
 
-// TEST74.1: focus-only navigation of REAPER's native Render to File dialog.
+// TEST74.5: bidirectional focus-only Render navigation and dedicated sample rate.
 // No parameter setting, button activation, render action, or disk persistence.
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -44,6 +44,7 @@ private:
     std::wstring nearbyLabel(HWND child) const;
     void rebuildAccelerators();
     bool jumpKey(wchar_t letter);
+    bool jumpKeyDirection(wchar_t letter, int direction);
     bool focusControl(HWND target) noexcept;
     std::vector<Control> results(const std::wstring& query);
     bool searchStep(int direction);

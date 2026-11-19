@@ -94,7 +94,7 @@ const wchar_t* knownMain(int id) {
 // use captions/neighbor labels rather than mislabel WAV controls as MP3.
 std::wstring classKind(HWND h) {
     const auto cls = klass(h);
-    if (cls.find(L"combobox") != std::wstring::npos) return L"Combo";
+    if (cls.find(L"combo") != std::wstring::npos) return L"Combo";
     if (cls.find(L"edit") != std::wstring::npos) return L"Edit";
     if (cls == L"button") return L"Button";
     if (cls.find(L"trackbar") != std::wstring::npos || cls.find(L"fader") != std::wstring::npos) return L"Slider";
@@ -104,7 +104,7 @@ std::wstring classKind(HWND h) {
 bool isInput(HWND h) {
     const auto cls = klass(h);
     if (cls == L"static") return false;
-    if (cls.find(L"combobox") != std::wstring::npos || cls.find(L"edit") != std::wstring::npos ||
+    if (cls.find(L"combo") != std::wstring::npos || cls.find(L"edit") != std::wstring::npos ||
         cls == L"button" || cls.find(L"trackbar") != std::wstring::npos ||
         cls.find(L"fader") != std::wstring::npos || cls.find(L"tab") != std::wstring::npos ||
         cls.find(L"listbox") != std::wstring::npos || cls.find(L"updown") != std::wstring::npos ||
@@ -318,9 +318,14 @@ void RenderNavigation::refreshControls(HWND root) {
     controls_.clear();
     const HWND host = directOrNested(root, 58000);
     for (HWND h : children(root)) {
-        if (!IsWindowVisible(h) || !IsWindowEnabled(h) || !isInput(h)) continue;
+        if (!IsWindowVisible(h) || !IsWindowEnabled(h)) continue;
+        // REAPER can wrap its sample-rate combo in a custom HWND without
+        // the usual class/WS_TABSTOP signature. Its known dialog ID is a
+        // safe discovery hint; focusing is still subject to Win32 validation.
+        const bool sampleRateId = GetDlgCtrlID(h) == 1041 && klass(h) != L"static";
+        if (!isInput(h) && !sampleRateId) continue;
         const auto parentClass = klass(GetParent(h));
-        if (parentClass.find(L"combobox") != std::wstring::npos) continue;
+        if (parentClass.find(L"combo") != std::wstring::npos && !sampleRateId) continue;
         const bool format = host && isDescendant(host, h);
         Control entry{}; entry.hwnd = h; entry.id = static_cast<UINT>(GetDlgCtrlID(h));
         entry.format = format;
@@ -344,10 +349,44 @@ void RenderNavigation::refreshControls(HWND root) {
 void RenderNavigation::rebuildAccelerators() {
     accelerators_.clear(); // Preserve cycling indices across catalog refreshes.
     std::vector<bool> assigned(controls_.size(), false);
+
+    // Reserve Z for the main Render sample-rate input. Prefer the known native
+    // ID, but also support REAPER versions that expose it under a different
+    // ID with an accessible name/nearby label. Never confuse it with the
+    // separate "Use project sample rate" checkbox or a codec-specific field.
+    size_t sampleRate = controls_.size();
+    for (int pass = 0; pass < 2 && sampleRate == controls_.size(); ++pass) {
+        for (size_t j = 0; j < controls_.size(); ++j) {
+            const auto& control = controls_[j];
+            if (control.format || control.tab || control.tabPage >= 0) continue;
+            const auto cls = klass(control.hwnd);
+            if (cls == L"button" || cls == L"static") continue;
+            const bool inputLike = cls.find(L"combo") != std::wstring::npos ||
+                cls.find(L"edit") != std::wstring::npos ||
+                (GetWindowLongPtrW(control.hwnd, GWL_STYLE) & WS_TABSTOP) != 0;
+            if (!inputLike && control.id != 1041) continue;
+            const auto name = lower(control.name);
+            const bool namedSampleRate = name == L"sample rate";
+            if ((pass == 0 && control.id == 1041) ||
+                (pass == 1 && namedSampleRate)) {
+                sampleRate = j;
+                break;
+            }
+        }
+    }
+    // An absent/disabled rate combo must not make Alt+Z jump elsewhere.
+    accelerators_[L'z'];
+    if (sampleRate < controls_.size()) {
+        accelerators_[L'z'].push_back(controls_[sampleRate].hwnd);
+        // Preserve the earlier TEST74.4 Alt+S shortcut as an alias.
+        accelerators_[L's'].push_back(controls_[sampleRate].hwnd);
+        assigned[sampleRate] = true;
+    }
+
     // Explicit single-key anchors retain the user's preferred gestures.
     // The renderer is never started by Alt+R: SetFocus is the ONLY operation.
     constexpr std::pair<wchar_t, int> pinned[] = {
-        {L'r',1},{L't',1046},{L's',1041},{L'n',1013},{L'd',1007},
+        {L'r',1},{L't',1046},{L'n',1013},{L'd',1007},
         {L'f',1116},{L'o',1003},{L'b',1002},{L'c',1397},
         {L'p',1057},{L'w',1065},{L'q',1447},{L'g',1449},
         {L'v',1001},{L'e',1000},{L'i',1042},{L'h',1307}
@@ -396,16 +435,44 @@ bool RenderNavigation::focusControl(HWND target) noexcept {
     inJump_ = true;
     SetFocus(target);
     inJump_ = false;
-    return GetFocus() == target;
+    const HWND focused = GetFocus();
+    // A native combo can put keyboard focus on its inner edit HWND.
+    return focused == target || (focused && IsChild(target, focused));
 }
 bool RenderNavigation::jumpKey(wchar_t letter) {
+    return jumpKeyDirection(letter, +1);
+}
+bool RenderNavigation::jumpKeyDirection(wchar_t letter, int direction) {
     refreshControls(render_);
     const auto it = accelerators_.find(letter);
     if (it == accelerators_.end() || it->second.empty()) return false;
-    const size_t oldCycle = cycle_[letter];
-    for (size_t i = 0; i < it->second.size(); ++i) {
-        const size_t index = (oldCycle + i) % it->second.size();
-        const HWND target = it->second[index];
+    const auto& targets = it->second;
+    const size_t count = targets.size();
+    const bool reverse = direction < 0;
+
+    // A fresh reverse cycle begins at the last item. When the user is already
+    // on one of the letter's controls, both directions continue from there;
+    // otherwise use the saved next-forward position across other shortcuts.
+    const auto previous = cycle_.find(letter);
+    size_t first = 0;
+    if (previous == cycle_.end()) {
+        first = reverse ? count - 1 : 0;
+    } else {
+        const size_t nextForward = previous->second % count;
+        const size_t reverseOffset = 2 % count;
+        first = reverse ? (nextForward + count - reverseOffset) % count : nextForward;
+    }
+    const HWND focused = GetFocus();
+    for (size_t i = 0; i < count; ++i) {
+        if (focused && (targets[i] == focused || IsChild(targets[i], focused))) {
+            first = reverse ? (i + count - 1) % count : (i + 1) % count;
+            break;
+        }
+    }
+    for (size_t attempt = 0; attempt < count; ++attempt) {
+        const size_t index = reverse ? (first + count - attempt) % count
+                                     : (first + attempt) % count;
+        const HWND target = targets[index];
         // Only controls actually inside the format page receive this context.
         // Main Render controls do not inherit the currently selected format tab.
         bool insideFormatPage = false;
@@ -416,15 +483,14 @@ bool RenderNavigation::jumpKey(wchar_t letter) {
             }
         }
         const int page = insideFormatPage ? selectedFormatPage() : -1;
-        // Say the brief page context BEFORE the native focus event, so NVDA can
-        // announce the actual control immediately afterward. Never change any
-        // selection, field value or rendering option to obtain this context.
+        // Announce the page before NVDA's native control focus announcement.
+        // Neither direction changes the format selection or any render value.
         if (page >= 0 && speak_ && isInRoot(target) &&
             IsWindowVisible(target) && IsWindowEnabled(target)) {
             speak_(page == 0 ? "Primary" : "Secondary");
         }
         if (focusControl(target)) {
-            cycle_[letter] = (index+1) % it->second.size();
+            cycle_[letter] = (index + 1) % count;
             return true;
         }
     }
@@ -663,9 +729,12 @@ bool RenderNavigation::onKey(MSG& msg) {
     const UINT vk = static_cast<UINT>(msg.wParam);
     if (ctrl && !alt && !shift && vk == 'F') {findDialog(); return find_ != nullptr;}
     if (!alt && !ctrl && vk == VK_F3) { searchStep(shift ? -1 : 1); return true; }
-    if (alt && !ctrl && !shift) {
-        if (vk == '1' || vk == '2') return focusPageTab(vk == '1' ? 0 : 1);
-        if (vk >= 'A' && vk <= 'Z') return jumpKey(static_cast<wchar_t>(vk - 'A' + L'a'));
+    if (alt && !ctrl) {
+        if (!shift && (vk == '1' || vk == '2'))
+            return focusPageTab(vk == '1' ? 0 : 1);
+        if (vk >= 'A' && vk <= 'Z')
+            return shift ? jumpKeyDirection(static_cast<wchar_t>(vk - 'A' + L'a'), -1)
+                         : jumpKey(static_cast<wchar_t>(vk - 'A' + L'a'));
     }
     return false;
 }

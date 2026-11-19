@@ -1,3 +1,11 @@
+> **TEST74.5 — Render navigation (source-only):** Alt+Shift+letter cycles backwards
+> through native Render controls sharing the same accelerator; Alt+letter goes
+> forwards. Alt+Z now targets the main sample-rate control, with Alt+S kept
+> as an alias. Both shortcuts change focus only: no button activation or render
+> setting change. See [Render test guide](Docs/TEST74_1_RENDER_NAVIGATION.md).
+> Preserve the ReaPack history and use `Tools\push_lreaparams.cmd "Commit message"`
+> in the existing Git clone; never overwrite `index.xml`.
+
 ## LReaParams 0.0.74 — Parameter ranges and MIDI CC session control (18 November 2026)
 
 This release introduces independent **Alt+R** ranges per FX/Track parameter, including Volume, and **Alt+C** ranges from 0–127 for an already assigned fixed MIDI CC. **Alt+F** sets a session-only range for the learned floating CC. The accessible dialogs offer Minimum, Maximum, OK and Cancel and return to the original parameter on confirmation or cancellation. Parameter ranges are displayed in the new Parameter Ranges memories column; modified fixed CC ranges appear alongside the assigned CC.

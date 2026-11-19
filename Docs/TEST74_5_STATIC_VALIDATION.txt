@@ -1,0 +1,33 @@
+LReaParams 0.0.74 TEST74.5 - Render reverse navigation and sample rate
+Source-only validation, 19 November 2026
+
+Changes limited to RenderNavigation, its test/README documentation and this report.
+- Alt+letter cycles forward; Alt+Shift+letter cycles backwards and wraps.
+- Reverse is based on the currently focused matching HWND, else the prior
+  cycle state, else the last entry for a fresh reverse cycle.
+- Alt+Z is reserved for the main Sample rate input (ID 1041, with label fallback).
+- Earlier Alt+S remains an alias for the same sample rate control.
+- Supports native combo controls that focus a child edit.
+- Existing Ctrl+F/F3, Alt+1/Alt+2, tab read-only context and native Ctrl+Tab
+  are unchanged. Both accelerator directions change focus only.
+- Disabled controls remain disabled and cannot be focused.
+- No changes to Tools/push_lreaparams.cmd, Tools/generate_reapack_index.py,
+  .github/workflows/publish-reapack.yml or the Git/ReaPack publishing scheme.
+
+PASS: Testing/test74_1_render_navigation_static.py
+PASS: Testing/test74_2_render_accessible_tabs_static.py
+PASS: Testing/test74_4_render_tab_context_static.py
+PASS: Testing/test74_5_render_reverse_and_samplerate_static.py
+PASS: Testing/test74_release_floating_cc_speech_static.py
+PASS: Testing/test65_1_1_optional_reapack_index_static.py
+PASS: Testing/test65_1_reapack_release_automation_static.py
+PASS: Testing/test68_stable_used_release_static.py
+PASS: Testing/test68_tag_preservation_static.py
+PASS: Testing/test73_1_ranges_static.py
+PASS: Testing/test73_2_range_modal_focus_static.py
+PASS: Testing/test73_3_floating_cc_and_track_review_static.py
+PASS: Testing/test73_4_fixed_floating_toggle_static.py
+
+Full Tools/run_static.py exceeded the available execution limit while still
+running historical suites. This is not evidence of a build failure.
+Not run: Windows MSVC compilation; live REAPER/NVDA/OSARA tests.

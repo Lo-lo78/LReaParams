@@ -13,10 +13,14 @@ rendering API, preference changes, or setting writes are performed.
   tab item itself**, not a field or a previously visited control inside it.
 - Ctrl+Tab and Ctrl+Shift+Tab are **not intercepted** by this module. Their
   native REAPER behavior is retained without a special page-switch handler.
-- Alt+letter navigates directly to a control. The first suitable unused
-  letter from its name is preferred; when no distinct letter remains the
-  shortcut cycles through controls sharing that letter. The main anchors are:
-  Alt+R Render, Alt+T Tail, Alt+S Sample rate, Alt+N File name,
+- Alt+letter navigates directly to a control. **Alt+Shift+letter goes
+  backwards** through the same group of controls. When multiple controls
+  share a letter, both shortcuts cycle with wraparound; changing direction
+  starts from the currently focused matching control whenever possible.
+  The first suitable unused letter from a name is preferred; when no
+  distinct letter remains, the shortcut cycles through sharing controls.
+  The main anchors are:
+  Alt+R Render, Alt+T Tail, **Alt+Z Sample rate** (Alt+S remains an alias), Alt+N File name,
   Alt+D Output directory, Alt+F Output format, Alt+O Source, Alt+B Bounds,
   Alt+C Channels, Alt+P Presets, Alt+W Wildcards, Alt+Q Queue,
   Alt+G Save settings, Alt+V Render speed, Alt+E Resample,
@@ -40,7 +44,10 @@ current child control signatures. All other windows (including subdialogs,
 render progress, queues and other programs) are left untouched.
 
 A fresh walk of all visible/enabled keyboard-focusable children is used for
-search and accelerators. Format-dependent controls are discovered dynamically
+search and accelerators. A main sample-rate widget using native ID 1041 is
+also admitted even if REAPER supplies a nonstandard class/Tab-stop; a
+labeled replacement is considered if the native ID is missing. Alt+Z is
+reserved for sample rate alone. Disabled native controls cannot be focused. Format-dependent controls are discovered dynamically
 instead of being hardcoded as an exhaustive list. An optional ID-to-label
 mapping improves access to older REAPER render controls. Labels for unknown
 controls are recovered from native captions/nearby static labels.
@@ -59,6 +66,9 @@ available instead of guessing or jumping into a format field.
 1. Open 40015 from Ctrl+Alt+R, File menu and Actions list. Original focus and
    Tab/Shift+Tab, selection, Space, Enter and rendering must be unchanged.
 2. Search `sample`, Enter, then NVDA must read the native sample-rate combo.
+   Press Alt+Z to jump directly there without modifying the sample rate; verify
+   Alt+S still reaches the same input. If the combo is disabled by REAPER,
+   first make it available with the native "Use project sample rate" setting.
 3. Search `format`, Enter, then F3/Shift+F3 and test wraparound; no setting
    may change when merely moving focus.
 4. Search a native button (`render`), then press Alt+R. The render must NOT
@@ -66,7 +76,10 @@ available instead of guessing or jumping into a format field.
 5. Alt+T focuses Tail without toggling it. Alt+1 and Alt+2 focus the
    Primary/Secondary tab *labels themselves* (verify NVDA reads the tab).
    Ctrl+Tab / Ctrl+Shift+Tab must NOT be overridden by LReaParams.
-6. Test Alt+letter inside both output format pages: the brief Primary or
+6. Test Alt+letter and Alt+Shift+letter on a key that cycles through several
+   controls. After two forward moves, reverse should return to the previous
+   item, then continue backwards, including wraparound. Check that either
+   direction only changes focus. Test both gestures inside output format pages: the brief Primary or
    Secondary announcement should match the selected native tab, while NVDA
    reads the target control normally. Outside those pages, no page prefix.
 7. Test WAV/FLAC/MP3/video-specific fields and enabled/disabled conditions.
