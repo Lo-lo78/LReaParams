@@ -2,6 +2,7 @@
 from pathlib import Path
 import importlib.util
 import xml.etree.ElementTree as ET
+from reapack_index_contract import verify_optional_reapack_index
 
 root = Path(__file__).resolve().parents[1]
 rd = lambda p: (root / p).read_text(encoding='utf-8')
@@ -27,7 +28,9 @@ assert 'types: [published]' in rd('.github/workflows/publish-reapack.yml')
 assert 'ref: ${{ env.RELEASE_TAG }}' in rd('.github/workflows/publish-reapack.yml')
 assert 'git restore --source=origin/main --staged --worktree -- index.xml' in rd('Tools/push_lreaparams.cmd')
 assert 'git pull --rebase origin main' in rd('Tools/push_lreaparams.cmd')
-assert not (root / 'index.xml').exists(), 'Source release must not include generated index.xml'
+# A source archive omits the generated index.xml, but the Git checkout on main
+# normally contains it. Preserve it and verify its structure if present.
+verify_optional_reapack_index(root)
 
 spec = importlib.util.spec_from_file_location('reapack', root / 'Tools/generate_reapack_index.py')
 m = importlib.util.module_from_spec(spec)
