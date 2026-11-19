@@ -52,6 +52,7 @@ private:
     void closeFind() noexcept;
     HWND findFormatTab() const;
     bool focusPageTab(int page);
+    int selectedFormatPage() const; // Read-only: never selects a tab or changes render settings.
     void resetDialog() noexcept;
     bool namedFocus(const wchar_t* name) noexcept;
     std::function<void(const std::string&)> speak_;

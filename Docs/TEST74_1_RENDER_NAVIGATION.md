@@ -21,6 +21,12 @@ rendering API, preference changes, or setting writes are performed.
   Alt+C Channels, Alt+P Presets, Alt+W Wildcards, Alt+Q Queue,
   Alt+G Save settings, Alt+V Render speed, Alt+E Resample,
   Alt+I Silently increment, Alt+H Dither.
+- When Alt+letter reaches a control inside the currently displayed output-
+  format page, LReaParams briefly announces **Primary** or **Secondary**
+  before leaving the native control to NVDA. This context is read from the
+  selected tab's native Windows/MSAA state: if that state is not available,
+  LReaParams stays silent rather than guessing. Other Render controls do
+  not receive a misleading page prefix.
 - **An Alt+letter moves focus only. It NEVER presses a button, starts a
   render, changes a checkbox, chooses a format or writes a project setting.**
   Use REAPER's original Space/Enter/arrows yourself after reaching it.
@@ -60,10 +66,13 @@ available instead of guessing or jumping into a format field.
 5. Alt+T focuses Tail without toggling it. Alt+1 and Alt+2 focus the
    Primary/Secondary tab *labels themselves* (verify NVDA reads the tab).
    Ctrl+Tab / Ctrl+Shift+Tab must NOT be overridden by LReaParams.
-6. Test WAV/FLAC/MP3/video-specific fields and enabled/disabled conditions.
-7. Open a Metadata, File chooser or Normalize subdialog: Render-specific
+6. Test Alt+letter inside both output format pages: the brief Primary or
+   Secondary announcement should match the selected native tab, while NVDA
+   reads the target control normally. Outside those pages, no page prefix.
+7. Test WAV/FLAC/MP3/video-specific fields and enabled/disabled conditions.
+8. Open a Metadata, File chooser or Normalize subdialog: Render-specific
    keys must stop intercepting until the original Render window regains focus.
-8. Close Render or start a render and confirm all shortcuts behave normally
+9. Close Render or start a render and confirm all shortcuts behave normally
    elsewhere in REAPER, without OSARA duplicate announcements.
 
 **Not yet verified on a live Windows REAPER build:** exact tab-control class,

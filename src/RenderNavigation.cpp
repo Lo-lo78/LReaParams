@@ -405,7 +405,25 @@ bool RenderNavigation::jumpKey(wchar_t letter) {
     const size_t oldCycle = cycle_[letter];
     for (size_t i = 0; i < it->second.size(); ++i) {
         const size_t index = (oldCycle + i) % it->second.size();
-        if (focusControl(it->second[index])) {
+        const HWND target = it->second[index];
+        // Only controls actually inside the format page receive this context.
+        // Main Render controls do not inherit the currently selected format tab.
+        bool insideFormatPage = false;
+        for (const auto& c : controls_) {
+            if (c.hwnd == target && c.format && !c.tab) {
+                insideFormatPage = true;
+                break;
+            }
+        }
+        const int page = insideFormatPage ? selectedFormatPage() : -1;
+        // Say the brief page context BEFORE the native focus event, so NVDA can
+        // announce the actual control immediately afterward. Never change any
+        // selection, field value or rendering option to obtain this context.
+        if (page >= 0 && speak_ && isInRoot(target) &&
+            IsWindowVisible(target) && IsWindowEnabled(target)) {
+            speak_(page == 0 ? "Primary" : "Secondary");
+        }
+        if (focusControl(target)) {
             cycle_[letter] = (index+1) % it->second.size();
             return true;
         }
@@ -465,6 +483,44 @@ HWND RenderNavigation::findFormatTab() const {
     }
     return nullptr;
 }
+// A format control can be shown by either output-format page. Determine the
+// ACTIVE page from REAPER's native accessibility state, not from its caption,
+// focus history or the position of a control in the window. Read-only.
+int RenderNavigation::selectedFormatPage() const {
+    const HWND tab = findFormatTab();
+    if (!tab) return -1;
+    if (klass(tab) == L"systabcontrol32") {
+        const LRESULT selected = SendMessageW(tab, TCM_GETCURSEL, 0, 0);
+        return selected == 0 || selected == 1 ? static_cast<int>(selected) : -1;
+    }
+    AccessibleTabs tabs{};
+    if (!readAccessibleTabs(tab, tabs)) return -1;
+    IAccessible* acc = nullptr;
+    if (FAILED(AccessibleObjectFromWindow(tabs.window, OBJID_CLIENT, IID_IAccessible,
+        reinterpret_cast<void**>(&acc))) || !acc) return -1;
+    bool selected[2]{};
+    for (int page = 0; page < 2; ++page) {
+        VARIANT child{}; child.vt = VT_I4; child.lVal = tabs.items[page];
+        VARIANT state{}; VariantInit(&state);
+        if (SUCCEEDED(acc->get_accState(child, &state)) && state.vt == VT_I4 &&
+            (state.lVal & STATE_SYSTEM_SELECTED)) selected[page] = true;
+        VariantClear(&state);
+    }
+    // Some custom tab providers expose the selected item through
+    // get_accSelection instead of STATE_SYSTEM_SELECTED.
+    if (selected[0] == selected[1]) {
+        VARIANT selection{}; VariantInit(&selection);
+        if (SUCCEEDED(acc->get_accSelection(&selection)) && selection.vt == VT_I4) {
+            for (int page = 0; page < 2; ++page)
+                if (selection.lVal == tabs.items[page]) selected[page] = true;
+        }
+        VariantClear(&selection);
+    }
+    acc->Release();
+    // Never announce Primary/Secondary if both/neither were confirmed.
+    return selected[0] != selected[1] ? (selected[0] ? 0 : 1) : -1;
+}
+
 bool RenderNavigation::focusPageTab(int page) {
     if (page < 0 || page > 1) return false;
     const HWND tab = findFormatTab();
