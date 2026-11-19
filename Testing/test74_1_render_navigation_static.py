@@ -6,10 +6,9 @@ hdr = (root / 'include/lrp/RenderNavigation.h').read_text(encoding='utf-8')
 ext = (root / 'src/Extension.cpp').read_text(encoding='utf-8')
 cm = (root / 'CMakeLists.txt').read_text(encoding='utf-8')
 for needle in ('WH_GETMESSAGE', 'WM_NULL', 'isRender(', 'GetForegroundWindow()',
-               'Find Render control', 'VK_F3', 'VK_TAB', 'VK_RETURN', 'VK_ESCAPE',
+               'Find Render control', 'VK_F3', 'VK_RETURN', 'VK_ESCAPE',
                'VK_CONTROL', 'VK_MENU', 'focusControl(', 'refreshControls(',
-               'EnumChildWindows(', 'lastTabFocus_', 'lastTabId_',
-               'lastTabName_', 'get_accName(', 'accSelect(', 'ROLE_SYSTEM_PAGETAB', 'get_accSelection('):
+               'EnumChildWindows(', 'get_accName(', 'accSelect(', 'ROLE_SYSTEM_PAGETAB', 'SELFLAG_TAKEFOCUS'):
     assert needle in (src+hdr), needle
 assert 'src/RenderNavigation.cpp' in cm
 assert 'renderNavigation_.start()' in ext
@@ -35,6 +34,6 @@ print('TEST74.1 render focus-only source PASS')
 # Never synthesize tab-clicks, rendering actions or changes to render settings.
 assert 'TabCtrl_SetCurSel(' not in src
 assert 'TCN_SELCHANGE' not in src
-assert 'selectAccessibleTab(tabs, page)' in src
-assert 'if (selectedPage() != page) return focusControl(tab);' in src
+assert 'focusAccessibleTab(tabs, page)' in src
+assert 'focusPageTab(c.tabPage)' in src
 print('TEST74.2 accessible tabs PASS')

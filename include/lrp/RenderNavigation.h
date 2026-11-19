@@ -51,10 +51,7 @@ private:
     void finishFind(bool accept);
     void closeFind() noexcept;
     HWND findFormatTab() const;
-    int selectedPage() const;
-    bool changePage(int page);
-    bool inFormatArea(HWND focus) const;
-    void rememberFocus(HWND focus);
+    bool focusPageTab(int page);
     void resetDialog() noexcept;
     bool namedFocus(const wchar_t* name) noexcept;
     std::function<void(const std::string&)> speak_;
@@ -71,9 +68,6 @@ private:
     std::wstring query_;
     HWND lastResult_{};
     int lastResultPage_ = -1;
-    HWND lastTabFocus_[2]{};
-    int lastTabId_[2]{-1, -1};
-    std::wstring lastTabName_[2];
     std::vector<Control> controls_;
     std::map<wchar_t, std::vector<HWND>> accelerators_;
     std::map<wchar_t, size_t> cycle_;

@@ -9,9 +9,10 @@ rendering API, preference changes, or setting writes are performed.
 - Ctrl+F opens a small search field. Type a control name, Enter focuses the
   first currently visible matching control, Escape restores prior focus.
 - F3 / Shift+F3 focus next / previous result immediately (wrap around).
-- Alt+1 / Alt+2 navigate to Primary / Secondary output-format page.
-- Ctrl+Tab / Ctrl+Shift+Tab switch between the two output-format pages only
-  when the focus is inside the tab, format selector or format-settings area.
+- Alt+1 / Alt+2 focus the **Primary output format / Secondary output format
+  tab item itself**, not a field or a previously visited control inside it.
+- Ctrl+Tab and Ctrl+Shift+Tab are **not intercepted** by this module. Their
+  native REAPER behavior is retained without a special page-switch handler.
 - Alt+letter navigates directly to a control. The first suitable unused
   letter from its name is preferred; when no distinct letter remains the
   shortcut cycles through controls sharing that letter. The main anchors are:
@@ -38,10 +39,14 @@ instead of being hardcoded as an exhaustive list. An optional ID-to-label
 mapping improves access to older REAPER render controls. Labels for unknown
 controls are recovered from native captions/nearby static labels.
 
-The two tabs are selected using the native tab-control/MSAA interface when
-available; selection changes the VISIBLE PAGE only and never touches any
-render value. Each tab remembers its last focus by HWND, control ID and name,
-with safe fallback if REAPER has recreated its child controls.
+Alt+1/Alt+2 only move keyboard focus to the corresponding native tab item.
+For MSAA child tabs this uses `SELFLAG_TAKEFOCUS` (not selection); for a Win32
+`SysTabControl32`, `TCM_SETCURFOCUS` targets the requested tab item. Depending
+on REAPER's standard tab semantics, moving focus can also display that tab's
+page, but never adjusts a rendering setting. The previous page-control focus
+memory and Ctrl+Tab override have been removed. If a custom tab item cannot
+be focused unambiguously, the shortcut leaves REAPER's native navigation
+available instead of guessing or jumping into a format field.
 
 ## Acceptance checks (requires Windows REAPER with NVDA/OSARA)
 
@@ -52,8 +57,9 @@ with safe fallback if REAPER has recreated its child controls.
    may change when merely moving focus.
 4. Search a native button (`render`), then press Alt+R. The render must NOT
    start until you personally press REAPER's native Space/Enter.
-5. Alt+T focuses Tail without toggling it; Alt+1/Alt+2 navigate the tab pages.
-   Ctrl+Tab restores each remembered control when the page is revisited.
+5. Alt+T focuses Tail without toggling it. Alt+1 and Alt+2 focus the
+   Primary/Secondary tab *labels themselves* (verify NVDA reads the tab).
+   Ctrl+Tab / Ctrl+Shift+Tab must NOT be overridden by LReaParams.
 6. Test WAV/FLAC/MP3/video-specific fields and enabled/disabled conditions.
 7. Open a Metadata, File chooser or Normalize subdialog: Render-specific
    keys must stop intercepting until the original Render window regains focus.
