@@ -1,5 +1,6 @@
 #include "lrp/InputRouter.h"
 #include "lrp/TransportMarkers.h"
+#include "lrp/ShortcutHelp.h"
 #include <cwchar>
 #include <cwctype>
 
@@ -94,8 +95,41 @@ void InputRouter::stop() noexcept {
     if (current_ == this) current_ = nullptr;
     swallowed_.fill(nullptr); head_ = tail_ = 0; originalRoot_ = floating_ = ownedWindow_ = nullptr;
     exitRequested_ = false; escapeHookOnly_ = false;
+    helpMode_ = false; helpFocus_ = nullptr;
 }
-void InputRouter::requestExit() noexcept { capturing_ = false; exitRequested_ = true; head_ = tail_ = 0; }
+void InputRouter::requestExit() noexcept {
+    capturing_ = false; exitRequested_ = true; head_ = tail_ = 0;
+    helpMode_ = false; helpFocus_ = nullptr;
+}
+void InputRouter::sayHelp(const std::string& message) noexcept {
+    try { if (helpSpeech_) helpSpeech_(message); } catch (...) {}
+}
+bool InputRouter::inspectKey(const Key& physical) noexcept {
+    if (shortcutHelpToggle(physical)) {
+        if (physical.repeat) return true;
+        helpMode_ = !helpMode_;
+        helpFocus_ = helpMode_ ? GetFocus() : nullptr;
+        // Never execute commands queued just before entering inspector mode.
+        head_ = tail_ = 0;
+        sayHelp(helpMode_ ?
+            "LReaParams shortcut help on. Press a shortcut to hear its function. Shift F1 to exit" :
+            "LReaParams shortcut help off");
+        return true;
+    }
+    if (!helpMode_) return false;
+    if (GetFocus() != helpFocus_) {
+        helpMode_ = false; helpFocus_ = nullptr;
+        return false;
+    }
+    if (!physical.repeat && physical.vk != VK_CONTROL && physical.vk != VK_SHIFT &&
+        physical.vk != VK_MENU && physical.vk != VK_LCONTROL && physical.vk != VK_RCONTROL &&
+        physical.vk != VK_LSHIFT && physical.vk != VK_RSHIFT &&
+        physical.vk != VK_LMENU && physical.vk != VK_RMENU) {
+        try { sayHelp(shortcutHelpDescription(physical, preferences_, *navigator_)); }
+        catch (...) { sayHelp("Shortcut description unavailable"); }
+    }
+    return true;
+}
 void InputRouter::refreshAllowedWindows(HWND floating) noexcept { floating_ = floating; }
 bool InputRouter::switchOwnedWindow(HWND keyboardWindow) noexcept {
     if (!capturing_ || !ownedWindow_ || !keyboardWindow || !IsWindow(keyboardWindow) ||
@@ -149,6 +183,26 @@ bool InputRouter::route(MSG& message, bool removed) noexcept {
     // NVDA uses Insert or Numpad Insert as an NVDA modifier by default.
     // Do not treat an NVDA gesture such as NVDA+T as an unknown navigation key.
     if ((GetKeyState(VK_INSERT) & 0x8000) || (GetKeyState(VK_NUMPAD0) & 0x8000)) return false;
+    Key physical{vk, (GetKeyState(VK_CONTROL) & 0x8000) != 0,
+        (GetKeyState(VK_MENU) & 0x8000) != 0,
+        (GetKeyState(VK_SHIFT) & 0x8000) != 0,
+        (message.lParam & (1LL << 30)) != 0, message.hwnd,
+        0, (GetKeyState(VK_RMENU) & 0x8000) != 0};
+    physical.time = message.time;
+    if ((!physical.ctrl && !physical.alt) || physical.altGr)
+        physical.character = printableKey(vk);
+    if (helpMode_ || shortcutHelpToggle(physical)) {
+        if (!navigator_ || !navigator_->active() ||
+            (ownedWindow_ && (message.hwnd != ownedWindow_ || GetFocus() != ownedWindow_)) ||
+            !environmentSafe() || !safeTarget(message.hwnd) ||
+            (helpMode_ && GetFocus() != helpFocus_)) {
+            helpMode_ = false; helpFocus_ = nullptr;
+            return false; // Outside LReaParams, the gesture belongs to REAPER.
+        }
+        const bool consumed = inspectKey(physical);
+        if (consumed) swallowed_[vk] = message.hwnd;
+        return consumed;
+    }
     // Bare F12 is deliberately unassigned and reserved for this extension.
     // Never forward it to OSARA/REAPER or close navigation. Ctrl+F12 and
     // Ctrl+Shift+F12 remain slot 12; Alt+F12 remains free for OSARA watchers.
@@ -240,6 +294,13 @@ bool InputRouter::enqueueOwnedKey(HWND window, UINT vk, bool repeat) noexcept {
     key.altGr = key.ctrl && key.alt && (GetKeyState(VK_RMENU) & 0x8000);
     key.time = static_cast<DWORD>(GetMessageTime());
     if ((!key.ctrl && !key.alt) || key.altGr) key.character = printableKey(vk);
+    // In owned-window mode the WH_GETMESSAGE hook gets first refusal.
+    // This is a defensive fallback if the window dispatches a key directly.
+    if (helpMode_ || shortcutHelpToggle(key)) {
+        if (GetFocus() != window) { helpMode_ = false; helpFocus_ = nullptr; return true; }
+        inspectKey(key);
+        return true;
+    }
     // A gfx.getchar-style keyboard owner does not close on an unsupported key
     // and never leaks such a key to the TCP, FX or project.
     const bool preferencesKey = opensPreferences(key);
@@ -294,7 +355,16 @@ LRESULT CALLBACK InputRouter::hook(int code, WPARAM param, LPARAM data) noexcept
             (vk == VK_PRIOR || vk == VK_NEXT || vk == 'I' || vk == 'O' ||
              (vk >= '0' && vk <= '9')) &&
             self->swallowed_[vk] == message.hwnd;
-        if ((shortcutDown || shortcutUp) && self->navigator_ &&
+        // Help mode preempts both SDK accelerators and native TitleProxy
+        // dispatch, including key releases and keys normally owned by REAPER.
+        // Shift+F1 outside an active navigator is never intercepted.
+        const bool helpToggle = down && shortcutHelpToggle(shortcut);
+        const bool helpCapture = self->helpMode_ && (down || up);
+        const bool swallowedRelease = up && vk < self->swallowed_.size() &&
+            self->swallowed_[vk] == message.hwnd;
+        if (helpToggle || helpCapture || swallowedRelease) {
+            consumed = self->route(message, true);
+        } else if ((shortcutDown || shortcutUp) && self->navigator_ &&
             (shortcutUp || self->navigator_->accepts(shortcut))) {
             consumed = self->route(message, true);
         } else if (chordDown || chordUp) {

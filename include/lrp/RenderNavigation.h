@@ -8,6 +8,7 @@
 #endif
 #include <windows.h>
 #include <functional>
+#include <array>
 #include <map>
 #include <string>
 #include <vector>
@@ -36,6 +37,8 @@ private:
     static LRESULT CALLBACK searchWindowProc(HWND, UINT, WPARAM, LPARAM);
     static LRESULT CALLBACK searchEditProc(HWND, UINT, WPARAM, LPARAM);
     bool onKey(MSG&);
+    std::string describeHelpKey(UINT vk, bool ctrl, bool alt, bool shift);
+    void announceHelp(const std::string& message) noexcept;
     HWND renderFromFocus(HWND focus) const;
     bool isRender(HWND candidate) const;
     bool isInRoot(HWND child) const noexcept;
@@ -67,6 +70,9 @@ private:
     HWND focusBeforeFind_{};
     WNDPROC originalEditProc_{};
     bool inJump_ = false;
+    bool helpMode_ = false;
+    HWND helpFocus_{};
+    std::array<HWND, 256> helpReleases_{};
     std::wstring query_;
     HWND lastResult_{};
     int lastResultPage_ = -1;

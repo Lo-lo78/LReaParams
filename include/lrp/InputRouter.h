@@ -3,6 +3,8 @@
 #include "ReaperApi.h"
 #include "Preferences.h"
 #include <array>
+#include <functional>
+#include <string>
 
 namespace lrp {
 enum class InputBackend { sdkAccelerator, mainThreadHook, ownedWindow };
@@ -12,6 +14,8 @@ public:
     ~InputRouter();
     bool start(InputBackend backend, HWND keyboardWindow = nullptr);
     void setPreferences(const Preferences* preferences) noexcept { preferences_ = preferences; }
+    void setShortcutHelpSpeech(std::function<void(const std::string&)> speech) { helpSpeech_ = std::move(speech); }
+    bool shortcutHelpActive() const noexcept { return helpMode_; }
     // Called directly by the Lua-style keyboard window, on REAPER's UI thread.
     // Unknown keys remain inside that window instead of escaping into REAPER.
     bool enqueueOwnedKey(HWND window, UINT vk, bool repeat) noexcept;
@@ -31,7 +35,12 @@ private:
     bool interceptTransport(MSG&) noexcept;
     bool safeTarget(HWND target) const noexcept;
     void requestExit() noexcept;
+    bool inspectKey(const Key& physical) noexcept;
+    void sayHelp(const std::string& message) noexcept;
     const Preferences* preferences_ = nullptr;
+    std::function<void(const std::string&)> helpSpeech_;
+    bool helpMode_ = false;
+    HWND helpFocus_ = nullptr;
     reaper_plugin_info_t* api_;
     Navigator* navigator_;
     accelerator_register_t accelerator_{};

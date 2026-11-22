@@ -60,6 +60,7 @@ public:
     bool valid() const;
     bool contextUnchanged() const override;
     bool accepts(const Key& key) const noexcept override;
+    std::string shortcutDescription(const Key& key) const override;
     void handle(const Key& key) override;
     void announce() override;
     void announceTitle() override;

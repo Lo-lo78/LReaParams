@@ -1,4 +1,5 @@
 #include "lrp/RenderNavigation.h"
+#include "lrp/ShortcutHelp.h"
 #ifdef _WIN32
 #include <commctrl.h>
 #include <oleacc.h>
@@ -209,9 +210,12 @@ void RenderNavigation::stop() noexcept {
     if (hook_) { UnhookWindowsHookEx(hook_); hook_ = nullptr; }
     if (active_ == this) active_ = nullptr;
     resetDialog();
+    helpReleases_.fill(nullptr);
     UnregisterClassW(findClass, GetModuleHandleW(nullptr));
 }
 void RenderNavigation::resetDialog() noexcept {
+    helpMode_ = false; helpFocus_ = nullptr;
+    helpReleases_.fill(nullptr);
     render_ = nullptr;
     cachedFormatTab_ = nullptr;
     controls_.clear(); accelerators_.clear(); cycle_.clear();
@@ -254,6 +258,11 @@ void RenderNavigation::tick() noexcept {
     try {
         if (GetCurrentThreadId() != thread_ || !hook_) return;
         if (render_ && !IsWindow(render_)) {resetDialog(); return;}
+        // Leaving the Render focus context disarms help. In particular,
+        // Metadata, file pickers and the TCP must not inherit this mode.
+        if (helpMode_ && (!IsWindow(helpFocus_) || renderFromFocus(GetFocus()) != render_)) {
+            helpMode_ = false; helpFocus_ = nullptr;
+        }
         if (find_ && !IsWindow(find_)) {find_ = edit_ = nullptr; originalEditProc_ = nullptr;}
     } catch (...) {
         // Never let an optional dialog-navigation aid stop the REAPER extension.
@@ -702,21 +711,93 @@ LRESULT CALLBACK RenderNavigation::keyHook(int code, WPARAM removed, LPARAM data
     try {
         if (code >= 0 && removed == PM_REMOVE && self && data) {
             auto* msg = reinterpret_cast<MSG*>(data);
-            if ((msg->message == WM_KEYDOWN || msg->message == WM_SYSKEYDOWN) &&
-                self->onKey(*msg)) {
+            const bool down = msg->message == WM_KEYDOWN || msg->message == WM_SYSKEYDOWN;
+            const bool up = msg->message == WM_KEYUP || msg->message == WM_SYSKEYUP;
+            const UINT vk = static_cast<UINT>(msg->wParam);
+            bool consumed = false;
+            if (up && vk < self->helpReleases_.size() &&
+                self->helpReleases_[vk] == msg->hwnd) {
+                self->helpReleases_[vk] = nullptr;
+                consumed = true;
+            } else if (down && self->onKey(*msg)) {
+                // Swallow only help-mode key releases. Existing render shortcuts
+                // retain their pre-existing key-up handling.
+                if (self->helpMode_ || (vk == VK_F1 && (GetKeyState(VK_SHIFT) & 0x8000) &&
+                    !(GetKeyState(VK_CONTROL) & 0x8000) && !(GetKeyState(VK_MENU) & 0x8000)))
+                    if (vk < self->helpReleases_.size()) self->helpReleases_[vk] = msg->hwnd;
+                consumed = true;
+            }
+            if (consumed) {
                 msg->message = WM_NULL; // no native action was invoked
                 msg->wParam = 0; msg->lParam = 0;
             }
         }
     } catch (...) {
-        // Fail open: leave the native Render keystroke unchanged on error.
+        // Never let an exception trigger a Render action while inspecting.
+        // Outside help, keep the original fail-open behavior.
+        if (self && self->helpMode_ && data) {
+            auto* message = reinterpret_cast<MSG*>(data);
+            message->message = WM_NULL;
+            message->wParam = 0; message->lParam = 0;
+        }
     }
     return CallNextHookEx(self ? self->hook_ : nullptr, code, removed, data);
 }
+void RenderNavigation::announceHelp(const std::string& message) noexcept {
+    try { if (speak_) speak_(message); } catch (...) {}
+}
+std::string RenderNavigation::describeHelpKey(UINT vk, bool ctrl, bool alt, bool shift) {
+    const Key physical{vk, ctrl, alt, shift};
+    const std::string gesture = shortcutHelpKeyName(physical) + ". ";
+    if (!alt && ctrl && !shift && vk == 'F')
+        return gesture + "Find a control in the Render window";
+    if (!alt && !ctrl && vk == VK_F3) {
+        if (query_.empty()) return gesture + "No stored Render search results";
+        return gesture + (shift ? "Previous Render search result" : "Next Render search result");
+    }
+    if (!ctrl && alt && !shift && (vk == '1' || vk == '2')) {
+        if (findFormatTab()) return gesture + (vk == '1' ?
+            "Focus Primary output format tab" : "Focus Secondary output format tab");
+        return gesture + "Output format tabs unavailable";
+    }
+    if (!ctrl && alt && vk >= 'A' && vk <= 'Z') {
+        // Read the actual, current accelerator map. No SetFocus, no jumping,
+        // no cycling-index update, no activation and no render command.
+        refreshControls(render_);
+        const wchar_t letter = static_cast<wchar_t>(vk - 'A' + L'a');
+        const auto it = accelerators_.find(letter);
+        if (it == accelerators_.end() || it->second.empty())
+            return gesture + "No active Render control assigned to this letter";
+        std::vector<std::string> names;
+        for (HWND h : it->second) {
+            if (!isInRoot(h) || !IsWindowVisible(h) || !IsWindowEnabled(h)) continue;
+            for (const auto& c : controls_) {
+                if (c.hwnd != h || c.tabPage >= 0) continue;
+                const auto name = shortcutHelpUtf8(c.name);
+                if (!name.empty() && std::find(names.begin(), names.end(), name) == names.end())
+                    names.push_back(name);
+                break;
+            }
+        }
+        if (names.empty()) return gesture + "No active Render control assigned to this letter";
+        std::string result = gesture + (shift ? "Focus previous control: " : "Focus control: ");
+        for (size_t i = 0; i < names.size(); ++i) {
+            if (i) result += ", ";
+            result += names[i];
+        }
+        if (names.size() > 1) result += ". Cycles through " + std::to_string(names.size()) + " controls";
+        return result;
+    }
+    return gesture + "No LReaParams Render shortcut in this context";
+}
 bool RenderNavigation::onKey(MSG& msg) {
-    if (inJump_ || find_ || !IsWindow(msg.hwnd)) return false;
+    if (inJump_ || find_ || !IsWindow(msg.hwnd)) {
+        // Native modal/search windows are not owned by this help context.
+        if (helpMode_) { helpMode_ = false; helpFocus_ = nullptr; }
+        return false;
+    }
     HWND root = renderFromFocus(GetFocus());
-    if (!root) return false;
+    if (!root) { helpMode_ = false; helpFocus_ = nullptr; return false; }
     if (render_ != root) {resetDialog(); render_ = root;}
     if (msg.hwnd != GetFocus() && !isInRoot(msg.hwnd)) return false;
     GUITHREADINFO gui{sizeof(gui)};
@@ -725,8 +806,31 @@ bool RenderNavigation::onKey(MSG& msg) {
     const bool alt = (GetKeyState(VK_MENU) & 0x8000) != 0;
     const bool ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
     const bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
-    if (alt && ctrl) return false; // never intercept AltGr or existing multi-modifier REAPER gestures
     const UINT vk = static_cast<UINT>(msg.wParam);
+    const bool toggle = vk == VK_F1 && shift && !alt && !ctrl;
+    if (toggle || helpMode_) {
+        // The focus is intentionally never moved into a help window.
+        if (helpMode_ && GetFocus() != helpFocus_) {
+            helpMode_ = false; helpFocus_ = nullptr;
+            return false;
+        }
+        const bool repeat = (msg.lParam & (1LL << 30)) != 0;
+        if (toggle) {
+            if (!repeat) {
+                helpMode_ = !helpMode_;
+                helpFocus_ = helpMode_ ? GetFocus() : nullptr;
+                announceHelp(helpMode_ ?
+                    "LReaParams Render shortcut help on. Press a shortcut to hear its function. Shift F1 to exit" :
+                    "LReaParams Render shortcut help off");
+            }
+        } else if (!repeat && vk != VK_SHIFT && vk != VK_CONTROL && vk != VK_MENU &&
+                   vk != VK_LSHIFT && vk != VK_RSHIFT && vk != VK_LCONTROL && vk != VK_RCONTROL &&
+                   vk != VK_LMENU && vk != VK_RMENU) {
+            announceHelp(describeHelpKey(vk, ctrl, alt, shift));
+        }
+        return true; // block ALL native/extension execution during help
+    }
+    if (alt && ctrl) return false; // never intercept AltGr or existing multi-modifier REAPER gestures
     if (ctrl && !alt && !shift && vk == 'F') {findDialog(); return find_ != nullptr;}
     if (!alt && !ctrl && vk == VK_F3) { searchStep(shift ? -1 : 1); return true; }
     if (alt && !ctrl) {

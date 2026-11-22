@@ -428,6 +428,7 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             // Keep REAPER transport, the NVDA modifier and OSARA's peak watchers free.
             if ((!ctrl && !alt && !shift && (vk == VK_SPACE || vk == VK_RETURN)) ||
                 (vk == 'P' && ctrl && !alt && !shift) || // Ctrl+P always opens Preferences
+                (vk == VK_F1 && shift && !ctrl && !alt) || // Shift+F1 owns internal help
                 (vk == VK_F12 && !ctrl) || vk == VK_INSERT || vk == VK_NUMPAD0 ||
                 (vk == VK_SPACE && ctrl) ||
                 (alt && (vk == VK_F10 || vk == VK_F11 || vk == VK_F12))) {
@@ -947,7 +948,8 @@ Preferences loadPreferences(const std::filesystem::path& file) {
         if (value < 0) continue;
         const Key candidate = shortcut(static_cast<UINT>(value & 255), value >> 8);
         if (!candidate.vk || candidate.vk == VK_ESCAPE || (candidate.vk == VK_F12 && !candidate.ctrl) ||
-            (candidate.vk == 'P' && candidate.ctrl && !candidate.alt && !candidate.shift)) continue;
+            (candidate.vk == 'P' && candidate.ctrl && !candidate.alt && !candidate.shift) ||
+            (candidate.vk == VK_F1 && candidate.shift && !candidate.ctrl && !candidate.alt)) continue;
         bool duplicate = false;
         for (size_t j = 0; j < p.shortcuts.size(); ++j)
             if (i != j && p.shortcuts[i].scope == p.shortcuts[j].scope &&

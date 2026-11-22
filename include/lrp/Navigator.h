@@ -19,6 +19,8 @@ public:
     virtual bool isTrackNavigator() const noexcept { return false; }
     virtual bool contextUnchanged() const = 0;
     virtual bool accepts(const Key&) const noexcept = 0;
+    // Optional context-specific explanation. Never executes a command.
+    virtual std::string shortcutDescription(const Key&) const { return {}; }
     virtual void handle(const Key&) = 0;
     virtual void announce() = 0;
     virtual void announceTitle() = 0; // one OSARA announcement at mode entry

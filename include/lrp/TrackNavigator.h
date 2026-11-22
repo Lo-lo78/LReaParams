@@ -29,6 +29,7 @@ public:
     bool active() const noexcept override { return active_; }
     bool contextUnchanged() const override;
     bool accepts(const Key&) const noexcept override;
+    std::string shortcutDescription(const Key&) const override;
     void handle(const Key&) override;
     void announce() override;
     void announceTitle() override;

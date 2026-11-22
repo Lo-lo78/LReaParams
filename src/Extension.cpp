@@ -51,6 +51,7 @@ public:
         setTitleMessages(preferences_);
         backend_ = preferences_.compatibilityHook ? InputBackend::mainThreadHook : InputBackend::sdkAccelerator;
         input_.setPreferences(&preferences_);
+        input_.setShortcutHelpSpeech([this](const std::string& message) { speak(message); });
         navigator_.setResourceRoot(resource_);
         backgroundMidi_.setResourceRoot(resource_);
         backgroundTrackMidi_.setResourceRoot(resource_);
@@ -580,6 +581,14 @@ public:
         if (auto report = importer_.poll()) {
             OutputDebugStringA(("LReaParams " + report->summary() + "\n").c_str());
             if (announceImport_) { speak(report->summary()); announceImport_ = false; }
+        }
+        // A help session must never process delayed FX commands, MIDI-CC
+        // changes, comparison commits or keyboard navigation. Do still validate
+        // its focused owner, and release capture if the context disappears.
+        if (input_.shortcutHelpActive()) {
+            if (!current_ || !current_->active() || !current_->contextUnchanged() ||
+                !current_->uiStillOpen() || !input_.environmentSafe()) exitNavigation(false);
+            return;
         }
         // Background CC has no window/focus dependency: validate identities
         // on every REAPER main-thread tick, including while Track Params is up.
