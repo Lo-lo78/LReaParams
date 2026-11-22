@@ -525,6 +525,21 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             }
             return DefSubclassProc(hwnd, msg, wp, lp);
         }
+        // The lookup must see the REAL gesture before dialog accelerators.
+        // In particular Alt+S (Reset section), Alt+O (OK), and Alt+C (Cancel)
+        // are queries here, never button activations or edits.
+        if (hwnd == st->lookup) {
+            if (vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT ||
+                vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_LMENU ||
+                vk == VK_RMENU || vk == VK_LSHIFT || vk == VK_RSHIFT) return 0;
+            if (vk == VK_TAB && !ctrl && !alt) { pageTab(st, hwnd, shift); return 0; }
+            if (vk == VK_ESCAPE && !ctrl && !alt) {
+                SendMessageW(st->hwnd, WM_COMMAND, IDCANCEL, 0); return 0;
+            }
+            findShortcut(st, shortcut(vk, (ctrl ? kPrefCtrl : 0) |
+                (alt ? kPrefAlt : 0) | (shift ? kPrefShift : 0)));
+            return 0;
+        }
         if (hwnd == st->messages && alt && !ctrl && (vk == VK_UP || vk == VK_DOWN)) {
             reorderMessagePart(st, vk == VK_UP ? -1 : 1); return 0;
         }
@@ -537,18 +552,6 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
                 SendMessageW(st->hwnd, WM_COMMAND, vk == 'O' ? IDOK : IDCANCEL, 0);
                 return 0;
             }
-        }
-        if (hwnd == st->lookup) {
-            if (vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT ||
-                vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_LMENU ||
-                vk == VK_RMENU || vk == VK_LSHIFT || vk == VK_RSHIFT) return 0;
-            if (vk == VK_TAB && !ctrl && !alt) { pageTab(st, hwnd, shift); return 0; }
-            if (vk == VK_ESCAPE && !ctrl && !alt) {
-                SendMessageW(st->hwnd, WM_COMMAND, IDCANCEL, 0); return 0;
-            }
-            findShortcut(st, shortcut(vk, (ctrl ? kPrefCtrl : 0) |
-                (alt ? kPrefAlt : 0) | (shift ? kPrefShift : 0)));
-            return 0;
         }
         if (hwnd == st->capture) {
             if (vk == VK_ESCAPE) { cancelCapture(st); return 0; }
@@ -774,6 +777,17 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         if (GetFocus() != target) SetFocus(target);
         return 0;
     }
+    // A system-character message directed at the dialog rather than the EDIT
+    // must not turn an interrogated Alt+letter into a button mnemonic.
+    // The modal pump normally delivers these keys directly to the EDIT;
+    // this guard also covers messages delivered synchronously to the parent.
+    const HWND focusedControl = GetFocus();
+    const bool inShortcutInput = st->page == Page::shortcuts &&
+        (focusedControl == st->lookup ||
+         (st->capturing && focusedControl == st->capture));
+    if (inShortcutInput && msg == WM_SYSCHAR) return 0;
+    if (inShortcutInput && msg == WM_SYSKEYDOWN && wp != VK_TAB)
+        return SendMessageW(focusedControl, msg, wp, lp);
     if (msg == WM_SYSKEYDOWN && (GetKeyState(VK_MENU) & 0x8000) && (wp == '1' || wp == '2')) {
         st->pending.compatibilityHook = wp == '2';
         updateChoices(st);
@@ -1241,6 +1255,28 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
         // Do not let the nested modal loop claim keyboard messages from
         // unrelated REAPER windows or from another foreground application.
         const bool isDialogMessage = msg.hwnd == hwnd || (msg.hwnd && IsChild(hwnd, msg.hwnd));
+        const HWND focused = GetFocus();
+        const bool isShortcutInput = state.page == Page::shortcuts &&
+            (focused == state.lookup ||
+             (state.capturing && focused == state.capture));
+        // IsDialogMessage() performs native Alt+letter mnemonic translation.
+        // Never call it while an EDIT is interrogating/capturing a shortcut:
+        // otherwise Alt+S/Alt+O/Alt+C can click Reset/OK/Cancel first.
+        // Send the physical key directly to the subclass, and deliberately do
+        // not call TranslateMessage(), which would queue a WM_SYSCHAR that
+        // could fire after findShortcut() moves focus to the result list.
+        // Preserve Alt+Tab as a system task-switch key.
+        const bool altTab = (msg.message == WM_SYSKEYDOWN || msg.message == WM_SYSKEYUP) &&
+            msg.wParam == VK_TAB;
+        if (isDialogMessage && isShortcutInput && !altTab) {
+            if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN ||
+                msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP) {
+                SendMessageW(focused, msg.message, msg.wParam, msg.lParam);
+                continue;
+            }
+            if (msg.message == WM_CHAR || msg.message == WM_SYSCHAR ||
+                msg.message == WM_DEADCHAR || msg.message == WM_SYSDEADCHAR) continue;
+        }
         if (isDialogMessage && msg.message == WM_KEYDOWN && msg.wParam == VK_TAB &&
             !(GetKeyState(VK_CONTROL) & 0x8000) &&
             !(GetKeyState(VK_MENU) & 0x8000)) {
