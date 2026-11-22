@@ -140,12 +140,18 @@ def main():
     # Preferences is a separate, explicit user-invoked modal Win32 dialog, with
     # a narrow creation allowance. No arbitrary source file may add windows.
     preferences_src = (ROOT/'src/Preferences.cpp').read_text()
-    # TEST Preferences Tree 2: scope chooser is now two real child nodes of
-    # Shortcuts and the on-open instructional static has been removed.
-    # Keep the creation count restricted so additional focus-owning windows
-    # cannot be introduced without updating this explicit safety audit.
-    check(preferences_src.count('CreateWindowExW(') == 8 and
-          preferences_src.count('CreateWindowW(') == 3,
+    # TEST75.3: Preferences adds one child EDIT for shortcut lookup and one
+    # reset-section BUTTON. The dialog must still own exactly the expected
+    # windows: 9 CreateWindowExW (including the modal dialog) and 4
+    # CreateWindowW. Explicitly check both new controls and the Render node;
+    # do not loosen the audit into an unrestricted window allowance.
+    check(preferences_src.count('CreateWindowExW(') == 9 and
+          preferences_src.count('CreateWindowW(') == 4 and
+          'st->lookup = CreateWindowExW(' in preferences_src and
+          'st->resetSection = CreateWindowW(' in preferences_src and
+          'IDC_LOOKUP' in preferences_src and
+          'IDC_RESET_SECTION' in preferences_src and
+          'st->renderNode = insertNode(' in preferences_src,
           'Preferences native dialog window/child creation contract changed')
     for marker in ['L"LReaParamsPreferencesV1"', 'RegisterClassW(', 'WS_EX_DLGMODALFRAME',
                    'WS_EX_CONTROLPARENT', 'SetWindowSubclass(', 'IsDialogMessageW(',
