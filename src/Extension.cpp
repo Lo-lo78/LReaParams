@@ -51,6 +51,7 @@ public:
         setTitleMessages(preferences_);
         backend_ = preferences_.compatibilityHook ? InputBackend::mainThreadHook : InputBackend::sdkAccelerator;
         input_.setPreferences(&preferences_);
+        renderNavigation_.setPreferences(&preferences_);
         input_.setShortcutHelpSpeech([this](const std::string& message) { speak(message); });
         navigator_.setResourceRoot(resource_);
         backgroundMidi_.setResourceRoot(resource_);
@@ -197,6 +198,11 @@ public:
             // directly to REAPER as before.
             Navigator* suspended = current_ && current_->active() &&
                 (current_ == &navigator_ || current_ == &trackNavigator_) ? current_ : nullptr;
+            // Capture Render's real controls and focus BEFORE showing the
+            // preferences popup, never by changing codec or format pages.
+            const HWND renderOwner = renderNavigation_.activeRenderDialog();
+            const HWND focusBeforePreferences = renderOwner ? GetFocus() : nullptr;
+            const auto renderControls = renderNavigation_.preferenceControls();
             preferencesDialogOpen_ = true; // Block reentrant timer ticks in the modal message loop.
             if (suspended) {
                 // The native Win32 EDIT can still contain uncommitted text;
@@ -211,8 +217,8 @@ public:
             } else {
                 exitNavigation(false);
             }
-            const auto edited = editPreferences(info_.hwnd_main, preferences_,
-                [this](const std::string& text) { speak(text); });
+            const auto edited = editPreferences(renderOwner ? renderOwner : info_.hwnd_main, preferences_,
+                [this](const std::string& text) { speak(text); }, renderControls);
             if (!edited) {
                 speak("Preferences cancelled. Changes not saved");
             } else {
@@ -242,6 +248,14 @@ public:
                 }
             }
             preferencesDialogOpen_ = false;
+            // Return to the exact Render control used to open preferences.
+            // No format/page selection is changed by this restoration.
+            if (renderOwner && IsWindow(renderOwner) && focusBeforePreferences &&
+                IsWindow(focusBeforePreferences) &&
+                (focusBeforePreferences == renderOwner || IsChild(renderOwner, focusBeforePreferences))) {
+                SetForegroundWindow(renderOwner);
+                SetFocus(focusBeforePreferences);
+            }
             break;
         }
         case openGuide: {
@@ -567,6 +581,13 @@ public:
         // input router as the end of an FX/Track navigation session.
         renderNavigation_.tick();
         if (preferencesDialogOpen_) return;
+        // Ctrl+P in native Render is intercepted by its local keyboard hook.
+        // Open Preferences on the next normal timer tick, not reentrantly from
+        // WH_GETMESSAGE (which could otherwise hijack focus/message routing).
+        if (renderNavigation_.takePreferencesRequest()) {
+            action(actions_[preferencesAction].command);
+            return;
+        }
         // Alt+R/C/F opens a native modal dialog on this same REAPER thread.
         // Its nested message loop receives timer ticks while the focus owner
         // is disabled; treating that as lost focus would exit to the TCP.

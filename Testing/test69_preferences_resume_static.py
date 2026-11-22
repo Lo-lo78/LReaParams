@@ -8,7 +8,7 @@ tick = s.split('void tick() {',1)[1].split('void menu(',1)[0]
 assert 'Navigator* suspended = current_ && current_->active()' in case
 assert 'preferencesDialogOpen_ = true' in case
 assert 'input_.stop();' in case and 'titleProxy_.hideAndRestore();' in case
-assert case.index('input_.stop();') < case.index('editPreferences(info_.hwnd_main, preferences_,')
+assert case.index('input_.stop();') < case.index('editPreferences(')  # Render can be the modal owner
 assert 'titleProxy_.textValue()' in case and 'setNativeText(' in case
 assert 'if (suspended) {' in case
 assert 'suspended->contextUnchanged() && suspended->uiStillOpen()' in case

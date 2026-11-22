@@ -7,7 +7,17 @@
 #include <vector>
 #include <string>
 namespace lrp {
-enum class ShortcutScope { fx, track };
+enum class ShortcutScope { fx, track, render };
+// Render uses discovered controls, not a frozen automatic accelerator table.
+// Only explicit user overrides are persisted. A missing entry means automatic.
+struct RenderControlInfo {
+    std::wstring identity, description;
+    std::vector<Key> automatic; // current Render window, for shortcut lookup only
+};
+struct RenderShortcutPreference {
+    std::wstring identity, description;
+    Key assigned{};
+};
 struct ShortcutPreference { std::wstring description; Key original{}, assigned{}; ShortcutScope scope = ShortcutScope::fx; };
 // Reusable ordered title parts. FX uses five elements; Track F4 uses
 // six (Heading, Track, Name, Custom, Type, Mode). Other pages use 3/4.
@@ -21,6 +31,7 @@ struct Preferences {
     bool pluginFirst = true;
     bool compatibilityHook = false;
     std::vector<ShortcutPreference> shortcuts;
+    std::vector<RenderShortcutPreference> renderShortcuts;
     TitleMessage fxTitle;
     // Independently configurable titles: FX Memories, FX Browser and FX Pin Connector.
     // Existing FxTitle INI keys and shortcut indices remain untouched.
@@ -37,7 +48,8 @@ bool savePreferences(const std::filesystem::path& file, const Preferences& prefe
 // Transactional: cancelled dialogs do not change the supplied preferences.
 // Immediate non-modal feedback through REAPER/OSARA (no warning MessageBox).
 std::optional<Preferences> editPreferences(HWND owner, const Preferences& current,
-    const std::function<void(const std::string&)>& announce);
+    const std::function<void(const std::string&)>& announce,
+    const std::vector<RenderControlInfo>& renderControls = {});
 Key mapPreferredShortcut(Key key, const Preferences& preferences, ShortcutScope scope) noexcept;
 // Sets the shared title-format preference for FX Params and FX Memories.
 void setFxNameFirst(bool enabled) noexcept;

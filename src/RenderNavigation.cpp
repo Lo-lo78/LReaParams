@@ -10,6 +10,7 @@
 #include <cwctype>
 #include <limits>
 #include <utility>
+#include <set>
 
 namespace lrp {
 namespace {
@@ -220,6 +221,147 @@ void RenderNavigation::resetDialog() noexcept {
     cachedFormatTab_ = nullptr;
     controls_.clear(); accelerators_.clear(); cycle_.clear();
     lastResult_ = nullptr; lastResultPage_ = -1;
+}
+
+HWND RenderNavigation::activeRenderDialog() const noexcept {
+    HWND focused = GetFocus();
+    if (focused && IsWindow(focused)) {
+        HWND root = GetAncestor(focused, GA_ROOT);
+        if (root && (root == render_ || isRender(root)) && GetForegroundWindow() == root)
+            return root;
+    }
+    return nullptr;
+}
+bool RenderNavigation::takePreferencesRequest() noexcept {
+    const bool pending = pendingPreferences_;
+    pendingPreferences_ = false;
+    return pending;
+}
+std::wstring RenderNavigation::currentCodecName() const {
+    // Read the currently selected output-format combo, never change selection.
+    HWND combo = directOrNested(render_, 1116);
+    if (!combo) return L"format unknown";
+    const int index = static_cast<int>(SendMessageW(combo, CB_GETCURSEL, 0, 0));
+    if (index >= 0) {
+        const auto length = SendMessageW(combo, CB_GETLBTEXTLEN, index, 0);
+        if (length >= 0 && length < 1024) {
+            std::wstring label(static_cast<size_t>(length + 1), L'\0');
+            SendMessageW(combo, CB_GETLBTEXT, index, reinterpret_cast<LPARAM>(&label[0]));
+            label.resize(static_cast<size_t>(length));
+            if (!label.empty()) return lower(label);
+        }
+    }
+    auto label = getText(combo);
+    return label.empty() ? L"format unknown" : lower(label);
+}
+std::wstring RenderNavigation::identityFor(const Control& c) const {
+    if (c.tabPage >= 0) return L"tab|" + std::to_wstring(c.tabPage);
+    // Format-dependent controls need their CURRENT codec and page; native
+    // child IDs can be reused for different codecs. Never use HWND in INI.
+    const auto prefix = c.format ?
+        (L"codec|" + currentCodecName() + L"|page" +
+         std::to_wstring(selectedFormatPage()) + L"|") : L"main|";
+    // Include the parent identity to distinguish codec subpanels which reuse
+    // child IDs, without depending on run-specific HWND values or coordinates.
+    HWND parent = GetParent(c.hwnd);
+    const std::wstring container = parent && parent != render_ ?
+        std::to_wstring(GetDlgCtrlID(parent)) + L":" + klass(parent) : L"root";
+    return prefix + container + L"|" + std::to_wstring(c.id) +
+        L"|" + klass(c.hwnd) + L"|" + lower(c.name);
+}
+std::vector<RenderControlInfo> RenderNavigation::preferenceControls() {
+    std::vector<RenderControlInfo> result;
+    const HWND root = activeRenderDialog();
+    if (!root) return result;
+    refreshControls(root); // passive enumeration, never changes user settings
+    // Also list disabled-but-visible controls so the user can assign an
+    // override before enabling the relevant checkbox. They remain inactive
+    // until REAPER actually enables them; navigation still uses controls_.
+    std::vector<Control> snapshot = controls_;
+    const HWND host = directOrNested(root, 58000);
+    for (HWND h : children(root)) {
+        if (!IsWindowVisible(h) || IsWindowEnabled(h)) continue;
+        const bool sampleRateId = GetDlgCtrlID(h) == 1041 && klass(h) != L"static";
+        if (!isInput(h) && !sampleRateId) continue;
+        if (!sampleRateId && klass(GetParent(h)).find(L"combo") != std::wstring::npos) continue;
+        Control control{};
+        control.hwnd = h; control.id = static_cast<UINT>(GetDlgCtrlID(h));
+        control.format = host && isDescendant(host, h);
+        control.tab = klass(h).find(L"tab") != std::wstring::npos;
+        control.name = controlName(h, control.format);
+        snapshot.push_back(std::move(control));
+    }
+    std::set<std::wstring> seen;
+    for (const auto& control : snapshot) {
+        const std::wstring id = identityFor(control);
+        // Reject ambiguous identities rather than let the wrong control be
+        // focused by a persistent binding. Identically labelled siblings
+        // cannot be distinguished safely across changing REAPER versions.
+        if (!seen.insert(id).second) continue;
+        RenderControlInfo item{};
+        item.identity = id;
+        item.description = control.name;
+        if (control.format && control.tabPage < 0) {
+            item.description += L" (" + currentCodecName() + L", " +
+                (selectedFormatPage() == 1 ? L"Secondary" : L"Primary") + L")";
+        }
+        for (const auto& entry : accelerators_)
+            if (std::find(entry.second.begin(), entry.second.end(), control.hwnd) != entry.second.end()) {
+                Key k{}; k.vk = static_cast<UINT>(entry.first - L'a' + 'A'); k.alt = true;
+                item.automatic.push_back(k);
+                k.shift = true; item.automatic.push_back(k);
+            }
+        result.push_back(std::move(item));
+    }
+    return result;
+}
+const RenderShortcutPreference* RenderNavigation::overrideFor(const Key& gesture) const noexcept {
+    if (!preferences_ || gesture.altGr) return nullptr;
+    for (const auto& binding : preferences_->renderShortcuts)
+        if (binding.assigned.vk == gesture.vk && binding.assigned.ctrl == gesture.ctrl &&
+            binding.assigned.alt == gesture.alt && binding.assigned.shift == gesture.shift)
+            return &binding;
+    return nullptr;
+}
+bool RenderNavigation::autoLetterReserved(wchar_t letter) const noexcept {
+    Key automatic{}; automatic.alt = true;
+    automatic.vk = static_cast<UINT>(letter - L'a' + 'A');
+    return overrideFor(automatic) != nullptr;
+}
+void RenderNavigation::announceMissingOverride(const RenderShortcutPreference& binding) {
+    announceHelp("Render: " + shortcutHelpUtf8(binding.description) +
+        ". Control unavailable in the current output format or page");
+}
+bool RenderNavigation::focusOverride(const RenderShortcutPreference& binding) {
+    refreshControls(render_);
+    // Never act on a guessed match. An identity must resolve to exactly one
+    // currently available control. A missing codec/page does not change tabs.
+    const Control* found = nullptr;
+    for (const auto& c : controls_) if (identityFor(c) == binding.identity) {
+        if (found) { announceMissingOverride(binding); return true; }
+        found = &c;
+    }
+    if (!found) {
+        // A codec-specific control may not currently exist. In normal
+        // navigation (NEVER in Shift+F1 help), offer the corresponding tab as
+        // a focus-only landmark; do not select a codec or change render values.
+        int page = -1;
+        if (binding.identity.rfind(L"codec|", 0) == 0) {
+            if (binding.identity.find(L"|page0|") != std::wstring::npos) page = 0;
+            if (binding.identity.find(L"|page1|") != std::wstring::npos) page = 1;
+        }
+        const bool moved = page >= 0 && focusPageTab(page);
+        if (moved) {
+            announceHelp("Render: " + shortcutHelpUtf8(binding.description) +
+                ". Control unavailable. Focused " +
+                (page == 0 ? "Primary" : "Secondary") +
+                " output format tab; choose the required format");
+        } else announceMissingOverride(binding);
+        return true;
+    }
+    bool focused = found->tabPage >= 0 ? focusPageTab(found->tabPage) : focusControl(found->hwnd);
+    if (!focused) announceMissingOverride(binding);
+    return true; // always swallow this personalized shortcut
 }
 
 bool RenderNavigation::isRender(HWND root) const {
@@ -715,15 +857,24 @@ LRESULT CALLBACK RenderNavigation::keyHook(int code, WPARAM removed, LPARAM data
             const bool up = msg->message == WM_KEYUP || msg->message == WM_SYSKEYUP;
             const UINT vk = static_cast<UINT>(msg->wParam);
             bool consumed = false;
-            if (up && vk < self->helpReleases_.size() &&
-                self->helpReleases_[vk] == msg->hwnd) {
+            if (up && vk < self->helpReleases_.size() && self->helpReleases_[vk] &&
+                (self->helpReleases_[vk] == msg->hwnd || self->isInRoot(msg->hwnd))) {
+                // A personalized shortcut can move focus before its key-up;
+                // swallow that release inside Render too, not only on the old HWND.
                 self->helpReleases_[vk] = nullptr;
                 consumed = true;
             } else if (down && self->onKey(*msg)) {
                 // Swallow only help-mode key releases. Existing render shortcuts
                 // retain their pre-existing key-up handling.
-                if (self->helpMode_ || (vk == VK_F1 && (GetKeyState(VK_SHIFT) & 0x8000) &&
-                    !(GetKeyState(VK_CONTROL) & 0x8000) && !(GetKeyState(VK_MENU) & 0x8000)))
+                const bool ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+                const bool alt = (GetKeyState(VK_MENU) & 0x8000) != 0;
+                const bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+                const Key physical{vk, ctrl, alt, shift};
+                const bool personal = self->overrideFor(physical) != nullptr;
+                const bool maskedAutomatic = alt && !ctrl && vk >= 'A' && vk <= 'Z' &&
+                    self->autoLetterReserved(static_cast<wchar_t>(vk - 'A' + L'a'));
+                if (self->helpMode_ || personal || maskedAutomatic || self->pendingPreferences_ ||
+                    (vk == VK_F1 && shift && !ctrl && !alt))
                     if (vk < self->helpReleases_.size()) self->helpReleases_[vk] = msg->hwnd;
                 consumed = true;
             }
@@ -748,7 +899,17 @@ void RenderNavigation::announceHelp(const std::string& message) noexcept {
 }
 std::string RenderNavigation::describeHelpKey(UINT vk, bool ctrl, bool alt, bool shift) {
     const Key physical{vk, ctrl, alt, shift};
+    if (const auto* user = overrideFor(physical)) {
+        refreshControls(render_);
+        bool available = false;
+        for (const auto& c : controls_)
+            if (identityFor(c) == user->identity) { available = true; break; }
+        return shortcutHelpKeyName(physical) + ". " + shortcutHelpUtf8(user->description) +
+            (available ? ". Focus this Render control" : ". Control unavailable in the current format or page");
+    }
     const std::string gesture = shortcutHelpKeyName(physical) + ". ";
+    if (!alt && ctrl && !shift && vk == 'P')
+        return gesture + "Open LReaParams Preferences for the Render context";
     if (!alt && ctrl && !shift && vk == 'F')
         return gesture + "Find a control in the Render window";
     if (!alt && !ctrl && vk == VK_F3) {
@@ -765,6 +926,8 @@ std::string RenderNavigation::describeHelpKey(UINT vk, bool ctrl, bool alt, bool
         // no cycling-index update, no activation and no render command.
         refreshControls(render_);
         const wchar_t letter = static_cast<wchar_t>(vk - 'A' + L'a');
+        if (autoLetterReserved(letter))
+            return gesture + "Automatic Render shortcut replaced by a personalized assignment";
         const auto it = accelerators_.find(letter);
         if (it == accelerators_.end() || it->second.empty())
             return gesture + "No active Render control assigned to this letter";
@@ -830,7 +993,28 @@ bool RenderNavigation::onKey(MSG& msg) {
         }
         return true; // block ALL native/extension execution during help
     }
-    if (alt && ctrl) return false; // never intercept AltGr or existing multi-modifier REAPER gestures
+    if (ctrl && !alt && !shift && vk == 'P') {
+        // Postpone opening Preferences until after the message hook returns.
+        pendingPreferences_ = true;
+        return true;
+    }
+    // AltGr produces synthetic Ctrl+Alt on many international keyboards.
+    // It is not a user-defined Ctrl+Alt shortcut and must remain native.
+    if (ctrl && alt && (GetKeyState(VK_RMENU) & 0x8000)) return false;
+    Key physical{vk, ctrl, alt, shift};
+    // In a native text field do not steal ordinary unmodified typing.
+    const bool typing = !ctrl && !alt && !shift && vk >= 'A' && vk <= 'Z' &&
+        (klass(GetFocus()).find(L"edit") != std::wstring::npos);
+    if (!typing) {
+        if (const auto* binding = overrideFor(physical)) return focusOverride(*binding);
+    }
+    if (alt && !ctrl && vk >= 'A' && vk <= 'Z' &&
+        autoLetterReserved(static_cast<wchar_t>(vk - 'A' + L'a'))) {
+        // The complete automatic cycle for Alt+letter yields to an explicit
+        // user assignment, even if that user's target is currently absent.
+        return true;
+    }
+    if (alt && ctrl) return false; // preserve unassigned AltGr/REAPER gestures
     if (ctrl && !alt && !shift && vk == 'F') {findDialog(); return find_ != nullptr;}
     if (!alt && !ctrl && vk == VK_F3) { searchStep(shift ? -1 : 1); return true; }
     if (alt && !ctrl) {

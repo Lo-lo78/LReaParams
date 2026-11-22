@@ -12,6 +12,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "Preferences.h"
 
 namespace lrp {
 class RenderNavigation {
@@ -22,6 +23,12 @@ public:
     bool start() noexcept;
     void stop() noexcept;
     void tick() noexcept;
+    void setPreferences(const Preferences* prefs) noexcept { preferences_ = prefs; }
+    // Read-only scan of the currently displayed Render controls. Does not
+    // select another format or tab, invoke a button or move the focus.
+    std::vector<RenderControlInfo> preferenceControls();
+    HWND activeRenderDialog() const noexcept;
+    bool takePreferencesRequest() noexcept;
 
 private:
     struct Control {
@@ -46,6 +53,12 @@ private:
     std::wstring controlName(HWND child, bool format) const;
     std::wstring nearbyLabel(HWND child) const;
     void rebuildAccelerators();
+    std::wstring identityFor(const Control& control) const;
+    std::wstring currentCodecName() const;
+    const RenderShortcutPreference* overrideFor(const Key& gesture) const noexcept;
+    bool focusOverride(const RenderShortcutPreference& binding);
+    bool autoLetterReserved(wchar_t letter) const noexcept;
+    void announceMissingOverride(const RenderShortcutPreference& binding);
     bool jumpKey(wchar_t letter);
     bool jumpKeyDirection(wchar_t letter, int direction);
     bool focusControl(HWND target) noexcept;
@@ -61,6 +74,8 @@ private:
     bool namedFocus(const wchar_t* name) noexcept;
     std::function<void(const std::string&)> speak_;
     HWND main_{};
+    const Preferences* preferences_{};
+    bool pendingPreferences_ = false;
     DWORD thread_{};
     HHOOK hook_{};
     HWND render_{};

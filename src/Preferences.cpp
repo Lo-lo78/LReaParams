@@ -9,6 +9,7 @@
 #include <array>
 #include <cwctype>
 #include <cctype>
+#include <set>
 
 namespace lrp {
 namespace {
@@ -24,6 +25,7 @@ int lastTreeChoice = 0;
 constexpr int IDC_TREE = 101, IDC_SHORTCUTS = 103;
 constexpr int IDC_CAPTURE = 104, IDC_MESSAGES = 105, IDC_ADVANCED = 106;
 constexpr int IDC_MESSAGE_TOPICS = 107, IDC_CUSTOM_EDIT = 108;
+constexpr int IDC_LOOKUP = 109, IDC_RESET_SECTION = 110;
 constexpr int kPrefCtrl = 1, kPrefAlt = 2, kPrefShift = 4;
 constexpr wchar_t kClassName[] = L"LReaParamsPreferencesV1";
 
@@ -141,18 +143,20 @@ struct DialogState {
     Preferences pending;
     std::function<void(const std::string&)> announce;
     HWND hwnd{}, tree{}, shortcuts{}, capture{}, messages{}, advanced{};
+    HWND lookup{}, resetSection{};
     HWND messageTopics{}, customLabel{}, customEdit{};
     HWND ok{}, cancel{}, lastFocused{};
-    HTREEITEM nodes[3]{}, fxNode{}, trackNode{}, fxMsgNode{}, trackMsgNode{};
+    HTREEITEM nodes[3]{}, fxNode{}, trackNode{}, renderNode{}, fxMsgNode{}, trackMsgNode{};
     Page page = Page::messages;
     ShortcutScope currentScope = ShortcutScope::fx;
     ShortcutScope messageScope = ShortcutScope::fx;
     int selectedTopic[2]{};
     std::vector<size_t> visible;
-    int selectedInScope[2]{};
+    std::vector<RenderControlInfo> renderDiscovered, renderVisible;
+    int selectedInScope[3]{};
     bool created = false, capturing = false, editingCustom = false, accepted = false;
 };
-int scopeIndex(ShortcutScope scope) { return scope == ShortcutScope::fx ? 0 : 1; }
+int scopeIndex(ShortcutScope scope) { return scope == ShortcutScope::fx ? 0 : scope == ShortcutScope::track ? 1 : 2; }
 int listSelection(HWND list) { return static_cast<int>(SendMessageW(list, LB_GETCURSEL, 0, 0)); }
 void selectList(HWND list, int position) { SendMessageW(list, LB_SETCURSEL, position, 0); }
 void buildChoices(HWND list, int selected, const wchar_t* const* items, int count) {
@@ -164,10 +168,40 @@ void buildChoices(HWND list, int selected, const wchar_t* const* items, int coun
     }
     selectList(list, selected);
 }
+const RenderShortcutPreference* renderOverride(const Preferences& p, const std::wstring& id) {
+    for (const auto& binding : p.renderShortcuts) if (binding.identity == id) return &binding;
+    return nullptr;
+}
 void fillShortcuts(DialogState* st) {
     const int selection = st->selectedInScope[scopeIndex(st->currentScope)];
     st->visible.clear();
+    st->renderVisible.clear();
     SendMessageW(st->shortcuts, LB_RESETCONTENT, 0, 0);
+    if (st->currentScope == ShortcutScope::render) {
+        // The list is of CONTROLS, not the volatile automatic Alt-letter map.
+        // Previously customized controls remain editable when temporarily hidden.
+        st->renderVisible = st->renderDiscovered;
+        for (const auto& user : st->pending.renderShortcuts) {
+            bool found = false;
+            for (const auto& item : st->renderVisible)
+                if (item.identity == user.identity) { found = true; break; }
+            if (!found) st->renderVisible.push_back({user.identity, user.description, {}});
+        }
+        for (const auto& item : st->renderVisible) {
+            const auto* user = renderOverride(st->pending, item.identity);
+            // No automatic key appears here: the empty field means the
+            // existing automatic Render mapper remains in full control.
+            const std::wstring line = item.description + (user ?
+                L" - " + keyName(user->assigned) : L"");
+            SendMessageW(st->shortcuts, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(line.c_str()));
+        }
+        if (!st->renderVisible.empty()) {
+            const int selected = std::clamp(selection, 0, static_cast<int>(st->renderVisible.size()) - 1);
+            selectList(st->shortcuts, selected);
+            st->selectedInScope[2] = selected;
+        }
+        return;
+    }
     for (size_t i = 0; i < st->pending.shortcuts.size(); ++i) {
         const auto& e = st->pending.shortcuts[i];
         if (e.scope != st->currentScope) continue;
@@ -183,7 +217,9 @@ void fillShortcuts(DialogState* st) {
 }
 void updateSelection(DialogState* st) {
     const int index = listSelection(st->shortcuts);
-    if (index >= 0 && index < static_cast<int>(st->visible.size()))
+    const size_t count = st->currentScope == ShortcutScope::render ?
+        st->renderVisible.size() : st->visible.size();
+    if (index >= 0 && index < static_cast<int>(count))
         st->selectedInScope[scopeIndex(st->currentScope)] = index;
 }
 void fillMessageTopics(DialogState* st) {
@@ -312,11 +348,89 @@ void cancelCapture(DialogState* st) {
 }
 void startCapture(DialogState* st) {
     updateSelection(st);
-    if (st->visible.empty()) return;
+    if (st->currentScope == ShortcutScope::render ?
+        st->renderVisible.empty() : st->visible.empty()) return;
     st->capturing = true;
     ShowWindow(st->capture, SW_SHOW);
     SetWindowTextW(st->capture, L"Press a new shortcut. Escape cancels.");
     SetFocus(st->capture);
+}
+// The lookup is an interrogation field: its key never executes a command.
+// Unknown gestures leave the listbox selection and navigation state intact.
+void findShortcut(DialogState* st, const Key& key) {
+    int found = -1;
+    const int current = listSelection(st->shortcuts);
+    if (st->currentScope == ShortcutScope::render) {
+        bool personalized = false;
+        for (const auto& user : st->pending.renderShortcuts)
+            if (same(user.assigned, key)) { personalized = true; break; }
+        const int count = static_cast<int>(st->renderVisible.size());
+        for (int step = 1; step <= count; ++step) {
+            const int j = (current + step + count) % count;
+            const auto& item = st->renderVisible[static_cast<size_t>(j)];
+            const auto* user = renderOverride(st->pending, item.identity);
+            if (user && same(user->assigned, key)) { found = j; break; }
+            if (!personalized) {
+                for (const auto& automatic : item.automatic)
+                    if (same(automatic, key)) { found = j; break; }
+            }
+            if (found >= 0) break;
+        }
+    } else {
+        for (size_t j = 0; j < st->visible.size(); ++j) {
+            const auto& entry = st->pending.shortcuts[st->visible[j]];
+            if (same(entry.assigned, key)) { found = static_cast<int>(j); break; }
+        }
+    }
+    if (found < 0) {
+        if (st->announce) st->announce("Shortcut not found in this section");
+        return;
+    }
+    selectList(st->shortcuts, found);
+    updateSelection(st);
+    SetFocus(st->shortcuts);
+}
+void resetSingleShortcut(DialogState* st) {
+    updateSelection(st);
+    const int selected = listSelection(st->shortcuts);
+    if (selected < 0) return;
+    if (st->currentScope == ShortcutScope::render) {
+        if (selected >= static_cast<int>(st->renderVisible.size())) return;
+        const std::wstring id = st->renderVisible[static_cast<size_t>(selected)].identity;
+        auto& changes = st->pending.renderShortcuts;
+        changes.erase(std::remove_if(changes.begin(), changes.end(), [&](const auto& binding) {
+            return binding.identity == id;
+        }), changes.end());
+    } else {
+        if (selected >= static_cast<int>(st->visible.size())) return;
+        const size_t index = st->visible[static_cast<size_t>(selected)];
+        auto& entry = st->pending.shortcuts[index];
+        // Never silently create duplicate bindings when resetting one item.
+        for (size_t i = 0; i < st->pending.shortcuts.size(); ++i) {
+            if (i != index && st->pending.shortcuts[i].scope == entry.scope &&
+                same(st->pending.shortcuts[i].assigned, entry.original)) {
+                if (st->announce) st->announce("Cannot restore default: shortcut in use. Reset the other command first");
+                return;
+            }
+        }
+        entry.assigned = entry.original;
+    }
+    fillShortcuts(st);
+    if (st->announce) st->announce("Shortcut restored to default. Press OK to save");
+}
+void resetCurrentSection(DialogState* st) {
+    const wchar_t* name = st->currentScope == ShortcutScope::fx ? L"FX Params" :
+        st->currentScope == ShortcutScope::track ? L"Track Params" : L"Render";
+    std::wstring question = L"Reset all shortcuts in "; question += name;
+    question += L" to their defaults?\n\nOnly this section will be reset.\nNo is selected by default. Changes are saved only with OK.";
+    const int answer = MessageBoxW(st->hwnd, question.c_str(),
+        L"LReaParams - Reset shortcuts", MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
+    if (answer != IDYES) return;
+    if (st->currentScope == ShortcutScope::render) st->pending.renderShortcuts.clear();
+    else for (auto& entry : st->pending.shortcuts)
+        if (entry.scope == st->currentScope) entry.assigned = entry.original;
+    fillShortcuts(st);
+    if (st->announce) st->announce("Section reset. Press OK to save or Cancel to discard");
 }
 // Selection changes never recreate tree nodes or rename the item under
 // NVDA/OSARA. This prevents stale/duplicate announcements after an arrow key.
@@ -329,6 +443,8 @@ void showPage(DialogState* st, Page page) {
     ShowWindow(st->messages, page == Page::messages ? SW_SHOW : SW_HIDE);
     ShowWindow(st->advanced, page == Page::advanced ? SW_SHOW : SW_HIDE);
     ShowWindow(st->shortcuts, page == Page::shortcuts ? SW_SHOW : SW_HIDE);
+    ShowWindow(st->lookup, page == Page::shortcuts ? SW_SHOW : SW_HIDE);
+    ShowWindow(st->resetSection, page == Page::shortcuts ? SW_SHOW : SW_HIDE);
     ShowWindow(st->capture, SW_HIDE);
     ShowWindow(st->customEdit, SW_HIDE);
     ShowWindow(st->customLabel, SW_HIDE);
@@ -345,13 +461,20 @@ HWND lastPageControl(DialogState* st) {
 // the FX Params/Track Params scope is selected as a child in the native tree.
 void pageTab(DialogState* st, HWND from, bool backward) {
     HWND next = st->tree;
-    if (from == st->tree) next = backward ? st->cancel : (st->page == Page::messages ? st->messageTopics : lastPageControl(st));
+    if (from == st->tree) next = backward ? st->cancel :
+        (st->page == Page::messages ? st->messageTopics :
+         st->page == Page::shortcuts ? st->lookup : lastPageControl(st));
     else if (from == st->cancel) next = backward ? st->ok : st->tree;
-    else if (from == st->ok) next = backward ? lastPageControl(st) : st->cancel;
+    else if (from == st->ok) next = backward ?
+        (st->page == Page::shortcuts ? st->resetSection : lastPageControl(st)) : st->cancel;
+    else if (from == st->resetSection) next = backward ? st->shortcuts : st->ok;
+    else if (from == st->lookup) next = backward ? st->tree : st->shortcuts;
     else if (st->page == Page::messages && from == st->messageTopics)
         next = backward ? st->tree : st->messages;
     else if (from == lastPageControl(st))
-        next = backward ? (st->page == Page::messages ? st->messageTopics : st->tree) : st->ok;
+        next = backward ? (st->page == Page::messages ? st->messageTopics :
+            st->page == Page::shortcuts ? st->lookup : st->tree) :
+            (st->page == Page::shortcuts ? st->resetSection : st->ok);
     if (next && IsWindowVisible(next) && IsWindowEnabled(next)) SetFocus(next);
 }
 HTREEITEM insertNode(HWND tree, HTREEITEM parent, const wchar_t* text) {
@@ -368,12 +491,13 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
     if (msg == WM_SETFOCUS) st->lastFocused = hwnd;
     // Buttons keep the normal Win32 handling for Enter/Space while still
     // remembering focus for Alt+Tab; only page controls own custom keys.
-    if (hwnd == st->ok || hwnd == st->cancel)
+    if (hwnd == st->ok || hwnd == st->cancel || hwnd == st->resetSection)
         return DefSubclassProc(hwnd, msg, wp, lp);
     if (msg == WM_GETDLGCODE) return DefSubclassProc(hwnd, msg, wp, lp) | DLGC_WANTTAB | DLGC_WANTALLKEYS;
     // READONLY EDIT gets WM_CHAR even when we consumed WM_KEYDOWN; otherwise
     // Windows can sound its default invalid-input beep during shortcut capture.
-    if (hwnd == st->capture && (msg == WM_CHAR || msg == WM_SYSCHAR)) return 0;
+    if ((hwnd == st->capture || hwnd == st->lookup) &&
+        (msg == WM_CHAR || msg == WM_SYSCHAR)) return 0;
     if (hwnd == st->customEdit && msg == WM_CHAR &&
         (wp == VK_RETURN || wp == VK_ESCAPE || wp == VK_TAB)) return 0;
     // Some Win32 controls beep on translated Tab characters after focus has
@@ -414,6 +538,18 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
                 return 0;
             }
         }
+        if (hwnd == st->lookup) {
+            if (vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT ||
+                vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_LMENU ||
+                vk == VK_RMENU || vk == VK_LSHIFT || vk == VK_RSHIFT) return 0;
+            if (vk == VK_TAB && !ctrl && !alt) { pageTab(st, hwnd, shift); return 0; }
+            if (vk == VK_ESCAPE && !ctrl && !alt) {
+                SendMessageW(st->hwnd, WM_COMMAND, IDCANCEL, 0); return 0;
+            }
+            findShortcut(st, shortcut(vk, (ctrl ? kPrefCtrl : 0) |
+                (alt ? kPrefAlt : 0) | (shift ? kPrefShift : 0)));
+            return 0;
+        }
         if (hwnd == st->capture) {
             if (vk == VK_ESCAPE) { cancelCapture(st); return 0; }
             if (vk == VK_TAB && !ctrl && !alt) {
@@ -423,17 +559,49 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             if (vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT ||
                 vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_LMENU ||
                 vk == VK_RMENU || vk == VK_LSHIFT || vk == VK_RSHIFT) return 0;
+            if (ctrl && alt && (GetKeyState(VK_RMENU) & 0x8000)) {
+                announceCapture(st, hwnd, L"AltGr is not a Ctrl+Alt shortcut. Try another key");
+                return 0;
+            }
             const Key candidate = shortcut(vk, (ctrl ? kPrefCtrl : 0) |
                 (alt ? kPrefAlt : 0) | (shift ? kPrefShift : 0));
             // Keep REAPER transport, the NVDA modifier and OSARA's peak watchers free.
             if ((!ctrl && !alt && !shift && (vk == VK_SPACE || vk == VK_RETURN)) ||
                 (vk == 'P' && ctrl && !alt && !shift) || // Ctrl+P always opens Preferences
+                vk == VK_ESCAPE || vk == VK_TAB || vk == VK_LWIN || vk == VK_RWIN ||
                 (vk == VK_F1 && shift && !ctrl && !alt) || // Shift+F1 owns internal help
                 (vk == VK_F12 && !ctrl) || vk == VK_INSERT || vk == VK_NUMPAD0 ||
                 (vk == VK_SPACE && ctrl) ||
                 (alt && (vk == VK_F10 || vk == VK_F11 || vk == VK_F12))) {
                 announceCapture(st, hwnd, L"Reserved shortcut: " + keyName(candidate) +
                     L". Try another shortcut.");
+                return 0;
+            }
+            if (st->currentScope == ShortcutScope::render) {
+                const int selected = listSelection(st->shortcuts);
+                if (selected < 0 || selected >= static_cast<int>(st->renderVisible.size())) return 0;
+                const auto item = st->renderVisible[static_cast<size_t>(selected)];
+                // Only a personal-vs-personal conflict needs confirmation;
+                // automatic Render gestures are simply overridden.
+                auto& changes = st->pending.renderShortcuts;
+                for (const auto& other : changes) {
+                    if (other.identity == item.identity || !same(other.assigned, candidate)) continue;
+                    const std::wstring prompt = keyName(candidate) + L" is already personalized for " +
+                        other.description + L". Replace this assignment?";
+                    if (MessageBoxW(st->hwnd, prompt.c_str(), L"LReaParams - Shortcut conflict",
+                        MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES) return 0;
+                    changes.erase(std::remove_if(changes.begin(), changes.end(), [&](const auto& b) {
+                        return same(b.assigned, candidate);
+                    }), changes.end());
+                    break;
+                }
+                bool updated = false;
+                for (auto& b : changes) if (b.identity == item.identity) {
+                    b.assigned = candidate; b.description = item.description; updated = true;
+                }
+                if (!updated) changes.push_back({item.identity, item.description, candidate});
+                fillShortcuts(st);
+                cancelCapture(st);
                 return 0;
             }
             if (st->visible.empty()) return 0;
@@ -461,6 +629,9 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
         }
         if (hwnd == st->shortcuts && vk == VK_RETURN && !ctrl && !alt) {
             startCapture(st); return 0;
+        }
+        if (hwnd == st->shortcuts && vk == VK_DELETE && !ctrl && !alt) {
+            resetSingleShortcut(st); return 0;
         }
         if (hwnd == st->messages && vk == VK_RETURN && !ctrl && !alt) {
             startCustomEditor(st); return 0;
@@ -491,9 +662,13 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             WS_VISIBLE | WS_CHILD | WS_TABSTOP | TVS_HASBUTTONS | TVS_HASLINES |
             TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_DISABLEDRAGDROP,
             16, 18, 219, 400, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_TREE)), nullptr, nullptr);
+        st->lookup = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT",
+            L"Search by shortcut: press a key combination",
+            WS_CHILD | WS_TABSTOP | ES_READONLY,
+            252, 18, 465, 29, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_LOOKUP)), nullptr, nullptr);
         st->shortcuts = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT,
-            252, 18, 465, 359, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_SHORTCUTS)), nullptr, nullptr);
+            252, 55, 465, 322, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_SHORTCUTS)), nullptr, nullptr);
         st->capture = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
             WS_CHILD | WS_TABSTOP | ES_READONLY,
             252, 381, 465, 29, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_CAPTURE)), nullptr, nullptr);
@@ -513,13 +688,16 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         st->advanced = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
             252, 18, 465, 160, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_ADVANCED)), nullptr, nullptr);
+        st->resetSection = CreateWindowW(L"BUTTON", L"Reset &section...",
+            WS_CHILD | WS_TABSTOP, 252, 434, 240, 32, hwnd,
+            reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_RESET_SECTION)), nullptr, nullptr);
         st->ok = CreateWindowW(L"BUTTON", L"&OK", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
             508, 434, 98, 32, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDOK)), nullptr, nullptr);
         st->cancel = CreateWindowW(L"BUTTON", L"&Cancel", WS_CHILD | WS_VISIBLE | WS_TABSTOP,
             618, 434, 98, 32, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDCANCEL)), nullptr, nullptr);
-        for (HWND control : {st->tree, st->shortcuts, st->capture, st->messages, st->messageTopics, st->customLabel, st->customEdit, st->advanced, st->ok, st->cancel})
+        for (HWND control : {st->tree, st->shortcuts, st->lookup, st->resetSection, st->capture, st->messages, st->messageTopics, st->customLabel, st->customEdit, st->advanced, st->ok, st->cancel})
             SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
-        for (HWND control : {st->tree, st->shortcuts, st->capture, st->messages, st->messageTopics, st->customEdit,
+        for (HWND control : {st->tree, st->shortcuts, st->lookup, st->resetSection, st->capture, st->messages, st->messageTopics, st->customEdit,
                              st->advanced, st->ok, st->cancel})
             SetWindowSubclass(control, pageProc, 1, reinterpret_cast<DWORD_PTR>(st));
         fillShortcuts(st);
@@ -531,6 +709,7 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         st->nodes[1] = insertNode(st->tree, TVI_ROOT, L"Shortcuts");
         st->fxNode = insertNode(st->tree, st->nodes[1], L"FX Params");
         st->trackNode = insertNode(st->tree, st->nodes[1], L"Track Params");
+        st->renderNode = insertNode(st->tree, st->nodes[1], L"Render");
         st->nodes[2] = insertNode(st->tree, TVI_ROOT, L"Advanced");
         // Child categories are directly accessible with Down/Up.
         SendMessageW(st->tree, TVM_EXPAND, TVE_EXPAND, reinterpret_cast<LPARAM>(st->nodes[0]));
@@ -538,8 +717,8 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         st->created = true;
         showPage(st, Page::messages);
         const HTREEITEM choices[] = {st->nodes[0], st->fxMsgNode, st->trackMsgNode,
-            st->nodes[1], st->fxNode, st->trackNode, st->nodes[2]};
-        const int index = std::clamp(lastTreeChoice, 0, 6);
+            st->nodes[1], st->fxNode, st->trackNode, st->renderNode, st->nodes[2]};
+        const int index = std::clamp(lastTreeChoice, 0, 7);
         SendMessageW(st->tree, TVM_SELECTITEM, TVGN_CARET, reinterpret_cast<LPARAM>(choices[index]));
         st->lastFocused = st->tree;
         return 0;
@@ -549,8 +728,8 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         reinterpret_cast<LPNMHDR>(lp)->code == TVN_SELCHANGEDW) {
         const HTREEITEM selected = reinterpret_cast<LPNMTREEVIEWW>(lp)->itemNew.hItem;
         const HTREEITEM choices[] = {st->nodes[0], st->fxMsgNode, st->trackMsgNode,
-            st->nodes[1], st->fxNode, st->trackNode, st->nodes[2]};
-        for (int i = 0; i < 7; ++i) if (choices[i] == selected) { lastTreeChoice = i; break; }
+            st->nodes[1], st->fxNode, st->trackNode, st->renderNode, st->nodes[2]};
+        for (int i = 0; i < 8; ++i) if (choices[i] == selected) { lastTreeChoice = i; break; }
         if (selected == st->nodes[0]) showPage(st, Page::messages);
         else if (selected == st->fxMsgNode || selected == st->trackMsgNode) {
             const ShortcutScope next = selected == st->fxMsgNode ? ShortcutScope::fx : ShortcutScope::track;
@@ -564,8 +743,9 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         }
         else if (selected == st->nodes[2]) showPage(st, Page::advanced);
         else if (selected == st->nodes[1]) showPage(st, Page::shortcuts);
-        else if (selected == st->fxNode || selected == st->trackNode) {
-            const auto newScope = selected == st->fxNode ? ShortcutScope::fx : ShortcutScope::track;
+        else if (selected == st->fxNode || selected == st->trackNode || selected == st->renderNode) {
+            const auto newScope = selected == st->fxNode ? ShortcutScope::fx :
+                selected == st->trackNode ? ShortcutScope::track : ShortcutScope::render;
             if (st->currentScope != newScope) {
                 st->currentScope = newScope;
                 fillShortcuts(st);
@@ -622,6 +802,7 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             }
             return 0;
         }
+        if (id == IDC_RESET_SECTION && notice == BN_CLICKED) { resetCurrentSection(st); return 0; }
         if (id == IDC_SHORTCUTS && notice == LBN_SELCHANGE) { updateSelection(st); return 0; }
         if (id == IDC_SHORTCUTS && notice == LBN_DBLCLK) { startCapture(st); return 0; }
         if (id == IDC_MESSAGES && notice == LBN_DBLCLK) {
@@ -956,6 +1137,24 @@ Preferences loadPreferences(const std::filesystem::path& file) {
                 same(p.shortcuts[j].assigned, candidate)) { duplicate = true; break; }
         if (!duplicate) p.shortcuts[i].assigned = candidate;
     }
+    // New independent Render section: no automatic gestures are serialized.
+    const int renderCount = std::clamp(GetPrivateProfileIntW(L"RenderShortcuts", L"Count", 0,
+        path.c_str()), 0, 512);
+    for (int i = 0; i < renderCount; ++i) {
+        const auto index = std::to_wstring(i);
+        const auto id = readIni(path, L"RenderShortcuts", (L"Id" + index).c_str());
+        const auto name = readIni(path, L"RenderShortcuts", (L"Name" + index).c_str());
+        const int value = GetPrivateProfileIntW(L"RenderShortcuts", (L"Key" + index).c_str(), -1, path.c_str());
+        if (id.empty() || id.size() > 600 || name.empty() || name.size() > 240 || value < 0) continue;
+        const Key gesture = shortcut(static_cast<UINT>(value & 255), value >> 8);
+        if (!gesture.vk || gesture.vk == VK_ESCAPE || gesture.vk == VK_TAB ||
+            (gesture.vk == VK_F1 && gesture.shift && !gesture.ctrl && !gesture.alt) ||
+            (gesture.vk == 'P' && gesture.ctrl && !gesture.alt && !gesture.shift)) continue;
+        bool duplicate = false;
+        for (const auto& other : p.renderShortcuts)
+            if (other.identity == id || same(other.assigned, gesture)) { duplicate = true; break; }
+        if (!duplicate) p.renderShortcuts.push_back({id, name, gesture});
+    }
     return p;
 }
 bool savePreferences(const std::filesystem::path& file, const Preferences& p) {
@@ -973,6 +1172,24 @@ bool savePreferences(const std::filesystem::path& file, const Preferences& p) {
             titlePartCount(ShortcutScope::track, i))) return false;
     }
     if (!WritePrivateProfileStringW(L"Keyboard", L"CompatibilityHook", p.compatibilityHook ? L"1" : L"0", path.c_str())) return false;
+    // Only explicit overrides are kept for Render. Delete obsolete entries
+    // before writing Count so a later section reset cannot resurrect them.
+    if (!WritePrivateProfileStringW(L"RenderShortcuts", nullptr, nullptr, path.c_str())) return false;
+    if (!WritePrivateProfileStringW(L"RenderShortcuts", L"Count",
+        std::to_wstring(p.renderShortcuts.size()).c_str(), path.c_str())) return false;
+    for (size_t i = 0; i < p.renderShortcuts.size(); ++i) {
+        const auto& binding = p.renderShortcuts[i];
+        const std::wstring n = std::to_wstring(i);
+        const Key& k = binding.assigned;
+        const int encoded = static_cast<int>(k.vk) |
+            (k.ctrl ? kPrefCtrl << 8 : 0) | (k.alt ? kPrefAlt << 8 : 0) | (k.shift ? kPrefShift << 8 : 0);
+        if (!WritePrivateProfileStringW(L"RenderShortcuts", (L"Id" + n).c_str(),
+                binding.identity.c_str(), path.c_str()) ||
+            !WritePrivateProfileStringW(L"RenderShortcuts", (L"Name" + n).c_str(),
+                binding.description.c_str(), path.c_str()) ||
+            !WritePrivateProfileStringW(L"RenderShortcuts", (L"Key" + n).c_str(),
+                std::to_wstring(encoded).c_str(), path.c_str())) return false;
+    }
     for (size_t i = 0; i < p.shortcuts.size(); ++i) {
         const Key& k = p.shortcuts[i].assigned;
         const int encoded = static_cast<int>(k.vk) |
@@ -983,7 +1200,8 @@ bool savePreferences(const std::filesystem::path& file, const Preferences& p) {
     return true;
 }
 std::optional<Preferences> editPreferences(HWND owner, const Preferences& current,
-    const std::function<void(const std::string&)>& announce) {
+    const std::function<void(const std::string&)>& announce,
+    const std::vector<RenderControlInfo>& renderControls) {
     static bool registered = false;
     if (!registered) {
         INITCOMMONCONTROLSEX common{sizeof(INITCOMMONCONTROLSEX), ICC_TREEVIEW_CLASSES};
@@ -995,6 +1213,7 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
         registered = true;
     }
     DialogState state; state.pending = current; state.announce = announce;
+    state.renderDiscovered = renderControls;
     // Disable the owner before displaying the popup, as for a native modal
     // Win32 dialog. A disabled owner cannot compete with its dialog for focus.
     const bool disabledOwner = owner && IsWindow(owner) && IsWindowEnabled(owner);
@@ -1036,7 +1255,8 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
                 pageTab(&state, state.messages, (GetKeyState(VK_SHIFT) & 0x8000) != 0);
                 continue;
             }
-            if (focused == state.tree || focused == state.shortcuts ||
+            if (focused == state.tree || focused == state.lookup ||
+                focused == state.resetSection || focused == state.shortcuts ||
                 focused == state.messages || focused == state.messageTopics || focused == state.advanced ||
                 focused == state.ok || focused == state.cancel) {
                 pageTab(&state, focused, (GetKeyState(VK_SHIFT) & 0x8000) != 0);
