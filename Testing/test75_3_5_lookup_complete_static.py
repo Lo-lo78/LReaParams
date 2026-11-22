@@ -5,13 +5,13 @@ root=Path(__file__).resolve().parents[1]
 prefs=(root/'src/Preferences.cpp').read_text(encoding='utf-8')
 render=(root/'src/RenderNavigation.cpp').read_text(encoding='utf-8')
 
-# Alt+1 and Alt+2 must resolve to their actual tab destination, not an
-# unrelated automatic Alt+letter mapping or a guessed HWND.
+# The native tab entries remain discoverable, but Alt+1 and Alt+2 must
+# NOT be synthetically inserted into the automatic lookup map.
 snapshot=render.split('std::vector<RenderControlInfo> RenderNavigation::preferenceControls()',1)[1].split('const RenderShortcutPreference* RenderNavigation::overrideFor',1)[0]
-assert "control.tabPage == 0 || control.tabPage == 1" in snapshot
-assert "control.tabPage == 0 ? '1' : '2'" in snapshot
-assert 'tabKey.alt = true;' in snapshot
-assert 'item.automatic.push_back(tabKey);' in snapshot
+assert 'const std::wstring id = identityFor(control);' in snapshot
+assert 'item.automatic.push_back(tabKey);' not in snapshot
+assert 'const HWND tab = findFormatTab();' in render
+assert 'entry.tabPage = i;' in render
 for identity in ('preferences', 'find', 'next-result', 'previous-result', 'help'):
     assert f'addCommand(L"{identity}"' in snapshot,identity
 assert 'entry.identity = std::wstring(L"internal|") + id;' in snapshot

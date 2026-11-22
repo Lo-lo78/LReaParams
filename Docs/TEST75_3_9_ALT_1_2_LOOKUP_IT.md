@@ -1,3 +1,5 @@
+> **Storico:** la parte che forza Alt+1/Alt+2 nella ricerca è stata ritirata nella TEST75.3.10. Vedi `Docs/TEST75_3_10_REMOVE_FORCED_ALT12_LOOKUP_IT.md`.
+
 # TEST75.3.9 — Alt+1/Alt+2, ricerca nelle Preferenze Render
 
 Derivata dalla TEST75.3.8. Correzione specifica per il falso annuncio «Shortcut not found in this section» dopo la selezione corretta di Primary/Secondary.

@@ -1,3 +1,5 @@
+> **Storico:** la parte che forza Alt+1/Alt+2 nella ricerca è stata ritirata nella TEST75.3.10. Vedi `Docs/TEST75_3_10_REMOVE_FORCED_ALT12_LOOKUP_IT.md`.
+
 # LReaParams TEST75.3.5 – Ricerca completa scorciatoie
 
 Questa modifica nasce dal mancato riconoscimento di Alt+1 e Alt+2 nella ricerca delle Preferenze Render. Non altera l'esecuzione dei tasti in Render.

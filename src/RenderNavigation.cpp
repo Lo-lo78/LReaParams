@@ -301,15 +301,9 @@ std::vector<RenderControlInfo> RenderNavigation::preferenceControls() {
         RenderControlInfo item{};
         item.identity = id;
         item.description = control.name;
-        // Primary/Secondary are genuine Render focus destinations, but their
-        // Alt+1/Alt+2 accelerators bypass the Alt+letter auto map. Expose
-        // those real gestures to the Preferences lookup, too.
-        if (control.tabPage == 0 || control.tabPage == 1) {
-            Key tabKey{};
-            tabKey.vk = static_cast<UINT>(control.tabPage == 0 ? '1' : '2');
-            tabKey.alt = true;
-            item.automatic.push_back(tabKey);
-        }
+        // Format tabs remain personalizable entries, but do not insert
+        // synthetic Alt+1/Alt+2 bindings into the Preferences lookup.
+        // The real Render window still handles those keys in onKey().
         if (control.format && control.tabPage < 0) {
             item.description += L" (" + currentCodecName() + L", " +
                 (selectedFormatPage() == 1 ? L"Secondary" : L"Primary") + L")";
