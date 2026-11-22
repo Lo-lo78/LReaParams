@@ -489,8 +489,15 @@ HTREEITEM insertNode(HWND tree, HTREEITEM parent, const wchar_t* text) {
 LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR ref) {
     auto* st = reinterpret_cast<DialogState*>(ref);
     if (msg == WM_SETFOCUS) st->lastFocused = hwnd;
-    // Buttons keep the normal Win32 handling for Enter/Space while still
-    // remembering focus for Alt+Tab; only page controls own custom keys.
+    // On Reset, Enter must open the No-default confirmation, never the
+    // dialog's default OK button. Space keeps its native button behavior.
+    if (hwnd == st->resetSection && (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) &&
+        wp == VK_RETURN && !(GetKeyState(VK_CONTROL) & 0x8000) &&
+        !(GetKeyState(VK_MENU) & 0x8000)) {
+        SendMessageW(st->hwnd, WM_COMMAND, MAKEWPARAM(IDC_RESET_SECTION, BN_CLICKED),
+            reinterpret_cast<LPARAM>(st->resetSection));
+        return 0;
+    }
     if (hwnd == st->ok || hwnd == st->cancel || hwnd == st->resetSection)
         return DefSubclassProc(hwnd, msg, wp, lp);
     if (msg == WM_GETDLGCODE) return DefSubclassProc(hwnd, msg, wp, lp) | DLGC_WANTTAB | DLGC_WANTALLKEYS;
@@ -525,9 +532,8 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             }
             return DefSubclassProc(hwnd, msg, wp, lp);
         }
-        // The lookup must see the REAL gesture before dialog accelerators.
-        // In particular Alt+S (Reset section), Alt+O (OK), and Alt+C (Cancel)
-        // are queries here, never button activations or edits.
+        // The lookup owns EVERY queried shortcut (including F1..F12 and
+        // Alt+S/Alt+R/Alt+O/Alt+C). Do not execute dialog mnemonics here.
         if (hwnd == st->lookup) {
             if (vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT ||
                 vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_LMENU ||
@@ -542,6 +548,18 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
         }
         if (hwnd == st->messages && alt && !ctrl && (vk == VK_UP || vk == VK_DOWN)) {
             reorderMessagePart(st, vk == VK_UP ? -1 : 1); return 0;
+        }
+        // Alt+S is the dedicated focus gesture for Shortcut lookup. It must
+        // NOT steal Alt+S from the shortcut query or the capture field.
+        if (st->page == Page::shortcuts && hwnd != st->capture &&
+            alt && !ctrl && !shift && vk == 'S') {
+            SetFocus(st->lookup); return 0;
+        }
+        if (st->page == Page::shortcuts && hwnd != st->capture &&
+            alt && !ctrl && !shift && vk == 'R') {
+            SendMessageW(st->hwnd, WM_COMMAND, MAKEWPARAM(IDC_RESET_SECTION, BN_CLICKED),
+                reinterpret_cast<LPARAM>(st->resetSection));
+            return 0;
         }
         if (hwnd != st->capture && alt) {
             if (vk == '1' || vk == '2') {
@@ -568,14 +586,14 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             }
             const Key candidate = shortcut(vk, (ctrl ? kPrefCtrl : 0) |
                 (alt ? kPrefAlt : 0) | (shift ? kPrefShift : 0));
-            // Keep REAPER transport, the NVDA modifier and OSARA's peak watchers free.
+            // F1..F12 (plain or with modifiers) are valid personal shortcuts.
+            // Reserve only gestures with an explicit, non-remappable role in
+            // the extension/dialog or an NVDA modifier/transport safety role.
             if ((!ctrl && !alt && !shift && (vk == VK_SPACE || vk == VK_RETURN)) ||
-                (vk == 'P' && ctrl && !alt && !shift) || // Ctrl+P always opens Preferences
+                (vk == 'P' && ctrl && !alt && !shift) || // Ctrl+P opens Preferences
                 vk == VK_ESCAPE || vk == VK_TAB || vk == VK_LWIN || vk == VK_RWIN ||
-                (vk == VK_F1 && shift && !ctrl && !alt) || // Shift+F1 owns internal help
-                (vk == VK_F12 && !ctrl) || vk == VK_INSERT || vk == VK_NUMPAD0 ||
-                (vk == VK_SPACE && ctrl) ||
-                (alt && (vk == VK_F10 || vk == VK_F11 || vk == VK_F12))) {
+                (vk == VK_F1 && shift && !ctrl && !alt) || // Universal shortcut help
+                vk == VK_INSERT || vk == VK_NUMPAD0 || (vk == VK_SPACE && ctrl)) {
                 announceCapture(st, hwnd, L"Reserved shortcut: " + keyName(candidate) +
                     L". Try another shortcut.");
                 return 0;
@@ -691,7 +709,7 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         st->advanced = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
             WS_CHILD | WS_TABSTOP | LBS_NOTIFY,
             252, 18, 465, 160, hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_ADVANCED)), nullptr, nullptr);
-        st->resetSection = CreateWindowW(L"BUTTON", L"Reset &section...",
+        st->resetSection = CreateWindowW(L"BUTTON", L"&Reset section...",
             WS_CHILD | WS_TABSTOP, 252, 434, 240, 32, hwnd,
             reinterpret_cast<HMENU>(static_cast<INT_PTR>(IDC_RESET_SECTION)), nullptr, nullptr);
         st->ok = CreateWindowW(L"BUTTON", L"&OK", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
@@ -794,6 +812,18 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         return 0;
     }
     if (msg == WM_SYSCHAR && (GetKeyState(VK_MENU) & 0x8000)) {
+        if (st->page == Page::shortcuts && !inShortcutInput &&
+            (wp == 's' || wp == 'S') &&
+            !(GetKeyState(VK_CONTROL) & 0x8000) &&
+            !(GetKeyState(VK_SHIFT) & 0x8000)) { SetFocus(st->lookup); return 0; }
+        if (st->page == Page::shortcuts && !inShortcutInput &&
+            (wp == 'r' || wp == 'R') &&
+            !(GetKeyState(VK_CONTROL) & 0x8000) &&
+            !(GetKeyState(VK_SHIFT) & 0x8000)) {
+            SendMessageW(hwnd, WM_COMMAND, MAKEWPARAM(IDC_RESET_SECTION, BN_CLICKED),
+                reinterpret_cast<LPARAM>(st->resetSection));
+            return 0;
+        }
         if (wp == 'o' || wp == 'O') { SendMessageW(hwnd, WM_COMMAND, IDOK, 0); return 0; }
         if (wp == 'c' || wp == 'C') { SendMessageW(hwnd, WM_COMMAND, IDCANCEL, 0); return 0; }
     }
@@ -1142,7 +1172,7 @@ Preferences loadPreferences(const std::filesystem::path& file) {
         const int value = GetPrivateProfileIntW(L"Shortcuts", key.c_str(), -1, path.c_str());
         if (value < 0) continue;
         const Key candidate = shortcut(static_cast<UINT>(value & 255), value >> 8);
-        if (!candidate.vk || candidate.vk == VK_ESCAPE || (candidate.vk == VK_F12 && !candidate.ctrl) ||
+        if (!candidate.vk || candidate.vk == VK_ESCAPE ||
             (candidate.vk == 'P' && candidate.ctrl && !candidate.alt && !candidate.shift) ||
             (candidate.vk == VK_F1 && candidate.shift && !candidate.ctrl && !candidate.alt)) continue;
         bool duplicate = false;
@@ -1261,7 +1291,7 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
              (state.capturing && focused == state.capture));
         // IsDialogMessage() performs native Alt+letter mnemonic translation.
         // Never call it while an EDIT is interrogating/capturing a shortcut:
-        // otherwise Alt+S/Alt+O/Alt+C can click Reset/OK/Cancel first.
+        // otherwise Alt+R/Alt+O/Alt+C can click Reset/OK/Cancel first.
         // Send the physical key directly to the subclass, and deliberately do
         // not call TranslateMessage(), which would queue a WM_SYSCHAR that
         // could fire after findShortcut() moves focus to the result list.
@@ -1299,6 +1329,40 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
                 pageTab(&state, focused, (GetKeyState(VK_SHIFT) & 0x8000) != 0);
                 continue;
             }
+        }
+        // The Enter key on Reset is not the dialog's default OK action:
+        // process it before IsDialogMessage can redirect Enter to IDOK.
+        if (isDialogMessage && state.page == Page::shortcuts &&
+            focused == state.resetSection && msg.wParam == VK_RETURN &&
+            (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN) &&
+            !(GetKeyState(VK_CONTROL) & 0x8000) &&
+            !(GetKeyState(VK_MENU) & 0x8000)) {
+            SendMessageW(hwnd, WM_COMMAND, MAKEWPARAM(IDC_RESET_SECTION, BN_CLICKED),
+                reinterpret_cast<LPARAM>(state.resetSection));
+            continue;
+        }
+        // Explicit Alt+S focuses the shortcut lookup from any Preferences
+        // control except the lookup/capture itself. Inside those fields the
+        // combination remains DATA and is not an accelerator.
+        if (isDialogMessage && state.page == Page::shortcuts &&
+            focused != state.lookup && !(state.capturing && focused == state.capture) &&
+            msg.message == WM_SYSKEYDOWN && msg.wParam == 'S' &&
+            (GetKeyState(VK_MENU) & 0x8000) &&
+            !(GetKeyState(VK_CONTROL) & 0x8000) &&
+            !(GetKeyState(VK_SHIFT) & 0x8000)) {
+            SetFocus(state.lookup);
+            continue;
+        }
+        // Alt+R invokes Reset only outside the shortcut lookup/capture fields.
+        if (isDialogMessage && state.page == Page::shortcuts &&
+            focused != state.lookup && !(state.capturing && focused == state.capture) &&
+            msg.message == WM_SYSKEYDOWN && msg.wParam == 'R' &&
+            (GetKeyState(VK_MENU) & 0x8000) &&
+            !(GetKeyState(VK_CONTROL) & 0x8000) &&
+            !(GetKeyState(VK_SHIFT) & 0x8000)) {
+            SendMessageW(hwnd, WM_COMMAND, MAKEWPARAM(IDC_RESET_SECTION, BN_CLICKED),
+                reinterpret_cast<LPARAM>(state.resetSection));
+            continue;
         }
         // Alt+Tab is a system task-switch gesture, not dialog navigation.
         const bool taskSwitch = (msg.message == WM_SYSKEYDOWN || msg.message == WM_SYSKEYUP) &&

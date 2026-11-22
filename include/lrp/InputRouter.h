@@ -34,6 +34,7 @@ private:
     // physical gesture through its own Action List accelerator.
     bool interceptTransport(MSG&) noexcept;
     bool safeTarget(HWND target) const noexcept;
+    bool assignedF12(const Key& physical) const noexcept;
     void requestExit() noexcept;
     bool inspectKey(const Key& physical) noexcept;
     void sayHelp(const std::string& message) noexcept;

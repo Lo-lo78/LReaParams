@@ -11,6 +11,6 @@ assert 'SendMessageW(focused, msg.message, msg.wParam, msg.lParam);' in raw
 assert 'msg.message == WM_SYSCHAR' in raw and 'msg.message == WM_SYSDEADCHAR' in raw
 assert 'const bool inShortcutInput = st->page == Page::shortcuts' in s
 assert 'if (inShortcutInput && msg == WM_SYSCHAR) return 0;' in s
-assert 'L"Reset &section..."' in s and 'L"&OK"' in s and 'L"&Cancel"' in s
+assert 'L"&Reset section..."' in s and 'L"&OK"' in s and 'L"&Cancel"' in s
 assert 'Shortcut not found in this section' in s
 print('TEST75.3.3 keyboard lookup vs dialog mnemonics: static PASS')

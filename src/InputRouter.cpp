@@ -165,6 +165,20 @@ bool InputRouter::safeTarget(HWND target) const noexcept {
     }
     return true;
 }
+// Preserve legacy F12 handling only when this exact physical gesture has
+// NOT been assigned in the active FX/Track shortcut preferences.
+bool InputRouter::assignedF12(const Key& physical) const noexcept {
+    if (physical.vk != VK_F12 || physical.altGr || !preferences_ || !navigator_ ||
+        !navigator_->active()) return false;
+    const ShortcutScope scope = navigator_->isTrackNavigator() ?
+        ShortcutScope::track : ShortcutScope::fx;
+    for (const auto& entry : preferences_->shortcuts) {
+        if (entry.scope == scope && entry.assigned.vk == physical.vk &&
+            entry.assigned.ctrl == physical.ctrl && entry.assigned.alt == physical.alt &&
+            entry.assigned.shift == physical.shift) return true;
+    }
+    return false;
+}
 bool InputRouter::environmentSafe() const noexcept {
     DWORD pid = 0; GetWindowThreadProcessId(GetForegroundWindow(), &pid);
     return pid == GetCurrentProcessId() && safeTarget(GetFocus());
@@ -203,16 +217,18 @@ bool InputRouter::route(MSG& message, bool removed) noexcept {
         if (consumed) swallowed_[vk] = message.hwnd;
         return consumed;
     }
-    // Bare F12 is deliberately unassigned and reserved for this extension.
-    // Never forward it to OSARA/REAPER or close navigation. Ctrl+F12 and
-    // Ctrl+Shift+F12 remain slot 12; Alt+F12 remains free for OSARA watchers.
+    // An F12 gesture personalized in this context is an ordinary shortcut.
+    // With no personal binding preserve the old bare-F12 no-op and
+    // Alt/Shift+F12 exit semantics, so existing users are not disrupted.
     if (vk == VK_F12 && !(GetKeyState(VK_CONTROL) & 0x8000) &&
-        !(GetKeyState(VK_MENU) & 0x8000) && !(GetKeyState(VK_SHIFT) & 0x8000)) {
+        !(GetKeyState(VK_MENU) & 0x8000) && !(GetKeyState(VK_SHIFT) & 0x8000) &&
+        !assignedF12(physical)) {
         if (!environmentSafe() || !safeTarget(message.hwnd)) { requestExit(); return false; }
         swallowed_[vk] = message.hwnd;
         return true;
     }
-    if (vk == VK_F12 && !(GetKeyState(VK_CONTROL) & 0x8000)) { requestExit(); return false; }
+    if (vk == VK_F12 && !(GetKeyState(VK_CONTROL) & 0x8000) &&
+        !assignedF12(physical)) { requestExit(); return false; }
     if (vk == VK_CONTROL || vk == VK_SHIFT || vk == VK_MENU || vk == VK_LCONTROL || vk == VK_RCONTROL ||
         vk == VK_LSHIFT || vk == VK_RSHIFT || vk == VK_LMENU || vk == VK_RMENU) return false;
     if (!environmentSafe() || !safeTarget(message.hwnd)) { requestExit(); return false; }
@@ -350,6 +366,9 @@ LRESULT CALLBACK InputRouter::hook(int code, WPARAM param, LPARAM data) noexcept
                            (GetKeyState(VK_SHIFT) & 0x8000) != 0,
                            (message.lParam & (1LL << 30)) != 0, message.hwnd,
                            0, (GetKeyState(VK_RMENU) & 0x8000) != 0};
+        // In SDK and owned-window backends, personalized F12 needs a first
+        // refusal before REAPER accelerators or TitleProxy's legacy handler.
+        const bool personalizedF12 = down && self->assignedF12(shortcut);
         const bool shortcutDown = down && isTransportMarkerShortcut(shortcut);
         const bool shortcutUp = up &&
             (vk == VK_PRIOR || vk == VK_NEXT || vk == 'I' || vk == 'O' ||
@@ -362,7 +381,7 @@ LRESULT CALLBACK InputRouter::hook(int code, WPARAM param, LPARAM data) noexcept
         const bool helpCapture = self->helpMode_ && (down || up);
         const bool swallowedRelease = up && vk < self->swallowed_.size() &&
             self->swallowed_[vk] == message.hwnd;
-        if (helpToggle || helpCapture || swallowedRelease) {
+        if (helpToggle || helpCapture || swallowedRelease || personalizedF12) {
             consumed = self->route(message, true);
         } else if ((shortcutDown || shortcutUp) && self->navigator_ &&
             (shortcutUp || self->navigator_->accepts(shortcut))) {
