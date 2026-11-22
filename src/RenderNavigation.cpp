@@ -301,6 +301,15 @@ std::vector<RenderControlInfo> RenderNavigation::preferenceControls() {
         RenderControlInfo item{};
         item.identity = id;
         item.description = control.name;
+        // Primary/Secondary are genuine Render focus destinations, but their
+        // Alt+1/Alt+2 accelerators bypass the Alt+letter auto map. Expose
+        // those real gestures to the Preferences lookup, too.
+        if (control.tabPage == 0 || control.tabPage == 1) {
+            Key tabKey{};
+            tabKey.vk = static_cast<UINT>(control.tabPage == 0 ? '1' : '2');
+            tabKey.alt = true;
+            item.automatic.push_back(tabKey);
+        }
         if (control.format && control.tabPage < 0) {
             item.description += L" (" + currentCodecName() + L", " +
                 (selectedFormatPage() == 1 ? L"Secondary" : L"Primary") + L")";
@@ -313,6 +322,27 @@ std::vector<RenderControlInfo> RenderNavigation::preferenceControls() {
             }
         result.push_back(std::move(item));
     }
+    // These Render-owned gestures do not belong to any individual native
+    // control and therefore cannot be discovered by EnumChildWindows or by
+    // the Alt+letter mapper. Expose them as read-only lookup entries. Keep
+    // the keys in sync with RenderNavigation::onKey and describeHelpKey.
+    // The identity prefix is intentionally NOT a focusable Render control.
+    const auto addCommand = [&](const wchar_t* id, const wchar_t* name,
+                                UINT vk, bool ctrl, bool alt, bool shift) {
+        RenderControlInfo entry{};
+        entry.identity = std::wstring(L"internal|") + id;
+        entry.description = name;
+        Key gesture{};
+        gesture.vk = vk;
+        gesture.ctrl = ctrl; gesture.alt = alt; gesture.shift = shift;
+        entry.automatic.push_back(gesture);
+        result.push_back(std::move(entry));
+    };
+    addCommand(L"preferences", L"Open LReaParams Preferences", 'P', true, false, false);
+    addCommand(L"find", L"Find a Render control", 'F', true, false, false);
+    addCommand(L"next-result", L"Next Render search result", VK_F3, false, false, false);
+    addCommand(L"previous-result", L"Previous Render search result", VK_F3, false, false, true);
+    addCommand(L"help", L"Explore LReaParams shortcuts", VK_F1, false, false, true);
     return result;
 }
 const RenderShortcutPreference* RenderNavigation::overrideFor(const Key& gesture) const noexcept {

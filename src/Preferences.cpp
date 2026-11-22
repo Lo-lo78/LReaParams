@@ -10,6 +10,7 @@
 #include <cwctype>
 #include <cctype>
 #include <set>
+#include <limits>
 
 namespace lrp {
 namespace {
@@ -157,6 +158,15 @@ struct DialogState {
     bool created = false, capturing = false, editingCustom = false, accepted = false;
 };
 int scopeIndex(ShortcutScope scope) { return scope == ShortcutScope::fx ? 0 : scope == ShortcutScope::track ? 1 : 2; }
+// Non-remappable commands common to both navigators are kept out of the
+// persisted ShortcutNN preference indices. Sentinel rows exist only in the UI.
+constexpr size_t kOpenPreferencesRow = std::numeric_limits<size_t>::max();
+constexpr size_t kShortcutHelpRow = kOpenPreferencesRow - 1;
+const Key kOpenPreferencesKey = shortcut('P', kPrefCtrl);
+const Key kShortcutHelpKey = shortcut(VK_F1, kPrefShift);
+bool isFixedNavigatorRow(size_t row) {
+    return row == kOpenPreferencesRow || row == kShortcutHelpRow;
+}
 int listSelection(HWND list) { return static_cast<int>(SendMessageW(list, LB_GETCURSEL, 0, 0)); }
 void selectList(HWND list, int position) { SendMessageW(list, LB_SETCURSEL, position, 0); }
 void buildChoices(HWND list, int selected, const wchar_t* const* items, int count) {
@@ -171,6 +181,22 @@ void buildChoices(HWND list, int selected, const wchar_t* const* items, int coun
 const RenderShortcutPreference* renderOverride(const Preferences& p, const std::wstring& id) {
     for (const auto& binding : p.renderShortcuts) if (binding.identity == id) return &binding;
     return nullptr;
+}
+// Internal Render commands are not native controls and must never be stored
+// as persistent focus overrides. They still appear in the shortcut lookup.
+bool isRenderCommand(const RenderControlInfo& item) {
+    return item.identity.rfind(L"internal|", 0) == 0;
+}
+// Assigning Alt+letter to a control suppresses the ENTIRE old automatic
+// group, including Alt+Shift+letter, in RenderNavigation::onKey. Lookup must
+// apply the same rule instead of reporting a key the navigator cannot use.
+bool maskedRenderAutomatic(const Preferences& p, const Key& key) {
+    if (!key.alt || key.ctrl || key.vk < 'A' || key.vk > 'Z') return false;
+    Key forward = key;
+    forward.shift = false;
+    for (const auto& user : p.renderShortcuts)
+        if (same(user.assigned, forward)) return true;
+    return false;
 }
 void fillShortcuts(DialogState* st) {
     const int selection = st->selectedInScope[scopeIndex(st->currentScope)];
@@ -191,8 +217,9 @@ void fillShortcuts(DialogState* st) {
             const auto* user = renderOverride(st->pending, item.identity);
             // No automatic key appears here: the empty field means the
             // existing automatic Render mapper remains in full control.
-            const std::wstring line = item.description + (user ?
-                L" - " + keyName(user->assigned) : L"");
+            const std::wstring line = isRenderCommand(item) && !item.automatic.empty() ?
+                item.description + L" - " + keyName(item.automatic.front()) + L" (internal command)" :
+                item.description + (user ? L" - " + keyName(user->assigned) : L"");
             SendMessageW(st->shortcuts, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(line.c_str()));
         }
         if (!st->renderVisible.empty()) {
@@ -209,6 +236,14 @@ void fillShortcuts(DialogState* st) {
         const std::wstring line = keyName(e.assigned) + L" - " + e.description;
         SendMessageW(st->shortcuts, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(line.c_str()));
     }
+    // Two LReaParams commands are intentionally not in the editable
+    // FX/Track mapping but are still searchable through the same UI.
+    st->visible.push_back(kOpenPreferencesRow);
+    std::wstring open = keyName(kOpenPreferencesKey) + L" - Open LReaParams Preferences (internal)";
+    SendMessageW(st->shortcuts, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(open.c_str()));
+    st->visible.push_back(kShortcutHelpRow);
+    std::wstring help = keyName(kShortcutHelpKey) + L" - Explore LReaParams shortcuts (internal)";
+    SendMessageW(st->shortcuts, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(help.c_str()));
     if (!st->visible.empty()) {
         const int selected = std::clamp(selection, 0, static_cast<int>(st->visible.size()) - 1);
         selectList(st->shortcuts, selected);
@@ -350,6 +385,22 @@ void startCapture(DialogState* st) {
     updateSelection(st);
     if (st->currentScope == ShortcutScope::render ?
         st->renderVisible.empty() : st->visible.empty()) return;
+    if (st->currentScope != ShortcutScope::render) {
+        const int index = listSelection(st->shortcuts);
+        if (index < 0 || index >= static_cast<int>(st->visible.size())) return;
+        if (isFixedNavigatorRow(st->visible[static_cast<size_t>(index)])) {
+            if (st->announce) st->announce("This LReaParams command is not customizable");
+            return;
+        }
+    }
+    if (st->currentScope == ShortcutScope::render) {
+        const int index = listSelection(st->shortcuts);
+        if (index < 0 || index >= static_cast<int>(st->renderVisible.size())) return;
+        if (isRenderCommand(st->renderVisible[static_cast<size_t>(index)])) {
+            if (st->announce) st->announce("This is an internal Render command, not a customizable control");
+            return;
+        }
+    }
     st->capturing = true;
     ShowWindow(st->capture, SW_SHOW);
     SetWindowTextW(st->capture, L"Press a new shortcut. Escape cancels.");
@@ -364,13 +415,15 @@ void findShortcut(DialogState* st, const Key& key) {
         bool personalized = false;
         for (const auto& user : st->pending.renderShortcuts)
             if (same(user.assigned, key)) { personalized = true; break; }
+        // Also hide reverse automatic groups claimed by a forward Alt+letter.
+        const bool masked = maskedRenderAutomatic(st->pending, key);
         const int count = static_cast<int>(st->renderVisible.size());
         for (int step = 1; step <= count; ++step) {
             const int j = (current + step + count) % count;
             const auto& item = st->renderVisible[static_cast<size_t>(j)];
             const auto* user = renderOverride(st->pending, item.identity);
             if (user && same(user->assigned, key)) { found = j; break; }
-            if (!personalized) {
+            if (!personalized && !masked) {
                 for (const auto& automatic : item.automatic)
                     if (same(automatic, key)) { found = j; break; }
             }
@@ -378,8 +431,10 @@ void findShortcut(DialogState* st, const Key& key) {
         }
     } else {
         for (size_t j = 0; j < st->visible.size(); ++j) {
-            const auto& entry = st->pending.shortcuts[st->visible[j]];
-            if (same(entry.assigned, key)) { found = static_cast<int>(j); break; }
+            const size_t row = st->visible[j];
+            const Key& effective = row == kOpenPreferencesRow ? kOpenPreferencesKey :
+                row == kShortcutHelpRow ? kShortcutHelpKey : st->pending.shortcuts[row].assigned;
+            if (same(effective, key)) { found = static_cast<int>(j); break; }
         }
     }
     if (found < 0) {
@@ -396,6 +451,10 @@ void resetSingleShortcut(DialogState* st) {
     if (selected < 0) return;
     if (st->currentScope == ShortcutScope::render) {
         if (selected >= static_cast<int>(st->renderVisible.size())) return;
+        if (isRenderCommand(st->renderVisible[static_cast<size_t>(selected)])) {
+            if (st->announce) st->announce("This internal Render command has no personalized shortcut to reset");
+            return;
+        }
         const std::wstring id = st->renderVisible[static_cast<size_t>(selected)].identity;
         auto& changes = st->pending.renderShortcuts;
         changes.erase(std::remove_if(changes.begin(), changes.end(), [&](const auto& binding) {
@@ -404,6 +463,10 @@ void resetSingleShortcut(DialogState* st) {
     } else {
         if (selected >= static_cast<int>(st->visible.size())) return;
         const size_t index = st->visible[static_cast<size_t>(selected)];
+        if (isFixedNavigatorRow(index)) {
+            if (st->announce) st->announce("This internal LReaParams command has no personalized shortcut to reset");
+            return;
+        }
         auto& entry = st->pending.shortcuts[index];
         // Never silently create duplicate bindings when resetting one item.
         for (size_t i = 0; i < st->pending.shortcuts.size(); ++i) {
@@ -549,10 +612,10 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
         if (hwnd == st->messages && alt && !ctrl && (vk == VK_UP || vk == VK_DOWN)) {
             reorderMessagePart(st, vk == VK_UP ? -1 : 1); return 0;
         }
-        // Alt+S is the dedicated focus gesture for Shortcut lookup. It must
+        // Alt+S / Alt+D focus Shortcut lookup. They must
         // NOT steal Alt+S from the shortcut query or the capture field.
         if (st->page == Page::shortcuts && hwnd != st->capture &&
-            alt && !ctrl && !shift && vk == 'S') {
+            alt && !ctrl && !shift && (vk == 'S' || vk == 'D')) {
             SetFocus(st->lookup); return 0;
         }
         if (st->page == Page::shortcuts && hwnd != st->capture &&
@@ -627,6 +690,10 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             }
             if (st->visible.empty()) return 0;
             const size_t selected = st->visible[static_cast<size_t>(st->selectedInScope[scopeIndex(st->currentScope)])];
+            if (isFixedNavigatorRow(selected)) {
+                announceCapture(st, hwnd, L"This internal LReaParams command is not customizable");
+                return 0;
+            }
             for (size_t i = 0; i < st->pending.shortcuts.size(); ++i) {
                 if (i != selected && st->pending.shortcuts[i].scope == st->currentScope &&
                     same(st->pending.shortcuts[i].assigned, candidate)) {
@@ -813,7 +880,7 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     }
     if (msg == WM_SYSCHAR && (GetKeyState(VK_MENU) & 0x8000)) {
         if (st->page == Page::shortcuts && !inShortcutInput &&
-            (wp == 's' || wp == 'S') &&
+            (wp == 's' || wp == 'S' || wp == 'd' || wp == 'D') &&
             !(GetKeyState(VK_CONTROL) & 0x8000) &&
             !(GetKeyState(VK_SHIFT) & 0x8000)) { SetFocus(st->lookup); return 0; }
         if (st->page == Page::shortcuts && !inShortcutInput &&
@@ -1341,12 +1408,12 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
                 reinterpret_cast<LPARAM>(state.resetSection));
             continue;
         }
-        // Explicit Alt+S focuses the shortcut lookup from any Preferences
+        // Alt+S and Alt+D focus the shortcut lookup from any Preferences
         // control except the lookup/capture itself. Inside those fields the
         // combination remains DATA and is not an accelerator.
         if (isDialogMessage && state.page == Page::shortcuts &&
             focused != state.lookup && !(state.capturing && focused == state.capture) &&
-            msg.message == WM_SYSKEYDOWN && msg.wParam == 'S' &&
+            msg.message == WM_SYSKEYDOWN && (msg.wParam == 'S' || msg.wParam == 'D') &&
             (GetKeyState(VK_MENU) & 0x8000) &&
             !(GetKeyState(VK_CONTROL) & 0x8000) &&
             !(GetKeyState(VK_SHIFT) & 0x8000)) {
