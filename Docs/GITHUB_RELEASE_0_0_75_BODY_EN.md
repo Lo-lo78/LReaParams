@@ -1,26 +1,21 @@
-# LReaParams 0.0.75 — Accessible Native Render Navigation
+# LReaParams 0.0.75 — Accessible Render, Shortcut Help & Customizable Messages
 
-**19 November 2026 · Windows x64 · Native REAPER extension**
+Release date: 22 November 2026. Platform: Windows x64, native REAPER extension. Accessible with NVDA and OSARA.
 
 ## New in this release
 
-- Navigate **REAPER's original Render to File dialog** without replacing its interface or changing the rendering workflow.
-- **Ctrl+F** finds native Render controls by name. **F3 / Shift+F3** move to the next/previous search match.
-- **Alt+letter / Alt+Shift+letter** navigate forward/backward through the assigned native controls, including wrapping cycles for shared letters.
-- **Alt+Z** focuses **Sample rate** (**Alt+S** also works).
-- **Alt+1 / Alt+2** focus the native **Primary / Secondary** output-format tabs. Native **Ctrl+Tab / Ctrl+Shift+Tab** are preserved.
-- Format-specific controls can announce their **Primary / Secondary** context when REAPER exposes that information.
+- **Shift+F1 shortcut exploration** in FX Params, Track Params and Render: query LReaParams gestures without triggering commands or losing focus. Press Shift+F1 again to exit. Outside these contexts the key belongs to REAPER.
+- **Faster native Render to File navigation:** Ctrl+F searches controls, F3/Shift+F3 navigates results, and Alt+letter/Alt+Shift+letter moves focus without activating controls. Existing Alt+1/Alt+2 tab navigation remains available.
+- **Render Shortcuts in Ctrl+P:** discover controls exposed by the current Render configuration, keep automatic keys unless individually overridden, and save only the user's custom bindings. Previously personalized but unavailable controls remain editable.
+- **Shortcut management:** Alt+S opens shortcut lookup without executing the queried keys; F1–F12 can be queried or assigned where permitted. Delete resets a single binding; Alt+R opens section reset with No selected, followed by OK to save or Cancel/Escape to discard.
+- **Customizable navigator speech:** existing title templates stay intact; FX/Track message entries can be enabled/disabled or customized. `{original}` preserves dynamic content in a custom announcement.
 
-**Safety:** these shortcuts move focus only. They do not start rendering, activate a button, toggle a checkbox or modify render parameters. Continue editing with REAPER's standard keyboard controls. Disabled or unsupported native controls retain normal REAPER behavior.
+## Compatibility and installation
 
-All earlier FX/Track Params features are retained, including the **0.0.74 parameter ranges and MIDI CC improvements**.
+Previous 0.0.74 MIDI CC/range functions, Used parameters, Keyboard view, FX/Track memories and existing `.fx` / `.tp` user profiles are preserved. This release adds no separate Render replacement window.
 
-## Installation
+Download and install the matching **LReaParams 0.0.75 Windows x64 setup** produced by the verified GitHub Actions build. The complete seven-language accessible guide is included in the distribution. Detailed documentation: `Docs/RELEASE_NOTES_0_0_75.md` and `Docs/RENDER_NAVIGATION.md`.
 
-Download the **LReaParams 0.0.75 Windows x64 Setup EXE** attached to this release, install, then restart REAPER. Accessible HTML guides are included. See the source repository for the full source and release documentation.
+## ReaPack and release history
 
-## ReaPack
-
-Publishing this **stable GitHub Release `v0.0.75`** starts the existing ReaPack publishing workflow. It compiles and attaches the standalone `reaper_lreaparams.dll`, then refreshes `index.xml` from **all eligible published releases**. Earlier ReaPack versions and their original tagged guides remain available. This process is automatic after release publication; a source push alone does not trigger it.
-
-Project: https://github.com/Lo-lo78/LReaParams
+The existing **Publish LReaParams to ReaPack** workflow starts when this stable GitHub Release is published. It builds the standalone DLL from the exact `v0.0.75` tag, attaches the DLL to this release, and updates the ReaPack index from all eligible published versions, preserving historic releases. Source pushes alone do not update ReaPack. Do not manually overwrite `index.xml` or recreate previous tags. If publishing fails, use the workflow's manual rerun with the existing release tag after diagnosing the error.

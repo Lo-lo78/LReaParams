@@ -1,10 +1,20 @@
+## LReaParams 0.0.76 — Shortcut help, Render customization and configurable messages (22 November 2026)
+
+LReaParams 0.0.76 extends the native REAPER Render to File navigation introduced in v0.0.75. **Shift+F1** now explores shortcuts in FX Params, Track Params and Render without executing them or moving focus; outside LReaParams it remains REAPER's shortcut.
+
+**Ctrl+P > Shortcuts > Render** lists controls discovered in the current format/tab and previously customized controls that are temporarily unavailable. Automatic Alt+letter navigation remains the default until a user assigns a conflicting personal gesture. **Alt+S** alone enters Search by shortcut; inside this field combinations are queried and cannot activate Preferences buttons. **Delete** resets one binding; **Alt+R** resets the current section with **No preselected**, subject to OK to save or Cancel/Escape to discard. Normal Render **Alt+1/Alt+2** tab navigation is retained but not added synthetically to Preferences lookup.
+
+**Ctrl+P > Messages** preserves all existing title templates and adds individual on/off and custom text for 301 FX and 276 Track announcements. The `{original}` token retains dynamic names and values. All 0.0.75 and earlier parameter functionality remains compatible.
+
+[0.0.76 release notes](Docs/RELEASE_NOTES_0_0_76.md) · [Accessible guides (seven languages)](Guide/index.html) · [Protected ReaPack publishing procedure](Docs/REAPACK_SETUP_IT.md)
+
+**Publishing:** use `Tools\push_lreaparams.cmd "Release 0.0.76 - Context shortcut help Render preferences and configurable speech messages"` from the *existing Git clone*; preserve `.git` and the remotely generated `index.xml`. After Windows MSVC build, CTest and NVDA/OSARA verification, create the new stable tag **`v0.0.76`** only if it is unused, and attach the matching installer. Publishing that release triggers the untouched cumulative ReaPack publisher; do not change previous tags, published releases, or index history.
+
+---
+
 ## LReaParams 0.0.75 — Accessible native Render navigation (19 November 2026)
 
-Version 0.0.75 adds fast, **focus-only** navigation to REAPER's original **Render to File** dialog: **Ctrl+F** searches native controls by name, **F3 / Shift+F3** cycles search matches, and **Alt+letter / Alt+Shift+letter** cycles forward/backward among controls assigned the same accelerator. **Alt+Z** jumps to Sample rate (Alt+S alias), **Alt+1 / Alt+2** focus Primary / Secondary format tab labels, and native **Ctrl+Tab / Ctrl+Shift+Tab** are unchanged. The current Primary/Secondary context is spoken for format controls when known. **Navigation never starts rendering or changes a checkbox, button or setting**; use REAPER's native keys to activate a focused control.
-
-All 0.0.74 parameter range and floating/fixed MIDI CC features, user settings and profiles remain intact. See [0.0.75 release notes](Docs/RELEASE_NOTES_0_0_75.md), [accessible Render guide](Docs/RENDER_NAVIGATION.md) and [multilingual user guides](Guide/index.html).
-
-**GitHub/ReaPack historical safety:** from the existing Git clone (retain `.git` and `index.xml`), use `Tools\push_lreaparams.cmd "Release 0.0.75 - Accessible native Render navigation and reverse accelerators"`. Verify the Windows build, then publish stable tag **`v0.0.75`** on that commit and attach the matching installer. The unmodified `release: published` workflow uploads the standalone DLL and regenerates `index.xml` from all eligible tagged releases. Never recreate older tags, overwrite the generated index, or force-push. See [Italian publishing instructions](Docs/REAPACK_SETUP_IT.md).
+Introduced focus-only control navigation of REAPER's original Render to File dialog: Ctrl+F search, F3/Shift+F3 results, Alt+letter/Alt+Shift+letter cyclic navigation, Alt+Z Sample rate, and Alt+1/Alt+2 Primary/Secondary tabs. No keyboard accelerator clicks a button, toggles a checkbox or modifies render settings. The original public release **v0.0.75** and its tag remain unchanged.
 
 ---
 

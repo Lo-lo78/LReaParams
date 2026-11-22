@@ -1,10 +1,18 @@
+## LReaParams 0.0.76 — 22 November 2026
+
+- Shift+F1 shortcut exploration in active FX Params, Track Params and Render; execution blocked and focus preserved. Outside managed contexts the key remains available to REAPER.
+- Ctrl+P > Shortcuts > Render lists controls exposed in the current dialog and previously customized missing controls; automatic Alt+letter navigation remains the default unless overridden.
+- Preferences Alt+S searches effective shortcuts without triggering dialog accelerators; individual shortcut reset and section reset with No preselected, OK to save or Cancel/Escape to discard.
+- F1–F12 and supported modifier combinations can be mapped in permitted contexts; fixed Alt+1/Alt+2 tab gestures are not injected as synthetic shortcut-lookup entries.
+- Ctrl+P > Messages retains the four FX and twelve Track title configurations, adding 301 FX and 276 Track announcement types, each enabled/disabled or customized; `{original}` retains dynamic content.
+- Updated About, seven-language guides, installer and Windows build artifacts. Previous releases, ReaPack publishing workflow and `index.xml` history are preserved.
+
 ## LReaParams 0.0.75 — 19 November 2026
 
-- Accessible focus-only shortcuts in native Render to File: Ctrl+F control search, F3/Shift+F3 results, Alt+letter / Alt+Shift+letter bidirectional cyclic navigation.
-- Alt+Z Sample rate with Alt+S preserved; improved detection of native/custom sample-rate controls. Alt+1 / Alt+2 focus Primary/Secondary tabs, native Ctrl+Tab unchanged.
-- Format-specific controls announce Primary/Secondary when available, without selecting a new format or changing render settings.
-- Updated About, installer, Windows workflow artifacts, seven-language user guides and dedicated Render documentation.
-- Preserved every 0.0.74 parameter/MIDI CC feature, historical release documentation and automated ReaPack publisher/index generator; `index.xml` remains owned by the publisher.
+- Introduced focus-only navigation of REAPER's native Render to File window (action 40015), including Ctrl+F, F3/Shift+F3 and cycling Alt+letter gestures.
+- Alt+Z focuses Sample rate, and Alt+1 / Alt+2 focus Primary and Secondary; native Ctrl+Tab stays available.
+- Rendering controls are not activated or changed by the accessibility navigation.
+- Earlier FX/Track features, published releases and the ReaPack indexing workflow are preserved.
 
 ## 0.0.74 — 18 November 2026
 

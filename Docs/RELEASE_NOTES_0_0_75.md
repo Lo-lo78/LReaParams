@@ -1,29 +1,48 @@
-# LReaParams 0.0.75 — Native Render window navigation
+# LReaParams 0.0.75 — Accessible Render, shortcut help and configurable messages
 
-**Release date:** 19 November 2026  
+**Release date:** 22 November 2026  
 **Platform:** Windows x64 · Native REAPER extension · NVDA / OSARA
 
-## New: faster access to REAPER's native Render to File window
+## Shift+F1: context-sensitive shortcut exploration
 
-The usual REAPER action **40015** still opens the *original* Render to File dialog. LReaParams adds keyboard navigation only while that native dialog is active:
+- **Shift+F1** turns shortcut exploration on or off while an LReaParams context is active: **FX Params, Track Params or the native Render window**.
+- While exploring, pressing a gesture announces its *current LReaParams function*; it does not execute the action, change a parameter or move the focus. Press Shift+F1 again to return to normal operation at the same control.
+- The help resolves the active page/context and user remappings; it is not a replacement for OSARA's REAPER Action List shortcut help.
+- **Outside active LReaParams contexts, Shift+F1 belongs to REAPER**, including any user-assigned action.
 
-- **Ctrl+F** opens an accessible control-name search. Enter focuses the first matching visible control, Escape cancels.
-- **F3** and **Shift+F3** move forward/backward through search results with wraparound.
-- **Alt+letter** moves forward through the controls assigned to that accelerator; **Alt+Shift+letter** moves backward. Shared letters cycle in both directions.
-- **Alt+Z** focuses **Sample rate**; **Alt+S** also remains an alias. If the native input is disabled, REAPER must first enable it.
-- **Alt+1** and **Alt+2** focus the native **Primary** and **Secondary** output-format tab labels. **Ctrl+Tab / Ctrl+Shift+Tab** remain REAPER-native.
-- For a format-dependent control, a short **Primary** or **Secondary** context is announced when its state is available; no context is guessed if it cannot be read.
+## Render: automatic and personalized shortcuts
 
-**Important:** accelerators only move *keyboard focus*. They never press Render, toggle a checkbox, change a sample rate or adjust any render setting. Once focused, use the control's ordinary REAPER keys (Space, Enter, arrows, etc.). Controls disabled by REAPER are not forced into focus. Some codec-specific or custom controls may still require native Tab navigation.
+REAPER action **40015** still opens the original **Render to File** window. LReaParams supplements its native controls:
 
-See [Render navigation reference](RENDER_NAVIGATION.md) for detailed keys, caveats and manual acceptance checks.
+- **Ctrl+F** searches visible controls; **F3 / Shift+F3** navigate results.
+- **Alt+letter / Alt+Shift+letter** move the focus among available controls; shared automatic letters cycle. **Alt+Z** focuses Sample rate and **Alt+R** focuses Render without starting it.
+- **Alt+1 / Alt+2** still focus the Primary and Secondary tabs. These are fixed Render navigation gestures, not automatically generated Alt+letter choices; they are not artificially injected into the Preferences shortcut lookup when no personal gesture exists.
+- **Ctrl+Tab / Ctrl+Shift+Tab** and control activation remain native REAPER functions. Render accelerators **only move focus**: they never click a button, change a checkbox or start rendering.
+- **Ctrl+P → Shortcuts → Render** shows recognizable controls from the Render configuration currently exposed, plus any already-personalized controls that are temporarily unavailable. **No personal gesture means automatic navigation remains unchanged**. A user-defined gesture takes precedence over the corresponding automatic gesture without redistributing the old cycle.
+- Personal assignments persist in Preferences. A format-specific unavailable control remains editable; no format or tab is silently changed while scanning.
 
-## Compatibility and preservation
+## Ctrl+P Preferences improvements
 
-All features previously released in **0.0.74** remain, including Alt+R per-parameter ranges, Alt+C fixed MIDI CC ranges, Alt+F session-only floating CC ranges, their accessible dialogs, memory columns, and Track MIDI announcements. FX Params, Track Params, `.fx` / `.tp` profiles, previous published tags and release assets are not replaced by this release.
+- **Shortcuts** has separate FX Params, Track Params and Render sections. FX/Track retain their fixed, user-remappable mappings.
+- **Alt+S** is the **only** accelerator entering **Search by shortcut**. Within that field, all queried shortcut gestures are inert: **Alt+R, Alt+O, Alt+C, Alt+D** and other combinations never activate dialog buttons. The shortcut is looked up without executing it; a miss leaves the existing selection intact.
+- **F1–F12**, including supported modifier combinations, may be captured and searched. Certain essential navigation or accessibility combinations remain reserved (including Shift+F1).
+- **Delete** restores a single shortcut to its default (FX/Track) or removes the personal override (Render).
+- **Alt+R** selects **Reset section**. A confirmation starts on **No**. A Yes answer resets only the selected section *in the pending preferences*; **OK** saves and **Cancel/Escape** abandons changes.
+- The lookup only reports shortcuts mapped by LReaParams. REAPER Action List bindings remain REAPER/OSARA's responsibility.
 
-The GitHub stable-release publisher is preserved exactly. A published **`v0.0.75`** release triggers the existing workflow, builds and uploads `reaper_lreaparams.dll`, and regenerates the ReaPack index from **all eligible stable published releases** with their tagged guides. Do **not** manually overwrite `index.xml` or delete historical versions. The tested source is committed through `Tools\push_lreaparams.cmd` in the existing local clone.
+## Ctrl+P Messages: individual speech announcements
+
+- Existing title templates remain intact and keep their original positions: **four FX** and **twelve Track** titles.
+- The message list then exposes **301 FX** and **276 Track** navigator announcement types found in this source version. Each can be **enabled or disabled** independently or given an optional **custom message**.
+- For dynamic announcements, the literal token **`{original}`** inserts the original current text (for example, parameter names and values). An empty custom field keeps the original; disabled messages remain silent.
+- The overrides are kept in the existing Preferences system (`[SpeechMessages]`), apply after **OK**, and are discarded by **Cancel/Escape**. The navigator logic and title layouts are unchanged.
+
+## Compatibility and historical ReaPack safety
+
+All 0.0.74 parameter and MIDI CC ranges, FX/Track memories, `.fx` and `.tp` profile compatibility, Keyboard/Used modes, custom title configurations and previous functionality remain.
+
+**Do not alter previous tags, releases or index history.** In the existing Git clone, publish source changes only with `Tools\push_lreaparams.cmd "Release 0.0.75 - Context shortcut help Render preferences and configurable messages"`. Verify MSVC and CTest, then publish a **new stable `v0.0.75` release only if that tag is not already used**. Attach its matching Windows installer. On the GitHub **`release: published`** event the existing `Publish LReaParams to ReaPack` workflow runs separately: it builds the native DLL from that tag, attaches the DLL to the same release and regenerates `index.xml` from **all eligible stable releases**, including older tagged versions. **No manual XML commit, forced push or tag recreation.** If that run fails, retry the existing workflow manually with the *same* valid release tag.
 
 ## Validation
 
-Static/source tests verify Render key handling, version metadata, installer naming, multilingual guide sections and ReaPack preservation. A successful GitHub Actions MSVC build and native CTest are still required before release; verify the native Render UI with NVDA/OSARA on Windows.
+The source tests cover Render, Preferences, shortcut help, message overrides and historic ReaPack workflow contracts. Full release readiness additionally requires the GitHub Actions Windows build, CTest, and a final NVDA/OSARA smoke test. Source ZIPs contain no precompiled DLL or installer.

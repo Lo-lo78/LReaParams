@@ -1,4 +1,4 @@
-"""0.0.75 Release: Render shortcuts, versioned outputs and ReaPack continuity."""
+"""0.0.76 Release: Render shortcuts, versioned outputs and ReaPack continuity."""
 from pathlib import Path
 import importlib.util
 import xml.etree.ElementTree as ET
@@ -6,10 +6,10 @@ from reapack_index_contract import verify_optional_reapack_index
 
 root = Path(__file__).resolve().parents[1]
 rd = lambda p: (root / p).read_text(encoding='utf-8')
-version = '0.0.75'
+version = '0.0.76'
 assert f'project(LReaParams VERSION {version} LANGUAGES CXX)' in rd('CMakeLists.txt')
 assert f'LReaParams {version} - Native REAPER extension' in rd('src/Extension.cpp')
-assert 'Release date: 19 November 2026' in rd('src/Extension.cpp')
+assert 'Release date: 22 November 2026' in rd('src/Extension.cpp')
 assert f'!define APP_VERSION "{version}"' in rd('Installer/LReaParams.nsi')
 assert f'LReaParams-{version}-Windows-x64-SETUP-EXE' in rd('.github/workflows/build-windows.yml')
 assert f'LReaParams-{version}-Source.zip' in rd('.github/workflows/build-windows.yml')
@@ -40,8 +40,8 @@ def rel(v):
             'published_at':'2026-11-19T12:00:00Z',
             'assets':[{'name':'reaper_lreaparams.dll','state':'uploaded',
                        'browser_download_url':f'https://github.com/Lo-lo78/LReaParams/releases/download/v{v}/reaper_lreaparams.dll'}]}
-versions = ('0.0.63','0.0.65','0.0.66','0.0.67','0.0.68','0.0.69','0.0.70','0.0.71','0.0.72','0.0.73','0.0.74','0.0.75')
+versions = ('0.0.63','0.0.65','0.0.66','0.0.67','0.0.68','0.0.69','0.0.70','0.0.71','0.0.72','0.0.73','0.0.74','0.0.75','0.0.76')
 entries = m.release_versions([rel(v) for v in reversed(versions)], lambda _: ['Guide/index.html','Guide/it/fx.html'])
 xml = ET.fromstring(m.build_index(entries, m.DEFAULT_REPO))
 assert [v.attrib['name'] for v in xml.findall('./category/reapack/version')] == list(versions)
-print('0.0.75 Render, full ReaPack history and release metadata PASS')
+print('0.0.76 Render, full ReaPack history and release metadata PASS')

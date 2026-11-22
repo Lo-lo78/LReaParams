@@ -8,7 +8,9 @@ track_head = (root / 'include/lrp/TrackNavigator.h').read_text(encoding='utf-8')
 routing = (root / 'src/TrackNavigatorRouting.cpp').read_text(encoding='utf-8')
 assert 'int lastTreeChoice = 0;' in pref
 assert 'lastTreeChoice = i;' in pref
-assert 'std::clamp(lastTreeChoice, 0, 6)' in pref
+# Render Shortcuts added a tree entry without changing existing title templates.
+assert 'std::clamp(lastTreeChoice, 0, 7)' in pref
+assert 'for (int i = 0; i < 8; ++i)' in pref
 assert 'SetFocus(state.tree);' in pref
 for title in ['Track (F1)', 'Sends (F2)', 'Receives (F3)', 'FX TCP (F4)',
               'Track MIDI (F5)', 'Hardware outputs (F6)', 'ReaRoute (F7)',

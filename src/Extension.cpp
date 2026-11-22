@@ -294,9 +294,15 @@ public:
         case about:
             exitNavigation(false);
             ShowMessageBox(
-                "LReaParams 0.0.75 - Native REAPER extension\nRelease date: 19 November 2026\n\n"
+                "LReaParams 0.0.76 - Native REAPER extension\nRelease date: 22 November 2026\n\n"
                 "Accessible FX Params and Track Params for NVDA and OSARA.\n"
-                "New in 0.0.75: accessible navigation of REAPER's native Render to File window.\n"
+                "New in 0.0.76: Shift+F1 contextual shortcut exploration, Render shortcut customization and individual FX/Track speech message preferences.\n"
+                "Shift+F1: explore LReaParams shortcuts in FX Params, Track Params and Render without executing them; press Shift+F1 again to exit without losing focus. Outside these contexts REAPER keeps its own Shift+F1 action.\n"
+                "Preferences Ctrl+P: Shortcuts for FX, Track and Render; Alt+S focuses Search by shortcut. In the search field shortcut keys are only queried, never executed.\n"
+                "Render Shortcuts: automatic shortcuts remain until individually overridden; personal assignments persist and can be reset. Available controls and previously personalized missing controls remain manageable.\n"
+                "Preferences: Delete resets an individual shortcut; Alt+R resets the current section after a confirmation with No selected. OK saves, Cancel or Escape discards all unsaved changes.\n"
+                "Messages: FX titles (4) and Track titles (12) remain as before, followed by configurable FX/Track announcements. Toggle each message or set custom text; {original} retains dynamic content.\n"
+                "Introduced in 0.0.75: native Render navigation.\n"
                 "Render: Ctrl+F searches controls, F3/Shift+F3 moves between matches; Alt+letter/Alt+Shift+letter cycles forward/backward through assigned controls.\n"
                 "Render: Alt+Z focuses Sample rate (Alt+S alias); Alt+1/Alt+2 focuses Primary/Secondary format tabs; native Ctrl+Tab is unchanged.\n"
                 "Render accelerators change focus only: they never render, toggle a setting or alter a value.\n"
@@ -340,7 +346,7 @@ public:
                 "Space Play/Stop; Ctrl+Space Play/Pause; Ctrl+I/O markers; "
                 "Ctrl+1 through Ctrl+0 marker jumps.\n"
                 "Alt+F10/F11/F12 and Alt+Shift+F10/F11/F12: OSARA Peak Watcher.\n"
-                "F12 alone is reserved; Ctrl+F12 memory slot 12. Ctrl+P no longer opens the FX Browser.\n\n"
+                "F12 alone is reserved by default (it can be personally reassigned in Preferences); Ctrl+F12 memory slot 12. Ctrl+P no longer opens the FX Browser.\n\n"
                 "Open User Guide: choose English, Italian, Spanish, French, Russian, "
                 "Simplified Chinese or Japanese; then FX Params or Track Params.\n"
                 "Install Guide in REAPER resource path / LReaParams / Guide.\n"

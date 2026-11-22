@@ -1,6 +1,8 @@
-LReaParams 0.0.75 — sorgente GitHub Ready (19 novembre 2026)
+LReaParams 0.0.76 — sorgente GitHub Ready (22 novembre 2026)
 
-NOVITA': navigazione nella finestra Render nativa di REAPER:
+NOVITA' 0.0.76: Shift+F1 aiuto scorciatoie contestuali; Render Shortcuts
+personalizzabili; Messages FX e Track attivabili/disattivabili e custom.
+La navigazione nativa Render, introdotta in v0.0.75, rimane:
 Ctrl+F ricerca, F3/Maiusc+F3 risultati, Alt+lettera avanti,
 Alt+Maiusc+lettera indietro nei cicli, Alt+Z sample rate (Alt+S alternativo),
 Alt+1/Alt+2 schede Primary/Secondary. Tutti gli acceleratori spostano SOLO
@@ -12,19 +14,19 @@ Lo storico ReaPack e tutte le release precedenti NON devono andare persi.
 1. Estrai NEL CLONE GIT GIA' ESISTENTE. Conserva .git e index.xml
    presenti nella cartella locale; non creare un nuovo repository.
 2. Dalla radice del clone esegui ESCLUSIVAMENTE:
-   Tools\push_lreaparams.cmd "Release 0.0.75 - Accessible native Render navigation and reverse accelerators"
+   Tools\push_lreaparams.cmd "Release 0.0.76 - Accessible native Render navigation and reverse accelerators"
 3. Controlla Actions > Build LReaParams Windows x64 e scarica l'artefatto
-   LReaParams-0.0.75-Windows-x64-SETUP-EXE. Provalo in REAPER con NVDA/OSARA.
-4. Crea la release STABILE v0.0.75 sul commit compilato e collaudato.
-   Titolo: LReaParams 0.0.75 - Accessible Native Render Navigation
+   LReaParams-0.0.76-Windows-x64-SETUP-EXE. Provalo in REAPER con NVDA/OSARA.
+4. Crea la release STABILE v0.0.76 sul commit compilato e collaudato.
+   Titolo: LReaParams 0.0.76 - Shortcut Help, Render Customization and Configurable Messages
    Descrizione: Docs/GITHUB_RELEASE_0_0_75_BODY_EN.md
-   Allega l'installer EXE 0.0.75, senza rinominarlo in una vecchia versione.
+   Allega l'installer EXE 0.0.76, senza rinominarlo in una vecchia versione.
 5. Pubblicare la RELEASE (non il solo push) attiva automaticamente
    Actions > Publish LReaParams to ReaPack.
 6. Verifica i due job build-native-release-asset e regenerate-reapack-index,
    la DLL standalone allegata alla release e index.xml con lo storico completo.
    Se un run fallisce, NON creare un secondo tag o forzare il push:
-   correggi il problema, poi usa workflow_dispatch con tag v0.0.75.
+   correggi il problema, poi usa workflow_dispatch con tag v0.0.76.
 7. Dopo il commit automatico di index.xml, aggiorna il clone locale:
    git pull --rebase origin main
 
