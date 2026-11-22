@@ -1138,8 +1138,9 @@ Preferences loadPreferences(const std::filesystem::path& file) {
         if (!duplicate) p.shortcuts[i].assigned = candidate;
     }
     // New independent Render section: no automatic gestures are serialized.
-    const int renderCount = std::clamp(GetPrivateProfileIntW(L"RenderShortcuts", L"Count", 0,
-        path.c_str()), 0, 512);
+    const int renderCount = static_cast<int>(std::clamp(
+        GetPrivateProfileIntW(L"RenderShortcuts", L"Count", 0, path.c_str()),
+        0U, 512U));
     for (int i = 0; i < renderCount; ++i) {
         const auto index = std::to_wstring(i);
         const auto id = readIni(path, L"RenderShortcuts", (L"Id" + index).c_str());
