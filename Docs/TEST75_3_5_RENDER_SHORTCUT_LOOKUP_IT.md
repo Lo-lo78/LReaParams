@@ -8,12 +8,12 @@ Questa modifica nasce dal mancato riconoscimento di Alt+1 e Alt+2 nella ricerca 
 - La ricerca include ora anche i comandi di LReaParams Render che non corrispondono a un singolo controllo: Ctrl+P, Ctrl+F, F3, Shift+F3 e Shift+F1. Queste voci sono indicate come comandi interni, consultabili ma non personalizzabili direttamente dall'elenco dei controlli.
 - Alt+R e tutte le altre lettere automatiche continuano a essere lette dalla mappa effettiva, non da un elenco predefinito.
 - Se l'utente occupa Alt+M, la ricerca non propone più la vecchia Alt+Shift+M automatica: anche quel ciclo è disattivato nel navigatore.
-- Alt+S resta il collegamento preesistente al campo di ricerca; è disponibile anche Alt+D. Dentro il campo entrambe le combinazioni sono solo dati da interrogare, non acceleratori della finestra.
+- Alt+S è l’unico acceleratore per entrare nel campo di ricerca. Dentro il campo qualsiasi combinazione, inclusi Alt+S e Alt+D, è soltanto un dato da interrogare e non un acceleratore della finestra.
 - Anche in FX Params e Track Params Ctrl+P e Shift+F1 sono ora consultabili come comandi interni non modificabili. Nessun indice delle scorciatoie salvate viene spostato.
 
 ## Prova manuale su Windows, REAPER, NVDA/OSARA
 
-1. Apri Render con le schede Primary e Secondary rilevabili. Apri Ctrl+P > Shortcuts > Render e raggiungi Cerca scorciatoia (Alt+S oppure Alt+D).
+1. Apri Render con le schede Primary e Secondary rilevabili. Apri Ctrl+P > Shortcuts > Render e raggiungi Cerca scorciatoia (Alt+S).
 2. Cerca Alt+1: deve selezionare Primary output format, senza attivarla. Cerca Alt+2: deve selezionare Secondary output format, senza attivarla.
 3. Cerca Alt+R: deve selezionare il controllo che Render raggiunge attualmente con Alt+R, senza avviare un rendering.
 4. Cerca Ctrl+P, Ctrl+F, F3, Shift+F3 e Shift+F1: devono essere individuate le voci interne. Invio su una voce interna deve annunciare che non è personalizzabile; non deve aprire la cattura.

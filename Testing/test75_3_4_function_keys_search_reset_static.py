@@ -22,7 +22,7 @@ assert 'swallowedRelease || personalizedF12' in router
 assert router.count('!assignedF12(physical)') == 2
 # Alt+S focuses lookup; Alt+R resets section, ONLY outside shortcut input.
 assert 'L"&Reset section..."' in p
-assert 'msg.wParam == \'S\'' in p and 'SetFocus(state.lookup);' in p
+assert 'msg.wParam == \'S\'' in p and 'focusShortcutLookup(&state, static_cast<UINT>(msg.wParam));' in p
 assert 'msg.wParam == \'R\'' in p and 'MAKEWPARAM(IDC_RESET_SECTION, BN_CLICKED)' in p
 assert 'focused != state.lookup && !(state.capturing && focused == state.capture)' in p
 # The shortcut input first bypasses Windows' dialog-mnemonic interpretation.

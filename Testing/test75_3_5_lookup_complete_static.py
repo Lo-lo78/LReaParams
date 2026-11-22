@@ -28,10 +28,12 @@ assert 'Shortcut not found in this section' in lookup
 assert 'SetFocus(st->shortcuts)' in lookup
 assert 'Main_OnCommand' not in lookup
 assert 'forward.shift = false;' in prefs
-# Both Alt+D and the existing Alt+S open the lookup, but neither executes
-# mnemonic actions while the shortcut interrogation field has focus.
-assert prefs.count("(vk == 'S' || vk == 'D')") >= 1
-assert "(msg.wParam == 'S' || msg.wParam == 'D')" in prefs
+# Only Alt+S enters the lookup (TEST75.3.7); Alt+D is not a lookup
+# accelerator. Inside the interrogation field all keys are searchable data.
+assert "alt && !ctrl && !shift && vk == 'S'" in prefs
+assert "msg.message == WM_SYSKEYDOWN && msg.wParam == 'S'" in prefs
+assert "(vk == 'S' || vk == 'D')" not in prefs
+assert "(msg.wParam == 'S' || msg.wParam == 'D')" not in prefs
 assert 'if (hwnd == st->lookup)' in prefs
 assert 'if (isDialogMessage && isShortcutInput && !altTab)' in prefs
 assert 'MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2' in prefs

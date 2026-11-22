@@ -156,6 +156,14 @@ struct DialogState {
     std::vector<RenderControlInfo> renderDiscovered, renderVisible;
     int selectedInScope[3]{};
     bool created = false, capturing = false, editingCustom = false, accepted = false;
+    // An Alt+S gesture used to ENTER lookup is navigation, not a query.
+    // If Windows redirects the remaining repeat/character to the newly
+    // focused EDIT, suppress it until that physical key has been released.
+    UINT lookupActivator = 0;
+    // A native modal owner must be re-enabled BEFORE destroying the popup;
+    // otherwise Windows can activate a different application in the gap.
+    HWND modalOwner{};
+    bool modalOwnerDisabled = false;
 };
 int scopeIndex(ShortcutScope scope) { return scope == ShortcutScope::fx ? 0 : scope == ShortcutScope::track ? 1 : 2; }
 // Non-remappable commands common to both navigators are kept out of the
@@ -249,6 +257,11 @@ void fillShortcuts(DialogState* st) {
         selectList(st->shortcuts, selected);
         st->selectedInScope[scopeIndex(st->currentScope)] = selected;
     }
+}
+void focusShortcutLookup(DialogState* st, UINT activator) {
+    if (!st || !st->lookup || !IsWindow(st->lookup)) return;
+    st->lookupActivator = activator;
+    SetFocus(st->lookup);
 }
 void updateSelection(DialogState* st) {
     const int index = listSelection(st->shortcuts);
@@ -598,6 +611,8 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
         // The lookup owns EVERY queried shortcut (including F1..F12 and
         // Alt+S/Alt+R/Alt+O/Alt+C). Do not execute dialog mnemonics here.
         if (hwnd == st->lookup) {
+            if (st->lookupActivator == vk) return 0; // Alt+S was used to focus this EDIT
+            if ((lp & (static_cast<LPARAM>(1) << 30)) != 0) return 0; // no repeated lookup announcements
             if (vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT ||
                 vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_LMENU ||
                 vk == VK_RMENU || vk == VK_LSHIFT || vk == VK_RSHIFT) return 0;
@@ -612,11 +627,11 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
         if (hwnd == st->messages && alt && !ctrl && (vk == VK_UP || vk == VK_DOWN)) {
             reorderMessagePart(st, vk == VK_UP ? -1 : 1); return 0;
         }
-        // Alt+S / Alt+D focus Shortcut lookup. They must
+        // Only Alt+S focuses Shortcut lookup. It must
         // NOT steal Alt+S from the shortcut query or the capture field.
         if (st->page == Page::shortcuts && hwnd != st->capture &&
-            alt && !ctrl && !shift && (vk == 'S' || vk == 'D')) {
-            SetFocus(st->lookup); return 0;
+            alt && !ctrl && !shift && vk == 'S') {
+            focusShortcutLookup(st, vk); return 0;
         }
         if (st->page == Page::shortcuts && hwnd != st->capture &&
             alt && !ctrl && !shift && vk == 'R') {
@@ -880,9 +895,9 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     }
     if (msg == WM_SYSCHAR && (GetKeyState(VK_MENU) & 0x8000)) {
         if (st->page == Page::shortcuts && !inShortcutInput &&
-            (wp == 's' || wp == 'S' || wp == 'd' || wp == 'D') &&
+            (wp == 's' || wp == 'S') &&
             !(GetKeyState(VK_CONTROL) & 0x8000) &&
-            !(GetKeyState(VK_SHIFT) & 0x8000)) { SetFocus(st->lookup); return 0; }
+            !(GetKeyState(VK_SHIFT) & 0x8000)) { focusShortcutLookup(st, static_cast<UINT>(std::towupper(static_cast<wint_t>(wp)))); return 0; }
         if (st->page == Page::shortcuts && !inShortcutInput &&
             (wp == 'r' || wp == 'R') &&
             !(GetKeyState(VK_CONTROL) & 0x8000) &&
@@ -900,9 +915,19 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         if (id == IDOK || id == IDCANCEL) {
             if (st->editingCustom) closeCustomEditor(st, id == IDOK);
             st->accepted = id == IDOK;
+            // Modal ordering matters: return the native Render/REAPER owner
+            // to the enabled state WHILE this modal popup still exists.
+            // Destroying an owned popup while its owner remains disabled can
+            // invalidate REAPER's normal activation chain after closing Render.
+            if (st->modalOwnerDisabled && IsWindow(st->modalOwner)) {
+                EnableWindow(st->modalOwner, TRUE);
+                st->modalOwnerDisabled = false;
+            }
             st->hwnd = nullptr;
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
             DestroyWindow(hwnd);
+            if (st->modalOwner && IsWindow(st->modalOwner))
+                SetActiveWindow(st->modalOwner);
             return 0;
         }
         if (id == IDC_MESSAGE_TOPICS && notice == LBN_SELCHANGE) {
@@ -1326,10 +1351,14 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
     }
     DialogState state; state.pending = current; state.announce = announce;
     state.renderDiscovered = renderControls;
+    state.modalOwner = owner;
     // Disable the owner before displaying the popup, as for a native modal
-    // Win32 dialog. A disabled owner cannot compete with its dialog for focus.
+    // Win32 dialog. Its enable/activation state is restored *before* closing.
     const bool disabledOwner = owner && IsWindow(owner) && IsWindowEnabled(owner);
-    if (disabledOwner) EnableWindow(owner,FALSE);
+    if (disabledOwner) {
+        EnableWindow(owner,FALSE);
+        state.modalOwnerDisabled = true;
+    }
     HWND hwnd = CreateWindowExW(WS_EX_DLGMODALFRAME | WS_EX_CONTROLPARENT,
         kClassName, L"LReaParams - Preferences", WS_POPUP | WS_CAPTION | WS_SYSMENU,
         CW_USEDEFAULT, CW_USEDEFAULT, 752, 512, owner, nullptr, GetModuleHandleW(nullptr), &state);
@@ -1352,6 +1381,28 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
         // Do not let the nested modal loop claim keyboard messages from
         // unrelated REAPER windows or from another foreground application.
         const bool isDialogMessage = msg.hwnd == hwnd || (msg.hwnd && IsChild(hwnd, msg.hwnd));
+        // Alt+S moved the focus into lookup. That SAME physical
+        // key must not subsequently be interpreted as an unsuccessful search
+        // by a repeat, a delayed WM_SYSCHAR or a re-targeted key event.
+        // A fresh Alt+S pressed after release remains fully searchable.
+        if (isDialogMessage && state.lookupActivator) {
+            const UINT activator = state.lookupActivator;
+            const bool samePhysical = (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN ||
+                msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP) &&
+                msg.wParam == activator;
+            const bool matchingCharacter = (msg.message == WM_CHAR || msg.message == WM_SYSCHAR ||
+                msg.message == WM_DEADCHAR || msg.message == WM_SYSDEADCHAR) &&
+                static_cast<UINT>(std::towupper(static_cast<wint_t>(msg.wParam))) == activator;
+            if (samePhysical) {
+                if (msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP)
+                    state.lookupActivator = 0;
+                continue;
+            }
+            if (matchingCharacter) continue;
+            // Never leave a stale guard if a child changes focus before
+            // the corresponding release reaches this dialog queue.
+            if (GetFocus() != state.lookup) state.lookupActivator = 0;
+        }
         const HWND focused = GetFocus();
         const bool isShortcutInput = state.page == Page::shortcuts &&
             (focused == state.lookup ||
@@ -1408,16 +1459,16 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
                 reinterpret_cast<LPARAM>(state.resetSection));
             continue;
         }
-        // Alt+S and Alt+D focus the shortcut lookup from any Preferences
+        // Only Alt+S focuses the shortcut lookup from any Preferences
         // control except the lookup/capture itself. Inside those fields the
         // combination remains DATA and is not an accelerator.
         if (isDialogMessage && state.page == Page::shortcuts &&
             focused != state.lookup && !(state.capturing && focused == state.capture) &&
-            msg.message == WM_SYSKEYDOWN && (msg.wParam == 'S' || msg.wParam == 'D') &&
+            msg.message == WM_SYSKEYDOWN && msg.wParam == 'S' &&
             (GetKeyState(VK_MENU) & 0x8000) &&
             !(GetKeyState(VK_CONTROL) & 0x8000) &&
             !(GetKeyState(VK_SHIFT) & 0x8000)) {
-            SetFocus(state.lookup);
+            focusShortcutLookup(&state, static_cast<UINT>(msg.wParam));
             continue;
         }
         // Alt+R invokes Reset only outside the shortcut lookup/capture fields.
@@ -1439,12 +1490,11 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
             DispatchMessageW(&msg);
         }
     }
-    if (disabledOwner && IsWindow(owner)) {
+    // Fallback for WM_QUIT/abnormal destruction only. The normal OK/Cancel
+    // path has already re-enabled and activated the owner in the proper order.
+    if (state.modalOwnerDisabled && owner && IsWindow(owner)) {
         EnableWindow(owner,TRUE);
-        // Restore REAPER only when it belongs to the foreground thread;
-        // otherwise preserve the user's Alt+Tab destination.
-        if (GetActiveWindow() == nullptr || GetActiveWindow() == owner)
-            SetActiveWindow(owner);
+        state.modalOwnerDisabled = false;
     }
     return state.accepted ? std::make_optional(state.pending) : std::nullopt;
 }
