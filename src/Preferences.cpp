@@ -160,6 +160,11 @@ struct DialogState {
     // If Windows redirects the remaining repeat/character to the newly
     // focused EDIT, suppress it until that physical key has been released.
     UINT lookupActivator = 0;
+    // One physical shortcut query may produce several Win32 keyboard messages.
+    // Keep an unsuccessful result pending until release: a later successful
+    // interpretation of that SAME gesture must cancel the false negative.
+    UINT lookupQueryVk = 0;
+    bool lookupMissPending = false;
     // A native modal owner must be re-enabled BEFORE destroying the popup;
     // otherwise Windows can activate a different application in the gap.
     HWND modalOwner{};
@@ -421,7 +426,7 @@ void startCapture(DialogState* st) {
 }
 // The lookup is an interrogation field: its key never executes a command.
 // Unknown gestures leave the listbox selection and navigation state intact.
-void findShortcut(DialogState* st, const Key& key) {
+bool findShortcut(DialogState* st, const Key& key) {
     int found = -1;
     const int current = listSelection(st->shortcuts);
     if (st->currentScope == ShortcutScope::render) {
@@ -450,13 +455,11 @@ void findShortcut(DialogState* st, const Key& key) {
             if (same(effective, key)) { found = static_cast<int>(j); break; }
         }
     }
-    if (found < 0) {
-        if (st->announce) st->announce("Shortcut not found in this section");
-        return;
-    }
+    if (found < 0) return false; // The caller announces a miss ONLY after key release.
     selectList(st->shortcuts, found);
     updateSelection(st);
     SetFocus(st->shortcuts);
+    return true;
 }
 void resetSingleShortcut(DialogState* st) {
     updateSelection(st);
@@ -593,7 +596,8 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
         const UINT vk = static_cast<UINT>(wp);
         const bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
         const bool ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
-        const bool alt = (GetKeyState(VK_MENU) & 0x8000) != 0;
+        const bool alt = (GetKeyState(VK_MENU) & 0x8000) != 0 ||
+            (msg == WM_SYSKEYDOWN && (lp & (static_cast<LPARAM>(1) << 29)) != 0);
         if (hwnd == st->customEdit) {
             if (vk == VK_RETURN && !alt) {
                 closeCustomEditor(st, true);
@@ -620,8 +624,17 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             if (vk == VK_ESCAPE && !ctrl && !alt) {
                 SendMessageW(st->hwnd, WM_COMMAND, IDCANCEL, 0); return 0;
             }
-            findShortcut(st, shortcut(vk, (ctrl ? kPrefCtrl : 0) |
-                (alt ? kPrefAlt : 0) | (shift ? kPrefShift : 0)));
+            // Use one result per physical press. A miss is reported at key
+            // release, never here: this prevents an interim false "not found"
+            // if Win32 delivers the gesture with more than one key state.
+            if (st->lookupQueryVk && st->lookupQueryVk != vk)
+                st->lookupMissPending = false; // previous key release was lost
+            st->lookupQueryVk = vk;
+            if (findShortcut(st, shortcut(vk, (ctrl ? kPrefCtrl : 0) |
+                    (alt ? kPrefAlt : 0) | (shift ? kPrefShift : 0))))
+                st->lookupMissPending = false;
+            else
+                st->lookupMissPending = true;
             return 0;
         }
         if (hwnd == st->messages && alt && !ctrl && (vk == VK_UP || vk == VK_DOWN)) {
@@ -1402,6 +1415,19 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
             // Never leave a stale guard if a child changes focus before
             // the corresponding release reaches this dialog queue.
             if (GetFocus() != state.lookup) state.lookupActivator = 0;
+        }
+        // Resolve the lookup transaction at physical key release. A query
+        // that selected a control cannot announce a failure: only an unmatched
+        // press, with no successful interpretation, reaches OSARA once.
+        // Key-up can target the result list after findShortcut moved focus.
+        if (isDialogMessage && state.lookupQueryVk &&
+            (msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP) &&
+            static_cast<UINT>(msg.wParam) == state.lookupQueryVk) {
+            const bool missing = state.lookupMissPending;
+            state.lookupQueryVk = 0;
+            state.lookupMissPending = false;
+            if (missing && state.announce)
+                state.announce("Shortcut not found in this section");
         }
         const HWND focused = GetFocus();
         const bool isShortcutInput = state.page == Page::shortcuts &&

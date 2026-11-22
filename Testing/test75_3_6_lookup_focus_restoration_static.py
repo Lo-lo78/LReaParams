@@ -17,9 +17,11 @@ assert 'state.lookupActivator = 0;' in pref
 assert 'if (matchingCharacter) continue;' in pref
 assert 'if (st->lookupActivator == vk) return 0;' in pref
 # The user receives a not-found message only for a genuinely unmatched key.
-lookup = pref.split('void findShortcut(DialogState* st, const Key& key)',1)[1].split('void resetSingleShortcut(',1)[0]
-assert lookup.index('if (found < 0) {') < lookup.index('Shortcut not found in this section')
-assert lookup.index('Shortcut not found in this section') < lookup.index('selectList(st->shortcuts, found)')
+lookup = pref.split('bool findShortcut(DialogState* st, const Key& key)',1)[1].split('void resetSingleShortcut(',1)[0]
+assert 'if (found < 0) return false;' in lookup
+assert 'Shortcut not found in this section' not in lookup
+assert 'state.lookupMissPending' in pref
+assert 'if (missing && state.announce)' in pref
 assert 'SetFocus(st->shortcuts)' in lookup
 # Modal owner and focus chain: enabling before DestroyWindow avoids leaving
 # Render as the only manually foregrounded window with a stale active owner.

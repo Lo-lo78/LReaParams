@@ -55,8 +55,9 @@ assert 'MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2' in pref
 assert 'other.identity == item.identity || !same(other.assigned, candidate)' in pref
 assert 'if (!updated) changes.push_back(' in pref
 # Search must never execute an extension command.
-lookup=pref.split('void findShortcut(',1)[1].split('void resetSingleShortcut(',1)[0]
-assert 'SetFocus(st->shortcuts)' in lookup and 'Shortcut not found in this section' in lookup
+lookup=pref.split('bool findShortcut(',1)[1].split('void resetSingleShortcut(',1)[0]
+assert 'SetFocus(st->shortcuts)' in lookup and 'if (found < 0) return false;' in lookup
+assert 'Shortcut not found in this section' in pref
 for action in ['handle(', 'PostMessageW(', 'Main_OnCommand(', 'SetDlgItemTextW(', 'click(']:
     assert action not in lookup, action
 # Only personal Render assignments are serialized, not the default auto map.

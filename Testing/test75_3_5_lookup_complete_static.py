@@ -20,11 +20,12 @@ assert 'isRenderCommand(st->renderVisible[static_cast<size_t>(index)])' in prefs
 assert 'isRenderCommand(st->renderVisible[static_cast<size_t>(selected)])' in prefs
 # The lookup reflects both the personal override precedence and forward
 # Alt+letter masking of the reverse Alt+Shift+letter cycle.
-lookup=prefs.split('void findShortcut(',1)[1].split('void resetSingleShortcut(',1)[0]
+lookup=prefs.split('bool findShortcut(',1)[1].split('void resetSingleShortcut(',1)[0]
 assert 'const bool masked = maskedRenderAutomatic(st->pending, key);' in lookup
 assert 'if (user && same(user->assigned, key))' in lookup
 assert 'if (!personalized && !masked)' in lookup
-assert 'Shortcut not found in this section' in lookup
+assert 'if (found < 0) return false;' in lookup
+assert 'Shortcut not found in this section' in prefs
 assert 'SetFocus(st->shortcuts)' in lookup
 assert 'Main_OnCommand' not in lookup
 assert 'forward.shift = false;' in prefs
