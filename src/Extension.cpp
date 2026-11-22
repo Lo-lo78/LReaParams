@@ -49,6 +49,7 @@ public:
         preferences_ = loadPreferences(preferencesPath_);
         setFxNameFirst(preferences_.pluginFirst);
         setTitleMessages(preferences_);
+        setSpeechMessageOverrides(preferences_.speechMessages);
         backend_ = preferences_.compatibilityHook ? InputBackend::mainThreadHook : InputBackend::sdkAccelerator;
         input_.setPreferences(&preferences_);
         renderNavigation_.setPreferences(&preferences_);
@@ -230,6 +231,7 @@ public:
                     preferences_ = *edited;
                     setFxNameFirst(preferences_.pluginFirst);
                     setTitleMessages(preferences_);
+                    setSpeechMessageOverrides(preferences_.speechMessages);
                     backend_ = preferences_.compatibilityHook ? InputBackend::mainThreadHook : InputBackend::sdkAccelerator;
                     speak("Preferences saved");
                 }

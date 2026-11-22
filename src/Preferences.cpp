@@ -64,6 +64,40 @@ constexpr const wchar_t* kTrackPageLabels[kTrackTitleCount] = {
     L"Hardware outputs", L"ReaRoute", L"MIDI CC", L"Parameter Steps",
     L"Parameter Speech", L"Track Positions", L"Volume Ranges"
 };
+// Titles always occupy the first four FX / twelve Track entries. Every
+// catalogued navigator announcement follows them in the same topic list.
+int baseMessageTopics(ShortcutScope scope) {
+    return scope == ShortcutScope::fx ? kFxTitleCount : kTrackTitleCount;
+}
+SpeechScope messageDomain(ShortcutScope scope) {
+    return scope == ShortcutScope::fx ? SpeechScope::fx : SpeechScope::track;
+}
+const SpeechMessageDefinition* messageDefinition(ShortcutScope scope, int topic) {
+    int index = topic - baseMessageTopics(scope);
+    if (index < 0) return nullptr;
+    for (const auto& entry : speechMessageCatalog()) {
+        if (entry.scope != messageDomain(scope)) continue;
+        if (index-- == 0) return &entry;
+    }
+    return nullptr;
+}
+const SpeechMessageOverride* messageOverride(const Preferences& p, const std::string& id) {
+    for (const auto& rule : p.speechMessages)
+        if (rule.id == id) return &rule;
+    return nullptr;
+}
+SpeechMessageOverride& editableMessageOverride(Preferences& p, const std::string& id) {
+    for (auto& rule : p.speechMessages)
+        if (rule.id == id) return rule;
+    p.speechMessages.push_back({id, true, {}});
+    return p.speechMessages.back();
+}
+// A default message has no explicit stored entry. Keeping this property makes
+// older Preferences.ini files behave exactly as before the message editor.
+void removeEmptyMessageOverrides(Preferences& p) {
+    p.speechMessages.erase(std::remove_if(p.speechMessages.begin(), p.speechMessages.end(),
+        [](const SpeechMessageOverride& v) { return v.enabled && v.custom.empty(); }), p.speechMessages.end());
+}
 int titlePartCount(ShortcutScope scope, int topic = 0) {
     return scope == ShortcutScope::fx ? (topic == 2 ? 3 : 5) : (topic == 0 ? 3 : topic == 3 ? 6 : 4);
 }
@@ -281,12 +315,26 @@ void fillMessageTopics(DialogState* st) {
     if (st->messageScope == ShortcutScope::fx) {
         for (const auto* label : kFxTopicNames)
             SendMessageW(st->messageTopics, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(label));
-        st->selectedTopic[scope] = std::clamp(st->selectedTopic[scope], 0, kFxTitleCount - 1);
     } else {
         for (const auto* label : kTrackTopicNames)
             SendMessageW(st->messageTopics, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(label));
-        st->selectedTopic[scope] = std::clamp(st->selectedTopic[scope], 0, kTrackTitleCount - 1);
     }
+    // The topics are discoverable in their own scope, regardless of whether
+    // the message has ever been announced in the current REAPER session.
+    for (const auto& definition : speechMessageCatalog()) {
+        if (definition.scope != messageDomain(st->messageScope)) continue;
+        std::wstring line = L"Message: ";
+        const int chars = MultiByteToWideChar(CP_UTF8, 0, definition.label.c_str(), -1, nullptr, 0);
+        if (chars > 1) {
+            std::wstring text(static_cast<size_t>(chars), L'\0');
+            MultiByteToWideChar(CP_UTF8, 0, definition.label.c_str(), -1, text.data(), chars);
+            text.resize(static_cast<size_t>(chars - 1));
+            line += text;
+        } else line += L"Dynamic navigator message";
+        SendMessageW(st->messageTopics, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(line.c_str()));
+    }
+    const int count = static_cast<int>(SendMessageW(st->messageTopics, LB_GETCOUNT, 0, 0));
+    st->selectedTopic[scope] = std::clamp(st->selectedTopic[scope], 0, std::max(0, count - 1));
     selectList(st->messageTopics, st->selectedTopic[scope]);
 }
 const wchar_t* titlePartLabel(ShortcutScope scope, int topic, int part) {
@@ -310,6 +358,20 @@ const wchar_t* titlePartLabel(ShortcutScope scope, int topic, int part) {
 }
 void fillMessageParts(DialogState* st, int selected = 0) {
     const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
+    if (const auto* def = messageDefinition(st->messageScope, topic)) {
+        SendMessageW(st->messages, LB_RESETCONTENT, 0, 0);
+        const SpeechMessageOverride* saved = messageOverride(st->pending, def->id);
+        const bool enabled = !saved || saved->enabled;
+        const std::wstring line = enabled ? L"Enabled - Message (Space to disable)" :
+            L"Disabled - Message (Space to enable)";
+        SendMessageW(st->messages, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(line.c_str()));
+        std::wstring custom = L"Custom message";
+        if (saved && !saved->custom.empty()) custom += L": " + saved->custom;
+        custom += L" (Enter to edit; {original} retains the original text)";
+        SendMessageW(st->messages, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(custom.c_str()));
+        selectList(st->messages, std::clamp(selected, 0, 1));
+        return;
+    }
     TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
     const int count = titlePartCount(st->messageScope, topic);
     SendMessageW(st->messages, LB_RESETCONTENT, 0, 0);
@@ -338,9 +400,15 @@ void closeCustomEditor(DialogState* st, bool commit) {
         wchar_t buffer[241]{};
         GetWindowTextW(st->customEdit, buffer, 241);
         const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
-        TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
-        cfg.custom = buffer;
-        normalizeTitle(cfg, titlePartCount(st->messageScope, topic));
+        if (const auto* def = messageDefinition(st->messageScope, topic)) {
+            auto& entry = editableMessageOverride(st->pending, def->id);
+            entry.custom = buffer;
+            removeEmptyMessageOverrides(st->pending);
+        } else {
+            TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
+            cfg.custom = buffer;
+            normalizeTitle(cfg, titlePartCount(st->messageScope, topic));
+        }
     }
     st->editingCustom = false;
     ShowWindow(st->customEdit, SW_HIDE);
@@ -352,12 +420,19 @@ void closeCustomEditor(DialogState* st, bool commit) {
 void startCustomEditor(DialogState* st) {
     const int selection = listSelection(st->messages);
     const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
-    const TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
-    const int count = titlePartCount(st->messageScope, topic);
-    if (selection < 0 || selection >= count ||
-        cfg.order[static_cast<size_t>(selection)] != customPart(st->messageScope, topic)) return;
+    const SpeechMessageDefinition* def = messageDefinition(st->messageScope, topic);
+    if (def) {
+        if (selection != 1) return;
+    } else {
+        const TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
+        const int count = titlePartCount(st->messageScope, topic);
+        if (selection < 0 || selection >= count ||
+            cfg.order[static_cast<size_t>(selection)] != customPart(st->messageScope, topic)) return;
+    }
     st->editingCustom = true;
-    SetWindowTextW(st->customEdit, cfg.custom.c_str());
+    const auto* rule = def ? messageOverride(st->pending, def->id) : nullptr;
+    SetWindowTextW(st->customEdit, def ? (rule ? rule->custom.c_str() : L"") :
+        titleFor(st->pending, st->messageScope, topic).custom.c_str());
     ShowWindow(st->customLabel, SW_SHOW);
     ShowWindow(st->customEdit, SW_SHOW);
     SetFocus(st->customEdit);
@@ -366,6 +441,16 @@ void startCustomEditor(DialogState* st) {
 void toggleMessagePart(DialogState* st) {
     const int selected = listSelection(st->messages);
     const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
+    if (const auto* def = messageDefinition(st->messageScope, topic)) {
+        if (selected != 0) return;
+        auto& rule = editableMessageOverride(st->pending, def->id);
+        rule.enabled = !rule.enabled;
+        const bool enabled = rule.enabled;
+        removeEmptyMessageOverrides(st->pending);
+        fillMessageParts(st, selected);
+        if (st->announce) st->announce(enabled ? "Message enabled" : "Message disabled");
+        return;
+    }
     const int count = titlePartCount(st->messageScope, topic);
     if (selected < 0 || selected >= count) return;
     TitleMessage& cfg = titleFor(st->pending, st->messageScope, topic);
@@ -381,6 +466,7 @@ void toggleMessagePart(DialogState* st) {
 void reorderMessagePart(DialogState* st, int direction) {
     const int selected = listSelection(st->messages);
     const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
+    if (messageDefinition(st->messageScope, topic)) return; // Messages are not title fragments.
     const int count = titlePartCount(st->messageScope, topic);
     const int dest = selected + direction;
     if (selected < 0 || dest < 0 || dest >= count) return;
@@ -765,7 +851,11 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             resetSingleShortcut(st); return 0;
         }
         if (hwnd == st->messages && vk == VK_RETURN && !ctrl && !alt) {
-            startCustomEditor(st); return 0;
+            const int topic = st->selectedTopic[scopeIndex(st->messageScope)];
+            if (messageDefinition(st->messageScope, topic) && listSelection(st->messages) == 0)
+                toggleMessagePart(st);
+            else startCustomEditor(st);
+            return 0;
         }
         if (hwnd == st->messages && vk == VK_SPACE && !ctrl && !alt) {
             toggleMessagePart(st); return 0;
@@ -1287,6 +1377,26 @@ Preferences loadPreferences(const std::filesystem::path& file) {
         loadTitle(path, key.c_str(), p.trackExtraTitles[static_cast<size_t>(i - 1)],
             titlePartCount(ShortcutScope::track, i));
     }
+    // Only deviations from the default message behavior are persisted.
+    const UINT messageCount = std::min<UINT>(GetPrivateProfileIntW(
+        L"SpeechMessages", L"Count", 0, path.c_str()), 4096U);
+    for (UINT i = 0; i < messageCount; ++i) {
+        const auto n = std::to_wstring(i);
+        const auto id = readIni(path, L"SpeechMessages", (L"Id" + n).c_str());
+        if (id.empty() || id.size() > 100) continue;
+        std::string ascii;
+        for (wchar_t ch : id) if (ch >= 32 && ch < 127) ascii += static_cast<char>(ch);
+        if (ascii.size() != id.size()) continue;
+        bool duplicate = false;
+        for (const auto& other : p.speechMessages) if (other.id == ascii) duplicate = true;
+        if (duplicate) continue;
+        const bool enabled = GetPrivateProfileIntW(L"SpeechMessages", (L"Enabled" + n).c_str(),
+            1, path.c_str()) != 0;
+        std::wstring custom = readIni(path, L"SpeechMessages", (L"Custom" + n).c_str());
+        if (custom.size() > 240) custom.resize(240);
+        for (auto& ch : custom) if (ch == L'\r' || ch == L'\n' || ch == L'\t') ch = L' ';
+        if (!enabled || !custom.empty()) p.speechMessages.push_back({ascii, enabled, custom});
+    }
     for (size_t i = 0; i < p.shortcuts.size(); ++i) {
         const std::wstring key = L"Shortcut" + std::to_wstring(i);
         const int value = GetPrivateProfileIntW(L"Shortcuts", key.c_str(), -1, path.c_str());
@@ -1335,6 +1445,21 @@ bool savePreferences(const std::filesystem::path& file, const Preferences& p) {
         const std::wstring key = L"TrackTitlePage" + std::to_wstring(i);
         if (!saveTitle(path, key.c_str(), p.trackExtraTitles[static_cast<size_t>(i - 1)],
             titlePartCount(ShortcutScope::track, i))) return false;
+    }
+    // Transactional with OK/Cancel: the saved file changes only after OK.
+    if (!WritePrivateProfileStringW(L"SpeechMessages", nullptr, nullptr, path.c_str())) return false;
+    if (!WritePrivateProfileStringW(L"SpeechMessages", L"Count",
+        std::to_wstring(p.speechMessages.size()).c_str(), path.c_str())) return false;
+    for (size_t i = 0; i < p.speechMessages.size(); ++i) {
+        const auto& rule = p.speechMessages[i];
+        const auto n = std::to_wstring(i);
+        const std::wstring id(rule.id.begin(), rule.id.end());
+        if (!WritePrivateProfileStringW(L"SpeechMessages", (L"Id" + n).c_str(),
+                id.c_str(), path.c_str()) ||
+            !WritePrivateProfileStringW(L"SpeechMessages", (L"Enabled" + n).c_str(),
+                rule.enabled ? L"1" : L"0", path.c_str()) ||
+            !WritePrivateProfileStringW(L"SpeechMessages", (L"Custom" + n).c_str(),
+                rule.custom.c_str(), path.c_str())) return false;
     }
     if (!WritePrivateProfileStringW(L"Keyboard", L"CompatibilityHook", p.compatibilityHook ? L"1" : L"0", path.c_str())) return false;
     // Only explicit overrides are kept for Render. Delete obsolete entries

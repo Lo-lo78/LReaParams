@@ -1,5 +1,6 @@
 #pragma once
 #include "Navigator.h"
+#include "MessageCatalog.h"
 #include <filesystem>
 #include <array>
 #include <functional>
@@ -32,6 +33,7 @@ struct Preferences {
     bool compatibilityHook = false;
     std::vector<ShortcutPreference> shortcuts;
     std::vector<RenderShortcutPreference> renderShortcuts;
+    std::vector<SpeechMessageOverride> speechMessages;
     TitleMessage fxTitle;
     // Independently configurable titles: FX Memories, FX Browser and FX Pin Connector.
     // Existing FxTitle INI keys and shortcut indices remain untouched.

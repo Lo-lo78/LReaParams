@@ -10,7 +10,7 @@ add_library(lrp_profiles STATIC src/Profile.cpp src/Storage.cpp src/FxOrder.cpp 
 target_include_directories(lrp_profiles PUBLIC include)
 target_compile_definitions(lrp_profiles PUBLIC UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX _WIN32_WINNT=0x0A00 WINVER=0x0A00)
 target_link_libraries(lrp_profiles PUBLIC bcrypt)
-add_library(reaper_lreaparams SHARED src/Extension.cpp src/RenderNavigation.cpp src/RangeDialog.cpp src/ChoiceDialogs.cpp src/Preferences.cpp src/ShortcutHelp.cpp src/ShortcutHelpContexts.cpp src/InputRouter.cpp src/TransportMarkers.cpp src/FxNavigator.cpp src/FxNavigatorContexts.cpp src/FxNavigatorPinAudio.cpp src/FxNavigatorClipboard.cpp src/FxNavigatorOrder.cpp src/FxNavigatorUsed.cpp src/FxNavigatorMemories.cpp src/FxNavigatorAdvanced.cpp src/FxNavigatorReaEq.cpp src/FxNavigatorDynamics.cpp src/TrackNavigator.cpp src/TrackNavigatorRouting.cpp src/TrackNavigatorFolders.cpp src/TrackNavigatorEdit.cpp src/TrackNavigatorAutomation.cpp src/TrackNavigatorFilter.cpp src/TrackNavigatorMidi.cpp src/TrackNavigatorExtra.cpp src/TrackNavigatorMemories.cpp src/TrackNavigatorFxTcp.cpp src/TrackNavigatorFxTcpList.cpp src/TrackNavigatorTrackMidi.cpp src/TrackNavigatorHardwareOutputs.cpp src/TrackNavigatorReaRoute.cpp src/ReaperApi.cpp src/TitleProxy.cpp)
+add_library(reaper_lreaparams SHARED src/Extension.cpp src/RenderNavigation.cpp src/RangeDialog.cpp src/ChoiceDialogs.cpp src/Preferences.cpp src/MessageCatalog.cpp src/ShortcutHelp.cpp src/ShortcutHelpContexts.cpp src/InputRouter.cpp src/TransportMarkers.cpp src/FxNavigator.cpp src/FxNavigatorContexts.cpp src/FxNavigatorPinAudio.cpp src/FxNavigatorClipboard.cpp src/FxNavigatorOrder.cpp src/FxNavigatorUsed.cpp src/FxNavigatorMemories.cpp src/FxNavigatorAdvanced.cpp src/FxNavigatorReaEq.cpp src/FxNavigatorDynamics.cpp src/TrackNavigator.cpp src/TrackNavigatorRouting.cpp src/TrackNavigatorFolders.cpp src/TrackNavigatorEdit.cpp src/TrackNavigatorAutomation.cpp src/TrackNavigatorFilter.cpp src/TrackNavigatorMidi.cpp src/TrackNavigatorExtra.cpp src/TrackNavigatorMemories.cpp src/TrackNavigatorFxTcp.cpp src/TrackNavigatorFxTcpList.cpp src/TrackNavigatorTrackMidi.cpp src/TrackNavigatorHardwareOutputs.cpp src/TrackNavigatorReaRoute.cpp src/ReaperApi.cpp src/TitleProxy.cpp)
 target_include_directories(reaper_lreaparams PRIVATE include third_party/reaper-sdk)
 target_link_libraries(reaper_lreaparams PRIVATE lrp_profiles user32 shell32 comctl32 oleacc oleaut32)
 set_target_properties(reaper_lreaparams PROPERTIES PREFIX "" OUTPUT_NAME "reaper_lreaparams")
@@ -54,3 +54,9 @@ add_executable(parameter_ranges_tests Testing/ParameterRangesTests.cpp)
 target_include_directories(parameter_ranges_tests PRIVATE include)
 target_compile_options(parameter_ranges_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
 add_test(NAME parameter_ranges COMMAND parameter_ranges_tests)
+
+# TEST75.4: portable message identity, per-context overrides and originals.
+add_executable(message_catalog_tests Testing/MessageCatalogTests.cpp src/MessageCatalog.cpp)
+target_include_directories(message_catalog_tests PRIVATE include)
+target_compile_options(message_catalog_tests PRIVATE /W4 /permissive- /utf-8 /EHsc)
+add_test(NAME message_catalog COMMAND message_catalog_tests)

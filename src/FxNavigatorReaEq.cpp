@@ -6,6 +6,11 @@
 #include <cstdlib>
 #include <string>
 
+// Every navigator speech call is catalogued by source expression, not line
+// number. Existing announcements and navigation remain unchanged by default.
+#include "lrp/MessageCatalog.h"
+#define speech_(...) ::lrp::emitConfigurableSpeech(::lrp::SpeechScope::fx, __FILE__, #__VA_ARGS__, speech_, (__VA_ARGS__))
+
 namespace lrp {
 int FxNavigator::eqBandCount() const {
     if(!isReaEq() || !track_)return 0;

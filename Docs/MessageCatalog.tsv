@@ -1,0 +1,578 @@
+scope	id	label	file	expression
+FX	FX-a720ff15f0f1e7cb	0 selected	FxNavigatorMemories.cpp	"0 selected"
+FX	FX-ca5510b05e038666	0 selected	FxNavigatorOrder.cpp	"0 selected"
+FX	FX-41a56bc3a9d40b51	All selected	FxNavigatorOrder.cpp	"All selected"
+FX	FX-afe687491bc7e77c	Assign and enable a fixed MIDI CC before editing its range	FxNavigatorAdvanced.cpp	"Assign and enable a fixed MIDI CC before editing its range"
+FX	FX-0be4d7acbd39286b	Audio Pin Connector	FxNavigatorPinAudio.cpp	"Audio Pin Connector. " + fxDisplayName() + ". " + pinAudioReview(true)
+FX	FX-d8323b7fc1e5484c	Auto / Auto off	FxNavigatorAdvanced.cpp	target?"Auto. "+displayName():"Auto off. "+displayName()
+FX	FX-21fc63e538be685e	Automation clear cancelled	FxNavigator.cpp	"Automation clear cancelled"
+FX	FX-a5182954427ead9f	Automation update failed for / parameters	FxNavigatorAdvanced.cpp	"Automation update failed for "+std::to_string(failed)+" parameters"
+FX	FX-7149dade276a1b45	Band added / bands	FxNavigatorReaEq.cpp	wanted==0?"Band added. "+std::to_string(expected)+" bands":             "Band "+std::to_string(wanted)+" removed. "+std::to_string(expected)+" bands"
+FX	FX-a668c4894c10477b	Band structure changed. Use full Default reset	FxNavigator.cpp	"Band structure changed. Use full Default reset"
+FX	FX-9c5a943a5f6d301d	Bypassed / Enabled	FxNavigator.cpp	enabled ? "Bypassed" : "Enabled"
+FX	FX-a9c452c74fa28dc5	Cannot create Custom Order	FxNavigatorOrder.cpp	"Cannot create Custom Order"
+FX	FX-eab8c551fb9a9f68	Cannot cut between Custom Order and groups. Use Copy	FxNavigatorOrder.cpp	"Cannot cut between Custom Order and groups. Use Copy"
+FX	FX-ca2ec226c5ef8224	Cannot read parameter value	FxNavigatorClipboard.cpp	"Cannot read parameter value"
+FX	FX-8aff013e4094c8e7	Cannot save default	FxNavigatorMemories.cpp	"Cannot save default"
+FX	FX-793d5e4d64b676ab	CC learn / Move a MIDI control	FxNavigatorAdvanced.cpp	"CC learn. "+displayName()+". Move a MIDI control"
+FX	FX-2e7696f671ed7230	CC learn disarmed	FxNavigatorAdvanced.cpp	"CC learn disarmed"
+FX	FX-84829b01a77391f3	CC learn. Move a MIDI control. Delete removes mapping	FxNavigatorAdvanced.cpp	"CC learn. Move a MIDI control. Delete removes mapping"
+FX	FX-12a1a67fc08f7f1c	CC learned. Channel	FxNavigatorAdvanced.cpp	"CC learned. Channel "+std::to_string(cc.channel)+" CC "+std::to_string(cc.number)
+FX	FX-f694b7e14e000995	CC removed	FxNavigatorAdvanced.cpp	"CC removed"
+FX	FX-e10317e1254c66ef	CC speech not available	FxNavigatorAdvanced.cpp	"CC speech not available"
+FX	FX-4047ca1f9baee369	CC speech on / CC speech off	FxNavigatorAdvanced.cpp	std::string(on?"CC speech on. ":"CC speech off. ")+displayName()
+FX	FX-6f0f191145aeba0d	Cleared / FX envelopes	FxNavigatorAdvanced.cpp	"Cleared "+std::to_string(changed)+" FX envelopes"
+FX	FX-264c1e5c8e4cb551	Clipboard belongs to another FX	FxNavigatorOrder.cpp	"Clipboard belongs to another FX"
+FX	FX-19e912fdee32046a	Clipboard contains hidden parameters. Restore them in Custom Order first	FxNavigatorOrder.cpp	"Clipboard contains hidden parameters. Restore them in Custom Order first"
+FX	FX-32261559bbefa3aa	Clipboard empty	FxNavigatorOrder.cpp	"Clipboard empty"
+FX	FX-97bec0c125f36655	Clipboard empty or unavailable	FxNavigatorClipboard.cpp	"Clipboard empty or unavailable"
+FX	FX-d2e52b141664cc3d	Clipboard unavailable	FxNavigatorClipboard.cpp	"Clipboard unavailable"
+FX	FX-097b67b9620da0b4	Compare	FxNavigatorAdvanced.cpp	"Compare"
+FX	FX-714734e90fcab9ae	Compare layout changed. No changes	FxNavigatorAdvanced.cpp	"Compare layout changed. No changes"
+FX	FX-4b8bc440de2cf1b5	Compare parameter identity changed. No changes	FxNavigatorAdvanced.cpp	"Compare parameter identity changed. No changes"
+FX	FX-c8ad4e90baa24778	Compare ReaEQ chunk invalid	FxNavigatorAdvanced.cpp	"Compare ReaEQ chunk invalid"
+FX	FX-91f5204a8ce9b1d8	Compare restore incomplete. Use REAPER Undo	FxNavigatorAdvanced.cpp	"Compare restore incomplete. Use REAPER Undo"
+FX	FX-005118db3631e69c	Compare, Not armed	FxNavigator.cpp	"Compare, Not armed"
+FX	FX-b0c28918be607508	Copied / parameters from Used	FxNavigatorOrder.cpp	"Copied "+std::to_string(clip_.size())+" parameters from Used"
+FX	FX-682eca6a1349d65e	Could not change pin connection	FxNavigatorPinAudio.cpp	pinAudioSet(pinAudioColumn_, pinAudioChannel_, connect) ?                     pinAudioReview(false) : "Could not change pin connection"
+FX	FX-6f284d65a9e4def8	Could not disconnect	FxNavigatorPinAudio.cpp	pinAudioSet(pinAudioColumn_, pinAudioChannel_, false) ?                     pinAudioReview(false) : "Could not disconnect"
+FX	FX-def00f0248c64f9f	Ctrl+Delete removes parameters from a group only. Use Ctrl+Shift+Delete to hide	FxNavigatorOrder.cpp	"Ctrl+Delete removes parameters from a group only. Use Ctrl+Shift+Delete to hide"
+FX	FX-b43a8868be6eb3b6	Custom order	FxNavigatorOrder.cpp	"Custom order. "+currentParameterSpeech()
+FX	FX-af8e3b0e05c0e6c9	Custom order / Plugin order	FxNavigator.cpp	std::string(fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech()
+FX	FX-0dc193657a221b63	Custom order / Plugin order	FxNavigatorOrder.cpp	(groupSlot_?groupLabel(groupSlot_)+". ":fxOrder_.custom?"Custom order. ":"Plugin order. ")+currentParameterSpeech()
+FX	FX-198e4992c398d684	Cut belongs to another FX instance	FxNavigatorOrder.cpp	"Cut belongs to another FX instance"
+FX	FX-ebf74d2f40cd42a8	Cut pending / Copied	FxNavigatorOrder.cpp	std::string(cut?"Cut pending. ":"Copied ")+std::to_string(clip_.size())+             " parameters from "+(groupSlot_?groupLabel(groupSlot_):"Custom Order")
+FX	FX-43da56c78353dc0a	Default has no F7 editor. Press Enter to restore	FxNavigatorMemories.cpp	"Default has no F7 editor. Press Enter to restore"
+FX	FX-f9ac615212c5f9ec	Default parameter count changed. No changes	FxNavigator.cpp	"Default parameter count changed. No changes"
+FX	FX-a7d3975ffba95c6d	Default parameter identities changed. No changes	FxNavigator.cpp	"Default parameter identities changed. No changes"
+FX	FX-74b7ea2bb7f6b3f3	Default read failed. No changes	FxNavigator.cpp	"Default read failed. No changes"
+FX	FX-33253de2a1f863f4	Default restore incomplete. Use REAPER Undo	FxNavigator.cpp	"Default restore incomplete. Use REAPER Undo"
+FX	FX-8aa92adc3650b13c	Default restored	FxNavigator.cpp	"Default restored. "+currentParameterSpeech()
+FX	FX-097b13ce4d8b8e37	Default restored	FxNavigatorMemories.cpp	"Default restored. "+currentParameterSpeech()
+FX	FX-a4804f6118308b1a	Default restored. Plugin Order	FxNavigatorMemories.cpp	"Default restored. Plugin Order. "+currentParameterSpeech()
+FX	FX-e98a13cf4289c844	Deleted	FxNavigatorAdvanced.cpp	"Deleted. "+searchHistory_[static_cast<size_t>(historyIndex_)]
+FX	FX-531e19720f328640	Deleted / memory	FxNavigatorMemories.cpp	"Deleted "+std::to_string(removed)+ (removed==1?" memory. ":" memories. ")+         (memoryHasEntries()?memoryReview():"Parameter Navigator. No memories")
+FX	FX-791ad852887a1e81	Delta Solo cleared / No Delta Solo found	FxNavigator.cpp	cleared?"Delta Solo cleared":"No Delta Solo found"
+FX	FX-781dd59bc5a1e599	Delta Solo not changed	FxNavigator.cpp	"Delta Solo not changed"
+FX	FX-0b0487e19d4d2555	Delta Solo not cleared	FxNavigator.cpp	"Delta Solo not cleared"
+FX	FX-ecfd3d3f2b24b5a6	Delta Solo on / Delta Solo off	FxNavigator.cpp	std::string(next>0.5?"Delta Solo on":"Delta Solo off") +             (fxBrowserMode_?". "+browserSpeech():"")
+FX	FX-5189cdcb18ee87d3	Delta Solo unavailable for this FX	FxNavigator.cpp	"Delta Solo unavailable for this FX"
+FX	FX-629d5a2dd3891c84	Detector input unchanged	FxNavigator.cpp	"Detector input unchanged"
+FX	FX-c63194138e6387ae	Detector input unchanged	FxNavigatorDynamics.cpp	"Detector input unchanged"
+FX	FX-2418af58c5fffcee	Disable all automation on current FX? No selected. Left and Right choose Yes or No. Enter accepts, Y confirms, N or	FxNavigatorAdvanced.cpp	"Disable all automation on current FX? No selected. Left and Right choose Yes or No. Enter accepts, Y confirms, N or Escape cancels"
+FX	FX-169255b680512b10	Dynamic: (title.empty()?std::string{}:title+". ")+browserSpeech()	FxNavigator.cpp	(title.empty()?std::string{}:title+". ")+browserSpeech()
+FX	FX-3df581db15592573	Dynamic: (title.empty()?std::string{}:title+". ")+pinAudioReview(true)	FxNavigator.cpp	(title.empty()?std::string{}:title+". ")+pinAudioReview(true)
+FX	FX-d7ef5faa43bc82f2	Dynamic: browserSpeech()	FxNavigator.cpp	browserSpeech()
+FX	FX-6718fa0ee746c10a	Dynamic: browserSpeech()	FxNavigatorContexts.cpp	browserSpeech()
+FX	FX-84e47e6b1aff56d7	Dynamic: compareFormatted()	FxNavigator.cpp	compareFormatted()
+FX	FX-42d8a44a029f45c8	Dynamic: currentParameterSpeech()	FxNavigator.cpp	currentParameterSpeech()
+FX	FX-08192ea34cdfc36d	Dynamic: dynamics::detectorChoices[static_cast<size_t>(next)].label	FxNavigatorDynamics.cpp	dynamics::detectorChoices[static_cast<size_t>(next)].label
+FX	FX-52554f6b299caa24	Dynamic: dynamicsRealFormatted(parameter_,"")	FxNavigator.cpp	dynamicsRealFormatted(parameter_,"")
+FX	FX-259253f96cdddcb4	Dynamic: editF7_ ? editorParameterSpeech() : currentParameterSpeech()	FxNavigator.cpp	editF7_ ? editorParameterSpeech() : currentParameterSpeech()
+FX	FX-d0c4f3199de8cfdd	Dynamic: eqVirtualFormatted(parameter_)	FxNavigator.cpp	eqVirtualFormatted(parameter_)
+FX	FX-5e2ab0795e87baaf	Dynamic: formattedValue()	FxNavigator.cpp	formattedValue()
+FX	FX-f194b313fda26a22	Dynamic: fxContextAnnouncement()	FxNavigator.cpp	fxContextAnnouncement()
+FX	FX-550e13fdfa00879a	Dynamic: fxContextAnnouncement()	FxNavigatorContexts.cpp	fxContextAnnouncement()
+FX	FX-af443fffd918fda4	Dynamic: midiPendingSpeech_	FxNavigatorAdvanced.cpp	midiPendingSpeech_
+FX	FX-bec507da503e6a1c	Dynamic: pinAudioReview(false)	FxNavigator.cpp	pinAudioReview(false)
+FX	FX-5990c9c2fce864eb	Dynamic: pinAudioReview(false)	FxNavigatorPinAudio.cpp	pinAudioReview(false)
+FX	FX-13c816fa13f6bf4c	Dynamic: pinAudioReview(true)	FxNavigatorPinAudio.cpp	pinAudioReview(true)
+FX	FX-f82a237aa184d3ee	Dynamic: prefix + (valueOnly ? formattedValue() : currentParameterSpeech())	FxNavigator.cpp	prefix + (valueOnly ? formattedValue() : currentParameterSpeech())
+FX	FX-df9ba2733b42cf88	Dynamic: prefix + sample	FxNavigator.cpp	prefix + sample
+FX	FX-d44c08b30663adcc	Dynamic: prefix + spoken	FxNavigator.cpp	prefix + spoken
+FX	FX-66465191f3b6a18d	Dynamic: prefix.empty()?memoryReview():prefix+". "+memoryReview()	FxNavigatorMemories.cpp	prefix.empty()?memoryReview():prefix+". "+memoryReview()
+FX	FX-a4d9da5a43bbf0dc	Dynamic: reviewLine()	FxNavigator.cpp	reviewLine()
+FX	FX-82af82659d22414e	Dynamic: search_	FxNavigator.cpp	search_
+FX	FX-fdf0138fecc7c31a	Dynamic: title.empty()?currentParameterSpeech():title + ". " + currentParameterSpeech()	FxNavigator.cpp	title.empty()?currentParameterSpeech():title + ". " + currentParameterSpeech()
+FX	FX-4b99447ecc43c96c	Dynamic: what + ". " + browserSpeech()	FxNavigatorContexts.cpp	what + ". " + browserSpeech()
+FX	FX-17121922a4b36d6c	Dynamic: what + ". " + fxContextAnnouncement()	FxNavigatorContexts.cpp	what + ". " + fxContextAnnouncement()
+FX	FX-b2cb6f3622266c43	Edit / Custom Order	FxNavigatorMemories.cpp	std::string("Edit ")+(groupSlot_?groupLabel(groupSlot_):"Custom Order")+                 ". "+std::to_string(f7Selected_.size())+" selected. "+                 (visible_.empty()?"Empty":currentParameterSpeech())
+FX	FX-8aab5a078f7c0f6f	Edit group name / Edit param name	FxNavigatorOrder.cpp	std::string(textEditParam_==-1?"Edit group name. ":"Edit param name. ")+textBuffer_
+FX	FX-d4051efe00a7ffb6	Edit name / Empty	FxNavigatorOrder.cpp	"Edit name. "+(textBuffer_.empty()?"Empty":textBuffer_)
+FX	FX-aae6a8be911c4c2d	Edit: / Custom Order	FxNavigatorOrder.cpp	std::string(editF7_?"Edit: ":"")+                 (fxOrder_.custom?"Custom Order":"Plugin Order")+                 (f7FilterActive_?". Search results":"")+". "+                 (editF7_?editorParameterSpeech():currentParameterSpeech())
+FX	FX-26a81e13ccbb589c	Edit: / Edit: Custom Order	FxNavigatorOrder.cpp	std::string(groupSlot_?"Edit: "+groupLabel(groupSlot_):"Edit: Custom Order")+         ". "+std::to_string(f7Selected_.size())+" selected. "+         viewPositionSpeech()+". "+(visible_.empty()?"Empty":editorParameterSpeech())
+FX	FX-fa2bd9ee0eff6c97	Edit: / Empty	FxNavigatorUsed.cpp	std::string(editF7_?"Edit: ":"")+origin+". "+                 (visible_.empty()?"Empty":(editF7_?editorParameterSpeech():currentParameterSpeech()))
+FX	FX-158f236d4621af90	Edit: / Empty. Press Ctrl+V to paste parameters	FxNavigatorOrder.cpp	std::string(editF7_?"Edit: ":"")+groupLabel(slot)+". "+             (visible_.empty()?(editF7_?"Empty. Press Ctrl+V to paste parameters":                                      "Empty. Press F7 to edit and paste parameters"):                 editF7_?editorParameterSpeech():currentParameterSpeech())
+FX	FX-5be65e1adad262e4	Edit: Search cleared / Search cleared	FxNavigator.cpp	std::string(editF7_?"Edit: Search cleared. ":"Search cleared. ")+                     (editF7_?editorParameterSpeech():currentParameterSpeech())
+FX	FX-f35b9fc920324aab	Edit: Used / Edit:	FxNavigatorOrder.cpp	(usedActive_?"Edit: Used":groupSlot_?"Edit: "+groupLabel(groupSlot_):"Edit: Custom Order")+". "+                 std::to_string(f7Selected_.size())+" selected. "+viewPositionSpeech()+                 (f7FilterActive_?". Filter "+f7FilterQuery_:"")
+FX	FX-376976c18037ed39	Edit: Used / Used	FxNavigatorUsed.cpp	std::string(editF7_?"Edit: Used. ":"Used. ")+                       std::to_string(visible_.size())+" parameters"+                       (editF7_?". "+std::to_string(f7Selected_.size())+" selected":"")+                       (visible_.empty()?std::string(". Empty") : ". "+                           (editF7_?editorParameterSpeech():currentParameterSpeech()))
+FX	FX-bf892868e849d12c	Edit: Used. Empty / Used. Empty	FxNavigator.cpp	editF7_?"Edit: Used. Empty":"Used. Empty"
+FX	FX-a2eb1c3ce99c08e9	Enable and learn a floating MIDI CC before editing its range	FxNavigatorAdvanced.cpp	"Enable and learn a floating MIDI CC before editing its range"
+FX	FX-1d3eb743c322cc5e	EQ numeric selection update failed. Use REAPER Undo	FxNavigatorAdvanced.cpp	"EQ numeric selection update failed. Use REAPER Undo"
+FX	FX-54575b90a65a2956	EQ selection changed; no values written	FxNavigatorAdvanced.cpp	"EQ selection changed; no values written"
+FX	FX-aa6281ed7fe5d1ac	Exit F7 first	FxNavigator.cpp	"Exit F7 first"
+FX	FX-d93c417641131ac7	F7 Ctrl+Delete removes from groups, not Used. Return to a group first	FxNavigatorOrder.cpp	"F7 Ctrl+Delete removes from groups, not Used. Return to a group first"
+FX	FX-0ae298e2f89f2b5d	Find cancelled	FxNavigator.cpp	"Find cancelled"
+FX	FX-966441307c8f4e21	Find parameter. Type search text; Up or Down finds matches; Enter accepts; Escape cancels	FxNavigator.cpp	"Find parameter. Type search text; Up or Down finds matches; Enter accepts; Escape cancels."
+FX	FX-34375b3cd1d7283b	Fixed CC off. No active floating CC	FxNavigatorAdvanced.cpp	"Fixed CC off. No active floating CC"
+FX	FX-97349d012575fd22	Fixed CC on / parameters	FxNavigatorAdvanced.cpp	"Fixed CC on. " + std::to_string(count) + " parameters"
+FX	FX-7bab60a2f55b850a	Floating CC off. Normal CC mappings	FxNavigatorAdvanced.cpp	"Floating CC off. Normal CC mappings"
+FX	FX-7eff1b0d63731fae	Floating CC range / Fixed CC range	FxNavigatorAdvanced.cpp	std::string(floating?"Floating CC range":midi?"Fixed CC range":"Parameter range") +             " saved. " + rangeText(editable) + (midi?"":" percent")
+FX	FX-82fa58513120ec11	Floating CC. Channel	FxNavigatorAdvanced.cpp	"Floating CC. Channel "+std::to_string(cc.channel)+" CC "+std::to_string(cc.number)
+FX	FX-e55eca428732d461	Floating CC. Channel	FxNavigatorAdvanced.cpp	"Floating CC. Channel " + std::to_string(session.channel) +                         " CC " + std::to_string(session.number)
+FX	FX-bf7a82e450a6db5f	Floating CC. Move a MIDI control	FxNavigatorAdvanced.cpp	"Floating CC. Move a MIDI control"
+FX	FX-e6c0535f52760af5	Formatter unavailable	FxNavigatorAdvanced.cpp	"Formatter unavailable"
+FX	FX-e27a4717f95967eb	FX Browser	FxNavigator.cpp	"FX Browser. " + browserSpeech()
+FX	FX-b397249edab914f3	FX Browser	FxNavigatorContexts.cpp	"FX Browser. " + browserSpeech()
+FX	FX-6119a75cfe26c0bc	FX context changed	FxNavigatorClipboard.cpp	"FX context changed"
+FX	FX-3274cfa24cb6837d	FX context switch failed	FxNavigatorContexts.cpp	"FX context switch failed"
+FX	FX-aebb18acd37e3844	FX context unavailable	FxNavigatorContexts.cpp	"FX context unavailable"
+FX	FX-97818e5fcd107e10	FX list changed. Reopen FX Params	FxNavigator.cpp	"FX list changed. Reopen FX Params"
+FX	FX-edc119d4749976a8	FX list changed. Reopen FX Params	FxNavigatorContexts.cpp	"FX list changed. Reopen FX Params"
+FX	FX-966e82f898dc0557	FX list unavailable	FxNavigatorContexts.cpp	"FX list unavailable"
+FX	FX-3ecfebc2bdbd5bf7	FX moved	FxNavigatorContexts.cpp	"FX moved. " + (fxBrowserMode_ ? browserSpeech() : fxContextAnnouncement())
+FX	FX-1111278d48305b8f	FX no longer available	FxNavigatorPinAudio.cpp	"FX no longer available"
+FX	FX-8fece2afcc90dfc4	FX parameters	FxNavigatorPinAudio.cpp	"FX parameters. " + currentParameterSpeech()
+FX	FX-036baf8d9f3b4b54	FX parameters changed. Snapshot cancelled	FxNavigatorClipboard.cpp	"FX parameters changed. Snapshot cancelled"
+FX	FX-85fcffea628c5cf8	FX Params / No visible parameters	FxNavigatorMemories.cpp	"FX Params. "+(groupSlot_?groupLabel(groupSlot_)+". ":"")+                 (visible_.empty()?"No visible parameters":currentParameterSpeech())
+FX	FX-ab158db794bb210a	FX snapshot cancelled	FxNavigatorClipboard.cpp	"FX snapshot cancelled"
+FX	FX-91850fcffe576620	FX snapshot copied / parameters	FxNavigatorClipboard.cpp	"FX snapshot copied. "+fxDisplayName()+". "+std::to_string(count_)+" parameters"
+FX	FX-527d1b8e84ece900	FX snapshot paste incomplete. Use REAPER Undo	FxNavigatorClipboard.cpp	"FX snapshot paste incomplete. Use REAPER Undo"
+FX	FX-39ae99ca922a0c93	FX snapshot pasted / parameters	FxNavigatorClipboard.cpp	"FX snapshot pasted. "+fxDisplayName()+". "+std::to_string(count_)+" parameters"
+FX	FX-3dc5dcf684743d64	FX snapshot too large	FxNavigatorClipboard.cpp	"FX snapshot too large"
+FX	FX-d08452ef69c22982	Gain update failed	FxNavigator.cpp	"Gain update failed"
+FX	FX-3909b7942a1dea3b	Grid	FxNavigator.cpp	"Grid " + std::to_string(columns_)
+FX	FX-33dd54df524e8e1c	Grid 10	FxNavigator.cpp	"Grid 10"
+FX	FX-8c1206e488aebb85	Grid size edit cancelled	FxNavigator.cpp	"Grid size edit cancelled"
+FX	FX-8d5b24b14e766fa2	Grid size must be from 1 to 400	FxNavigator.cpp	"Grid size must be from 1 to 400"
+FX	FX-685fccd73ca8152e	Grid size, 1 to 400. Current / Enter accepts, Escape cancels	FxNavigator.cpp	"Grid size, 1 to 400. Current " + gridNumericBuffer_ +             ". Enter accepts, Escape cancels"
+FX	FX-51ade8ddc010bb39	Group empty	FxNavigatorOrder.cpp	"Group empty"
+FX	FX-8448634113d8663b	Groups / Memory positions	FxNavigator.cpp	slotMode_==0?"Groups":"Memory positions"
+FX	FX-c037b4091968e8b2	Hidden / parameters	FxNavigatorOrder.cpp	"Hidden "+std::to_string(idsToHide.size())+" parameters"+             (visible_.empty()?". No visible parameters":". "+currentParameterSpeech())
+FX	FX-0a8043b11a3cf9d4	Hidden parameter. Restore it from Hidden parameters first	FxNavigatorMemories.cpp	"Hidden parameter. Restore it from Hidden parameters first"
+FX	FX-67cd8b73581abeba	Invalid FX snapshot	FxNavigatorClipboard.cpp	"Invalid FX snapshot"
+FX	FX-f665346a09edc0ba	Invalid grid size. Enter a whole number from 1 to 400	FxNavigator.cpp	"Invalid grid size. Enter a whole number from 1 to 400"
+FX	FX-0df7c9c082f156d7	Invalid number	FxNavigatorAdvanced.cpp	"Invalid number"
+FX	FX-82e9a5b8c9173b89	Invalid value clipboard	FxNavigatorClipboard.cpp	"Invalid value clipboard"
+FX	FX-c8b7826adaa93782	Keyboard / Standard	FxNavigatorOrder.cpp	std::string(keyboardThemes_[context] ? "Keyboard. " : "Standard. ") +             (visible_.empty() ? "Empty" : currentParameterSpeech())
+FX	FX-0f16be410a6cade5	Keyboard. Used / Standard. Used	FxNavigatorOrder.cpp	std::string(usedState_.keyboard?"Keyboard. Used. ":"Standard. Used. ")+                 (visible_.empty()?"Empty":currentParameterSpeech())
+FX	FX-60d7a68cfcf1b95d	Leave Used to undo or redo group edits	FxNavigatorOrder.cpp	"Leave Used to undo or redo group edits"
+FX	FX-c4543bbc732c20ff	Master	FxNavigator.cpp	"Master"
+FX	FX-9225921df1557576	Match	FxNavigator.cpp	"Match " + std::to_string(pos + 1) + ", " + displayName()
+FX	FX-25b2627aa916fc6e	memories selected	FxNavigatorMemories.cpp	std::to_string(selected.size())+" memories selected. "+memoryReview()
+FX	FX-f1780dad412673f3	Memory position / empty	FxNavigator.cpp	"Memory position "+std::to_string(slot)+" empty"
+FX	FX-3827b0a7e78ec44f	Memory position hidden or not in this group	FxNavigator.cpp	"Memory position hidden or not in this group"
+FX	FX-e84949e54221b599	Memory selection changed. Select again	FxNavigatorMemories.cpp	"Memory selection changed. Select again"
+FX	FX-8e02578191288e95	Missing parameter	FxNavigatorMemories.cpp	"Missing parameter"
+FX	FX-066bf3d3b786bfa4	Missing parameter. Selection unchanged	FxNavigatorMemories.cpp	"Missing parameter. Selection unchanged"
+FX	FX-0e8223baee5ec2a7	Move to another position before paste	FxNavigatorOrder.cpp	"Move to another position before paste"
+FX	FX-85b76778f9532620	Moved / Pasted	FxNavigatorOrder.cpp	std::string(clipCut_?"Moved ":"Pasted ")+std::to_string(inserted)+             " parameters into "+(groupSlot_?groupLabel(groupSlot_):"Custom Order")+             ". "+(visible_.empty()?"No visible parameters":currentParameterSpeech())
+FX	FX-4b4e44e52579c968	Name copied	FxNavigatorOrder.cpp	"Name copied"
+FX	FX-e133ba2b50978715	Name saved	FxNavigatorOrder.cpp	"Name saved. "+(textEditParam_==-1?groupLabel(groupSlot_):displayName())
+FX	FX-a803b66ca46ebbed	No audio pins	FxNavigatorPinAudio.cpp	"No audio pins"
+FX	FX-4a39e452ddcea6f0	No automated parameters	FxNavigatorAdvanced.cpp	"No automated parameters"
+FX	FX-b2e1edbdaa260515	No Custom Order. Press F7	FxNavigator.cpp	"No Custom Order. Press F7"
+FX	FX-fc9e4d58c42ae9ac	No default for this action	FxNavigator.cpp	"No default for this action"
+FX	FX-ce68c4e7077a42ab	No default for this parameter	FxNavigator.cpp	"No default for this parameter"
+FX	FX-5a05744a54944795	No default snapshot	FxNavigator.cpp	"No default snapshot"
+FX	FX-d6e29a23db948bc3	No Delta Solo	FxNavigator.cpp	"No Delta Solo"
+FX	FX-0c5f30dbff568606	No Delta Solo / Delta Solo cleared	FxNavigator.cpp	known>0 && active==0 ? "No Delta Solo" : "Delta Solo cleared"
+FX	FX-f32376ae7843bd27	No editable parameter range for this field	FxNavigatorAdvanced.cpp	"No editable parameter range for this field"
+FX	FX-e547ff6db7908b75	No F7 editor for parameter ranges	FxNavigatorMemories.cpp	"No F7 editor for parameter ranges"
+FX	FX-26e8dd0a201fbdd8	No F7 editor for parameter steps	FxNavigatorMemories.cpp	"No F7 editor for parameter steps"
+FX	FX-4549a69b134704e9	No F7 editor for this memory	FxNavigatorMemories.cpp	"No F7 editor for this memory"
+FX	FX-67157e88cf4db1fa	No group parameters selected	FxNavigatorOrder.cpp	"No group parameters selected"
+FX	FX-f65046ced4881595	No navigable FX parameters	FxNavigator.cpp	"No navigable FX parameters"
+FX	FX-02869f378ac46f0d	No navigable FX parameters	FxNavigatorContexts.cpp	"No navigable FX parameters"
+FX	FX-dc95d1f34d0371c2	No new parameters hidden	FxNavigatorOrder.cpp	"No new parameters hidden"
+FX	FX-c1022fdf56606794	No next track with FX / No previous track with FX	FxNavigator.cpp	othersHaveFx ? (direction > 0 ? "No next track with FX" : "No previous track with FX")                              : "No FX on other tracks"
+FX	FX-861bc9b98625a698	No parameter	FxNavigatorMemories.cpp	"No parameter"
+FX	FX-dd7688a80f7eaf68	No parameter matching	FxNavigator.cpp	"No parameter matching " + search_
+FX	FX-de22b75a98e91ca6	No parameters to copy	FxNavigatorOrder.cpp	"No parameters to copy"
+FX	FX-b39b68ef5f801c5c	No physical destination parameter	FxNavigatorClipboard.cpp	"No physical destination parameter"
+FX	FX-2811cd3055300282	No physical parameter to copy	FxNavigatorClipboard.cpp	"No physical parameter to copy"
+FX	FX-d659e3536f171630	No plugin parameters to snapshot	FxNavigatorClipboard.cpp	"No plugin parameters to snapshot"
+FX	FX-eaaff7d25fa9778f	No previous item with FX / No next item with FX	FxNavigatorContexts.cpp	take_ ? (direction < 0 ? "No previous item with FX" : "No next item with FX") :             "No item with FX"
+FX	FX-485ae05b4719131e	No REAPER project	FxNavigator.cpp	"No REAPER project"
+FX	FX-589cc6177aaf6d33	No recent searches	FxNavigator.cpp	"No recent searches"
+FX	FX-98f0457537f83f15	No recent searches	FxNavigatorAdvanced.cpp	"No recent searches"
+FX	FX-92f5ae875bb44864	No results. Selection kept / No results	FxNavigatorOrder.cpp	editF7_?"No results. Selection kept":"No results"
+FX	FX-0628cff9fc116743	No selected connection in that direction	FxNavigatorPinAudio.cpp	"No selected connection in that direction"
+FX	FX-d2649e11fd042ecd	No take FX	FxNavigator.cpp	"No take FX"
+FX	FX-6c6a3e915e7b695c	No take FX / No track FX	FxNavigator.cpp	take_ ? "No take FX" : "No track FX"
+FX	FX-5aaf3469b219ff97	No take FX parameters / Track has no FX parameters	FxNavigatorContexts.cpp	destinationTake ? "No take FX parameters" : "Track has no FX parameters"
+FX	FX-0e910749990c6745	No track FX	FxNavigator.cpp	"No track FX"
+FX	FX-991c626ec1414f26	No visible parameters	FxNavigator.cpp	"No visible parameters"
+FX	FX-731c76f7ab6069c3	No visible parameters	FxNavigatorMemories.cpp	groupLabel(groupSlot_)+". "+                                (visible_.empty()?"No visible parameters":currentParameterSpeech())
+FX	FX-9ee5954da9725a6e	No wrapper default	FxNavigator.cpp	"No wrapper default"
+FX	FX-265076fedaaafc4c	not saved	FxNavigatorOrder.cpp	groupLabel(slot)+" not saved"
+FX	FX-13e93d3e2b39acc6	Nothing to redo / Nothing to undo	FxNavigatorOrder.cpp	redo?"Nothing to redo":"Nothing to undo"
+FX	FX-a21b72e1818e0f46	Numeric edit unavailable	FxNavigatorAdvanced.cpp	"Numeric edit unavailable"
+FX	FX-cf82db145e630d2b	Numeric selection update failed. Check values or use REAPER Undo	FxNavigatorAdvanced.cpp	"Numeric selection update failed. Check values or use REAPER Undo"
+FX	FX-4514538587d38de2	Offline	FxNavigatorContexts.cpp	"Offline. " + browserSpeech()
+FX	FX-ab05066c9bb4d2a5	Offline not changed	FxNavigatorContexts.cpp	"Offline not changed"
+FX	FX-3a209558ff77422c	Online	FxNavigatorContexts.cpp	"Online. " + fxContextAnnouncement()
+FX	FX-6c82886646c8de96	Online. Loading parameters	FxNavigatorContexts.cpp	"Online. Loading parameters. " + browserSpeech()
+FX	FX-5b7bbaeaf75fb5f2	Open a group to rename	FxNavigatorOrder.cpp	"Open a group to rename"
+FX	FX-7e26ba7a92a3aa62	Original	FxNavigatorAdvanced.cpp	"Original"
+FX	FX-301c202ba2d3837b	Original updated	FxNavigatorAdvanced.cpp	"Original updated"
+FX	FX-9b1dcaee353c2386	Outside parameter range	FxNavigatorAdvanced.cpp	"Outside parameter range"
+FX	FX-401a3b72a2b581f6	Parameter steps not saved	FxNavigatorMemories.cpp	"Parameter steps not saved"
+FX	FX-8454537fb505217c	Parameter value / Parameter value. Host raw units	FxNavigatorAdvanced.cpp	numericFormatted_?"Parameter value. "+numericUnit_:"Parameter value. Host raw units"
+FX	FX-45f6df9ceb41da72	Plugin Order is read only	FxNavigatorOrder.cpp	"Plugin Order is read only"
+FX	FX-4ee03b5156a50630	Plugin Order. Read only	FxNavigatorOrder.cpp	"Plugin Order. Read only"
+FX	FX-618aa7fca8e5bc33	Preset / Preset changed	FxNavigatorAdvanced.cpp	named&&text[0]?std::string("Preset. ")+text:"Preset changed"
+FX	FX-7c9f23dd98b81f26	Preset navigation unavailable	FxNavigatorAdvanced.cpp	"Preset navigation unavailable"
+FX	FX-3a89520477572955	Press Enter to activate band action	FxNavigatorReaEq.cpp	"Press Enter to activate band action"
+FX	FX-bd9db5139d25a8dc	Press F7 to rename	FxNavigator.cpp	"Press F7 to rename"
+FX	FX-7a5ec8c1adcf63c9	Press F7 to select group parameters	FxNavigatorOrder.cpp	"Press F7 to select group parameters"
+FX	FX-9d2cdfb62c8f1dee	ReaEQ band action failed. No verified change	FxNavigatorReaEq.cpp	"ReaEQ band action failed. No verified change"
+FX	FX-8f5ed337de40ceb0	ReaEQ band action unavailable. No changes	FxNavigatorReaEq.cpp	"ReaEQ band action unavailable. No changes"
+FX	FX-1cbec55f1501693d	ReaEQ band property unavailable	FxNavigatorReaEq.cpp	"ReaEQ band property unavailable"
+FX	FX-e3fdd9b73c7744d2	ReaEQ band update failed	FxNavigatorReaEq.cpp	"ReaEQ band update failed"
+FX	FX-7187e69b73a5de6c	ReaEQ restore failed or incomplete. Check REAPER Undo	FxNavigatorAdvanced.cpp	"ReaEQ restore failed or incomplete. Check REAPER Undo"
+FX	FX-d932e76cd27cffe5	ReaEQ unavailable	FxNavigatorReaEq.cpp	"ReaEQ unavailable"
+FX	FX-4ed61e04b5d04cb4	REAPER audio pin API unavailable	FxNavigatorPinAudio.cpp	"REAPER audio pin API unavailable"
+FX	FX-13a015d1fa26ae00	Recent searches	FxNavigator.cpp	"Recent searches. "+searchHistory_.front()
+FX	FX-d0de59b1a30fd5f5	Recent searches	FxNavigatorAdvanced.cpp	"Recent searches. "+std::to_string(next+1)+" of "+std::to_string(size)+". "+searchHistory_[static_cast<size_t>(next)]
+FX	FX-23b727c308de0572	Redo / Undo	FxNavigatorOrder.cpp	redo?"Redo. "+currentParameterSpeech():"Undo. "+currentParameterSpeech()
+FX	FX-e7015f01eb51cfd3	Removed from / No visible parameters	FxNavigatorOrder.cpp	"Removed from "+groupLabel(groupSlot_)+". "+                 (visible_.empty()?"No visible parameters":currentParameterSpeech())
+FX	FX-a6c69f80781e5632	Removed from Used / parameters remaining	FxNavigatorUsed.cpp	"Removed from Used. "+std::to_string(visible_.size())+" parameters remaining"+             (visible_.empty()?std::string():". "+currentParameterSpeech())
+FX	FX-57201f1d33a2a10a	Rename cancelled	FxNavigatorOrder.cpp	"Rename cancelled"
+FX	FX-6c895734f9d75b20	Reset	FxNavigator.cpp	"Reset. "+currentParameterSpeech()
+FX	FX-feaf745e54d47871	Reset / parameters	FxNavigator.cpp	"Reset "+std::to_string(restored)+" parameters. "+currentParameterSpeech()
+FX	FX-5b77a158eb92efec	Reset unavailable	FxNavigator.cpp	"Reset unavailable"
+FX	FX-f7b1362c3da750c1	Return to a group or Custom Order to hide parameters	FxNavigatorOrder.cpp	"Return to a group or Custom Order to hide parameters"
+FX	FX-5b734b228ab6cce3	Return to group before hiding parameters	FxNavigatorOrder.cpp	"Return to group before hiding parameters"
+FX	FX-5053994d5631d251	Return to group before paste	FxNavigatorOrder.cpp	"Return to group before paste"
+FX	FX-a66a5d7f0e3d14b1	Saved / parameters	FxNavigatorOrder.cpp	"Saved "+groupLabel(slot)+". "+std::to_string(fxOrder_.groups[slot].size())+             " parameters"+(fxOrder_.groups[slot].empty()?". Empty group ready for paste":"")
+FX	FX-f8acf6c1dda4124b	Saved memory position	FxNavigator.cpp	"Saved memory position "+std::to_string(slot)+". "+currentParameterSpeech()
+FX	FX-b4ed822771836a45	Search cleared	FxNavigatorOrder.cpp	"Search cleared. "+currentParameterSpeech()
+FX	FX-b0759ccd8c1d2ac2	Search empty	FxNavigator.cpp	"Search empty"
+FX	FX-b078c0ce1b6e29bd	Search history not saved	FxNavigatorAdvanced.cpp	"Search history not saved"
+FX	FX-b446ede63bbf5638	Search is empty	FxNavigator.cpp	"Search is empty"
+FX	FX-8be90b25abacd32f	Search results / results	FxNavigatorOrder.cpp	"Search results. "+std::to_string(visible_.size())+" results. "+             (editF7_?std::to_string(f7Selected_.size())+" selected. ":std::string())+currentParameterSpeech()
+FX	FX-475248b15def534f	Select a track with FX or an item with take FX / No FX in tracks	FxNavigator.cpp	anyNormalTrackFx(project_) ? "Select a track with FX or an item with take FX" : "No FX in tracks"
+FX	FX-a331f6e69c5146da	Select the focused parameter to edit the selection	FxNavigatorAdvanced.cpp	"Select the focused parameter to edit the selection"
+FX	FX-2f47622399eee524	Selected	FxNavigatorOrder.cpp	"Selected "+std::to_string(f7Selected_.size())+". "+editorParameterSpeech()
+FX	FX-82b25286880eb265	selected	FxNavigatorOrder.cpp	std::to_string(f7Selected_.size())+" selected. "+editorParameterSpeech()
+FX	FX-2ac695be6768c6dd	Selected / Not selected	FxNavigatorMemories.cpp	std::string(selected.count(memoryRow_)?"Selected. ":"Not selected. ")+                 memoryColumnName()+". "+col[static_cast<size_t>(memoryRow_)].label
+FX	FX-ab2f194b0a449807	Selected / Unselected	FxNavigatorOrder.cpp	std::string(f7Selected_.count(f7OriginalPosition(viewPos_))?"Selected ":"Unselected ")+currentParameterSpeech()
+FX	FX-bab63388a17e1632	Selected all / selected	FxNavigatorOrder.cpp	"Selected all. "+std::to_string(f7Selected_.size())+" selected"
+FX	FX-b4e6d4b29c0f5b86	selected EQ parameters set to	FxNavigatorAdvanced.cpp	std::to_string(ids.size())+" selected EQ parameters set to "+numericBuffer_+" "+numericUnit_
+FX	FX-c53d4c5c088f4210	Selected parameter numeric format is not monotonic	FxNavigatorAdvanced.cpp	"Selected parameter numeric format is not monotonic"
+FX	FX-cb8d819a25595b12	Selected parameter raw range differs. No values changed	FxNavigatorAdvanced.cpp	"Selected parameter raw range differs. No values changed"
+FX	FX-afcaa154df5a2feb	Selected parameter unit or range differs. No values changed	FxNavigatorAdvanced.cpp	"Selected parameter unit or range differs. No values changed"
+FX	FX-abdd18535cffed9f	selected parameters set to	FxNavigatorAdvanced.cpp	std::to_string(ids.size())+" selected parameters set to "+numericBuffer_+         (numericUnit_.empty()?std::string():" "+numericUnit_)
+FX	FX-4377249c400a2add	Selection changed. Copy cancelled	FxNavigatorOrder.cpp	"Selection changed. Copy cancelled"
+FX	FX-1666b629c86787d0	Selection contains / unsupported parameter types. No values changed	FxNavigator.cpp	"Selection contains "+std::to_string(unsupported)+                 " unsupported parameter types. No values changed"
+FX	FX-c302546873f020af	Selection contains incompatible EQ parameters	FxNavigatorAdvanced.cpp	"Selection contains incompatible EQ parameters"
+FX	FX-86b509fcc57f5181	Selection contains parameters without compatible numeric editing	FxNavigatorAdvanced.cpp	"Selection contains parameters without compatible numeric editing"
+FX	FX-3a52cb7c4397f63a	Slot occupied	FxNavigatorOrder.cpp	"Slot occupied. "+groupLabel(slot)
+FX	FX-a321aa8c58d11487	Slot occupied. Memory position	FxNavigator.cpp	"Slot occupied. Memory position "+std::to_string(slot)
+FX	FX-6e136d37eeeee166	Snapshot parameter count does not match	FxNavigatorClipboard.cpp	"Snapshot parameter count does not match"
+FX	FX-c2fb7c351c148e47	Snapshot parameters do not match at parameter	FxNavigatorClipboard.cpp	"Snapshot parameters do not match at parameter "+std::to_string(i+1)
+FX	FX-96816927ccb712bf	Snapshot paste cancelled	FxNavigatorClipboard.cpp	"Snapshot paste cancelled"
+FX	FX-9de01ddae6c28aff	Snapshot plugin does not match	FxNavigatorClipboard.cpp	"Snapshot plugin does not match"
+FX	FX-6b8ac2c8f53f732e	Source group changed. Cut cancelled	FxNavigatorOrder.cpp	"Source group changed. Cut cancelled"
+FX	FX-bdb0088cb4d9f6e0	Source group no longer exists. Cut cancelled	FxNavigatorOrder.cpp	"Source group no longer exists. Cut cancelled"
+FX	FX-ecd9446c09f26aff	Source selection changed. Cut cancelled	FxNavigatorOrder.cpp	"Source selection changed. Cut cancelled"
+FX	FX-7df56e77a553e95e	Step	FxNavigator.cpp	"Step "+std::to_string(stepScale_)
+FX	FX-df9ac97cd54742c7	Step	FxNavigatorMemories.cpp	"Step "+std::to_string(next)
+FX	FX-e345cbda6eadfcaf	Step	FxNavigatorMemories.cpp	"Step "+std::to_string(stepScale_)
+FX	FX-25305c306753c262	Step / saved	FxNavigator.cpp	"Step " + std::to_string(stepScale_) + " saved"
+FX	FX-1ed291f05fdc0c6b	Step / saved	FxNavigatorMemories.cpp	"Step "+std::to_string(value)+" saved"
+FX	FX-fc2d17213f3b395d	Step / saved	FxNavigatorMemories.cpp	"Step "+std::to_string(stepScale_)+" saved"
+FX	FX-086d9d1062115085	Step / selected parameters	FxNavigatorOrder.cpp	"Step "+std::to_string(next)+". "+std::to_string(ids.size())+" selected parameters"
+FX	FX-c3019c58fe1809a3	Step 0	FxNavigator.cpp	"Step 0"
+FX	FX-d82ac20f864ef2ca	Step cannot be saved	FxNavigator.cpp	"Step cannot be saved"
+FX	FX-bfd080966d150683	Step cannot be saved	FxNavigatorMemories.cpp	"Step cannot be saved"
+FX	FX-3f807c4084704769	Step not saved	FxNavigator.cpp	"Step not saved"
+FX	FX-2d2bdee7b58b9fe4	Step not saved	FxNavigatorMemories.cpp	"Step not saved"
+FX	FX-d7932432524a2ad6	Structural default invalid. No changes	FxNavigator.cpp	"Structural default invalid. No changes"
+FX	FX-ed0a4f2bf7e35d11	Structural default unavailable	FxNavigator.cpp	"Structural default unavailable"
+FX	FX-0cf7abfa3f083603	Structural snapshot belongs to ReaEQ. No changes	FxNavigatorAdvanced.cpp	"Structural snapshot belongs to ReaEQ. No changes"
+FX	FX-8f5778b19ca64eef	Track	FxNavigatorContexts.cpp	std::string(label[0] ? label : "Track") + ". " + browserSpeech()
+FX	FX-f42c76eea5ef0f49	Track switch failed	FxNavigator.cpp	"Track switch failed"
+FX	FX-e6157a670aac53da	Unable to save Keyboard theme	FxNavigatorOrder.cpp	"Unable to save Keyboard theme"
+FX	FX-d3dc59303ca6d51f	Unknown plugin. Snapshot cancelled	FxNavigatorClipboard.cpp	"Unknown plugin. Snapshot cancelled"
+FX	FX-341627b1ed448823	Unselected all. 0 selected	FxNavigatorOrder.cpp	"Unselected all. 0 selected"
+FX	FX-c6178748cb36d006	Unsupported ReaEQ default chunk. No changes	FxNavigatorAdvanced.cpp	"Unsupported ReaEQ default chunk. No changes"
+FX	FX-e6a8fb4598245938	Use Value for detector input	FxNavigatorAdvanced.cpp	"Use Value for detector input"
+FX	FX-57f9d9615fd9ad3e	Used / Custom Order	FxNavigator.cpp	(usedActive_?"Used":groupSlot_ ? groupLabel(groupSlot_) :                 fxOrder_.custom?"Custom Order":"Plugin Order")+                 (f7FilterActive_?". Search results":"")+". "+viewPositionSpeech()
+FX	FX-9f2a2b137aa1b78c	Used / Empty	FxNavigator.cpp	(title.empty()?std::string{}:title+". ")+"Used. "+(visible_.empty()?"Empty":currentParameterSpeech())
+FX	FX-92365856ffb8fd37	Used / Grid	FxNavigator.cpp	std::string(usedActive_?"Used. ":"")+"Grid "+std::to_string(columns_)+". Step "+std::to_string(stepScale_)+                 ". "+(slotMode_==0?"Group slots":"Memory slots")
+FX	FX-ec6fd089173789cc	Used is a virtual list. Use Ctrl+C to copy	FxNavigatorOrder.cpp	"Used is a virtual list. Use Ctrl+C to copy"
+FX	FX-09cf60e2f50287d8	Used is read only. Open a group to paste	FxNavigatorOrder.cpp	"Used is read only. Open a group to paste"
+FX	FX-4dedab9a795f4bb7	Used. Empty	FxNavigator.cpp	"Used. Empty"
+FX	FX-23a8026aacb6c2c6	Value copied / Clipboard unavailable	FxNavigatorClipboard.cpp	clipboardWrite(message)?"Value copied":"Clipboard unavailable"
+FX	FX-de11cea4312ed22b	Value edit cancelled	FxNavigatorAdvanced.cpp	"Value edit cancelled"
+FX	FX-d83fa4481559d10f	Value unavailable or outside host range	FxNavigatorAdvanced.cpp	"Value unavailable or outside host range"
+FX	FX-51be86dd9c162b26	value updated. Read parameter again	FxNavigator.cpp	prefix + displayName() + ", value updated. Read parameter again"
+FX	FX-d06df4b68ab8648d	Yes	FxNavigator.cpp	yes ? "Yes" : "No"
+TRACK	TRACK-5949371d6d3e1402	0 Selected	TrackNavigator.cpp	"0 Selected"
+TRACK	TRACK-a29b34cb249f27d7	0 selected	TrackNavigatorMemories.cpp	"0 selected"
+TRACK	TRACK-d86e286f1cd6d5df	Added / Removed	TrackNavigatorFxTcpList.cpp	std::string(desired ? "Added. " : "Removed. ") + fxTcpParameterGridReview(false)
+TRACK	TRACK-ec683b29ff470ae9	Added hardware output	TrackNavigatorHardwareOutputs.cpp	"Added hardware output. " + hardwareOutputReview(true)
+TRACK	TRACK-aa1cd6a98847754f	Added ReaRoute output	TrackNavigatorReaRoute.cpp	"Added ReaRoute output. " + reaRouteReview(true)
+TRACK	TRACK-5d5def5cd76fc5b4	Assign and enable a fixed MIDI CC before editing its range	TrackNavigatorExtra.cpp	"Assign and enable a fixed MIDI CC before editing its range"
+TRACK	TRACK-61960ddbcdbba5c7	Audio destination pair out of range	TrackNavigatorExtra.cpp	"Audio destination pair out of range"
+TRACK	TRACK-f57dc7c9c8b3b15c	Audio mode out of range	TrackNavigatorExtra.cpp	"Audio mode out of range"
+TRACK	TRACK-156460804d12fd45	Audio source disabled. Change Audio source first	TrackNavigator.cpp	"Audio source disabled. Change Audio source first."
+TRACK	TRACK-4475ae22e282aeeb	Audio source disabled. Change Audio source first	TrackNavigatorHardwareOutputs.cpp	"Audio source disabled. Change Audio source first"
+TRACK	TRACK-1873dc1f11aa9ed6	Audio source disabled. Change Audio source first	TrackNavigatorReaRoute.cpp	"Audio source disabled. Change Audio source first"
+TRACK	TRACK-47abac778390f386	Audio source exceeds 128 channels	TrackNavigatorHardwareOutputs.cpp	"Audio source exceeds 128 channels"
+TRACK	TRACK-6a7dcab3842f7f42	Audio source exceeds 128 track channels	TrackNavigatorReaRoute.cpp	"Audio source exceeds 128 track channels"
+TRACK	TRACK-bb35bf5c9dccb95a	Audio source pair out of range	TrackNavigatorExtra.cpp	"Audio source pair out of range"
+TRACK	TRACK-52994d1ef8e7b49b	Auto off / Auto	TrackNavigatorAutomation.cpp	std::string(before ? "Auto off. " : "Auto. ") + name + ", " + fxTcpValueSpeech()
+TRACK	TRACK-f6d7177bf9733c3b	Automation API unavailable. No changes	TrackNavigatorAutomation.cpp	"Automation API unavailable. No changes"
+TRACK	TRACK-3ef66e3b1ad80f1e	Automation change failed	TrackNavigatorAutomation.cpp	"Automation change failed"
+TRACK	TRACK-83a8cb8845874913	Automation change not confirmed	TrackNavigatorAutomation.cpp	"Automation change not confirmed"
+TRACK	TRACK-ecd4a679d4ce54bb	Automation chunk unavailable; no changes	TrackNavigatorAutomation.cpp	"Automation chunk unavailable; no changes"
+TRACK	TRACK-f83b22a8bbd50b6a	Automation clear cancelled	TrackNavigator.cpp	"Automation clear cancelled"
+TRACK	TRACK-bfab376b612b544d	Automation envelope unavailable	TrackNavigatorAutomation.cpp	"Automation envelope unavailable"
+TRACK	TRACK-d2bbc4e28ac66ec2	Automation off / envelopes	TrackNavigatorAutomation.cpp	"Automation off. " + std::to_string(changed) + " envelopes"
+TRACK	TRACK-e9cc7c267b0bbfa5	Automation partially disabled / changed	TrackNavigatorAutomation.cpp	"Automation partially disabled. " + std::to_string(changed) +         " changed, " + std::to_string(failed) + " failed"
+TRACK	TRACK-eb258078436bfdd5	Bypass not changed	TrackNavigatorFxTcp.cpp	"Bypass not changed"
+TRACK	TRACK-4238a397769c7898	Bypassed / Enabled	TrackNavigatorFxTcp.cpp	before ? "Bypassed" : "Enabled"
+TRACK	TRACK-bc6fe954c4d8cd4b	cancelled	TrackNavigatorRouting.cpp	std::string(kindName(receive)) + " cancelled"
+TRACK	TRACK-78a736a1fee74448	CC learn cancelled	TrackNavigator.cpp	"CC learn cancelled"
+TRACK	TRACK-b2bb772d8bcb1bbb	CC learn cancelled	TrackNavigatorFxTcp.cpp	"CC learn cancelled"
+TRACK	TRACK-754c8b52752c351f	CC learn cancelled	TrackNavigatorMidi.cpp	"CC learn cancelled"
+TRACK	TRACK-fbaa14c35264990f	CC learn failed. Could not save project Track memory	TrackNavigatorMidi.cpp	"CC learn failed. Could not save project Track memory"
+TRACK	TRACK-6d92c38a0552792e	CC learn. Move a MIDI control	TrackNavigatorMidi.cpp	"CC learn. Move a MIDI control"
+TRACK	TRACK-61ac95ba35abd894	CC learned. Channel	TrackNavigatorMidi.cpp	"CC learned. Channel " + std::to_string(cc.channel) + " CC " +                 std::to_string(cc.number) + ". " + target
+TRACK	TRACK-f2f40fac8eab531d	Clear filter before collapsing folders	TrackNavigatorFolders.cpp	"Clear filter before collapsing folders"
+TRACK	TRACK-9c404f17d82b7d95	Clear filter before physically moving tracks	TrackNavigatorEdit.cpp	"Clear filter before physically moving tracks"
+TRACK	TRACK-6589bc10e3a07ee3	Clear the filter before jumping to the linked routing	TrackNavigatorExtra.cpp	"Clear the filter before jumping to the linked routing"
+TRACK	TRACK-5d14e26731d9f927	Clear the track filter before pasting	TrackNavigatorEdit.cpp	"Clear the track filter before pasting"
+TRACK	TRACK-fd91ce2bee1a5c5c	could not be changed	TrackNavigatorHardwareOutputs.cpp	std::string(kFields[row]) + " could not be changed"
+TRACK	TRACK-84c60f6f87798f08	could not be changed	TrackNavigatorTrackMidi.cpp	std::string(kMidiLabels[trackMidiRow_]) + " could not be changed"
+TRACK	TRACK-f1933a866c6ad616	Could not change TCP parameter	TrackNavigatorFxTcpList.cpp	"Could not change TCP parameter"
+TRACK	TRACK-f13b8833b45994f8	Could not create hardware output	TrackNavigatorHardwareOutputs.cpp	"Could not create hardware output"
+TRACK	TRACK-70f119c59a21a760	Could not create ReaRoute output	TrackNavigatorReaRoute.cpp	"Could not create ReaRoute output"
+TRACK	TRACK-4587c25a8c2c25fe	Could not expand track channels	TrackNavigatorHardwareOutputs.cpp	"Could not expand track channels"
+TRACK	TRACK-ed12cd259b7679ea	Creating send envelopes requires SWS/BR	TrackNavigatorAutomation.cpp	"Creating send envelopes requires SWS/BR"
+TRACK	TRACK-add29f974fa544d5	Cut tracks with routing. Track count unchanged. Verify SWS result	TrackNavigatorEdit.cpp	"Cut tracks with routing. Track count unchanged. Verify SWS result"
+TRACK	TRACK-61b80026181b4474	Decibel unit only for Volume	TrackNavigatorExtra.cpp	"Decibel unit only for Volume"
+TRACK	TRACK-8c67848f19195124	Delete routing failed	TrackNavigatorFolders.cpp	"Delete routing failed"
+TRACK	TRACK-5fa8d68e6eb01845	Delete send not available	TrackNavigatorFolders.cpp	"Delete send not available"
+TRACK	TRACK-5a9867899a2e7d1b	Deleted	TrackNavigatorHardwareOutputs.cpp	"Deleted. " + hardwareOutputReview(true)
+TRACK	TRACK-9f59e9ff778ab723	Deleted / receive from	TrackNavigatorFolders.cpp	std::string("Deleted ") + (receive ? "receive from " : "send to ") + peerName +             (receive ? ". No receives" : ". No sends")
+TRACK	TRACK-c68cd9a91701fb5d	Deleted / receive from	TrackNavigatorFolders.cpp	std::string("Deleted ") + (receive ? "receive from " : "send to ") + peerName +         ". " + currentParameterSpeech()
+TRACK	TRACK-1e319f0e04b96a29	Deleted / Reset	TrackNavigatorMemories.cpp	(removedColumn==0||removedColumn==3 ? "Deleted " : "Reset ")+         std::to_string(removed)+(removed==1?" memory. ":" memories. ")+         (memoryItems_.empty()?"No memories":             std::string(columnNames[static_cast<size_t>(memoryColumn_)]) + ". " +             memoryItems_[static_cast<size_t>(memoryRow_)].label)
+TRACK	TRACK-607dfa031f0cbc0e	Deleted hardware output	TrackNavigatorHardwareOutputs.cpp	"Deleted hardware output. " + hardwareOutputReview(true)
+TRACK	TRACK-5cd9f4ebe556eb84	Deleted ReaRoute output	TrackNavigatorReaRoute.cpp	"Deleted ReaRoute output. " + reaRouteReview(true)
+TRACK	TRACK-4b5a4fb51a14405e	Delta Solo not changed	TrackNavigatorFxTcp.cpp	"Delta Solo not changed"
+TRACK	TRACK-2f005a306f71509f	Delta Solo on / Delta Solo off	TrackNavigatorFxTcp.cpp	target > .5 ? "Delta Solo on" : "Delta Solo off"
+TRACK	TRACK-d0001379b774e1e0	Delta Solo unavailable for this FX	TrackNavigatorFxTcp.cpp	"Delta Solo unavailable for this FX"
+TRACK	TRACK-3829c98b339fbdd0	destination tracks stored. Select source tracks, then press Ctrl Shift R / source tracks stored. Select destination	TrackNavigatorRouting.cpp	std::string(kindName(receive)) + ". " +         std::to_string(pendingTrackGuids_.size()) + (receive ?         " destination tracks stored. Select source tracks, then press Ctrl Shift R." :         " source tracks stored. Select destination tracks, then press Ctrl Shift S.")
+TRACK	TRACK-b7fbf1568a44835c	Disable all automation on current track, including send envelopes and FX? No selected. Left and Right choose Yes or	TrackNavigator.cpp	"Disable all automation on current track, including send envelopes and FX? No selected. Left and Right choose Yes or No. Enter accepts, Y confirms, N or Escape cancels"
+TRACK	TRACK-91749c1556cb440b	Disable all automation on current track, including send envelopes and FX? No selected. Left and Right choose Yes or	TrackNavigatorFxTcp.cpp	"Disable all automation on current track, including send envelopes and FX? No selected. Left and Right choose Yes or No. Enter accepts, Y confirms, N or Escape cancels"
+TRACK	TRACK-4435e42469f2db0c	Dynamic: currentParameterSpeech()	TrackNavigator.cpp	currentParameterSpeech()
+TRACK	TRACK-e3c7000134e71eee	Dynamic: detailColumnSpeech(previousColumn)	TrackNavigator.cpp	detailColumnSpeech(previousColumn)
+TRACK	TRACK-97b11677c42258c0	Dynamic: feedback(!enabled)	TrackNavigatorAutomation.cpp	feedback(!enabled)
+TRACK	TRACK-290d573213f13901	Dynamic: feedback(enable)	TrackNavigatorAutomation.cpp	feedback(enable)
+TRACK	TRACK-dcd1817f51c97708	Dynamic: feedback(true)	TrackNavigatorAutomation.cpp	feedback(true)
+TRACK	TRACK-1e9ebcec256bfd8c	Dynamic: fxTcpParameterGridReview(false)	TrackNavigatorFxTcpList.cpp	fxTcpParameterGridReview(false)
+TRACK	TRACK-4ed2b94c4b0d1329	Dynamic: fxTcpParameterGridReview(true)	TrackNavigatorFxTcpList.cpp	fxTcpParameterGridReview(true)
+TRACK	TRACK-b5985f4a742dedb3	Dynamic: fxTcpReview(false)	TrackNavigatorFxTcp.cpp	fxTcpReview(false)
+TRACK	TRACK-bc1d61642e323594	Dynamic: fxTcpReview(true)	TrackNavigatorFxTcp.cpp	fxTcpReview(true)
+TRACK	TRACK-213ea4cd84b7eae8	Dynamic: fxTcpReview(true)	TrackNavigatorFxTcpList.cpp	fxTcpReview(true)
+TRACK	TRACK-95414a1852ecaf75	Dynamic: fxTcpValueSpeech()	TrackNavigatorFxTcp.cpp	fxTcpValueSpeech()
+TRACK	TRACK-faed94c78fa7be50	Dynamic: hardwareOutputReview(false)	TrackNavigatorHardwareOutputs.cpp	hardwareOutputReview(false)
+TRACK	TRACK-930c697f74b6a825	Dynamic: hardwareOutputReview(newColumn)	TrackNavigatorHardwareOutputs.cpp	hardwareOutputReview(newColumn)
+TRACK	TRACK-5ff2b3dc308e3d15	Dynamic: hardwareOutputReview(true)	TrackNavigatorHardwareOutputs.cpp	hardwareOutputReview(true)
+TRACK	TRACK-d72fbefeea585b85	Dynamic: header + selected + columnNames[col] + ". " + memoryItems_[static_cast<size_t>(memoryRow_)].label	TrackNavigatorMemories.cpp	header + selected + columnNames[col] + ". " + memoryItems_[static_cast<size_t>(memoryRow_)].label
+TRACK	TRACK-41dd0964c328574d	Dynamic: info	TrackNavigator.cpp	info
+TRACK	TRACK-65dc95d9fa494640	Dynamic: parameterValueSpeech()	TrackNavigator.cpp	parameterValueSpeech()
+TRACK	TRACK-48d9f127be2bef47	Dynamic: pendingMidiSpeech_	TrackNavigatorMidi.cpp	pendingMidiSpeech_
+TRACK	TRACK-5fdc003dc35b8aa7	Dynamic: pendingRoutingStatus()	TrackNavigator.cpp	pendingRoutingStatus()
+TRACK	TRACK-5b41aa29bb90f6af	Dynamic: prefix + currentParameterSpeech()	TrackNavigator.cpp	prefix + currentParameterSpeech()
+TRACK	TRACK-124a5c0bf0775624	Dynamic: prefix + fxTcpReview(true)	TrackNavigator.cpp	prefix + fxTcpReview(true)
+TRACK	TRACK-cdafcc21012055e0	Dynamic: prefix + hardwareOutputReview(true)	TrackNavigator.cpp	prefix + hardwareOutputReview(true)
+TRACK	TRACK-a9133b0fd6f5cfcc	Dynamic: prefix + reaRouteReview(true)	TrackNavigator.cpp	prefix + reaRouteReview(true)
+TRACK	TRACK-f95c9524a27691b1	Dynamic: prefix + selected + parameterValueSpeech()	TrackNavigator.cpp	prefix + selected + parameterValueSpeech()
+TRACK	TRACK-ee4a7d6bc3749c06	Dynamic: prefix + trackMidiReview(false)	TrackNavigator.cpp	prefix + trackMidiReview(false)
+TRACK	TRACK-275c125adbc6706b	Dynamic: reaRouteReview(false)	TrackNavigatorReaRoute.cpp	reaRouteReview(false)
+TRACK	TRACK-975be57134a11c3e	Dynamic: reaRouteReview(newColumn)	TrackNavigatorReaRoute.cpp	reaRouteReview(newColumn)
+TRACK	TRACK-b70c3864f257c5cc	Dynamic: reaRouteReview(true)	TrackNavigatorReaRoute.cpp	reaRouteReview(true)
+TRACK	TRACK-e07ef0e74f672306	Dynamic: result	TrackNavigatorRouting.cpp	result
+TRACK	TRACK-8537f52e20d93658	Dynamic: reviewLine()	TrackNavigator.cpp	reviewLine()
+TRACK	TRACK-5f68d8fb4b00265d	Dynamic: std::string(name) + ". " + folderAwareTrackLabel()	TrackNavigatorEdit.cpp	std::string(name) + ". " + folderAwareTrackLabel()
+TRACK	TRACK-4a20b1c8d5b22373	Dynamic: trackMidiReview(false)	TrackNavigatorTrackMidi.cpp	trackMidiReview(false)
+TRACK	TRACK-8b8f6ce8df9cc654	Dynamic: trackMidiReview(true)	TrackNavigatorTrackMidi.cpp	trackMidiReview(true)
+TRACK	TRACK-c875322c63026b03	Dynamic: trackName() + ". " + currentParameterSpeech()	TrackNavigatorExtra.cpp	trackName() + ". " + currentParameterSpeech()
+TRACK	TRACK-f62f485cdc739e39	Dynamic: trackName() + ". " + fxTcpReview(true)	TrackNavigatorFxTcp.cpp	trackName() + ". " + fxTcpReview(true)
+TRACK	TRACK-bd21e81c4675d12f	Dynamic: valueText(e, get(e))	TrackNavigator.cpp	valueText(e, get(e))
+TRACK	TRACK-d5f40dd86e7fbdf2	Edit cancelled	TrackNavigator.cpp	"Edit cancelled. " + parameterValueSpeech()
+TRACK	TRACK-59935bfb17655e57	Edit cancelled	TrackNavigatorFxTcp.cpp	"Edit cancelled. " + fxTcpReview(false)
+TRACK	TRACK-11a7357d2338f237	Edit this parameter range with Alt R on its parameter. Delete restores the default	TrackNavigatorMemories.cpp	"Edit this parameter range with Alt R on its parameter. Delete restores the default"
+TRACK	TRACK-6c17b0fadbea1591	Empty track memory	TrackNavigatorMemories.cpp	"Empty track memory " + std::to_string(slot)
+TRACK	TRACK-dfb3cf6a8cbc4fa1	Enable and learn a floating MIDI CC before editing its range	TrackNavigatorExtra.cpp	"Enable and learn a floating MIDI CC before editing its range"
+TRACK	TRACK-7a00360d2601b5cc	Enable MIDI hardware output first	TrackNavigatorTrackMidi.cpp	"Enable MIDI hardware output first"
+TRACK	TRACK-51911993eb636945	Enable the LReaParams native keyboard window to edit a filter	TrackNavigatorFilter.cpp	"Enable the LReaParams native keyboard window to edit a filter"
+TRACK	TRACK-2c99ee36656bc910	Enable the native keyboard window to edit a filter	TrackNavigatorFxTcp.cpp	"Enable the native keyboard window to edit a filter"
+TRACK	TRACK-1998eb7c530f8341	Enter a number	TrackNavigatorExtra.cpp	"Enter a number"
+TRACK	TRACK-a77354e6fd535fb2	Enter a whole number	TrackNavigatorExtra.cpp	"Enter a whole number"
+TRACK	TRACK-3326c034c0353ced	Filter / results	TrackNavigatorFilter.cpp	"Filter " + filterQuery_ + ". " +         std::to_string(page_ == Page::tracks ? rows_.size() : entries_.size() / detailHeight) +         " results. " + currentParameterSpeech()
+TRACK	TRACK-e0a47af0528e3816	Finish or cancel Add receive first / Finish or cancel Add send first	TrackNavigatorRouting.cpp	pendingRouting_ == RoutingKind::receive ?             "Finish or cancel Add receive first" : "Finish or cancel Add send first"
+TRACK	TRACK-be500eb3f610738d	Finish or cancel Add send or receive before filtering	TrackNavigatorFilter.cpp	"Finish or cancel Add send or receive before filtering"
+TRACK	TRACK-1e65861c909167e8	Finish or cancel routing and CC learn before opening Track Memories	TrackNavigatorMemories.cpp	"Finish or cancel routing and CC learn before opening Track Memories"
+TRACK	TRACK-1b502121862f8f3b	Finish routing or CC learn before recalling a track position	TrackNavigatorMemories.cpp	"Finish routing or CC learn before recalling a track position"
+TRACK	TRACK-0e95a768e94f0790	Finish routing or CC learn before saving a track position	TrackNavigatorMemories.cpp	"Finish routing or CC learn before saving a track position"
+TRACK	TRACK-fc6c042e79dba5d2	Finish the current operation before editing a range	TrackNavigatorExtra.cpp	"Finish the current operation before editing a range"
+TRACK	TRACK-8a3716c68d6c91ff	Fixed CC map on / parameters	TrackNavigatorMidi.cpp	"Fixed CC map on. " + std::to_string(count) + " parameters"
+TRACK	TRACK-c43e77227507fffc	Fixed CC off. No active floating CC	TrackNavigatorMidi.cpp	"Fixed CC off. No active floating CC"
+TRACK	TRACK-074ca65d7a96bec1	Fixed CC removed / No fixed CC on	TrackNavigatorMidi.cpp	has ? "Fixed CC removed. " + key : "No fixed CC on " + key
+TRACK	TRACK-6aa6af1fe8dd38c4	Floating CC learn. Move a MIDI control	TrackNavigatorMidi.cpp	"Floating CC learn. Move a MIDI control"
+TRACK	TRACK-0798ad01e1c5f24d	Floating CC off	TrackNavigatorMidi.cpp	"Floating CC off"
+TRACK	TRACK-dd306c48f5a5cf14	Floating CC range / Fixed CC range	TrackNavigatorExtra.cpp	std::string(floating?"Floating CC range":midi?"Fixed CC range":"Parameter range") +             " saved. " + rangeText(range)
+TRACK	TRACK-838f5c0c67405e5e	Floating CC. Channel	TrackNavigatorMidi.cpp	"Floating CC. Channel " + std::to_string(cc.channel) +                 " CC " + std::to_string(cc.number)
+TRACK	TRACK-d8ffaa33a4578b96	Floating CC. Channel	TrackNavigatorMidi.cpp	"Floating CC. Channel " + std::to_string(session.channel) +                         " CC " + std::to_string(session.number)
+TRACK	TRACK-fa6e8e38fe04ec7d	Folder change failed	TrackNavigatorFolders.cpp	"Folder change failed"
+TRACK	TRACK-88605ca5fbaa2ce3	Folder GUID unavailable	TrackNavigatorFolders.cpp	"Folder GUID unavailable"
+TRACK	TRACK-78d7a11dc7ba7363	Folder no longer available	TrackNavigatorFolders.cpp	"Folder no longer available"
+TRACK	TRACK-1b24eea6d13dcc59	FX cannot be moved	TrackNavigatorFxTcp.cpp	"FX cannot be moved"
+TRACK	TRACK-de497b6c7bf38001	FX chain changed. Reopen parameter grid	TrackNavigatorFxTcpList.cpp	"FX chain changed. Reopen parameter grid"
+TRACK	TRACK-460b41e0ec8e97e8	FX changed. Numeric edit cancelled	TrackNavigatorFxTcp.cpp	"FX changed. Numeric edit cancelled"
+TRACK	TRACK-9ec1fd679c96b9a5	FX no longer available	TrackNavigatorFxTcp.cpp	"FX no longer available"
+TRACK	TRACK-68f81b2ccb154b2b	FX parameter change refused	TrackNavigatorFxTcp.cpp	"FX parameter change refused"
+TRACK	TRACK-89b068804ed54242	FX TCP automation unavailable	TrackNavigatorAutomation.cpp	"FX TCP automation unavailable"
+TRACK	TRACK-14d3f2753443ce6f	FX TCP structure changed. Reopen F4	TrackNavigatorFxTcp.cpp	"FX TCP structure changed. Reopen F4"
+TRACK	TRACK-1cfc59a9055bee4e	Grid	TrackNavigatorFxTcp.cpp	"Grid, " + fxTcpReview(false)
+TRACK	TRACK-5473978d659f4f17	Grid	TrackNavigatorFxTcpList.cpp	"Grid " + std::to_string(next)
+TRACK	TRACK-6b1f8cd0a6f89bb1	Grid	TrackNavigatorHardwareOutputs.cpp	"Grid, " + hardwareOutputReview(false)
+TRACK	TRACK-2a4e0c4166dd8988	Grid	TrackNavigatorReaRoute.cpp	"Grid, " + reaRouteReview(false)
+TRACK	TRACK-3dce6c68353f3d20	Hardware output API unavailable	TrackNavigatorHardwareOutputs.cpp	"Hardware output API unavailable"
+TRACK	TRACK-84393b59e316df10	Hardware output created but was not found in F6	TrackNavigatorHardwareOutputs.cpp	"Hardware output created but was not found in F6"
+TRACK	TRACK-88992b249a3b933e	Hardware output delete failed	TrackNavigatorHardwareOutputs.cpp	"Hardware output delete failed"
+TRACK	TRACK-f49f5059251a9bb7	Hardware output header. Read only	TrackNavigatorHardwareOutputs.cpp	"Hardware output header. Read only"
+TRACK	TRACK-84742762eff34826	Invalid number	TrackNavigatorFxTcp.cpp	"Invalid number"
+TRACK	TRACK-1ac99d253dc97b52	Invalid numeric value	TrackNavigatorExtra.cpp	"Invalid numeric value"
+TRACK	TRACK-dc246a7cc5cc367d	Linked track hidden in a closed folder	TrackNavigatorExtra.cpp	"Linked track hidden in a closed folder"
+TRACK	TRACK-367d174abc2e0ce3	Linked track unavailable	TrackNavigatorExtra.cpp	"Linked track unavailable"
+TRACK	TRACK-1da69877a0a4074b	Matching send or receive not found	TrackNavigatorExtra.cpp	"Matching send or receive not found"
+TRACK	TRACK-daaee16e8d3fac36	memories selected	TrackNavigatorMemories.cpp	std::to_string(selected.size())+" memories selected. "+             std::string(columnNames[memoryColumn_])+". "+             memoryItems_[static_cast<size_t>(memoryRow_)].label
+TRACK	TRACK-f262b123dd1bd6fd	Memory selection changed. Select again	TrackNavigatorMemories.cpp	"Memory selection changed. Select again"
+TRACK	TRACK-7b87e86af70ac5ab	MIDI destination or bus out of range	TrackNavigatorExtra.cpp	"MIDI destination or bus out of range"
+TRACK	TRACK-26dc229ff27a92bc	MIDI merge / Routing status: set MIDI source to None for off, or All / a channel for on	TrackNavigator.cpp	"MIDI merge " + valueText(*e, get(*e)) +                 ". Routing status: set MIDI source to None for off, or All / a channel for on."
+TRACK	TRACK-f3c58f4263f32d16	MIDI routing is read only. Press Enter for Sends or Receives	TrackNavigatorTrackMidi.cpp	"MIDI routing is read only. Press Enter for Sends or Receives"
+TRACK	TRACK-336a55d9753b77b5	MIDI source out of range	TrackNavigatorExtra.cpp	"MIDI source out of range"
+TRACK	TRACK-f27bce5b46443329	MIDI speech not available for this field	TrackNavigator.cpp	"MIDI speech not available for this field"
+TRACK	TRACK-ae1086f15b88859d	MIDI speech on / MIDI speech off	TrackNavigator.cpp	on ? "MIDI speech on" : "MIDI speech off"
+TRACK	TRACK-729cd20bfc874994	MIDI speech on / MIDI speech off	TrackNavigatorFxTcp.cpp	on ? "MIDI speech on" : "MIDI speech off"
+TRACK	TRACK-702a073f427155a9	MIDI speech target unavailable	TrackNavigator.cpp	"MIDI speech target unavailable"
+TRACK	TRACK-09c764306307b76a	MIDI speech target unavailable	TrackNavigatorFxTcp.cpp	"MIDI speech target unavailable"
+TRACK	TRACK-ecf3f871b3cab034	Move tracks not available	TrackNavigatorEdit.cpp	"Move tracks not available"
+TRACK	TRACK-7f774d194b34ae94	Moved FX not found	TrackNavigatorFxTcp.cpp	"Moved FX not found"
+TRACK	TRACK-5faaf311cc4b7b35	Moved up / Moved down	TrackNavigatorEdit.cpp	ok ? std::string(direction < 0 ? "Moved up. " : "Moved down. ") +         folderAwareTrackLabel() : "Unable to move selected tracks"
+TRACK	TRACK-d6d586e463867b27	No audio hardware outputs available	TrackNavigatorHardwareOutputs.cpp	"No audio hardware outputs available"
+TRACK	TRACK-3b26c589c20092a2	No automation	TrackNavigatorAutomation.cpp	"No automation"
+TRACK	TRACK-3406d1faa7f5f7f2	No destination tracks selected / No source tracks selected	TrackNavigatorRouting.cpp	receive ? "No destination tracks selected" : "No source tracks selected"
+TRACK	TRACK-246736a9af9d02cf	No editable parameter range for this field	TrackNavigatorExtra.cpp	"No editable parameter range for this field"
+TRACK	TRACK-18e7085e0920cc13	No fixed CC map	TrackNavigatorMidi.cpp	"No fixed CC map"
+TRACK	TRACK-f8a0c048bc1855bc	No fixed CC target	TrackNavigatorMidi.cpp	"No fixed CC target"
+TRACK	TRACK-30d77033c10acb18	No matching sends / No matching receives	TrackNavigator.cpp	page == Page::sends ? "No matching sends" : "No matching receives"
+TRACK	TRACK-837011182b97f2df	No matching tracks. Clear filter with Ctrl F	TrackNavigator.cpp	"No matching tracks. Clear filter with Ctrl F"
+TRACK	TRACK-f63221b2c3ea758c	No matching visible results. Filter unchanged	TrackNavigatorFilter.cpp	"No matching visible results. Filter unchanged"
+TRACK	TRACK-831206873b0582f2	No memories / Track Memories. No memories	TrackNavigatorMemories.cpp	any ? header + columnNames[col] + ". No memories" : "Track Memories. No memories"
+TRACK	TRACK-5a4df597bd3de069	No memories deleted	TrackNavigatorMemories.cpp	"No memories deleted"
+TRACK	TRACK-a579b4bbfca26b6e	No MIDI CC target for this field	TrackNavigatorMidi.cpp	"No MIDI CC target for this field"
+TRACK	TRACK-ceddd4b393a01f22	No new tracks pasted. Check SWS clipboard	TrackNavigatorEdit.cpp	"No new tracks pasted. Check SWS clipboard"
+TRACK	TRACK-8209ddd43f8c3c64	No parameter Step to save	TrackNavigatorMemories.cpp	"No parameter Step to save"
+TRACK	TRACK-54c57d34f912cfa1	No ReaRoute output	TrackNavigatorReaRoute.cpp	"No ReaRoute output"
+TRACK	TRACK-6b77a3bb11687906	No receives	TrackNavigator.cpp	"No receives"
+TRACK	TRACK-c5a53df0c955fa89	No results	TrackNavigatorFxTcp.cpp	"No results"
+TRACK	TRACK-785a62ba12b1b0ee	No results for / Edit the filter or press Escape	TrackNavigatorFilter.cpp	"No results for " + candidate + ". Edit the filter or press Escape"
+TRACK	TRACK-7942ffbff881acf4	No results for / Edit the filter or press Escape	TrackNavigatorFxTcp.cpp	"No results for " + query + ". Edit the filter or press Escape"
+TRACK	TRACK-8111c3d67bc49909	No selected tracks	TrackNavigatorEdit.cpp	"No selected tracks"
+TRACK	TRACK-a06a19027a0922f5	No send or receive	TrackNavigatorFolders.cpp	"No send or receive"
+TRACK	TRACK-d4e7be3be420976d	No sends	TrackNavigator.cpp	"No sends"
+TRACK	TRACK-2972c64b574cfab8	No sends or receives	TrackNavigatorTrackMidi.cpp	"No sends or receives"
+TRACK	TRACK-5d6c5bbf0f7832ac	No source tracks selected / No destination tracks selected	TrackNavigatorRouting.cpp	receive ? "No source tracks selected" : "No destination tracks selected"
+TRACK	TRACK-20417e0300cba297	No TCP parameter for numeric editing	TrackNavigatorFxTcp.cpp	"No TCP parameter for numeric editing"
+TRACK	TRACK-b64756cd243c6a1f	No TCP parameters. Press Alt+Enter to add	TrackNavigatorFxTcp.cpp	"No TCP parameters. Press Alt+Enter to add"
+TRACK	TRACK-0a91b6569026db04	No track FX	TrackNavigatorFxTcp.cpp	"No track FX"
+TRACK	TRACK-3252a1f0a556a070	No track FX	TrackNavigatorFxTcpList.cpp	"No track FX"
+TRACK	TRACK-762affba16dd3906	No track to save	TrackNavigatorMemories.cpp	"No track to save"
+TRACK	TRACK-74ca40375f41f506	No visible tracks	TrackNavigatorEdit.cpp	"No visible tracks"
+TRACK	TRACK-ef45c4de889df814	Not a folder or end folder	TrackNavigatorFolders.cpp	"Not a folder or end folder"
+TRACK	TRACK-43fc61ee6d5174f1	Not editable numerically	TrackNavigatorExtra.cpp	"Not editable numerically"
+TRACK	TRACK-76ee6d1888d89929	Numeric editor unavailable	TrackNavigatorExtra.cpp	"Numeric editor unavailable"
+TRACK	TRACK-e8ea7e1094ff8560	Numeric editor unavailable	TrackNavigatorFxTcp.cpp	"Numeric editor unavailable"
+TRACK	TRACK-a8917d46ab8d0026	Numeric value unavailable	TrackNavigatorFxTcp.cpp	"Numeric value unavailable"
+TRACK	TRACK-7c9ee432d904c062	Only in Tracks	TrackNavigatorRouting.cpp	"Only in Tracks"
+TRACK	TRACK-7cd0bec57f3ce5d6	Output is no longer ReaRoute	TrackNavigatorReaRoute.cpp	"Output is no longer ReaRoute"
+TRACK	TRACK-67381459cbd254c7	Parameter value / Parameter value. Host raw units	TrackNavigatorFxTcp.cpp	fxTcpNumericFormatted_ ? "Parameter value. " + fxTcpNumericUnit_ :                                    "Parameter value. Host raw units"
+TRACK	TRACK-e6f642928b508736	Parameter value. Enter a number, then Enter. Escape cancels	TrackNavigatorExtra.cpp	"Parameter value. Enter a number, then Enter. Escape cancels"
+TRACK	TRACK-973b9574defc9008	Paste at cursor unavailable: REAPER track reordering API missing	TrackNavigatorEdit.cpp	"Paste at cursor unavailable: REAPER track reordering API missing"
+TRACK	TRACK-7037ecdac9feeb9d	Percent unit only for Pan or Width	TrackNavigatorExtra.cpp	"Percent unit only for Pan or Width"
+TRACK	TRACK-489f4ef927eeaff8	Press Delete to remove this CC association	TrackNavigatorMemories.cpp	"Press Delete to remove this CC association"
+TRACK	TRACK-f9706977cf9cec95	Range -100 to 100 percent	TrackNavigatorExtra.cpp	"Range -100 to 100 percent"
+TRACK	TRACK-fe01260c39d31301	Read only	TrackNavigator.cpp	"Read only"
+TRACK	TRACK-67321de3fe0e302b	Read only	TrackNavigatorExtra.cpp	"Read only"
+TRACK	TRACK-d7208bacd0a657c4	Read only	TrackNavigatorReaRoute.cpp	reaRouteReview(false) + ". Read only"
+TRACK	TRACK-cefc042d4818097a	Read only or not yet migrated	TrackNavigator.cpp	"Read only or not yet migrated"
+TRACK	TRACK-919236a2a690769f	REAPER TCP FX parameter API unavailable	TrackNavigatorFxTcp.cpp	"REAPER TCP FX parameter API unavailable"
+TRACK	TRACK-0bb1629845374b6c	REAPER track channel API unavailable	TrackNavigatorHardwareOutputs.cpp	"REAPER track channel API unavailable"
+TRACK	TRACK-1a75964707e7c940	REAPER track MIDI API unavailable	TrackNavigatorTrackMidi.cpp	"REAPER track MIDI API unavailable"
+TRACK	TRACK-f54b5476f3d1adaf	ReaRoute API unavailable	TrackNavigatorReaRoute.cpp	"ReaRoute API unavailable"
+TRACK	TRACK-09ee227d72fb7504	ReaRoute input belongs to the current track input. It does not change record arm or monitoring	TrackNavigatorReaRoute.cpp	"ReaRoute input belongs to the current track input. It does not change record arm or monitoring"
+TRACK	TRACK-6fc1792f3c355822	ReaRoute input change failed	TrackNavigatorReaRoute.cpp	"ReaRoute input change failed"
+TRACK	TRACK-cd86de3be2f42d0b	ReaRoute output change failed	TrackNavigatorReaRoute.cpp	"ReaRoute output change failed"
+TRACK	TRACK-ccc0e269dcc26a28	ReaRoute output delete failed	TrackNavigatorReaRoute.cpp	"ReaRoute output delete failed"
+TRACK	TRACK-d4f4819e86a6d840	ReaRoute outputs are in the next column	TrackNavigatorReaRoute.cpp	"ReaRoute outputs are in the next column"
+TRACK	TRACK-5b96d504c4b153e1	Receive send instance not found	TrackNavigatorFolders.cpp	"Receive send instance not found"
+TRACK	TRACK-74382fdbbc52e247	Receive source not found	TrackNavigatorFolders.cpp	"Receive source not found"
+TRACK	TRACK-33fe75e00d4dca69	Routing API unavailable	TrackNavigatorExtra.cpp	"Routing API unavailable"
+TRACK	TRACK-455a4f8b7e2b5f1d	Routing exceeds REAPER's 128 track channels	TrackNavigator.cpp	"Routing exceeds REAPER's 128 track channels"
+TRACK	TRACK-e41787c564a6e205	Routing peer unavailable	TrackNavigator.cpp	"Routing peer unavailable"
+TRACK	TRACK-ffcaf37e4af00714	Routing unavailable	TrackNavigatorAutomation.cpp	"Routing unavailable"
+TRACK	TRACK-5d564605b817eb22	Routing unavailable	TrackNavigatorMidi.cpp	"Routing unavailable"
+TRACK	TRACK-16bf95017251ca2c	Routing unavailable. CC not learned	TrackNavigatorMidi.cpp	"Routing unavailable. CC not learned"
+TRACK	TRACK-49d2a0955203b03a	Saved track is hidden in TCP. Open its parent folder first	TrackNavigatorMemories.cpp	"Saved track is hidden in TCP. Open its parent folder first"
+TRACK	TRACK-a3b51f92c00ea3b4	Saved track no longer exists. Slot	TrackNavigatorMemories.cpp	"Saved track no longer exists. Slot " + std::to_string(slot)
+TRACK	TRACK-b08dab88fcad4937	Search cleared	TrackNavigatorFilter.cpp	"Search cleared. " + parameterValueSpeech()
+TRACK	TRACK-b7ad734e4e5a1724	Search cleared	TrackNavigatorFxTcp.cpp	"Search cleared. " + fxTcpReview(false)
+TRACK	TRACK-b69d50373e0f04e8	Search results / results	TrackNavigatorFxTcp.cpp	"Search results. " + std::to_string(count) + " results. " + fxTcpReview(false)
+TRACK	TRACK-37794711b2b19f19	Select a hardware output to delete	TrackNavigatorHardwareOutputs.cpp	"Select a hardware output to delete"
+TRACK	TRACK-2a768ab84fc134c6	Selected / Added	TrackNavigatorFxTcpList.cpp	std::string(desired ? (e.visible ? "Selected. " : "Added. ") : "Removed. ") +                 fxTcpReview(false)
+TRACK	TRACK-b022b6b7af307ad2	Selected / Deselected	TrackNavigator.cpp	std::to_string(CountSelectedTracks(project_)) + " Selected. " + trackName() +         (deselectOnly || wasSelected ? ". Deselected" : ". Selected")
+TRACK	TRACK-2ccd64c054f4a35c	Selected / Not selected	TrackNavigator.cpp	std::string(selected ? "Selected. " : "Not selected. ") +         folderAwareTrackLabel() + ". " + std::to_string(CountSelectedTracks(project_)) + " tracks selected"
+TRACK	TRACK-bc55762410ae57c8	Selected / Not selected	TrackNavigator.cpp	std::to_string(CountSelectedTracks(project_)) + " Selected. " + trackName() + ". Not selected"
+TRACK	TRACK-e1ba37b7cd095cc2	Selected / Not selected	TrackNavigator.cpp	std::string(selected ? "Selected. " : "Not selected. ") +                     folderAwareTrackLabel() + (total > 1 ? ". " + std::to_string(total) + " tracks selected" : "")
+TRACK	TRACK-3bfe155444e6d1bc	Selected / Not selected	TrackNavigatorMemories.cpp	std::string(selected.count(memoryRow_)?"Selected. ":"Not selected. ")+             columnNames[memoryColumn_]+". "+memoryItems_[static_cast<size_t>(memoryRow_)].label
+TRACK	TRACK-6820567a8f7142a9	Send type out of range	TrackNavigatorExtra.cpp	"Send type out of range"
+TRACK	TRACK-607aad9e74ef7165	Send/receive automation not created	TrackNavigatorAutomation.cpp	created ? feedback(true) : "Send/receive automation not created"
+TRACK	TRACK-5883cf1d6e16024d	Slot	TrackNavigatorMemories.cpp	"Slot " + std::to_string(slot) + ". " + savedTrackLabel(saved) + ". " + parameterValueSpeech()
+TRACK	TRACK-80f8598b00a45a0a	Slot / occupied	TrackNavigatorMemories.cpp	"Slot " + std::to_string(slot) + " occupied. " + savedTrackLabel(existing) +                 ". Delete it from Track Memories to replace"
+TRACK	TRACK-b87af1df29010897	Slot / saved	TrackNavigatorMemories.cpp	"Slot " + std::to_string(slot) + " saved. " + savedTrackLabel(guid)
+TRACK	TRACK-caa943833d1f945a	Step	TrackNavigator.cpp	"Step " + std::to_string(stepScale_)
+TRACK	TRACK-3ad8d0700af20e39	Step	TrackNavigatorFxTcp.cpp	"Step " + std::to_string(next)
+TRACK	TRACK-7d5ced9e96880c2b	Step	TrackNavigatorMemories.cpp	"Step " + std::to_string(next)
+TRACK	TRACK-f9c5bcf6576506de	Step / saved	TrackNavigator.cpp	"Step " + std::to_string(stepScale_) + " saved"
+TRACK	TRACK-6ae31bbd15fa2da9	Step / saved	TrackNavigatorFxTcp.cpp	"Step " + std::to_string(value) + " saved"
+TRACK	TRACK-b171c6c8398f578f	Step / saved	TrackNavigatorMemories.cpp	"Step " + std::to_string(value) + " saved"
+TRACK	TRACK-f9455b951caf47c7	Step 0	TrackNavigator.cpp	"Step 0"
+TRACK	TRACK-d111887df366fc07	SWS command API unavailable	TrackNavigatorEdit.cpp	"SWS command API unavailable"
+TRACK	TRACK-a9c77447c82e49be	SWS/S&M not installed. Tracks with routing were not changed	TrackNavigatorEdit.cpp	"SWS/S&M not installed. Tracks with routing were not changed"
+TRACK	TRACK-ca8d146c879eff54	TCP parameter no longer visible	TrackNavigatorFxTcp.cpp	"TCP parameter no longer visible"
+TRACK	TRACK-432ae546d9ab909d	TCP parameter not removed	TrackNavigatorFxTcp.cpp	"TCP parameter not removed"
+TRACK	TRACK-6c975d7fd92e25e0	TCP parameter removed	TrackNavigatorFxTcp.cpp	"TCP parameter removed. " + fxTcpReview(false)
+TRACK	TRACK-58892d17d9f44a01	Top of tracks / End of tracks	TrackNavigatorEdit.cpp	direction < 0 ? "Top of tracks" : "End of tracks"
+TRACK	TRACK-e9dec320a1958d43	Track is hidden in the TCP	TrackNavigator.cpp	"Track is hidden in the TCP"
+TRACK	TRACK-0666b05918e62067	Track no longer available	TrackNavigator.cpp	"Track no longer available"
+TRACK	TRACK-1ae653944fbfa609	Track no longer available	TrackNavigatorTrackMidi.cpp	"Track no longer available"
+TRACK	TRACK-8f8a204eecec6949	Track or routing unavailable for CC learn	TrackNavigatorMidi.cpp	"Track or routing unavailable for CC learn"
+TRACK	TRACK-ff7af5e23267795c	Track Params: no project	TrackNavigator.cpp	"Track Params: no project"
+TRACK	TRACK-55bcef8b4c7bfcbb	Track Params: no visible tracks	TrackNavigator.cpp	"Track Params: no visible tracks"
+TRACK	TRACK-1a318d6a390b7312	Track Params: project memory not saved. Check the project .tp	TrackNavigator.cpp	"Track Params: project memory not saved. Check the project .tp"
+TRACK	TRACK-3c346679833c9e97	Track unavailable. No changes	TrackNavigatorAutomation.cpp	"Track unavailable. No changes"
+TRACK	TRACK-9e6255c5f2752f30	Tracks pasted, but placement after the current track could not be confirmed	TrackNavigatorEdit.cpp	"Tracks pasted, but placement after the current track could not be confirmed. " +             folderAwareTrackLabel()
+TRACK	TRACK-bd7247988538fb79	Type text and press Enter; Escape cancels	TrackNavigatorFilter.cpp	nativeTextLabel() + ". Type text and press Enter; Escape cancels."
+TRACK	TRACK-4e51b4b24dd5e630	Type text and press Enter; Escape cancels	TrackNavigatorFxTcp.cpp	nativeTextLabel() + ". Type text and press Enter; Escape cancels."
+TRACK	TRACK-2dc4a080f85c0788	Use 0 for off or 1 for on	TrackNavigatorExtra.cpp	"Use 0 for off or 1 for on"
+TRACK	TRACK-3ce2d1902427512f	Use Alt Left or Right to change the step, Delete to reset	TrackNavigatorMemories.cpp	"Use Alt Left or Right to change the step, Delete to reset"
+TRACK	TRACK-8ee8e88bd4ea4624	Value / Grid	TrackNavigatorFxTcp.cpp	std::string(valueMode_ ? "Value, " : "Grid, ") + fxTcpReview(false)
+TRACK	TRACK-2ce6ba07cf7e9687	Value / Grid	TrackNavigatorHardwareOutputs.cpp	std::string(valueMode_ ? "Value, " : "Grid, ") + hardwareOutputReview(false)
+TRACK	TRACK-5f81664da986ccfe	Value / Grid	TrackNavigatorReaRoute.cpp	std::string(valueMode_ ? "Value, " : "Grid, ") + reaRouteReview(false)
+TRACK	TRACK-03ebb8ae499ed6e4	Value / Step	TrackNavigatorFxTcp.cpp	(valueMode_ ? "Value, " : "") + fxTcpReview(true) +                 (key.empty() ? "" : ". Step " + std::to_string(workingFxTcpStep())) +                 (key.empty() ? "" : (memory_.valueSpeech(key) ? ". Value speech on" : ". Value speech off")) +                 (ccSpeaking ? ". MIDI speech on" : ". MIDI speech off")
+TRACK	TRACK-bf34edf892642701	Value speech on / Value speech off	TrackNavigator.cpp	on ? "Value speech on" : "Value speech off"
+TRACK	TRACK-4baff87adf5902dc	Value speech on / Value speech off	TrackNavigatorFxTcp.cpp	on ? "Value speech on" : "Value speech off"
+TRACK	TRACK-5acaff6b6dcffc70	Value unavailable or outside host range	TrackNavigatorFxTcp.cpp	"Value unavailable or outside host range"
+TRACK	TRACK-c2ca5fc6e00f3832	Visible TCP parameters, remove / FX parameter selection	TrackNavigatorFxTcpList.cpp	std::string(visibleOnly ? "Visible TCP parameters, remove. " : "FX parameter selection. ") +         std::to_string(fxTcpListEntries_.size()) + " parameters. " + fxTcpParameterGridReview(false)
+TRACK	TRACK-2dac147ea3450263	Volume outside configured range. Minimum / dB, maximum	TrackNavigatorExtra.cpp	"Volume outside configured range. Minimum " +                             std::to_string(limits.minimum) + " dB, maximum " +                             std::to_string(limits.maximum) + " dB"
+TRACK	TRACK-98783a6b7b434428	Volume range -150 to 48 dB	TrackNavigatorExtra.cpp	"Volume range -150 to 48 dB"
+TRACK	TRACK-0cb902d6aebd3713	Width automation change not confirmed. No changes	TrackNavigatorAutomation.cpp	"Width automation change not confirmed. No changes"
+TRACK	TRACK-31dfdddf012936a9	Yes	TrackNavigator.cpp	yes ? "Yes" : "No"
