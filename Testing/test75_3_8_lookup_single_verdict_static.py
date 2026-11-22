@@ -10,7 +10,7 @@ assert 'Shortcut not found in this section' not in lookup
 assert 'return true;' in lookup and 'SetFocus(st->shortcuts);' in lookup
 assert 'UINT lookupQueryVk = 0;' in p and 'bool lookupMissPending = false;' in p
 assert 'msg == WM_SYSKEYDOWN && (lp & (static_cast<LPARAM>(1) << 29)) != 0' in subclass
-assert 'if (findShortcut(st, shortcut(vk' in subclass
+assert 'if (findShortcut(st, query))' in subclass
 assert 'st->lookupMissPending = false;' in subclass
 assert 'st->lookupMissPending = true;' in subclass
 assert 'msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP' in pump

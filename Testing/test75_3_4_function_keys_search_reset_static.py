@@ -29,7 +29,7 @@ assert 'focused != state.lookup && !(state.capturing && focused == state.capture
 pump=p.split('const bool isShortcutInput = state.page == Page::shortcuts',1)[1]
 assert pump.index('if (isDialogMessage && isShortcutInput && !altTab)') < pump.index('IsDialogMessageW(hwnd, &msg)')
 lookup=p.split('if (hwnd == st->lookup) {',1)[1].split('if (hwnd == st->messages && alt',1)[0]
-assert 'findShortcut(st, shortcut(vk' in lookup
+assert 'if (findShortcut(st, query))' in lookup
 assert 'vk == VK_F12' not in lookup and 'vk == \'S\'' not in lookup
 # Enter on Reset asks the No-default confirmation; only OK commits changes.
 assert 'focused == state.resetSection && msg.wParam == VK_RETURN' in p

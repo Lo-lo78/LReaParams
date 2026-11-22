@@ -165,6 +165,10 @@ struct DialogState {
     // interpretation of that SAME gesture must cancel the false negative.
     UINT lookupQueryVk = 0;
     bool lookupMissPending = false;
+    // Alt+1/Alt+2 are Render's fixed tab actions, not auto Alt+letter
+    // accelerators. Once either tab is found, consume stray Win32 messages
+    // from that physical gesture without starting a second failed lookup.
+    UINT lookupResolvedTabVk = 0;
     // A native modal owner must be re-enabled BEFORE destroying the popup;
     // otherwise Windows can activate a different application in the gap.
     HWND modalOwner{};
@@ -430,6 +434,25 @@ bool findShortcut(DialogState* st, const Key& key) {
     int found = -1;
     const int current = listSelection(st->shortcuts);
     if (st->currentScope == ShortcutScope::render) {
+        // Resolve default Render page gestures by stable tab identity,
+        // not via the changing automatic Alt+letter list. A personalized
+        // Alt+1/Alt+2 override still takes precedence, as in onKey().
+        const bool personalTabOverride = std::any_of(
+            st->pending.renderShortcuts.begin(), st->pending.renderShortcuts.end(),
+            [&](const auto& user) { return same(user.assigned, key); });
+        if (!personalTabOverride && key.alt && !key.ctrl && !key.shift &&
+            (key.vk == '1' || key.vk == '2')) {
+            const std::wstring tabId = key.vk == '1' ? L"tab|0" : L"tab|1";
+            for (size_t i = 0; i < st->renderVisible.size(); ++i) {
+                if (st->renderVisible[i].identity == tabId) {
+                    selectList(st->shortcuts, static_cast<int>(i));
+                    updateSelection(st);
+                    SetFocus(st->shortcuts);
+                    return true;
+                }
+            }
+            return false; // A missing tab is not reported as available.
+        }
         bool personalized = false;
         for (const auto& user : st->pending.renderShortcuts)
             if (same(user.assigned, key)) { personalized = true; break; }
@@ -616,6 +639,7 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
         // Alt+S/Alt+R/Alt+O/Alt+C). Do not execute dialog mnemonics here.
         if (hwnd == st->lookup) {
             if (st->lookupActivator == vk) return 0; // Alt+S was used to focus this EDIT
+            if (st->lookupResolvedTabVk == vk) return 0; // already resolved this Alt+digit press
             if ((lp & (static_cast<LPARAM>(1) << 30)) != 0) return 0; // no repeated lookup announcements
             if (vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT ||
                 vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_LMENU ||
@@ -630,11 +654,26 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             if (st->lookupQueryVk && st->lookupQueryVk != vk)
                 st->lookupMissPending = false; // previous key release was lost
             st->lookupQueryVk = vk;
-            if (findShortcut(st, shortcut(vk, (ctrl ? kPrefCtrl : 0) |
-                    (alt ? kPrefAlt : 0) | (shift ? kPrefShift : 0))))
+            // Alt may already appear released in GetKeyState by the time
+            // this queued WM_SYSKEYDOWN is dispatched. Its context bit and
+            // the Render tab gesture are authoritative for Alt+1/Alt+2.
+            const bool renderTabGesture = st->currentScope == ShortcutScope::render &&
+                (vk == '1' || vk == '2') && !ctrl && !shift &&
+                (alt || (msg == WM_SYSKEYDOWN &&
+                    (lp & (static_cast<LPARAM>(1) << 29)) != 0));
+            Key query = shortcut(vk, (ctrl ? kPrefCtrl : 0) |
+                ((alt || renderTabGesture) ? kPrefAlt : 0) |
+                (shift ? kPrefShift : 0));
+            if (findShortcut(st, query)) {
+                // Success is FINAL, not pending until key-up. In particular,
+                // Alt+1/Alt+2 may generate later WM_SYSCHAR/repeat messages
+                // after focus has already moved to the result list.
+                st->lookupQueryVk = 0;
                 st->lookupMissPending = false;
-            else
+                if (renderTabGesture) st->lookupResolvedTabVk = vk;
+            } else {
                 st->lookupMissPending = true;
+            }
             return 0;
         }
         if (hwnd == st->messages && alt && !ctrl && (vk == VK_UP || vk == VK_DOWN)) {
@@ -653,7 +692,10 @@ LRESULT CALLBACK pageProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, D
             return 0;
         }
         if (hwnd != st->capture && alt) {
-            if (vk == '1' || vk == '2') {
+            // The Alt+1/Alt+2 backend selector only exists on Advanced;
+            // in the Shortcuts list these keys are Render tab queries.
+            if (st->page == Page::advanced && hwnd == st->advanced &&
+                (vk == '1' || vk == '2')) {
                 st->pending.compatibilityHook = vk == '2';
                 updateChoices(st); return 0;
             }
@@ -1416,9 +1458,23 @@ std::optional<Preferences> editPreferences(HWND owner, const Preferences& curren
             // the corresponding release reaches this dialog queue.
             if (GetFocus() != state.lookup) state.lookupActivator = 0;
         }
-        // Resolve the lookup transaction at physical key release. A query
-        // that selected a control cannot announce a failure: only an unmatched
-        // press, with no successful interpretation, reaches OSARA once.
+        // A successful Alt+1/Alt+2 lookup has already selected a real tab.
+        // Discard all residual events from that press, including key-up,
+        // before the generic failed-lookup path can see them.
+        if (isDialogMessage && state.lookupResolvedTabVk &&
+            (msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP) &&
+            static_cast<UINT>(msg.wParam) == state.lookupResolvedTabVk) {
+            state.lookupResolvedTabVk = 0;
+            state.lookupQueryVk = 0;
+            state.lookupMissPending = false;
+            continue;
+        }
+        // A missing digit key-up should not leave the guard armed forever.
+        if (isDialogMessage && state.lookupResolvedTabVk &&
+            (msg.message == WM_SYSKEYUP || msg.message == WM_KEYUP) &&
+            msg.wParam == VK_MENU) state.lookupResolvedTabVk = 0;
+        // Resolve a genuine unsuccessful query at physical key release.
+        // A successful query closed its transaction synchronously.
         // Key-up can target the result list after findShortcut moved focus.
         if (isDialogMessage && state.lookupQueryVk &&
             (msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP) &&
